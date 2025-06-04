@@ -59,15 +59,16 @@ model Currency {
   @@map("currencies")
 }
 
-// 分类表 - 支持树状结构的分类系统
+// 分类表 - 支持树状结构的分类系统，区分账户性质
 model Category {
-  id       String  @id @default(cuid())
+  id       String      @id @default(cuid())
   userId   String
   name     String
-  parentId String? // 父分类ID，null表示顶级分类
-  order    Int     @default(0) // 排序字段
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  parentId String?     // 父分类ID，null表示顶级分类
+  type     AccountType // 账户类型：资产、负债、收入、支出
+  order    Int         @default(0) // 排序字段
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   // 关联关系
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -78,6 +79,16 @@ model Category {
 
   @@unique([userId, name, parentId]) // 同一用户下同一父分类中的分类名不能重复
   @@map("categories")
+}
+
+// 账户类型枚举 - 区分存量和流量
+enum AccountType {
+  ASSET     // 资产类（存量）- 现金、银行存款、投资、房产等
+  LIABILITY // 负债类（存量）- 信用卡、贷款、应付款等
+  INCOME    // 收入类（流量）- 工资、投资收益、其他收入等
+  EXPENSE   // 支出类（流量）- 生活费、娱乐、交通等
+
+  @@map("account_types")
 }
 
 // 账户表 - 用户的各种账户

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
+import { calculateAccountBalance, calculateNetWorth, validateAccountTypes } from '@/lib/account-balance'
 
 export async function GET() {
   try {
@@ -31,29 +32,32 @@ export async function GET() {
       }
     })
 
-    // 计算每个账户的余额
+    // 使用新的余额计算逻辑
     const accountBalances = accounts.map(account => {
-      const balances: Record<string, number> = {}
-      
-      account.transactions.forEach(transaction => {
-        const currencyCode = transaction.currency.code
-        if (!balances[currencyCode]) {
-          balances[currencyCode] = 0
-        }
-        
-        if (transaction.type === 'INCOME') {
-          balances[currencyCode] += parseFloat(transaction.amount.toString())
-        } else if (transaction.type === 'EXPENSE') {
-          balances[currencyCode] -= parseFloat(transaction.amount.toString())
-        }
-        // 转账交易需要特殊处理，这里简化处理
+      const accountData = {
+        id: account.id,
+        name: account.name,
+        category: account.category,
+        transactions: account.transactions.map(t => ({
+          type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER',
+          amount: parseFloat(t.amount.toString()),
+          currency: t.currency
+        }))
+      }
+
+      const balances = calculateAccountBalance(accountData)
+
+      // 转换为原有格式以保持兼容性
+      const balancesRecord: Record<string, number> = {}
+      Object.values(balances).forEach(balance => {
+        balancesRecord[balance.currencyCode] = balance.amount
       })
 
       return {
         id: account.id,
         name: account.name,
         category: account.category,
-        balances
+        balances: balancesRecord
       }
     })
 
@@ -102,23 +106,31 @@ export async function GET() {
       }
     })
 
-    // 计算净资产（简化版本，实际应用中需要汇率转换）
-    let totalNetWorth = 0
-    accountBalances.forEach(account => {
-      Object.entries(account.balances).forEach(([currencyCode, balance]) => {
-        if (currencyCode === baseCurrency.code) {
-          totalNetWorth += balance
-        }
-        // TODO: 添加汇率转换逻辑
-      })
-    })
+    // 使用新的净资产计算逻辑
+    const accountsForNetWorth = accounts.map(account => ({
+      id: account.id,
+      name: account.name,
+      category: account.category,
+      transactions: account.transactions.map(t => ({
+        type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER',
+        amount: parseFloat(t.amount.toString()),
+        currency: t.currency
+      }))
+    }))
+
+    const netWorthByCurrency = calculateNetWorth(accountsForNetWorth)
+    const totalNetWorth = netWorthByCurrency[baseCurrency.code]?.amount || 0
+
+    // 验证账户类型设置
+    const validation = validateAccountTypes(accountsForNetWorth)
 
     return successResponse({
       netWorth: {
         amount: totalNetWorth,
-        currency: baseCurrency
+        currency: baseCurrency,
+        byCurrency: netWorthByCurrency
       },
-      accountBalances: accountBalances.filter(account => 
+      accountBalances: accountBalances.filter(account =>
         Object.values(account.balances).some(balance => Math.abs(balance) > 0.01)
       ),
       recentActivity: {
@@ -134,7 +146,8 @@ export async function GET() {
         totalCategories: await prisma.category.count({
           where: { userId: user.id }
         })
-      }
+      },
+      validation: validation
     })
   } catch (error) {
     console.error('Get dashboard summary error:', error)

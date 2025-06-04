@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, parentId, order } = body
+    const { name, parentId, order, type } = body
 
     if (!name) {
       return errorResponse('分类名称不能为空', 400)
@@ -54,13 +54,33 @@ export async function POST(request: NextRequest) {
       return errorResponse('该分类名称已存在', 400)
     }
 
-    const category = await prisma.category.create({
-      data: {
-        userId: user.id,
-        name,
-        parentId: parentId || null,
-        order: order || 0
+    // 准备创建数据
+    const createData: any = {
+      userId: user.id,
+      name,
+      parentId: parentId || null,
+      order: order || 0
+    }
+
+    // 如果是顶级分类，可以设置账户类型
+    if (!parentId && type) {
+      createData.type = type
+    } else if (parentId) {
+      // 如果是子分类，继承父分类的账户类型
+      const parentCategory = await prisma.category.findFirst({
+        where: {
+          id: parentId,
+          userId: user.id
+        }
+      })
+
+      if (parentCategory && parentCategory.type) {
+        createData.type = parentCategory.type
       }
+    }
+
+    const category = await prisma.category.create({
+      data: createData
     })
 
     return successResponse(category, '分类创建成功')

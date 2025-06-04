@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
+import SmartAccountSummary from './SmartAccountSummary'
+import { calculateAccountBalance } from '@/lib/account-balance'
 
 interface User {
   id: string
@@ -13,7 +15,17 @@ interface Account {
   name: string
   category: {
     name: string
+    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   }
+  transactions?: Array<{
+    type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+    amount: number
+    currency: {
+      code: string
+      symbol: string
+      name: string
+    }
+  }>
 }
 
 interface Category {
@@ -46,6 +58,7 @@ interface DashboardContentProps {
   categories: Category[]
   currencies: Currency[]
   tags: Tag[]
+  baseCurrency: Currency
 }
 
 export default function DashboardContent({
@@ -54,7 +67,8 @@ export default function DashboardContent({
   accounts,
   categories,
   currencies,
-  tags
+  tags,
+  baseCurrency
 }: DashboardContentProps) {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [defaultTransactionType, setDefaultTransactionType] = useState<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE')
@@ -69,6 +83,38 @@ export default function DashboardContent({
     window.location.reload()
   }
 
+  // 计算账户余额
+  const accountsWithBalances = accounts.map(account => {
+    const accountData = {
+      id: account.id,
+      name: account.name,
+      category: {
+        name: account.category.name,
+        type: account.category.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+      },
+      transactions: (account.transactions || []).map(t => ({
+        type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER',
+        amount: t.amount, // amount已经是number类型了
+        currency: t.currency
+      }))
+    }
+
+    const balances = calculateAccountBalance(accountData)
+
+    // 转换为原有格式
+    const balancesRecord: Record<string, number> = {}
+    Object.values(balances).forEach(balance => {
+      balancesRecord[balance.currencyCode] = balance.amount
+    })
+
+    return {
+      id: account.id,
+      name: account.name,
+      category: account.category,
+      balances: balancesRecord
+    }
+  })
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* 页面标题 */}
@@ -79,7 +125,21 @@ export default function DashboardContent({
         </p>
       </div>
 
-      {/* 统计卡片 */}
+      {/* 智能财务统计 */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          财务概览
+          <span className="ml-2 text-sm font-normal text-gray-500">
+            (区分存量和流量数据)
+          </span>
+        </h2>
+        <SmartAccountSummary
+          accounts={accountsWithBalances}
+          baseCurrency={baseCurrency}
+        />
+      </div>
+
+      {/* 基础统计卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* 账户数量 */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -190,17 +250,44 @@ export default function DashboardContent({
       {/* 功能状态 */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          🎉 交易管理系统开发中！
+          🎉 Flow Balance 功能状态
         </h2>
-        <div className="space-y-4 text-gray-600">
-          <p>✅ 认证系统 - 登录、注册、登出</p>
-          <p>✅ 主界面布局 - 顶部状态栏、侧边导航、主内容区</p>
-          <p>✅ 数据库设计 - 完整的 Prisma Schema</p>
-          <p>✅ API 路由 - 分类、账户、交易管理</p>
-          <p>✅ 交易表单模态框 - 添加/编辑交易</p>
-          <p>🚧 账户详情页面 - 开发中</p>
-          <p>🚧 分类汇总页面 - 开发中</p>
-          <p>🚧 交易列表页面 - 开发中</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="font-medium text-green-700 mb-2">✅ 已完成功能</h3>
+            <div className="space-y-2 text-sm text-gray-600">
+              <p>✅ 认证系统 - 登录、注册、登出</p>
+              <p>✅ 主界面布局 - 顶部状态栏、侧边导航、主内容区</p>
+              <p>✅ 数据库设计 - 完整的 Prisma Schema</p>
+              <p>✅ API 路由 - 分类、账户、交易管理</p>
+              <p>✅ 交易表单模态框 - 添加/编辑交易</p>
+              <p>✅ <strong>存量流量概念区分</strong> - 正确的财务统计</p>
+              <p>✅ <strong>分类设置功能</strong> - 账户类型管理</p>
+              <p>✅ <strong>专业财务报表</strong> - 资产负债表、现金流量表</p>
+              <p>✅ <strong>智能统计面板</strong> - 区分存量和流量数据</p>
+            </div>
+          </div>
+          <div>
+            <h3 className="font-medium text-blue-700 mb-2">🚧 开发中功能</h3>
+            <div className="space-y-2 text-sm text-gray-600">
+              <p>🚧 账户详情页面 - 开发中</p>
+              <p>🚧 分类汇总页面 - 开发中</p>
+              <p>🚧 交易列表页面 - 开发中</p>
+              <p>🚧 图表可视化 - ECharts 集成</p>
+              <p>🚧 多币种汇率转换</p>
+              <p>🚧 数据导出功能</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-2">💡 新功能亮点</h4>
+          <div className="text-sm text-blue-800 space-y-1">
+            <p>• <strong>存量 vs 流量</strong>：正确区分资产负债（存量）和收入支出（流量）的统计方法</p>
+            <p>• <strong>分类设置</strong>：可以为大类设置账户类型，子分类自动继承</p>
+            <p>• <strong>专业报表</strong>：标准的个人资产负债表和现金流量表</p>
+            <p>• <strong>智能面板</strong>：根据账户类型显示不同的统计信息和录入选项</p>
+          </div>
         </div>
       </div>
 

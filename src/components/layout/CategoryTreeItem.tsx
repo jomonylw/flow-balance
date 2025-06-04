@@ -7,11 +7,14 @@ import CategoryContextMenu from './CategoryContextMenu'
 import InputDialog from '@/components/ui/InputDialog'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import CategorySelector from '@/components/ui/CategorySelector'
+import CategorySettingsModal from '@/components/ui/CategorySettingsModal'
 
 interface Category {
   id: string
   name: string
   parentId: string | null
+  type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  order: number
 }
 
 interface CategoryTreeItemProps {
@@ -43,6 +46,7 @@ export default function CategoryTreeItem({
   const [showCategorySelector, setShowCategorySelector] = useState(false)
   const [showAddSubcategoryDialog, setShowAddSubcategoryDialog] = useState(false)
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
 
   const isActive = pathname === `/categories/${category.id}`
 
@@ -110,8 +114,7 @@ export default function CategoryTreeItem({
         setShowCategorySelector(true)
         break
       case 'settings':
-        // TODO: 打开分类设置模态框
-        console.log('Category settings for:', category.name)
+        setShowSettingsModal(true)
         break
       case 'delete':
         setShowDeleteConfirm(true)
@@ -241,6 +244,33 @@ export default function CategoryTreeItem({
     } catch (error) {
       console.error('Error adding account:', error)
       alert('添加账户失败')
+    }
+  }
+
+  const handleSaveSettings = async (updates: Partial<Category>) => {
+    try {
+      const response = await fetch(`/api/categories/${category.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: category.name,
+          parentId: category.parentId,
+          ...updates
+        }),
+      })
+
+      if (response.ok) {
+        setShowSettingsModal(false)
+        onDataChange()
+      } else {
+        const error = await response.json()
+        alert(error.message || '保存设置失败')
+      }
+    } catch (error) {
+      console.error('Error saving category settings:', error)
+      alert('保存设置失败')
     }
   }
 
@@ -382,6 +412,14 @@ export default function CategoryTreeItem({
           if (value.length > 50) return '账户名称不能超过50个字符'
           return null
         }}
+      />
+
+      {/* 分类设置模态框 */}
+      <CategorySettingsModal
+        isOpen={showSettingsModal}
+        category={category}
+        onClose={() => setShowSettingsModal(false)}
+        onSave={handleSaveSettings}
       />
     </div>
   )

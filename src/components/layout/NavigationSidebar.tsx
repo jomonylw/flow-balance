@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import SidebarSearchBox from './SidebarSearchBox'
 import SidebarDashboardLink from './SidebarDashboardLink'
+import SidebarReportsLink from './SidebarReportsLink'
 import CategoryAccountTree from './CategoryAccountTree'
 
 interface User {
@@ -66,6 +67,9 @@ export default function NavigationSidebar({ user }: NavigationSidebarProps) {
         <div className="p-4 space-y-4">
           {/* Dashboard 链接 */}
           <SidebarDashboardLink />
+
+          {/* 报表链接 */}
+          <SidebarReportsLink />
 
           {/* 分类和账户树 */}
           <div>

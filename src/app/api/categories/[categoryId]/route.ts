@@ -3,6 +3,45 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ categoryId: string }> }
+) {
+  try {
+    const { categoryId } = await params
+    const user = await getCurrentUser()
+    if (!user) {
+      return unauthorizedResponse()
+    }
+
+    // 获取分类详情
+    const category = await prisma.category.findFirst({
+      where: {
+        id: categoryId,
+        userId: user.id
+      },
+      include: {
+        parent: true,
+        children: {
+          orderBy: [
+            { order: 'asc' },
+            { name: 'asc' }
+          ]
+        }
+      }
+    })
+
+    if (!category) {
+      return notFoundResponse('分类不存在')
+    }
+
+    return successResponse(category)
+  } catch (error) {
+    console.error('Get category error:', error)
+    return errorResponse('获取分类失败', 500)
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ categoryId: string }> }
@@ -27,7 +66,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, parentId, order } = body
+    const { name, parentId, order, type } = body
 
     if (!name) {
       return errorResponse('分类名称不能为空', 400)
@@ -71,14 +110,27 @@ export async function PUT(
       return errorResponse('该分类名称已存在', 400)
     }
 
+    // 准备更新数据
+    const updateData: any = {
+      name,
+      parentId: parentId || null,
+      order: order !== undefined ? order : existingCategory.order
+    }
+
+    // 只有顶级分类可以设置账户类型
+    if (!parentId && type) {
+      updateData.type = type
+    }
+
     const updatedCategory = await prisma.category.update({
       where: { id: categoryId },
-      data: {
-        name,
-        parentId: parentId || null,
-        order: order !== undefined ? order : existingCategory.order
-      }
+      data: updateData
     })
+
+    // 如果是顶级分类且更新了账户类型，需要更新所有子分类的类型
+    if (!parentId && type) {
+      await updateChildrenAccountType(categoryId, type)
+    }
 
     return successResponse(updatedCategory, '分类更新成功')
   } catch (error) {
@@ -162,4 +214,25 @@ async function checkIfDescendant(categoryId: string, potentialAncestorId: string
   }
 
   return false
+}
+
+// 辅助函数：递归更新所有子分类的账户类型
+async function updateChildrenAccountType(parentId: string, accountType: string): Promise<void> {
+  // 获取所有直接子分类
+  const children = await prisma.category.findMany({
+    where: {
+      parentId: parentId
+    }
+  })
+
+  // 更新所有子分类的账户类型
+  for (const child of children) {
+    await prisma.category.update({
+      where: { id: child.id },
+      data: { type: accountType as any }
+    })
+
+    // 递归更新子分类的子分类
+    await updateChildrenAccountType(child.id, accountType)
+  }
 }
