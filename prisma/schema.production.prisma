@@ -1,0 +1,165 @@
+// Flow Balance - Personal Finance Management System
+// Prisma Schema Definition for Production (PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表 - 核心用户信息
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  password         String    // 哈希后的密码
+  resetToken       String?   // 密码重置令牌
+  resetTokenExpiry DateTime? // 重置令牌过期时间
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // 关联关系
+  settings     UserSettings?
+  accounts     Account[]
+  categories   Category[]
+  transactions Transaction[]
+  tags         Tag[]
+
+  @@map("users")
+}
+
+// 用户设置表 - 与用户一对一关系
+model UserSettings {
+  id               String @id @default(cuid())
+  userId           String @unique
+  baseCurrencyCode String @default("USD") // 本位币代码
+  dateFormat       String @default("YYYY-MM-DD")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // 关联关系
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  baseCurrency Currency @relation(fields: [baseCurrencyCode], references: [code])
+
+  @@map("user_settings")
+}
+
+// 币种表 - 全局币种信息
+model Currency {
+  code   String @id // 例如: USD, EUR, CNY
+  name   String // 例如: US Dollar, Euro, Chinese Yuan
+  symbol String // 例如: $, €, ¥
+
+  // 关联关系
+  userSettings UserSettings[]
+  transactions Transaction[]
+
+  @@map("currencies")
+}
+
+// 分类表 - 支持树状结构的分类系统
+model Category {
+  id       String  @id @default(cuid())
+  userId   String
+  name     String
+  parentId String? // 父分类ID，null表示顶级分类
+  order    Int     @default(0) // 排序字段
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联关系
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[]  @relation("CategoryHierarchy")
+  accounts     Account[]
+  transactions Transaction[]
+
+  @@unique([userId, name, parentId]) // 同一用户下同一父分类中的分类名不能重复
+  @@map("categories")
+}
+
+// 账户表 - 用户的各种账户
+model Account {
+  id          String   @id @default(cuid())
+  userId      String
+  categoryId  String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联关系
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     Category      @relation(fields: [categoryId], references: [id])
+  transactions Transaction[]
+
+  @@unique([userId, name]) // 同一用户下账户名不能重复
+  @@map("accounts")
+}
+
+// 交易表 - 用户的所有交易记录
+model Transaction {
+  id           String            @id @default(cuid())
+  userId       String
+  accountId    String
+  categoryId   String
+  currencyCode String
+  type         TransactionType   // 收入、支出、转账
+  amount       Decimal           // 金额，使用 Decimal 类型确保精度
+  description  String
+  notes        String?           // 备注
+  date         DateTime          // 交易日期
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  // 关联关系
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account      Account           @relation(fields: [accountId], references: [id])
+  category     Category          @relation(fields: [categoryId], references: [id])
+  currency     Currency          @relation(fields: [currencyCode], references: [code])
+  tags         TransactionTag[]  // 多对多关系
+
+  @@map("transactions")
+}
+
+// 交易类型枚举
+enum TransactionType {
+  INCOME   // 收入
+  EXPENSE  // 支出
+  TRANSFER // 转账
+
+  @@map("transaction_types")
+}
+
+// 标签表 - 用户自定义标签
+model Tag {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String?  // 标签颜色，可选
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联关系
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions TransactionTag[] // 多对多关系
+
+  @@unique([userId, name]) // 同一用户下标签名不能重复
+  @@map("tags")
+}
+
+// 交易标签关联表 - 交易和标签的多对多关系
+model TransactionTag {
+  id            String @id @default(cuid())
+  transactionId String
+  tagId         String
+
+  // 关联关系
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  tag         Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([transactionId, tagId]) // 同一交易不能重复添加同一标签
+  @@map("transaction_tags")
+}
