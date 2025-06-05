@@ -148,8 +148,8 @@ export async function registerUser(email: string, password: string) {
         password: hashedPassword,
         settings: {
           create: {
-            baseCurrencyCode: 'USD',
             dateFormat: 'YYYY-MM-DD'
+            // baseCurrencyCode 暂时为空，需要用户在初始设置中选择
           }
         }
       },

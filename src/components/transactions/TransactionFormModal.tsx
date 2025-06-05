@@ -243,7 +243,7 @@ export default function TransactionFormModal({
     label: category.name
   }))
 
-  const currencyOptions = currencies.map(currency => ({
+  const currencyOptions = (currencies || []).map(currency => ({
     value: currency.code,
     label: `${currency.name} (${currency.symbol})`
   }))

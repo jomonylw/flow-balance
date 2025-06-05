@@ -6,6 +6,7 @@ import { User, UserSettings, Currency } from '@prisma/client'
 import ProfileSettingsForm from './ProfileSettingsForm'
 import ChangePasswordForm from './ChangePasswordForm'
 import PreferencesForm from './PreferencesForm'
+import CurrencyManagement from './CurrencyManagement'
 import DataManagementSection from './DataManagementSection'
 import ExchangeRateManagement from './ExchangeRateManagement'
 
@@ -15,7 +16,7 @@ interface UserSettingsPageProps {
   currencies: Currency[]
 }
 
-type TabType = 'profile' | 'security' | 'preferences' | 'exchange-rates' | 'data'
+type TabType = 'profile' | 'security' | 'preferences' | 'currencies' | 'exchange-rates' | 'data'
 
 export default function UserSettingsPage({
   user,
@@ -28,7 +29,7 @@ export default function UserSettingsPage({
   useEffect(() => {
     // 检查URL参数中是否指定了标签页
     const tab = searchParams.get('tab') as TabType
-    if (tab && ['profile', 'security', 'preferences', 'exchange-rates', 'data'].includes(tab)) {
+    if (tab && ['profile', 'security', 'preferences', 'currencies', 'exchange-rates', 'data'].includes(tab)) {
       setActiveTab(tab)
     }
   }, [searchParams])
@@ -37,6 +38,7 @@ export default function UserSettingsPage({
     { id: 'profile' as TabType, label: '个人资料', icon: '👤' },
     { id: 'security' as TabType, label: '安全设置', icon: '🔒' },
     { id: 'preferences' as TabType, label: '偏好设置', icon: '⚙️' },
+    { id: 'currencies' as TabType, label: '货币管理', icon: '💰' },
     { id: 'exchange-rates' as TabType, label: '汇率管理', icon: '💱' },
     { id: 'data' as TabType, label: '数据管理', icon: '📊' }
   ]
@@ -54,6 +56,8 @@ export default function UserSettingsPage({
             currencies={currencies}
           />
         )
+      case 'currencies':
+        return <CurrencyManagement />
       case 'exchange-rates':
         return <ExchangeRateManagement currencies={currencies} />
       case 'data':

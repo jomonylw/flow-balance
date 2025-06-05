@@ -152,7 +152,7 @@ export default function BalanceUpdateModal({
     return null // 只有存量类账户才显示余额更新
   }
 
-  const currencyOptions = currencies.map(currency => ({
+  const currencyOptions = (currencies || []).map(currency => ({
     value: currency.code,
     label: `${currency.code} - ${currency.name}`
   }))
@@ -162,7 +162,7 @@ export default function BalanceUpdateModal({
     { value: 'adjustment', label: '调整金额' }
   ]
 
-  const selectedCurrency = currencies.find(c => c.code === formData.currencyCode)
+  const selectedCurrency = (currencies || []).find(c => c.code === formData.currencyCode)
   const currencySymbol = selectedCurrency?.symbol || '$'
 
   const calculateNewBalance = () => {

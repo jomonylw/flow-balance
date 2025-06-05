@@ -88,11 +88,11 @@ export default function SignupForm() {
       const result = await response.json()
 
       if (result.success) {
-        setSuccessMessage('注册成功！请登录您的账户。')
-        // 3秒后自动跳转到登录页
+        setSuccessMessage('注册成功！正在跳转到初始设置...')
+        // 2秒后自动跳转到登录页
         setTimeout(() => {
-          router.push('/login')
-        }, 3000)
+          router.push('/login?redirect=setup')
+        }, 2000)
       } else {
         setGeneralError(result.error || '注册失败')
       }

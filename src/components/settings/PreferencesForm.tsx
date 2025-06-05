@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { UserSettings, Currency } from '@prisma/client'
 import SelectField from '@/components/ui/SelectField'
 
@@ -11,12 +11,29 @@ interface PreferencesFormProps {
 
 export default function PreferencesForm({ userSettings, currencies }: PreferencesFormProps) {
   const [formData, setFormData] = useState({
-    baseCurrencyCode: userSettings?.baseCurrencyCode || 'USD',
+    baseCurrencyCode: userSettings?.baseCurrencyCode || '',
     dateFormat: userSettings?.dateFormat || 'YYYY-MM-DD'
   })
+  const [userCurrencies, setUserCurrencies] = useState<Currency[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetchUserCurrencies()
+  }, [])
+
+  const fetchUserCurrencies = async () => {
+    try {
+      const response = await fetch('/api/user/currencies')
+      if (response.ok) {
+        const data = await response.json()
+        setUserCurrencies(data.data.currencies)
+      }
+    } catch (error) {
+      console.error('获取用户货币失败:', error)
+    }
+  }
 
   const dateFormatOptions = [
     { value: 'YYYY-MM-DD', label: '2024-01-01 (YYYY-MM-DD)' },
@@ -25,7 +42,7 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
     { value: 'DD-MM-YYYY', label: '01-01-2024 (DD-MM-YYYY)' }
   ]
 
-  const currencyOptions = currencies.map(currency => ({
+  const currencyOptions = userCurrencies.map(currency => ({
     value: currency.code,
     label: `${currency.symbol} ${currency.name} (${currency.code})`
   }))
@@ -98,8 +115,16 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
           value={formData.baseCurrencyCode}
           onChange={handleSelectChange}
           options={currencyOptions}
-          help="选择您的主要货币，用于汇总和报告"
+          help="选择您的主要货币，用于汇总和报告。只能从您的可用货币中选择。"
         />
+
+        {userCurrencies.length === 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+            <div className="text-sm text-yellow-800">
+              您还没有设置可用货币。请先在"货币管理"页面添加您需要使用的货币。
+            </div>
+          </div>
+        )}
 
         <SelectField
           name="dateFormat"

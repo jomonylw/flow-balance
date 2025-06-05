@@ -96,7 +96,7 @@ export default function AccountTreeItem({
         const [accountsRes, categoriesRes, currenciesRes, tagsRes] = await Promise.all([
           fetch('/api/accounts'),
           fetch('/api/categories'),
-          fetch('/api/currencies'),
+          fetch('/api/user/currencies'), // 使用用户可用货币
           fetch('/api/tags')
         ])
 
@@ -112,7 +112,7 @@ export default function AccountTreeItem({
 
         if (currenciesRes.ok) {
           const currenciesData = await currenciesRes.json()
-          setCurrencies(currenciesData.data || [])
+          setCurrencies(currenciesData.data?.currencies || [])
         }
 
         if (tagsRes.ok) {
@@ -121,44 +121,8 @@ export default function AccountTreeItem({
         }
       } catch (error) {
         console.error('Error fetching form data:', error)
-      }
-    }
-
-    fetchFormData()
-  }, [])
-
-  // 获取交易表单所需的数据
-  useEffect(() => {
-    const fetchFormData = async () => {
-      try {
-        const [accountsRes, categoriesRes, currenciesRes, tagsRes] = await Promise.all([
-          fetch('/api/accounts'),
-          fetch('/api/categories'),
-          fetch('/api/currencies'),
-          fetch('/api/tags')
-        ])
-
-        if (accountsRes.ok) {
-          const accountsData = await accountsRes.json()
-          setAccounts(accountsData.data || [])
-        }
-
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json()
-          setCategories(categoriesData.data || [])
-        }
-
-        if (currenciesRes.ok) {
-          const currenciesData = await currenciesRes.json()
-          setCurrencies(currenciesData.data || [])
-        }
-
-        if (tagsRes.ok) {
-          const tagsData = await tagsRes.json()
-          setTags(tagsData.data || [])
-        }
-      } catch (error) {
-        console.error('Error fetching form data:', error)
+        // 设置默认值以防止错误
+        setCurrencies([])
       }
     }
 

@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import InputField from '@/components/ui/InputField'
 import AuthButton from '@/components/ui/AuthButton'
 
 export default function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -70,8 +71,14 @@ export default function LoginForm() {
       const result = await response.json()
 
       if (result.success) {
-        // 登录成功，重定向到 dashboard
-        router.push('/dashboard')
+        // 检查是否需要跳转到初始设置
+        const redirect = searchParams.get('redirect')
+        if (redirect === 'setup') {
+          router.push('/setup')
+        } else {
+          // 登录成功，重定向到 dashboard
+          router.push('/dashboard')
+        }
         router.refresh()
       } else {
         setGeneralError(result.error || '登录失败')

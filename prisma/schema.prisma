@@ -21,12 +21,14 @@ model User {
   updatedAt        DateTime  @updatedAt
 
   // 关联关系
-  settings      UserSettings?
-  accounts      Account[]
-  categories    Category[]
-  transactions  Transaction[]
-  tags          Tag[]
-  exchangeRates ExchangeRate[]
+  settings         UserSettings?
+  userCurrencies   UserCurrency[]
+  customCurrencies Currency[]     // 用户创建的自定义货币
+  accounts         Account[]
+  categories       Category[]
+  transactions     Transaction[]
+  tags             Tag[]
+  exchangeRates    ExchangeRate[]
 
   @@map("users")
 }
@@ -35,31 +37,54 @@ model User {
 model UserSettings {
   id               String @id @default(cuid())
   userId           String @unique
-  baseCurrencyCode String @default("USD") // 本位币代码
+  baseCurrencyCode String? // 本位币代码，可为空（初始设置时）
   dateFormat       String @default("YYYY-MM-DD")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   // 关联关系
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  baseCurrency Currency @relation(fields: [baseCurrencyCode], references: [code])
+  baseCurrency Currency? @relation(fields: [baseCurrencyCode], references: [code])
 
   @@map("user_settings")
 }
 
 // 币种表 - 全局币种信息
 model Currency {
-  code   String @id // 例如: USD, EUR, CNY
-  name   String // 例如: US Dollar, Euro, Chinese Yuan
-  symbol String // 例如: $, €, ¥
+  code      String  @id // 例如: USD, EUR, CNY
+  name      String  // 例如: US Dollar, Euro, Chinese Yuan
+  symbol    String  // 例如: $, €, ¥
+  isCustom  Boolean @default(false) // 是否为用户自定义货币
+  createdBy String? // 创建者用户ID（仅自定义货币）
 
   // 关联关系
-  userSettings     UserSettings[]
-  transactions     Transaction[]
+  userSettings      UserSettings[]
+  userCurrencies    UserCurrency[]
+  transactions      Transaction[]
   fromExchangeRates ExchangeRate[] @relation("FromCurrency")
   toExchangeRates   ExchangeRate[] @relation("ToCurrency")
+  creator           User?          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@map("currencies")
+}
+
+// 用户可用货币表 - 管理用户可以使用的货币
+model UserCurrency {
+  id           String   @id @default(cuid())
+  userId       String
+  currencyCode String
+  isActive     Boolean  @default(true) // 是否启用
+  order        Int      @default(0) // 显示顺序
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 关联关系
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currency Currency @relation(fields: [currencyCode], references: [code])
+
+  // 确保同一用户的同一货币只有一条记录
+  @@unique([userId, currencyCode])
+  @@map("user_currencies")
 }
 
 // 汇率表 - 用户自定义汇率管理

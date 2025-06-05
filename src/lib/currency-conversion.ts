@@ -188,13 +188,43 @@ export async function convertMultipleCurrencies(
  */
 export async function getUserCurrencies(userId: string): Promise<string[]> {
   try {
+    // 首先获取用户设置的可用货币
+    const userCurrencies = await prisma.userCurrency.findMany({
+      where: {
+        userId,
+        isActive: true
+      },
+      select: { currencyCode: true }
+    })
+
+    if (userCurrencies.length > 0) {
+      return userCurrencies.map(uc => uc.currencyCode)
+    }
+
+    // 如果用户没有设置可用货币，则回退到从交易记录中获取
     const transactions = await prisma.transaction.findMany({
       where: { userId },
       select: { currencyCode: true },
       distinct: ['currencyCode']
     })
 
-    return transactions.map(t => t.currencyCode)
+    // 获取用户的本位币
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { baseCurrencyCode: true }
+    })
+
+    const currencyCodes = new Set<string>()
+
+    // 添加交易中的货币
+    transactions.forEach(t => currencyCodes.add(t.currencyCode))
+
+    // 添加本位币
+    if (userSettings?.baseCurrencyCode) {
+      currencyCodes.add(userSettings.baseCurrencyCode)
+    }
+
+    return Array.from(currencyCodes)
   } catch (error) {
     console.error('获取用户货币失败:', error)
     return []

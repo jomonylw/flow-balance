@@ -38,8 +38,25 @@ export default function ExchangeRateForm({
     effectiveDate: new Date().toISOString().split('T')[0],
     notes: ''
   })
+  const [userCurrencies, setUserCurrencies] = useState<Currency[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetchUserCurrencies()
+  }, [])
+
+  const fetchUserCurrencies = async () => {
+    try {
+      const response = await fetch('/api/user/currencies')
+      if (response.ok) {
+        const data = await response.json()
+        setUserCurrencies(data.data.currencies)
+      }
+    } catch (error) {
+      console.error('获取用户货币失败:', error)
+    }
+  }
 
   useEffect(() => {
     if (editingRate) {
@@ -145,7 +162,7 @@ export default function ExchangeRateForm({
   }
 
   // 准备货币选项
-  const currencyOptions = currencies.map(currency => ({
+  const currencyOptions = userCurrencies.map(currency => ({
     value: currency.code,
     label: `${currency.symbol} ${currency.name} (${currency.code})`
   }))

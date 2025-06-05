@@ -81,6 +81,26 @@ async function main() {
     }
   })
 
+  // 为用户1添加可用货币
+  console.log('💰 创建用户货币设置...')
+  await prisma.userCurrency.createMany({
+    data: [
+      { userId: user1.id, currencyCode: 'USD', order: 0, isActive: true },
+      { userId: user1.id, currencyCode: 'EUR', order: 1, isActive: true },
+      { userId: user1.id, currencyCode: 'CNY', order: 2, isActive: true },
+      { userId: user1.id, currencyCode: 'JPY', order: 3, isActive: true }
+    ]
+  })
+
+  // 为用户2添加可用货币
+  await prisma.userCurrency.createMany({
+    data: [
+      { userId: user2.id, currencyCode: 'CNY', order: 0, isActive: true },
+      { userId: user2.id, currencyCode: 'USD', order: 1, isActive: true },
+      { userId: user2.id, currencyCode: 'EUR', order: 2, isActive: true }
+    ]
+  })
+
   // 3. 为用户1创建分类结构
   console.log('📁 创建分类结构...')
   
@@ -471,6 +491,7 @@ async function main() {
   console.log('✅ 种子数据填充完成!')
   console.log(`👤 创建了 2 个用户`)
   console.log(`💱 创建了 ${currencies.length} 种币种`)
+  console.log(`💰 为用户设置了可用货币`)
   console.log(`📁 创建了分类结构`)
   console.log(`🏦 创建了 4 个账户`)
   console.log(`🏷️ 创建了 3 个标签`)
