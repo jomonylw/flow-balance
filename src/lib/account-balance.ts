@@ -118,7 +118,33 @@ export function calculateAccountBalance(
     const amount = transaction.amount
 
     // 根据账户类型和交易类型计算余额
-    const accountType = account.category.type
+    let accountType = account.category.type
+
+    // 如果账户类型未设置，但分类名称包含特定关键词，尝试推断类型
+    if (!accountType && validateData) {
+      const categoryName = account.category.name?.toLowerCase() || ''
+      if (categoryName.includes('资产') || categoryName.includes('现金') || categoryName.includes('银行') || categoryName.includes('投资')) {
+        accountType = 'ASSET'
+        if (validateData) {
+          console.log(`推断账户 ${account.name} 为资产类账户`)
+        }
+      } else if (categoryName.includes('负债') || categoryName.includes('贷款') || categoryName.includes('信用卡')) {
+        accountType = 'LIABILITY'
+        if (validateData) {
+          console.log(`推断账户 ${account.name} 为负债类账户`)
+        }
+      } else if (categoryName.includes('收入') || categoryName.includes('工资') || categoryName.includes('奖金')) {
+        accountType = 'INCOME'
+        if (validateData) {
+          console.log(`推断账户 ${account.name} 为收入类账户`)
+        }
+      } else if (categoryName.includes('支出') || categoryName.includes('费用') || categoryName.includes('消费')) {
+        accountType = 'EXPENSE'
+        if (validateData) {
+          console.log(`推断账户 ${account.name} 为支出类账户`)
+        }
+      }
+    }
 
     try {
       switch (accountType) {
@@ -170,9 +196,9 @@ export function calculateAccountBalance(
           break
 
         default:
-          // 未设置账户类型时的兜底处理
+          // 未设置账户类型时的兜底处理 - 按资产类账户处理
           if (validateData) {
-            console.warn(`账户 ${account.name} 未设置账户类型，使用默认计算方式`)
+            console.warn(`账户 ${account.name} 未设置账户类型，按资产类账户处理`)
           }
           if (transaction.type === 'INCOME') {
             balances[currencyCode].amount += amount
@@ -255,11 +281,11 @@ export function calculateBalancesByType(
   
   accounts.forEach(account => {
     const accountType = account.category.type || 'ASSET' // 默认为资产类
-    const accountBalances = calculateAccountBalance(account, asOfDate)
-    
+    const accountBalances = calculateAccountBalance(account, { asOfDate })
+
     Object.values(accountBalances).forEach(balance => {
       const currencyCode = balance.currencyCode
-      
+
       if (!balancesByType[accountType][currencyCode]) {
         balancesByType[accountType][currencyCode] = {
           currencyCode,
@@ -267,7 +293,7 @@ export function calculateBalancesByType(
           currency: balance.currency
         }
       }
-      
+
       balancesByType[accountType][currencyCode].amount += balance.amount
     })
   })
@@ -282,7 +308,7 @@ export function calculateBalancesByType(
  * @returns 按币种分组的净资产
  */
 export function calculateNetWorth(
-  accounts: Account[], 
+  accounts: Account[],
   asOfDate?: Date
 ): Record<string, AccountBalance> {
   const balancesByType = calculateBalancesByType(accounts, asOfDate)

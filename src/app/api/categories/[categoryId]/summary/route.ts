@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
+import { calculateAccountBalance } from '@/lib/account-balance'
 
 export async function GET(
   request: NextRequest,
@@ -50,24 +51,15 @@ export async function GET(
       }
     })
 
-    // 计算账户余额
+    // 计算账户余额（使用专业的余额计算服务）
     const accountSummaries = accounts.map(account => {
+      // 使用统一的余额计算方法
+      const accountBalances = calculateAccountBalance(account)
+
+      // 转换为简单的余额记录格式
       const balances: Record<string, number> = {}
-      let transactionCount = 0
-      
-      account.transactions.forEach(transaction => {
-        const currencyCode = transaction.currency.code
-        if (!balances[currencyCode]) {
-          balances[currencyCode] = 0
-        }
-        
-        const amount = parseFloat(transaction.amount.toString())
-        if (transaction.type === 'INCOME') {
-          balances[currencyCode] += amount
-        } else if (transaction.type === 'EXPENSE') {
-          balances[currencyCode] -= amount
-        }
-        transactionCount++
+      Object.entries(accountBalances).forEach(([currencyCode, balanceData]) => {
+        balances[currencyCode] = balanceData.amount
       })
 
       return {
@@ -75,7 +67,7 @@ export async function GET(
         name: account.name,
         description: account.description,
         balances,
-        transactionCount
+        transactionCount: account.transactions.length
       }
     })
 
@@ -113,43 +105,69 @@ export async function GET(
       orderBy: { date: 'desc' }
     })
 
-    // 按币种统计交易金额
-    const transactionSummary: Record<string, { 
-      income: number; 
-      expense: number; 
+    // 按币种统计交易金额（对于存量类分类，这里统计的是余额变化）
+    const transactionSummary: Record<string, {
+      income: number;
+      expense: number;
       count: number;
       currencies: Set<string>;
     }> = {}
 
+    // 获取分类类型以确定计算方法
+    const categoryType = category.type
+
     transactions.forEach(transaction => {
       const currencyCode = transaction.currency.code
       if (!transactionSummary[currencyCode]) {
-        transactionSummary[currencyCode] = { 
-          income: 0, 
-          expense: 0, 
+        transactionSummary[currencyCode] = {
+          income: 0,
+          expense: 0,
           count: 0,
           currencies: new Set()
         }
       }
-      
+
       const amount = parseFloat(transaction.amount.toString())
       transactionSummary[currencyCode].count++
       transactionSummary[currencyCode].currencies.add(currencyCode)
-      
-      if (transaction.type === 'INCOME') {
-        transactionSummary[currencyCode].income += amount
-      } else if (transaction.type === 'EXPENSE') {
-        transactionSummary[currencyCode].expense += amount
+
+      // 对于存量类分类，交易类型的含义不同
+      if (categoryType === 'ASSET' || categoryType === 'LIABILITY') {
+        // 存量类：INCOME表示增加，EXPENSE表示减少
+        if (transaction.type === 'INCOME') {
+          transactionSummary[currencyCode].income += amount
+        } else if (transaction.type === 'EXPENSE') {
+          transactionSummary[currencyCode].expense += amount
+        }
+      } else {
+        // 流量类：按原有逻辑处理
+        if (transaction.type === 'INCOME') {
+          transactionSummary[currencyCode].income += amount
+        } else if (transaction.type === 'EXPENSE') {
+          transactionSummary[currencyCode].expense += amount
+        }
       }
     })
 
-    // 转换 Set 为数组以便序列化
+    // 转换 Set 为数组以便序列化，并计算净值
     const summaryForResponse = Object.entries(transactionSummary).reduce((acc, [currency, data]) => {
+      let net = 0
+      if (categoryType === 'ASSET') {
+        // 资产：收入增加资产，支出减少资产
+        net = data.income - data.expense
+      } else if (categoryType === 'LIABILITY') {
+        // 负债：支出增加负债，收入减少负债
+        net = data.expense - data.income
+      } else {
+        // 流量类：收入减支出
+        net = data.income - data.expense
+      }
+
       acc[currency] = {
         income: data.income,
         expense: data.expense,
         count: data.count,
-        net: data.income - data.expense
+        net: net
       }
       return acc
     }, {} as Record<string, { income: number; expense: number; count: number; net: number }>)

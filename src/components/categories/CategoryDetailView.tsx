@@ -388,18 +388,23 @@ export default function CategoryDetailView({
               分类汇总
             </h2>
 
-            {/* 总余额 */}
+            {/* 总余额/净收支 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {summaryData.transactionSummary && Object.entries(summaryData.transactionSummary).map(([currency, data]: [string, any]) => (
                 <div key={currency} className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-sm text-gray-500 mb-1">{currency} 净收支</div>
+                  <div className="text-sm text-gray-500 mb-1">
+                    {currency} {isStockCategory ? '净余额' : '净收支'}
+                  </div>
                   <div className={`text-xl font-semibold ${
                     data.net >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
                     {currencySymbol}{Math.abs(data.net).toFixed(2)}
                   </div>
                   <div className="text-xs text-gray-400 mt-1">
-                    收入: {currencySymbol}{data.income.toFixed(2)} | 支出: {currencySymbol}{data.expense.toFixed(2)}
+                    {isStockCategory
+                      ? `增加: ${currencySymbol}${data.income.toFixed(2)} | 减少: ${currencySymbol}${data.expense.toFixed(2)}`
+                      : `收入: ${currencySymbol}${data.income.toFixed(2)} | 支出: ${currencySymbol}${data.expense.toFixed(2)}`
+                    }
                   </div>
                 </div>
               ))}
@@ -469,10 +474,15 @@ export default function CategoryDetailView({
       {monthlyData && (
         <div className="mb-8">
           <MonthlySummaryChart
-            monthlyData={monthlyData.monthlyData}
+            monthlyData={isStockCategory ? undefined : monthlyData.monthlyData}
+            stockMonthlyData={isStockCategory ? monthlyData.monthlyData : undefined}
             baseCurrency={monthlyData.baseCurrency}
-            title={`${category.name} - 月度收支汇总`}
+            title={isStockCategory
+              ? `${category.name} - 月度账户余额汇总`
+              : `${category.name} - 月度收支汇总`
+            }
             height={400}
+            chartType={isStockCategory ? "stock" : "flow"}
           />
         </div>
       )}
