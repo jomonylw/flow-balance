@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { User, UserSettings, Currency } from '@prisma/client'
 import ProfileSettingsForm from './ProfileSettingsForm'
 import ChangePasswordForm from './ChangePasswordForm'
 import PreferencesForm from './PreferencesForm'
 import DataManagementSection from './DataManagementSection'
+import ExchangeRateManagement from './ExchangeRateManagement'
 
 interface UserSettingsPageProps {
   user: User
@@ -13,19 +15,29 @@ interface UserSettingsPageProps {
   currencies: Currency[]
 }
 
-type TabType = 'profile' | 'security' | 'preferences' | 'data'
+type TabType = 'profile' | 'security' | 'preferences' | 'exchange-rates' | 'data'
 
-export default function UserSettingsPage({ 
-  user, 
-  userSettings, 
-  currencies 
+export default function UserSettingsPage({
+  user,
+  userSettings,
+  currencies
 }: UserSettingsPageProps) {
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<TabType>('profile')
+
+  useEffect(() => {
+    // 检查URL参数中是否指定了标签页
+    const tab = searchParams.get('tab') as TabType
+    if (tab && ['profile', 'security', 'preferences', 'exchange-rates', 'data'].includes(tab)) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
 
   const tabs = [
     { id: 'profile' as TabType, label: '个人资料', icon: '👤' },
     { id: 'security' as TabType, label: '安全设置', icon: '🔒' },
     { id: 'preferences' as TabType, label: '偏好设置', icon: '⚙️' },
+    { id: 'exchange-rates' as TabType, label: '汇率管理', icon: '💱' },
     { id: 'data' as TabType, label: '数据管理', icon: '📊' }
   ]
 
@@ -37,11 +49,13 @@ export default function UserSettingsPage({
         return <ChangePasswordForm />
       case 'preferences':
         return (
-          <PreferencesForm 
-            userSettings={userSettings} 
-            currencies={currencies} 
+          <PreferencesForm
+            userSettings={userSettings}
+            currencies={currencies}
           />
         )
+      case 'exchange-rates':
+        return <ExchangeRateManagement currencies={currencies} />
       case 'data':
         return <DataManagementSection />
       default:

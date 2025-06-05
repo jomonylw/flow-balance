@@ -5,6 +5,7 @@ import TransactionFormModal from '@/components/transactions/TransactionFormModal
 import NetWorthChart from './NetWorthChart'
 import CashFlowChart from './CashFlowChart'
 import SmartAccountSummary from './SmartAccountSummary'
+import ExchangeRateAlert from './ExchangeRateAlert'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { validateAccountData, validateChartData } from '@/lib/data-validation'
 
@@ -192,6 +193,9 @@ export default function DashboardContent({
           欢迎回来，{user.email}！这里是您的财务概览。
         </p>
       </div>
+
+      {/* 汇率设置提醒 */}
+      <ExchangeRateAlert className="mb-6" />
 
       {/* 数据质量评分 */}
       {validationResult && validationResult.score !== undefined && (

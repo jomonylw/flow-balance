@@ -1,0 +1,257 @@
+import { NextRequest } from 'next/server'
+import { getCurrentUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
+
+/**
+ * 获取用户的汇率设置
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return unauthorizedResponse()
+    }
+
+    const { searchParams } = new URL(request.url)
+    const fromCurrency = searchParams.get('fromCurrency')
+    const toCurrency = searchParams.get('toCurrency')
+
+    let whereClause: any = { userId: user.id }
+
+    // 如果指定了货币对，则过滤
+    if (fromCurrency) {
+      whereClause.fromCurrency = fromCurrency
+    }
+    if (toCurrency) {
+      whereClause.toCurrency = toCurrency
+    }
+
+    const exchangeRates = await prisma.exchangeRate.findMany({
+      where: whereClause,
+      include: {
+        fromCurrencyRef: true,
+        toCurrencyRef: true
+      },
+      orderBy: [
+        { fromCurrency: 'asc' },
+        { toCurrency: 'asc' },
+        { effectiveDate: 'desc' }
+      ]
+    })
+
+    // 序列化 Decimal 类型
+    const serializedRates = exchangeRates.map(rate => ({
+      ...rate,
+      rate: parseFloat(rate.rate.toString())
+    }))
+
+    return successResponse(serializedRates)
+  } catch (error) {
+    console.error('获取汇率失败:', error)
+    return errorResponse('获取汇率失败', 500)
+  }
+}
+
+/**
+ * 创建或更新汇率
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return unauthorizedResponse()
+    }
+
+    const body = await request.json()
+    const { fromCurrency, toCurrency, rate, effectiveDate, notes } = body
+
+    // 验证必填字段
+    if (!fromCurrency || !toCurrency || !rate || !effectiveDate) {
+      return validationErrorResponse('缺少必填字段')
+    }
+
+    // 验证汇率值
+    const rateValue = parseFloat(rate)
+    if (isNaN(rateValue) || rateValue <= 0) {
+      return validationErrorResponse('汇率必须是大于0的数字')
+    }
+
+    // 验证货币代码
+    const [fromCurrencyExists, toCurrencyExists] = await Promise.all([
+      prisma.currency.findUnique({ where: { code: fromCurrency } }),
+      prisma.currency.findUnique({ where: { code: toCurrency } })
+    ])
+
+    if (!fromCurrencyExists) {
+      return validationErrorResponse(`源货币 ${fromCurrency} 不存在`)
+    }
+
+    if (!toCurrencyExists) {
+      return validationErrorResponse(`目标货币 ${toCurrency} 不存在`)
+    }
+
+    // 验证不能设置相同货币的汇率
+    if (fromCurrency === toCurrency) {
+      return validationErrorResponse('不能设置相同货币之间的汇率')
+    }
+
+    // 验证日期
+    const parsedDate = new Date(effectiveDate)
+    if (isNaN(parsedDate.getTime())) {
+      return validationErrorResponse('无效的生效日期')
+    }
+
+    // 检查是否已存在相同日期的汇率
+    const existingRate = await prisma.exchangeRate.findUnique({
+      where: {
+        userId_fromCurrency_toCurrency_effectiveDate: {
+          userId: user.id,
+          fromCurrency,
+          toCurrency,
+          effectiveDate: parsedDate
+        }
+      }
+    })
+
+    let exchangeRate
+    if (existingRate) {
+      // 更新现有汇率
+      exchangeRate = await prisma.exchangeRate.update({
+        where: { id: existingRate.id },
+        data: {
+          rate: rateValue,
+          notes: notes || null
+        },
+        include: {
+          fromCurrencyRef: true,
+          toCurrencyRef: true
+        }
+      })
+    } else {
+      // 创建新汇率
+      exchangeRate = await prisma.exchangeRate.create({
+        data: {
+          userId: user.id,
+          fromCurrency,
+          toCurrency,
+          rate: rateValue,
+          effectiveDate: parsedDate,
+          notes: notes || null
+        },
+        include: {
+          fromCurrencyRef: true,
+          toCurrencyRef: true
+        }
+      })
+    }
+
+    // 序列化 Decimal 类型
+    const serializedRate = {
+      ...exchangeRate,
+      rate: parseFloat(exchangeRate.rate.toString())
+    }
+
+    return successResponse(serializedRate, existingRate ? '汇率更新成功' : '汇率创建成功')
+  } catch (error) {
+    console.error('创建/更新汇率失败:', error)
+    return errorResponse('操作失败', 500)
+  }
+}
+
+/**
+ * 批量创建汇率
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return unauthorizedResponse()
+    }
+
+    const body = await request.json()
+    const { rates } = body
+
+    if (!Array.isArray(rates) || rates.length === 0) {
+      return validationErrorResponse('汇率数据格式不正确')
+    }
+
+    const results = []
+    const errors = []
+
+    for (let i = 0; i < rates.length; i++) {
+      const rateData = rates[i]
+      try {
+        const { fromCurrency, toCurrency, rate, effectiveDate, notes } = rateData
+
+        // 基本验证
+        if (!fromCurrency || !toCurrency || !rate || !effectiveDate) {
+          errors.push(`第${i + 1}条记录：缺少必填字段`)
+          continue
+        }
+
+        const rateValue = parseFloat(rate)
+        if (isNaN(rateValue) || rateValue <= 0) {
+          errors.push(`第${i + 1}条记录：汇率必须是大于0的数字`)
+          continue
+        }
+
+        if (fromCurrency === toCurrency) {
+          errors.push(`第${i + 1}条记录：不能设置相同货币之间的汇率`)
+          continue
+        }
+
+        const parsedDate = new Date(effectiveDate)
+        if (isNaN(parsedDate.getTime())) {
+          errors.push(`第${i + 1}条记录：无效的生效日期`)
+          continue
+        }
+
+        // 使用 upsert 创建或更新
+        const exchangeRate = await prisma.exchangeRate.upsert({
+          where: {
+            userId_fromCurrency_toCurrency_effectiveDate: {
+              userId: user.id,
+              fromCurrency,
+              toCurrency,
+              effectiveDate: parsedDate
+            }
+          },
+          update: {
+            rate: rateValue,
+            notes: notes || null
+          },
+          create: {
+            userId: user.id,
+            fromCurrency,
+            toCurrency,
+            rate: rateValue,
+            effectiveDate: parsedDate,
+            notes: notes || null
+          },
+          include: {
+            fromCurrencyRef: true,
+            toCurrencyRef: true
+          }
+        })
+
+        results.push({
+          ...exchangeRate,
+          rate: parseFloat(exchangeRate.rate.toString())
+        })
+      } catch (error) {
+        errors.push(`第${i + 1}条记录：${error instanceof Error ? error.message : '未知错误'}`)
+      }
+    }
+
+    return successResponse({
+      success: results.length,
+      errors: errors.length,
+      results,
+      errorMessages: errors
+    }, `成功处理 ${results.length} 条汇率记录${errors.length > 0 ? `，${errors.length} 条失败` : ''}`)
+  } catch (error) {
+    console.error('批量创建汇率失败:', error)
+    return errorResponse('批量操作失败', 500)
+  }
+}

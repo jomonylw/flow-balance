@@ -1,9 +1,12 @@
 /**
  * 账户余额计算服务
  * 正确区分存量账户（资产、负债）和流量账户（收入、支出）的余额计算逻辑
+ * 支持多货币转换和本位币统计
  *
  * 🔧 优化版本 - 增强数据一致性和错误处理
  */
+
+import { convertMultipleCurrencies, ConversionResult } from './currency-conversion'
 
 export interface Transaction {
   id?: string
@@ -338,5 +341,179 @@ export function validateAccountTypes(accounts: Account[]): {
     isValid: issues.length === 0,
     issues,
     suggestions
+  }
+}
+
+/**
+ * 扩展的账户余额接口，包含货币转换信息
+ */
+export interface AccountBalanceWithConversion extends AccountBalance {
+  convertedAmount?: number
+  baseCurrency?: {
+    code: string
+    symbol: string
+    name: string
+  }
+  conversionRate?: number
+  conversionSuccess?: boolean
+  conversionError?: string
+}
+
+/**
+ * 计算账户余额并转换为本位币
+ * @param userId 用户ID
+ * @param account 账户信息
+ * @param baseCurrency 本位币
+ * @param options 计算选项
+ * @returns 包含转换信息的余额数据
+ */
+export async function calculateAccountBalanceWithConversion(
+  userId: string,
+  account: Account,
+  baseCurrency: { code: string; symbol: string; name: string },
+  options: CalculationOptions = {}
+): Promise<Record<string, AccountBalanceWithConversion>> {
+  // 先计算原始余额
+  const originalBalances = calculateAccountBalance(account, options)
+  const balancesWithConversion: Record<string, AccountBalanceWithConversion> = {}
+
+  // 准备转换数据
+  const amountsToConvert = Object.values(originalBalances).map(balance => ({
+    amount: balance.amount,
+    currency: balance.currencyCode
+  }))
+
+  try {
+    // 批量转换货币
+    const conversionResults = await convertMultipleCurrencies(
+      userId,
+      amountsToConvert,
+      baseCurrency.code,
+      options.asOfDate
+    )
+
+    // 合并转换结果
+    Object.keys(originalBalances).forEach((currencyCode, index) => {
+      const originalBalance = originalBalances[currencyCode]
+      const conversionResult = conversionResults[index]
+
+      balancesWithConversion[currencyCode] = {
+        ...originalBalance,
+        convertedAmount: conversionResult.convertedAmount,
+        baseCurrency,
+        conversionRate: conversionResult.exchangeRate,
+        conversionSuccess: conversionResult.success,
+        conversionError: conversionResult.error
+      }
+    })
+  } catch (error) {
+    console.error('货币转换失败:', error)
+
+    // 转换失败时，返回原始余额
+    Object.keys(originalBalances).forEach(currencyCode => {
+      const originalBalance = originalBalances[currencyCode]
+      balancesWithConversion[currencyCode] = {
+        ...originalBalance,
+        convertedAmount: originalBalance.amount,
+        baseCurrency,
+        conversionRate: 1,
+        conversionSuccess: false,
+        conversionError: '货币转换服务不可用'
+      }
+    })
+  }
+
+  return balancesWithConversion
+}
+
+/**
+ * 计算多个账户的汇总余额并转换为本位币
+ * @param userId 用户ID
+ * @param accounts 账户列表
+ * @param baseCurrency 本位币
+ * @param options 计算选项
+ * @returns 转换为本位币的汇总余额
+ */
+export async function calculateTotalBalanceWithConversion(
+  userId: string,
+  accounts: Account[],
+  baseCurrency: { code: string; symbol: string; name: string },
+  options: CalculationOptions = {}
+): Promise<{
+  totalInBaseCurrency: number
+  totalsByOriginalCurrency: Record<string, AccountBalance>
+  conversionDetails: ConversionResult[]
+  hasConversionErrors: boolean
+}> {
+  let totalInBaseCurrency = 0
+  const totalsByOriginalCurrency: Record<string, AccountBalance> = {}
+  const conversionDetails: ConversionResult[] = []
+  let hasConversionErrors = false
+
+  // 计算所有账户的原始余额
+  const allAmountsToConvert: Array<{ amount: number; currency: string }> = []
+
+  for (const account of accounts) {
+    const accountBalances = calculateAccountBalance(account, options)
+
+    Object.values(accountBalances).forEach(balance => {
+      const currencyCode = balance.currencyCode
+
+      if (!totalsByOriginalCurrency[currencyCode]) {
+        totalsByOriginalCurrency[currencyCode] = {
+          currencyCode,
+          amount: 0,
+          currency: balance.currency
+        }
+      }
+
+      totalsByOriginalCurrency[currencyCode].amount += balance.amount
+    })
+  }
+
+  // 准备转换数据
+  Object.values(totalsByOriginalCurrency).forEach(balance => {
+    allAmountsToConvert.push({
+      amount: balance.amount,
+      currency: balance.currencyCode
+    })
+  })
+
+  try {
+    // 批量转换货币
+    const conversionResults = await convertMultipleCurrencies(
+      userId,
+      allAmountsToConvert,
+      baseCurrency.code,
+      options.asOfDate
+    )
+
+    conversionDetails.push(...conversionResults)
+
+    // 计算本位币总额
+    conversionResults.forEach(result => {
+      if (result.success) {
+        totalInBaseCurrency += result.convertedAmount
+      } else {
+        hasConversionErrors = true
+        // 转换失败时使用原始金额（可能不准确）
+        totalInBaseCurrency += result.originalAmount
+      }
+    })
+  } catch (error) {
+    console.error('批量货币转换失败:', error)
+    hasConversionErrors = true
+
+    // 转换失败时，使用原始金额作为近似值
+    Object.values(totalsByOriginalCurrency).forEach(balance => {
+      totalInBaseCurrency += balance.amount
+    })
+  }
+
+  return {
+    totalInBaseCurrency,
+    totalsByOriginalCurrency,
+    conversionDetails,
+    hasConversionErrors
   }
 }

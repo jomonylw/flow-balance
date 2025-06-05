@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
-import { calculateAccountBalance } from '@/lib/account-balance'
+import { calculateAccountBalance, calculateTotalBalanceWithConversion } from '@/lib/account-balance'
+import { convertMultipleCurrencies } from '@/lib/currency-conversion'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
 
 /**
@@ -40,82 +41,139 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // 转换账户数据格式
+    const accountsForCalculation = accounts.map(account => ({
+      id: account.id,
+      name: account.name,
+      category: account.category,
+      transactions: account.transactions.map(t => ({
+        type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER',
+        amount: parseFloat(t.amount.toString()),
+        date: t.date,
+        currency: t.currency
+      }))
+    }))
+
     // 生成月份数据
     const monthlyData = []
     const currentDate = new Date()
-    
+
     for (let i = months - 1; i >= 0; i--) {
       const targetDate = subMonths(currentDate, i)
       const monthStart = startOfMonth(targetDate)
       const monthEnd = endOfMonth(targetDate)
       const monthLabel = format(targetDate, 'yyyy-MM')
 
-      // 计算该月末的净资产
-      let totalAssets = 0
-      let totalLiabilities = 0
-      let monthlyIncome = 0
-      let monthlyExpense = 0
+      try {
+        // 计算该月末的净资产（使用货币转换）
+        const netWorthResult = await calculateTotalBalanceWithConversion(
+          user.id,
+          accountsForCalculation.filter(account =>
+            account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
+          ),
+          baseCurrency,
+          { asOfDate: monthEnd }
+        )
 
-      accounts.forEach(account => {
-        const accountType = account.category.type
+        // 计算当月现金流（收入和支出）
+        const monthlyIncomeAmounts: Array<{ amount: number; currency: string }> = []
+        const monthlyExpenseAmounts: Array<{ amount: number; currency: string }> = []
 
-        // 数据验证：只处理有明确类型的账户
-        if (!accountType) {
-          console.warn(`Account ${account.name} (ID: ${account.id}) has no type set`)
-          return
-        }
+        accountsForCalculation.forEach(account => {
+          const accountType = account.category.type
 
-        // 存量类账户：计算到月末的余额
-        if (accountType === 'ASSET' || accountType === 'LIABILITY') {
-          const balances = calculateAccountBalance(account, monthEnd)
-          const balance = balances[baseCurrency.code]?.amount || 0
+          if (accountType === 'INCOME' || accountType === 'EXPENSE') {
+            const monthlyTransactions = account.transactions.filter(t => {
+              const transactionDate = new Date(t.date)
+              return transactionDate >= monthStart && transactionDate <= monthEnd
+            })
 
-          if (accountType === 'ASSET') {
-            totalAssets += balance
-          } else if (accountType === 'LIABILITY') {
-            // 负债余额应该是正数（表示欠款金额）
-            totalLiabilities += Math.abs(balance)
+            monthlyTransactions.forEach(transaction => {
+              if (transaction.amount > 0) {
+                if (accountType === 'INCOME' && transaction.type === 'INCOME') {
+                  monthlyIncomeAmounts.push({
+                    amount: transaction.amount,
+                    currency: transaction.currency.code
+                  })
+                } else if (accountType === 'EXPENSE' && transaction.type === 'EXPENSE') {
+                  monthlyExpenseAmounts.push({
+                    amount: transaction.amount,
+                    currency: transaction.currency.code
+                  })
+                }
+              }
+            })
           }
-        }
+        })
 
-        // 流量类账户：计算当月的现金流
-        if (accountType === 'INCOME' || accountType === 'EXPENSE') {
-          const monthlyTransactions = account.transactions.filter(t => {
-            const transactionDate = new Date(t.date)
-            return transactionDate >= monthStart && transactionDate <= monthEnd &&
-                   t.currency.code === baseCurrency.code
-          })
+        // 转换收支到本位币
+        const [incomeConversions, expenseConversions] = await Promise.all([
+          convertMultipleCurrencies(user.id, monthlyIncomeAmounts, baseCurrency.code, monthEnd),
+          convertMultipleCurrencies(user.id, monthlyExpenseAmounts, baseCurrency.code, monthEnd)
+        ])
 
-          monthlyTransactions.forEach(transaction => {
-            const amount = parseFloat(transaction.amount.toString())
-            // 数据验证：确保金额为正数
-            if (amount <= 0) {
-              console.warn(`Invalid transaction amount: ${amount} for transaction ${transaction.id}`)
-              return
-            }
+        const monthlyIncomeInBaseCurrency = incomeConversions.reduce((sum, result) =>
+          sum + (result.success ? result.convertedAmount : result.originalAmount), 0
+        )
 
-            if (accountType === 'INCOME' && transaction.type === 'INCOME') {
-              monthlyIncome += amount
-            } else if (accountType === 'EXPENSE' && transaction.type === 'EXPENSE') {
-              monthlyExpense += amount
-            }
-          })
-        }
-      })
+        const monthlyExpenseInBaseCurrency = expenseConversions.reduce((sum, result) =>
+          sum + (result.success ? result.convertedAmount : result.originalAmount), 0
+        )
 
-      const netWorth = totalAssets - totalLiabilities
-      const netCashFlow = monthlyIncome - monthlyExpense
+        const netCashFlow = monthlyIncomeInBaseCurrency - monthlyExpenseInBaseCurrency
 
-      monthlyData.push({
-        month: monthLabel,
-        monthName: format(targetDate, 'yyyy年MM月'),
-        netWorth: Math.round(netWorth * 100) / 100,
-        totalAssets: Math.round(totalAssets * 100) / 100,
-        totalLiabilities: Math.round(totalLiabilities * 100) / 100,
-        monthlyIncome: Math.round(monthlyIncome * 100) / 100,
-        monthlyExpense: Math.round(monthlyExpense * 100) / 100,
-        netCashFlow: Math.round(netCashFlow * 100) / 100
-      })
+        // 分离资产和负债
+        let totalAssets = 0
+        let totalLiabilities = 0
+
+        Object.entries(netWorthResult.totalsByOriginalCurrency).forEach(([currencyCode, balance]) => {
+          // 这里需要根据账户类型来分离资产和负债
+          // 由于我们已经过滤了账户，这里的逻辑需要重新计算
+        })
+
+        // 重新计算资产和负债（分别计算）
+        const assetAccounts = accountsForCalculation.filter(account => account.category.type === 'ASSET')
+        const liabilityAccounts = accountsForCalculation.filter(account => account.category.type === 'LIABILITY')
+
+        const [assetResult, liabilityResult] = await Promise.all([
+          calculateTotalBalanceWithConversion(user.id, assetAccounts, baseCurrency, { asOfDate: monthEnd }),
+          calculateTotalBalanceWithConversion(user.id, liabilityAccounts, baseCurrency, { asOfDate: monthEnd })
+        ])
+
+        totalAssets = assetResult.totalInBaseCurrency
+        totalLiabilities = Math.abs(liabilityResult.totalInBaseCurrency) // 负债显示为正数
+
+        const netWorth = totalAssets - totalLiabilities
+
+        monthlyData.push({
+          month: monthLabel,
+          monthName: format(targetDate, 'yyyy年MM月'),
+          netWorth: Math.round(netWorth * 100) / 100,
+          totalAssets: Math.round(totalAssets * 100) / 100,
+          totalLiabilities: Math.round(totalLiabilities * 100) / 100,
+          monthlyIncome: Math.round(monthlyIncomeInBaseCurrency * 100) / 100,
+          monthlyExpense: Math.round(monthlyExpenseInBaseCurrency * 100) / 100,
+          netCashFlow: Math.round(netCashFlow * 100) / 100,
+          hasConversionErrors: netWorthResult.hasConversionErrors ||
+                              incomeConversions.some(r => !r.success) ||
+                              expenseConversions.some(r => !r.success)
+        })
+      } catch (error) {
+        console.error(`计算月份 ${monthLabel} 数据失败:`, error)
+        // 添加错误数据点
+        monthlyData.push({
+          month: monthLabel,
+          monthName: format(targetDate, 'yyyy年MM月'),
+          netWorth: 0,
+          totalAssets: 0,
+          totalLiabilities: 0,
+          monthlyIncome: 0,
+          monthlyExpense: 0,
+          netCashFlow: 0,
+          hasConversionErrors: true,
+          error: '数据计算失败'
+        })
+      }
     }
 
     // 准备图表数据
@@ -174,12 +232,20 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    // 检查是否有转换错误
+    const hasAnyConversionErrors = monthlyData.some(data => data.hasConversionErrors)
+
     return successResponse({
       netWorthChart: netWorthChartData,
       cashFlowChart: cashFlowChartData,
       monthlyData,
       currency: baseCurrency,
-      period: `最近${months}个月`
+      period: `最近${months}个月`,
+      currencyConversion: {
+        baseCurrency,
+        hasErrors: hasAnyConversionErrors,
+        note: hasAnyConversionErrors ? '部分数据可能因汇率缺失而不准确' : '所有数据已正确转换为本位币'
+      }
     })
   } catch (error) {
     console.error('Get dashboard charts error:', error)

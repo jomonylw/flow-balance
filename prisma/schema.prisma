@@ -21,11 +21,12 @@ model User {
   updatedAt        DateTime  @updatedAt
 
   // 关联关系
-  settings     UserSettings?
-  accounts     Account[]
-  categories   Category[]
-  transactions Transaction[]
-  tags         Tag[]
+  settings      UserSettings?
+  accounts      Account[]
+  categories    Category[]
+  transactions  Transaction[]
+  tags          Tag[]
+  exchangeRates ExchangeRate[]
 
   @@map("users")
 }
@@ -53,10 +54,34 @@ model Currency {
   symbol String // 例如: $, €, ¥
 
   // 关联关系
-  userSettings UserSettings[]
-  transactions Transaction[]
+  userSettings     UserSettings[]
+  transactions     Transaction[]
+  fromExchangeRates ExchangeRate[] @relation("FromCurrency")
+  toExchangeRates   ExchangeRate[] @relation("ToCurrency")
 
   @@map("currencies")
+}
+
+// 汇率表 - 用户自定义汇率管理
+model ExchangeRate {
+  id           String   @id @default(cuid())
+  userId       String
+  fromCurrency String   // 源货币代码
+  toCurrency   String   // 目标货币代码
+  rate         Decimal  // 汇率，使用 Decimal 类型确保精度
+  effectiveDate DateTime // 汇率生效日期
+  notes        String?  // 备注
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 关联关系
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromCurrencyRef Currency @relation("FromCurrency", fields: [fromCurrency], references: [code])
+  toCurrencyRef   Currency @relation("ToCurrency", fields: [toCurrency], references: [code])
+
+  // 确保同一用户的同一货币对在同一日期只有一个汇率
+  @@unique([userId, fromCurrency, toCurrency, effectiveDate])
+  @@map("exchange_rates")
 }
 
 // 分类表 - 支持树状结构的分类系统，区分账户性质

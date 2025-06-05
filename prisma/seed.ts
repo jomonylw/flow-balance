@@ -1,4 +1,4 @@
-import { PrismaClient, TransactionType } from '@prisma/client'
+import { PrismaClient, TransactionType, AccountType } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -89,6 +89,7 @@ async function main() {
     data: {
       userId: user1.id,
       name: '资产',
+      type: AccountType.ASSET,
       order: 1
     }
   })
@@ -97,6 +98,7 @@ async function main() {
     data: {
       userId: user1.id,
       name: '负债',
+      type: AccountType.LIABILITY,
       order: 2
     }
   })
@@ -105,6 +107,7 @@ async function main() {
     data: {
       userId: user1.id,
       name: '收入',
+      type: AccountType.INCOME,
       order: 3
     }
   })
@@ -113,6 +116,7 @@ async function main() {
     data: {
       userId: user1.id,
       name: '支出',
+      type: AccountType.EXPENSE,
       order: 4
     }
   })
@@ -122,6 +126,7 @@ async function main() {
     data: {
       userId: user1.id,
       name: '现金',
+      type: AccountType.ASSET,
       parentId: assetsCategory.id,
       order: 1
     }
@@ -131,6 +136,7 @@ async function main() {
     data: {
       userId: user1.id,
       name: '银行账户',
+      type: AccountType.ASSET,
       parentId: assetsCategory.id,
       order: 2
     }
@@ -140,6 +146,7 @@ async function main() {
     data: {
       userId: user1.id,
       name: '投资',
+      type: AccountType.ASSET,
       parentId: assetsCategory.id,
       order: 3
     }
@@ -150,6 +157,7 @@ async function main() {
     data: {
       userId: user1.id,
       name: '餐饮',
+      type: AccountType.EXPENSE,
       parentId: expenseCategory.id,
       order: 1
     }
@@ -159,6 +167,7 @@ async function main() {
     data: {
       userId: user1.id,
       name: '交通',
+      type: AccountType.EXPENSE,
       parentId: expenseCategory.id,
       order: 2
     }
@@ -168,6 +177,7 @@ async function main() {
     data: {
       userId: user1.id,
       name: '购物',
+      type: AccountType.EXPENSE,
       parentId: expenseCategory.id,
       order: 3
     }
@@ -175,9 +185,16 @@ async function main() {
 
   // 4. 创建账户
   console.log('🏦 创建账户...')
-  
-  const checkingAccount = await prisma.account.create({
-    data: {
+
+  const checkingAccount = await prisma.account.upsert({
+    where: {
+      userId_name: {
+        userId: user1.id,
+        name: '招商银行储蓄卡'
+      }
+    },
+    update: {},
+    create: {
       userId: user1.id,
       categoryId: bankCategory.id,
       name: '招商银行储蓄卡',
@@ -185,8 +202,15 @@ async function main() {
     }
   })
 
-  const savingsAccount = await prisma.account.create({
-    data: {
+  const savingsAccount = await prisma.account.upsert({
+    where: {
+      userId_name: {
+        userId: user1.id,
+        name: '建设银行定期存款'
+      }
+    },
+    update: {},
+    create: {
       userId: user1.id,
       categoryId: bankCategory.id,
       name: '建设银行定期存款',
@@ -194,8 +218,15 @@ async function main() {
     }
   })
 
-  const cashAccount = await prisma.account.create({
-    data: {
+  const cashAccount = await prisma.account.upsert({
+    where: {
+      userId_name: {
+        userId: user1.id,
+        name: '现金钱包'
+      }
+    },
+    update: {},
+    create: {
       userId: user1.id,
       categoryId: cashCategory.id,
       name: '现金钱包',
@@ -203,8 +234,15 @@ async function main() {
     }
   })
 
-  const investmentAccount = await prisma.account.create({
-    data: {
+  const investmentAccount = await prisma.account.upsert({
+    where: {
+      userId_name: {
+        userId: user1.id,
+        name: '股票投资账户'
+      }
+    },
+    update: {},
+    create: {
       userId: user1.id,
       categoryId: investmentCategory.id,
       name: '股票投资账户',
@@ -327,13 +365,119 @@ async function main() {
     }
   })
 
+  // 添加一些多货币交易记录
+  await prisma.transaction.create({
+    data: {
+      userId: user1.id,
+      accountId: cashAccount.id,
+      categoryId: incomeCategory.id,
+      currencyCode: 'EUR',
+      type: TransactionType.INCOME,
+      amount: 500,
+      description: '欧洲项目收入',
+      date: new Date('2024-01-10')
+    }
+  })
+
+  await prisma.transaction.create({
+    data: {
+      userId: user1.id,
+      accountId: cashAccount.id,
+      categoryId: foodCategory.id,
+      currencyCode: 'CNY',
+      type: TransactionType.EXPENSE,
+      amount: 150,
+      description: '中餐厅用餐',
+      date: new Date('2024-01-12')
+    }
+  })
+
+  await prisma.transaction.create({
+    data: {
+      userId: user1.id,
+      accountId: investmentAccount.id,
+      categoryId: incomeCategory.id,
+      currencyCode: 'JPY',
+      type: TransactionType.INCOME,
+      amount: 50000,
+      description: '日本股票收益',
+      date: new Date('2024-01-15')
+    }
+  })
+
+  // 7. 创建示例汇率数据
+  console.log('💱 创建汇率数据...')
+
+  const exchangeRates = await Promise.all([
+    prisma.exchangeRate.upsert({
+      where: {
+        userId_fromCurrency_toCurrency_effectiveDate: {
+          userId: user1.id,
+          fromCurrency: 'EUR',
+          toCurrency: 'USD',
+          effectiveDate: new Date('2024-01-01')
+        }
+      },
+      update: {},
+      create: {
+        userId: user1.id,
+        fromCurrency: 'EUR',
+        toCurrency: 'USD',
+        rate: 1.08,
+        effectiveDate: new Date('2024-01-01'),
+        notes: '欧元兑美元汇率'
+      }
+    }),
+    prisma.exchangeRate.upsert({
+      where: {
+        userId_fromCurrency_toCurrency_effectiveDate: {
+          userId: user1.id,
+          fromCurrency: 'CNY',
+          toCurrency: 'USD',
+          effectiveDate: new Date('2024-01-01')
+        }
+      },
+      update: {},
+      create: {
+        userId: user1.id,
+        fromCurrency: 'CNY',
+        toCurrency: 'USD',
+        rate: 0.14,
+        effectiveDate: new Date('2024-01-01'),
+        notes: '人民币兑美元汇率'
+      }
+    }),
+    prisma.exchangeRate.upsert({
+      where: {
+        userId_fromCurrency_toCurrency_effectiveDate: {
+          userId: user1.id,
+          fromCurrency: 'JPY',
+          toCurrency: 'USD',
+          effectiveDate: new Date('2024-01-01')
+        }
+      },
+      update: {},
+      create: {
+        userId: user1.id,
+        fromCurrency: 'JPY',
+        toCurrency: 'USD',
+        rate: 0.0067,
+        effectiveDate: new Date('2024-01-01'),
+        notes: '日元兑美元汇率'
+      }
+    })
+  ])
+
   console.log('✅ 种子数据填充完成!')
   console.log(`👤 创建了 2 个用户`)
   console.log(`💱 创建了 ${currencies.length} 种币种`)
   console.log(`📁 创建了分类结构`)
   console.log(`🏦 创建了 4 个账户`)
   console.log(`🏷️ 创建了 3 个标签`)
-  console.log(`💰 创建了 5 条交易记录`)
+  console.log(`💰 创建了 8 条交易记录（包含多货币）`)
+  console.log(`💱 创建了 ${exchangeRates.length} 个汇率记录`)
+  console.log(`🔄 多货币交易：USD, EUR, CNY, JPY`)
+  console.log(`📊 汇率设置：EUR→USD, CNY→USD, JPY→USD`)
 }
 
 main()
