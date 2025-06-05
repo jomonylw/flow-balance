@@ -15,6 +15,15 @@ interface MonthlyData {
   }
 }
 
+interface StockMonthlyData {
+  [monthKey: string]: {
+    [currencyCode: string]: {
+      accounts: Record<string, { balance: number; name: string }>
+      totalBalance: number
+    }
+  }
+}
+
 interface Currency {
   code: string
   symbol: string
@@ -22,19 +31,23 @@ interface Currency {
 }
 
 interface MonthlySummaryChartProps {
-  monthlyData: MonthlyData
+  monthlyData?: MonthlyData
+  stockMonthlyData?: StockMonthlyData
   baseCurrency: Currency
   title?: string
   height?: number
   showCategories?: boolean
+  chartType?: 'flow' | 'stock' // 新增：区分流量和存量图表
 }
 
 export default function MonthlySummaryChart({
   monthlyData,
+  stockMonthlyData,
   baseCurrency,
   title = '月度收支汇总',
   height = 400,
-  showCategories = false
+  showCategories = false,
+  chartType = 'flow'
 }: MonthlySummaryChartProps) {
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
@@ -45,6 +58,30 @@ export default function MonthlySummaryChart({
     // 初始化图表
     chartInstance.current = echarts.init(chartRef.current)
 
+    if (chartType === 'stock' && stockMonthlyData) {
+      // 存量类图表：账户汇总叠加柱状图
+      renderStockChart()
+    } else if (chartType === 'flow' && monthlyData) {
+      // 流量类图表：收入支出图
+      renderFlowChart()
+    }
+
+    // 响应式处理
+    const handleResize = () => {
+      chartInstance.current?.resize()
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      chartInstance.current?.dispose()
+    }
+  }, [monthlyData, stockMonthlyData, baseCurrency, chartType])
+
+  const renderFlowChart = () => {
+    if (!monthlyData || !chartInstance.current) return
+
     // 准备数据
     const months = Object.keys(monthlyData).sort()
     const incomeData: number[] = []
@@ -54,7 +91,7 @@ export default function MonthlySummaryChart({
     months.forEach(month => {
       const monthData = monthlyData[month]
       const currencyData = monthData[baseCurrency.code] || { income: 0, expense: 0, balance: 0 }
-      
+
       incomeData.push(currencyData.income)
       expenseData.push(currencyData.expense)
       balanceData.push(currencyData.balance)
@@ -85,7 +122,7 @@ export default function MonthlySummaryChart({
           let result = `<div style="font-weight: bold; margin-bottom: 5px;">${params[0].axisValue}</div>`
           params.forEach((param: any) => {
             const value = param.value
-            const formattedValue = value >= 0 
+            const formattedValue = value >= 0
               ? `+${baseCurrency.symbol}${Math.abs(value).toFixed(2)}`
               : `-${baseCurrency.symbol}${Math.abs(value).toFixed(2)}`
             result += `<div style="display: flex; align-items: center; margin: 2px 0;">
@@ -180,29 +217,169 @@ export default function MonthlySummaryChart({
 
     // 设置图表选项
     chartInstance.current.setOption(option)
+  }
 
-    // 响应式处理
-    const handleResize = () => {
-      chartInstance.current?.resize()
+  const renderStockChart = () => {
+    if (!stockMonthlyData || !chartInstance.current) return
+
+    // 准备数据
+    const months = Object.keys(stockMonthlyData).sort()
+    const formattedMonths = months.map(month => {
+      const [year, monthNum] = month.split('-')
+      return `${year}年${monthNum}月`
+    })
+
+    // 获取所有账户名称
+    const allAccounts = new Set<string>()
+    months.forEach(month => {
+      const monthData = stockMonthlyData[month]
+      const currencyData = monthData[baseCurrency.code]
+      if (currencyData?.accounts) {
+        Object.keys(currencyData.accounts).forEach(accountId => {
+          allAccounts.add(currencyData.accounts[accountId].name)
+        })
+      }
+    })
+
+    const accountNames = Array.from(allAccounts)
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316']
+
+    // 为每个账户准备数据
+    const series = accountNames.map((accountName, index) => {
+      const data = months.map(month => {
+        const monthData = stockMonthlyData[month]
+        const currencyData = monthData[baseCurrency.code]
+        if (currencyData?.accounts) {
+          const account = Object.values(currencyData.accounts).find(acc => acc.name === accountName)
+          return account?.balance || 0
+        }
+        return 0
+      })
+
+      return {
+        name: accountName,
+        type: 'bar',
+        stack: 'total',
+        data,
+        itemStyle: {
+          color: colors[index % colors.length]
+        }
+      }
+    })
+
+    const option: echarts.EChartsOption = {
+      title: {
+        text: title,
+        left: 'center',
+        textStyle: {
+          fontSize: 16,
+          fontWeight: 'bold'
+        }
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow'
+        },
+        formatter: function (params: any) {
+          let result = `<div style="font-weight: bold; margin-bottom: 8px;">${params[0].axisValue}</div>`
+          let total = 0
+
+          params.forEach((param: any) => {
+            if (param.value > 0) {
+              total += param.value
+              result += `
+                <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                  <span style="display: inline-block; width: 10px; height: 10px; background-color: ${param.color}; margin-right: 8px; border-radius: 50%;"></span>
+                  <span style="margin-right: 8px;">${param.seriesName}:</span>
+                  <span style="font-weight: bold;">${baseCurrency.symbol}${param.value.toFixed(2)}</span>
+                </div>
+              `
+            }
+          })
+
+          result += `<div style="border-top: 1px solid #ccc; margin-top: 8px; padding-top: 4px; font-weight: bold;">总计: ${baseCurrency.symbol}${total.toFixed(2)}</div>`
+
+          return result
+        }
+      },
+      legend: {
+        data: accountNames,
+        top: 30,
+        type: 'scroll'
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        top: '20%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: formattedMonths,
+        axisLabel: {
+          rotate: 45,
+          fontSize: 12
+        }
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: function (value: number) {
+            if (Math.abs(value) >= 10000) {
+              return `${baseCurrency.symbol}${(value / 10000).toFixed(1)}万`
+            } else if (Math.abs(value) >= 1000) {
+              return `${baseCurrency.symbol}${(value / 1000).toFixed(1)}k`
+            }
+            return `${baseCurrency.symbol}${value.toFixed(0)}`
+          }
+        }
+      },
+      series
     }
 
-    window.addEventListener('resize', handleResize)
+    // 设置图表选项
+    chartInstance.current.setOption(option)
+  }
 
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      chartInstance.current?.dispose()
-    }
-  }, [monthlyData, baseCurrency, title, showCategories])
+  const renderSummary = () => {
+    if (chartType === 'stock' && stockMonthlyData) {
+      // 存量类数据摘要
+      const totalBalance = Object.values(stockMonthlyData).reduce((sum, monthData) => {
+        const currencyData = monthData[baseCurrency.code]
+        return sum + (currencyData?.totalBalance || 0)
+      }, 0) / Object.keys(stockMonthlyData).length // 平均余额
 
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div 
-        ref={chartRef} 
-        style={{ width: '100%', height: `${height}px` }}
-      />
-      
-      {/* 数据摘要 */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      const accountCount = new Set<string>()
+      Object.values(stockMonthlyData).forEach(monthData => {
+        const currencyData = monthData[baseCurrency.code]
+        if (currencyData?.accounts) {
+          Object.keys(currencyData.accounts).forEach(accountId => {
+            accountCount.add(accountId)
+          })
+        }
+      })
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="text-center">
+            <div className="text-gray-500 mb-1">平均总余额</div>
+            <div className="text-lg font-semibold text-blue-600">
+              {baseCurrency.symbol}{totalBalance.toFixed(2)}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-gray-500 mb-1">账户数量</div>
+            <div className="text-lg font-semibold text-gray-600">
+              {accountCount.size} 个账户
+            </div>
+          </div>
+        </div>
+      )
+    } else if (chartType === 'flow' && monthlyData) {
+      // 流量类数据摘要
+      return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div className="text-center">
             <div className="text-gray-500 mb-1">总收入</div>
@@ -237,6 +414,21 @@ export default function MonthlySummaryChart({
             </div>
           </div>
         </div>
+      )
+    }
+    return null
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div
+        ref={chartRef}
+        style={{ width: '100%', height: `${height}px` }}
+      />
+
+      {/* 数据摘要 */}
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        {renderSummary()}
       </div>
     </div>
   )

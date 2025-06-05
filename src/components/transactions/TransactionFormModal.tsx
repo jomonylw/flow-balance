@@ -11,13 +11,16 @@ interface Account {
   id: string
   name: string
   category: {
+    id: string
     name: string
+    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   }
 }
 
 interface Category {
   id: string
   name: string
+  type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
 }
 
 interface Currency {
@@ -121,8 +124,23 @@ export default function TransactionFormModal({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-    
+
+    // 如果选择了账户，自动设置对应的分类
+    if (name === 'accountId' && value) {
+      const selectedAccount = accounts.find(acc => acc.id === value)
+      if (selectedAccount) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          categoryId: selectedAccount.category.id // 自动设置分类
+        }))
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }))
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
+
     // 清除对应字段的错误
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
@@ -203,12 +221,24 @@ export default function TransactionFormModal({
     { value: 'TRANSFER', label: '转账' }
   ]
 
-  const accountOptions = accounts.map(account => ({
+  // 只显示流量类账户（收入/支出）
+  const flowAccounts = accounts.filter(account => {
+    const accountType = account.category?.type
+    return accountType === 'INCOME' || accountType === 'EXPENSE'
+  })
+
+  const accountOptions = flowAccounts.map(account => ({
     value: account.id,
     label: `${account.name} (${account.category.name})`
   }))
 
-  const categoryOptions = categories.map(category => ({
+  // 只显示流量类分类（收入/支出）
+  const flowCategories = categories.filter(category => {
+    const categoryType = category.type
+    return categoryType === 'INCOME' || categoryType === 'EXPENSE'
+  })
+
+  const categoryOptions = flowCategories.map(category => ({
     value: category.id,
     label: category.name
   }))
@@ -255,7 +285,7 @@ export default function TransactionFormModal({
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           <SelectField
             name="accountId"
             label="账户"
@@ -264,17 +294,25 @@ export default function TransactionFormModal({
             options={accountOptions}
             error={errors.accountId}
             required
+            help="只能选择收入或支出类账户进行交易记录"
           />
 
-          <SelectField
-            name="categoryId"
-            label="分类"
-            value={formData.categoryId}
-            onChange={handleChange}
-            options={categoryOptions}
-            error={errors.categoryId}
-            required
-          />
+          {/* 显示自动选择的分类 */}
+          {formData.accountId && formData.categoryId && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <div className="flex items-center">
+                <svg className="h-4 w-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm text-blue-700">
+                  分类已自动设置为：
+                  <span className="font-medium ml-1">
+                    {categories.find(cat => cat.id === formData.categoryId)?.name || '未知分类'}
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

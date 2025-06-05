@@ -8,6 +8,8 @@ import InputDialog from '@/components/ui/InputDialog'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import CategorySelector from '@/components/ui/CategorySelector'
 import AccountSettingsModal from '@/components/ui/AccountSettingsModal'
+import BalanceUpdateModal from '@/components/accounts/BalanceUpdateModal'
+import TransactionFormModal from '@/components/transactions/TransactionFormModal'
 
 interface Account {
   id: string
@@ -44,6 +46,14 @@ export default function AccountTreeItem({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [showBalanceUpdateModal, setShowBalanceUpdateModal] = useState(false)
+  const [showTransactionModal, setShowTransactionModal] = useState(false)
+
+  // 数据状态
+  const [accounts, setAccounts] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [currencies, setCurrencies] = useState<any[]>([])
+  const [tags, setTags] = useState<any[]>([])
 
   const isActive = pathname === `/accounts/${account.id}`
 
@@ -79,6 +89,82 @@ export default function AccountTreeItem({
     fetchBalance()
   }, [account.id])
 
+  // 获取交易表单所需的数据
+  useEffect(() => {
+    const fetchFormData = async () => {
+      try {
+        const [accountsRes, categoriesRes, currenciesRes, tagsRes] = await Promise.all([
+          fetch('/api/accounts'),
+          fetch('/api/categories'),
+          fetch('/api/currencies'),
+          fetch('/api/tags')
+        ])
+
+        if (accountsRes.ok) {
+          const accountsData = await accountsRes.json()
+          setAccounts(accountsData.data || [])
+        }
+
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json()
+          setCategories(categoriesData.data || [])
+        }
+
+        if (currenciesRes.ok) {
+          const currenciesData = await currenciesRes.json()
+          setCurrencies(currenciesData.data || [])
+        }
+
+        if (tagsRes.ok) {
+          const tagsData = await tagsRes.json()
+          setTags(tagsData.data || [])
+        }
+      } catch (error) {
+        console.error('Error fetching form data:', error)
+      }
+    }
+
+    fetchFormData()
+  }, [])
+
+  // 获取交易表单所需的数据
+  useEffect(() => {
+    const fetchFormData = async () => {
+      try {
+        const [accountsRes, categoriesRes, currenciesRes, tagsRes] = await Promise.all([
+          fetch('/api/accounts'),
+          fetch('/api/categories'),
+          fetch('/api/currencies'),
+          fetch('/api/tags')
+        ])
+
+        if (accountsRes.ok) {
+          const accountsData = await accountsRes.json()
+          setAccounts(accountsData.data || [])
+        }
+
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json()
+          setCategories(categoriesData.data || [])
+        }
+
+        if (currenciesRes.ok) {
+          const currenciesData = await currenciesRes.json()
+          setCurrencies(currenciesData.data || [])
+        }
+
+        if (tagsRes.ok) {
+          const tagsData = await tagsRes.json()
+          setTags(tagsData.data || [])
+        }
+      } catch (error) {
+        console.error('Error fetching form data:', error)
+      }
+    }
+
+    fetchFormData()
+  }, [])
+
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
     setShowContextMenu(true)
@@ -92,8 +178,10 @@ export default function AccountTreeItem({
         router.push(`/accounts/${account.id}`)
         break
       case 'add-transaction':
-        // TODO: 打开添加交易模态框
-        console.log('Add transaction for account:', account.name)
+        setShowTransactionModal(true)
+        break
+      case 'update-balance':
+        setShowBalanceUpdateModal(true)
         break
       case 'rename':
         setShowRenameDialog(true)
@@ -183,6 +271,16 @@ export default function AccountTreeItem({
       console.error('Error moving account:', error)
       alert('移动失败')
     }
+  }
+
+  const handleBalanceUpdateSuccess = () => {
+    onDataChange()
+    setShowBalanceUpdateModal(false)
+  }
+
+  const handleTransactionSuccess = () => {
+    onDataChange()
+    setShowTransactionModal(false)
   }
 
   const handleSaveSettings = async (updates: Partial<Account>) => {
@@ -321,6 +419,34 @@ export default function AccountTreeItem({
         onClose={() => setShowSettingsModal(false)}
         onSave={handleSaveSettings}
         account={account}
+      />
+
+      {/* 余额更新模态框 */}
+      <BalanceUpdateModal
+        isOpen={showBalanceUpdateModal}
+        onClose={() => setShowBalanceUpdateModal(false)}
+        onSuccess={handleBalanceUpdateSuccess}
+        account={account}
+        currencies={currencies}
+        currentBalance={balance || 0}
+        currencyCode="CNY"
+      />
+
+      {/* 交易表单模态框 */}
+      <TransactionFormModal
+        isOpen={showTransactionModal}
+        onClose={() => setShowTransactionModal(false)}
+        onSuccess={handleTransactionSuccess}
+        accounts={accounts.filter(acc => {
+          // 只显示流量类账户
+          const accType = acc.category?.type
+          return accType === 'INCOME' || accType === 'EXPENSE'
+        })}
+        categories={categories}
+        currencies={currencies}
+        tags={tags}
+        defaultAccountId={account.id}
+        defaultCategoryId={account.categoryId}
       />
     </div>
   )

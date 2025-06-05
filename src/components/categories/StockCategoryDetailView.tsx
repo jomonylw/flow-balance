@@ -263,10 +263,11 @@ export default function StockCategoryDetailView({
       {monthlyData && (
         <div className="mb-8">
           <MonthlySummaryChart
-            monthlyData={monthlyData.monthlyData}
+            stockMonthlyData={monthlyData.monthlyData}
             baseCurrency={monthlyData.baseCurrency}
-            title={`${category.name} - 月度余额变化`}
+            title={`${category.name} - 月度账户余额汇总`}
             height={400}
+            chartType="stock"
           />
         </div>
       )}
