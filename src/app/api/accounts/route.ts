@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, categoryId, description } = body
+    const { name, categoryId, description, color } = body
 
     if (!name) {
       return errorResponse('账户名称不能为空', 400)
@@ -76,7 +76,8 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         categoryId,
         name,
-        description: description || null
+        description: description || null,
+        color: color || null
       },
       include: {
         category: true

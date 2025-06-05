@@ -7,12 +7,19 @@ import AccountContextMenu from './AccountContextMenu'
 import InputDialog from '@/components/ui/InputDialog'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import CategorySelector from '@/components/ui/CategorySelector'
+import AccountSettingsModal from '@/components/ui/AccountSettingsModal'
 
 interface Account {
   id: string
   name: string
   categoryId: string
   description?: string
+  color?: string
+  category: {
+    id: string
+    name: string
+    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  }
 }
 
 interface AccountTreeItemProps {
@@ -36,6 +43,7 @@ export default function AccountTreeItem({
   const [showRenameDialog, setShowRenameDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
 
   const isActive = pathname === `/accounts/${account.id}`
 
@@ -94,8 +102,7 @@ export default function AccountTreeItem({
         setShowCategorySelector(true)
         break
       case 'settings':
-        // TODO: 打开账户设置模态框
-        console.log('Account settings for:', account.name)
+        setShowSettingsModal(true)
         break
       case 'delete':
         setShowDeleteConfirm(true)
@@ -178,6 +185,33 @@ export default function AccountTreeItem({
     }
   }
 
+  const handleSaveSettings = async (updates: Partial<Account>) => {
+    try {
+      const response = await fetch(`/api/accounts/${account.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: updates.name || account.name,
+          categoryId: account.categoryId,
+          description: updates.description,
+          color: updates.color
+        }),
+      })
+
+      if (response.ok) {
+        onDataChange()
+      } else {
+        const error = await response.json()
+        throw new Error(error.message || '保存失败')
+      }
+    } catch (error) {
+      console.error('Error saving account settings:', error)
+      throw error
+    }
+  }
+
   return (
     <div className="relative">
       <div 
@@ -187,8 +221,15 @@ export default function AccountTreeItem({
         `}
         style={{ paddingLeft: `${level * 16 + 24}px` }}
       >
-        {/* 账户图标 */}
-        <div className="mr-2 flex-shrink-0">
+        {/* 账户颜色指示器和图标 */}
+        <div className="mr-2 flex-shrink-0 flex items-center space-x-1">
+          {account.color && (
+            <div
+              className="w-3 h-3 rounded-full border border-gray-300"
+              style={{ backgroundColor: account.color }}
+              title="账户颜色"
+            />
+          )}
           <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
@@ -219,6 +260,7 @@ export default function AccountTreeItem({
         <button
           onClick={(e) => {
             e.preventDefault()
+            e.stopPropagation()
             setShowContextMenu(true)
           }}
           onContextMenu={handleContextMenu}
@@ -268,8 +310,17 @@ export default function AccountTreeItem({
         isOpen={showCategorySelector}
         title="移动账户到其他分类"
         currentCategoryId={account.categoryId}
+        filterByAccountType={account.category.type}
         onSelect={handleMoveToCategory}
         onCancel={() => setShowCategorySelector(false)}
+      />
+
+      {/* 账户设置模态框 */}
+      <AccountSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onSave={handleSaveSettings}
+        account={account}
       />
     </div>
   )

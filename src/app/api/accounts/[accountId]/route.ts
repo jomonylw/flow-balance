@@ -27,7 +27,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, categoryId, description } = body
+    const { name, categoryId, description, color } = body
 
     if (!name) {
       return errorResponse('账户名称不能为空', 400)
@@ -35,15 +35,30 @@ export async function PUT(
 
     // 如果要更改分类，验证新分类是否属于当前用户
     if (categoryId && categoryId !== existingAccount.categoryId) {
-      const category = await prisma.category.findFirst({
-        where: {
-          id: categoryId,
-          userId: user.id
-        }
-      })
+      const [currentCategory, newCategory] = await Promise.all([
+        prisma.category.findFirst({
+          where: {
+            id: existingAccount.categoryId,
+            userId: user.id
+          }
+        }),
+        prisma.category.findFirst({
+          where: {
+            id: categoryId,
+            userId: user.id
+          }
+        })
+      ])
 
-      if (!category) {
-        return errorResponse('分类不存在', 400)
+      if (!newCategory) {
+        return errorResponse('目标分类不存在', 400)
+      }
+
+      // 验证账户类型是否匹配（只能在同类型分类间移动）
+      if (currentCategory && currentCategory.type && newCategory.type) {
+        if (currentCategory.type !== newCategory.type) {
+          return errorResponse('只能在相同账户类型的分类间移动账户', 400)
+        }
       }
     }
 
@@ -65,7 +80,8 @@ export async function PUT(
       data: {
         name,
         categoryId: categoryId || existingAccount.categoryId,
-        description: description || null
+        description: description || null,
+        color: color || null
       },
       include: {
         category: true

@@ -98,6 +98,7 @@ model Account {
   categoryId  String
   name        String
   description String?
+  color       String?  // 账户颜色，用于图表展示等
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

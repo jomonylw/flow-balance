@@ -6,6 +6,8 @@ import TransactionFormModal from '@/components/transactions/TransactionFormModal
 import TransactionList from '@/components/transactions/TransactionList'
 import CategorySummaryCard from './CategorySummaryCard'
 import CategoryChart from './CategoryChart'
+import SmartCategorySummaryCard from './SmartCategorySummaryCard'
+import SmartCategoryChart from './SmartCategoryChart'
 import MonthlySummaryChart from '@/components/charts/MonthlySummaryChart'
 
 interface User {
@@ -57,6 +59,7 @@ interface Transaction {
 interface Category {
   id: string
   name: string
+  type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   parentId?: string | null
   description?: string
   color?: string
@@ -122,6 +125,10 @@ export default function CategoryDetailView({
     fetchSummaryData()
   }, [category.id])
 
+  const categoryType = category.type
+  const isStockCategory = categoryType === 'ASSET' || categoryType === 'LIABILITY'
+  const isFlowCategory = categoryType === 'INCOME' || categoryType === 'EXPENSE'
+
   const handleAddTransaction = () => {
     setEditingTransaction(null)
     setIsTransactionModalOpen(true)
@@ -143,6 +150,30 @@ export default function CategoryDetailView({
     }
     setEditingTransaction(formTransaction as any)
     setIsTransactionModalOpen(true)
+  }
+
+  const handleDeleteTransaction = async (transactionId: string) => {
+    if (!confirm('确定要删除这笔交易吗？')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/transactions/${transactionId}`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // 刷新页面以更新数据
+        window.location.reload()
+      } else {
+        alert('删除失败：' + (result.error || '未知错误'))
+      }
+    } catch (error) {
+      console.error('Delete transaction error:', error)
+      alert('删除失败：网络错误')
+    }
   }
 
   const handleTransactionSuccess = () => {
@@ -308,25 +339,45 @@ export default function CategoryDetailView({
             )}
           </div>
         </div>
-        
-        <button
-          onClick={handleAddTransaction}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          添加交易
-        </button>
+
+        <div className="flex items-center space-x-3">
+          {/* 只有流量类分类才显示添加交易按钮 */}
+          {!isStockCategory && (
+            <button
+              onClick={handleAddTransaction}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              添加交易
+            </button>
+          )}
+
+          {/* 存量类分类的提示 */}
+          {isStockCategory && (
+            <div className="text-sm text-gray-500 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+              💡 存量类分类为只读模式，请在具体账户页面进行余额更新操作
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* 分类摘要卡片 */}
+      {/* 智能分类摘要卡片 */}
       <div className="mb-8">
-        <CategorySummaryCard
-          category={category}
-          stats={stats}
-          currencySymbol={currencySymbol}
-        />
+        {category.type ? (
+          <SmartCategorySummaryCard
+            category={category}
+            currencySymbol={currencySymbol}
+            summaryData={summaryData}
+          />
+        ) : (
+          <CategorySummaryCard
+            category={category}
+            stats={stats}
+            currencySymbol={currencySymbol}
+          />
+        )}
       </div>
 
       {/* 汇总数据展示 */}
@@ -447,11 +498,19 @@ export default function CategoryDetailView({
         </div>
         
         <div className="p-6">
-          <CategoryChart
-            transactions={category.transactions}
-            timeRange={timeRange}
-            currencySymbol={currencySymbol}
-          />
+          {category.type ? (
+            <SmartCategoryChart
+              category={category}
+              timeRange={timeRange}
+              currencySymbol={currencySymbol}
+            />
+          ) : (
+            <CategoryChart
+              transactions={category.transactions}
+              timeRange={timeRange}
+              currencySymbol={currencySymbol}
+            />
+          )}
         </div>
       </div>
 
@@ -470,9 +529,11 @@ export default function CategoryDetailView({
         
         <TransactionList
           transactions={category.transactions}
-          onEdit={handleEditTransaction}
+          onEdit={isStockCategory ? () => {} : handleEditTransaction}
+          onDelete={isStockCategory ? undefined : handleDeleteTransaction}
           currencySymbol={currencySymbol}
           showAccount={true}
+          readOnly={isStockCategory}
         />
       </div>
 

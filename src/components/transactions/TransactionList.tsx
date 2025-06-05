@@ -43,6 +43,7 @@ interface TransactionListProps {
   onDelete?: (transactionId: string) => void
   currencySymbol: string
   showAccount?: boolean
+  readOnly?: boolean
 }
 
 export default function TransactionList({
@@ -50,7 +51,8 @@ export default function TransactionList({
   onEdit,
   onDelete,
   currencySymbol,
-  showAccount = true
+  showAccount = true,
+  readOnly = false
 }: TransactionListProps) {
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set())
 
@@ -161,7 +163,7 @@ export default function TransactionList({
   return (
     <div>
       {/* 批量操作栏 */}
-      {selectedTransactions.size > 0 && (
+      {!readOnly && selectedTransactions.size > 0 && (
         <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-blue-700">
@@ -182,14 +184,16 @@ export default function TransactionList({
       {/* 表头 */}
       <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
         <div className="flex items-center">
-          <input
-            type="checkbox"
-            checked={selectedTransactions.size === transactions.length}
-            onChange={handleSelectAll}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <span className="ml-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-            交易详情
+          {!readOnly && (
+            <input
+              type="checkbox"
+              checked={selectedTransactions.size === transactions.length}
+              onChange={handleSelectAll}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+          )}
+          <span className={`${!readOnly ? 'ml-3' : ''} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
+            {readOnly ? '记录详情' : '交易详情'}
           </span>
         </div>
       </div>
@@ -205,12 +209,14 @@ export default function TransactionList({
           >
             <div className="flex items-center space-x-4">
               {/* 选择框 */}
-              <input
-                type="checkbox"
-                checked={selectedTransactions.has(transaction.id)}
-                onChange={() => handleSelectTransaction(transaction.id)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
+              {!readOnly && (
+                <input
+                  type="checkbox"
+                  checked={selectedTransactions.has(transaction.id)}
+                  onChange={() => handleSelectTransaction(transaction.id)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+              )}
 
               {/* 交易类型图标 */}
               <div className="flex-shrink-0">
@@ -242,29 +248,31 @@ export default function TransactionList({
                       {getAmountDisplay(transaction)}
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => onEdit(transaction)}
-                        className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                        title="编辑交易"
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-
-                      {onDelete && (
+                    {!readOnly && (
+                      <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => onDelete(transaction.id)}
-                          className="text-gray-400 hover:text-red-600 focus:outline-none"
-                          title="删除交易"
+                          onClick={() => onEdit(transaction)}
+                          className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                          title="编辑交易"
                         >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
-                      )}
-                    </div>
+
+                        {onDelete && (
+                          <button
+                            onClick={() => onDelete(transaction.id)}
+                            className="text-gray-400 hover:text-red-600 focus:outline-none"
+                            title="删除交易"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

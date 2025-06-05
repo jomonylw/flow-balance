@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
+import NetWorthChart from './NetWorthChart'
+import CashFlowChart from './CashFlowChart'
 import SmartAccountSummary from './SmartAccountSummary'
 import { calculateAccountBalance } from '@/lib/account-balance'
 
@@ -72,6 +74,8 @@ export default function DashboardContent({
 }: DashboardContentProps) {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [defaultTransactionType, setDefaultTransactionType] = useState<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE')
+  const [chartData, setChartData] = useState<any>(null)
+  const [isLoadingCharts, setIsLoadingCharts] = useState(true)
 
   const handleQuickTransaction = (type: 'INCOME' | 'EXPENSE' | 'TRANSFER') => {
     setDefaultTransactionType(type)
@@ -82,6 +86,26 @@ export default function DashboardContent({
     // 刷新页面以更新数据
     window.location.reload()
   }
+
+  // 获取图表数据
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        setIsLoadingCharts(true)
+        const response = await fetch('/api/dashboard/charts?months=12')
+        if (response.ok) {
+          const data = await response.json()
+          setChartData(data.data)
+        }
+      } catch (error) {
+        console.error('Error fetching chart data:', error)
+      } finally {
+        setIsLoadingCharts(false)
+      }
+    }
+
+    fetchChartData()
+  }, [])
 
   // 计算账户余额
   const accountsWithBalances = accounts.map(account => {
@@ -247,6 +271,51 @@ export default function DashboardContent({
         </div>
       </div>
 
+      {/* 图表展示区域 */}
+      <div className="space-y-6">
+        <h2 className="text-lg font-semibold text-gray-900">
+          📊 财务趋势分析
+        </h2>
+
+        {isLoadingCharts ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+                <div className="h-64 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+                <div className="h-64 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+        ) : chartData ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <NetWorthChart
+              data={chartData.netWorthChart}
+              currency={chartData.currency}
+            />
+            <CashFlowChart
+              data={chartData.cashFlowChart}
+              currency={chartData.currency}
+            />
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="text-center text-gray-500">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <p className="mt-2">暂无图表数据</p>
+              <p className="text-sm">请先添加一些交易记录</p>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* 功能状态 */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -273,7 +342,7 @@ export default function DashboardContent({
               <p>🚧 账户详情页面 - 开发中</p>
               <p>🚧 分类汇总页面 - 开发中</p>
               <p>🚧 交易列表页面 - 开发中</p>
-              <p>🚧 图表可视化 - ECharts 集成</p>
+              <p>✅ 图表可视化 - ECharts 集成完成</p>
               <p>🚧 多币种汇率转换</p>
               <p>🚧 数据导出功能</p>
             </div>

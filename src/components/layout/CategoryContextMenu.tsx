@@ -153,7 +153,11 @@ export default function CategoryContextMenu({
           return (
             <button
               key={menuItem.action}
-              onClick={() => onAction(menuItem.action)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onAction(menuItem.action)
+              }}
               className={`
                 flex items-center w-full px-4 py-2 text-sm transition-colors
                 ${menuItem.className || 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}

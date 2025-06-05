@@ -332,6 +332,7 @@ export default function CategoryTreeItem({
         <button
           onClick={(e) => {
             e.preventDefault()
+            e.stopPropagation()
             setShowContextMenu(true)
           }}
           onContextMenu={handleContextMenu}

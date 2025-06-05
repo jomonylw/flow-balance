@@ -7,6 +7,7 @@ interface Category {
   id: string
   name: string
   parentId: string | null
+  type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   children?: Category[]
 }
 
@@ -15,6 +16,7 @@ interface CategorySelectorProps {
   title: string
   currentCategoryId?: string
   excludeCategoryId?: string // 排除的分类ID（用于移动时排除自己和子分类）
+  filterByAccountType?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE' // 按账户类型过滤
   onSelect: (categoryId: string) => void
   onCancel: () => void
 }
@@ -24,6 +26,7 @@ export default function CategorySelector({
   title,
   currentCategoryId,
   excludeCategoryId,
+  filterByAccountType,
   onSelect,
   onCancel
 }: CategorySelectorProps) {
@@ -45,12 +48,17 @@ export default function CategorySelector({
       if (response.ok) {
         const result = await response.json()
         let categoriesData = result.data || []
-        
+
         // 如果有排除的分类，过滤掉它和它的所有子分类
         if (excludeCategoryId) {
           categoriesData = filterExcludedCategories(categoriesData, excludeCategoryId)
         }
-        
+
+        // 如果指定了账户类型过滤，只显示同类型的分类
+        if (filterByAccountType) {
+          categoriesData = filterByAccountTypeFunc(categoriesData, filterByAccountType)
+        }
+
         setCategories(buildCategoryTree(categoriesData))
       }
     } catch (error) {
@@ -73,11 +81,37 @@ export default function CategorySelector({
   const isDescendantOf = (category: Category, ancestorId: string, allCategories: Category[]): boolean => {
     if (!category.parentId) return false
     if (category.parentId === ancestorId) return true
-    
+
     const parent = allCategories.find(c => c.id === category.parentId)
     if (!parent) return false
-    
+
     return isDescendantOf(parent, ancestorId, allCategories)
+  }
+
+  const filterByAccountTypeFunc = (categories: Category[], accountType: string): Category[] => {
+    return categories.filter(category => {
+      // 如果分类有明确的类型，检查是否匹配
+      if (category.type) {
+        return category.type === accountType
+      }
+
+      // 如果分类没有类型，检查其父分类的类型
+      const rootCategory = findRootCategory(category, categories)
+      return rootCategory?.type === accountType
+    })
+  }
+
+  const findRootCategory = (category: Category, allCategories: Category[]): Category | null => {
+    if (!category.parentId) {
+      return category
+    }
+
+    const parent = allCategories.find(c => c.id === category.parentId)
+    if (!parent) {
+      return category
+    }
+
+    return findRootCategory(parent, allCategories)
   }
 
   const buildCategoryTree = (categories: Category[]): Category[] => {

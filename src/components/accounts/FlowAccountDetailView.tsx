@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
 import TransactionList from '@/components/transactions/TransactionList'
-import AccountSummaryCard from './AccountSummaryCard'
+import FlowAccountSummaryCard from './FlowAccountSummaryCard'
 
 interface User {
   id: string
@@ -21,6 +21,7 @@ interface User {
 interface Category {
   id: string
   name: string
+  type: 'INCOME' | 'EXPENSE'
 }
 
 interface Currency {
@@ -55,7 +56,7 @@ interface Account {
   transactions: Transaction[]
 }
 
-interface AccountDetailViewProps {
+interface FlowAccountDetailViewProps {
   account: Account
   categories: Category[]
   currencies: Currency[]
@@ -63,13 +64,13 @@ interface AccountDetailViewProps {
   user: User
 }
 
-export default function AccountDetailView({
+export default function FlowAccountDetailView({
   account,
   categories,
   currencies,
   tags,
   user
-}: AccountDetailViewProps) {
+}: FlowAccountDetailViewProps) {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<any>(null)
 
@@ -96,24 +97,47 @@ export default function AccountDetailView({
     setIsTransactionModalOpen(true)
   }
 
+  const handleDeleteTransaction = async (transactionId: string) => {
+    if (!confirm('确定要删除这笔交易吗？')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/transactions/${transactionId}`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // 刷新页面以更新数据
+        window.location.reload()
+      } else {
+        alert('删除失败：' + (result.error || '未知错误'))
+      }
+    } catch (error) {
+      console.error('Delete transaction error:', error)
+      alert('删除失败：网络错误')
+    }
+  }
+
   const handleTransactionSuccess = () => {
     // 刷新页面以更新数据
     window.location.reload()
   }
 
-  // 计算账户余额
-  const calculateBalance = () => {
-    return account.transactions.reduce((balance, transaction) => {
-      if (transaction.type === 'INCOME') {
-        return balance + transaction.amount
-      } else if (transaction.type === 'EXPENSE') {
-        return balance - transaction.amount
-      }
-      return balance
+  // 计算账户累计金额（流量类账户）
+  const calculateFlowTotal = () => {
+    return account.transactions.reduce((total, transaction) => {
+      const isRelevantTransaction = 
+        (account.category.type === 'INCOME' && transaction.type === 'INCOME') ||
+        (account.category.type === 'EXPENSE' && transaction.type === 'EXPENSE')
+      
+      return isRelevantTransaction ? total + transaction.amount : total
     }, 0)
   }
 
-  const balance = calculateBalance()
+  const flowTotal = calculateFlowTotal()
   const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
 
   return (
@@ -153,6 +177,15 @@ export default function AccountDetailView({
             {account.category.name}
             {account.description && ` • ${account.description}`}
           </p>
+          <div className="mt-2">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              account.category.type === 'INCOME' 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {account.category.type === 'INCOME' ? '收入账户' : '支出账户'} • 流量数据
+            </span>
+          </div>
         </div>
         
         <button
@@ -168,9 +201,9 @@ export default function AccountDetailView({
 
       {/* 账户摘要卡片 */}
       <div className="mb-8">
-        <AccountSummaryCard
+        <FlowAccountSummaryCard
           account={account}
-          balance={balance}
+          balance={flowTotal}
           currencySymbol={currencySymbol}
         />
       </div>
@@ -186,13 +219,17 @@ export default function AccountDetailView({
               共 {account.transactions.length} 笔交易
             </span>
           </div>
+          <p className="text-sm text-gray-600 mt-1">
+            记录{account.category.type === 'INCOME' ? '收入' : '支出'}的详细流水和现金流动
+          </p>
         </div>
         
         <TransactionList
           transactions={account.transactions}
           onEdit={handleEditTransaction}
+          onDelete={handleDeleteTransaction}
           currencySymbol={currencySymbol}
-          showAccount={false} // 在账户详情页不显示账户列
+          showAccount={false}
         />
       </div>
 
@@ -207,6 +244,7 @@ export default function AccountDetailView({
         currencies={currencies}
         tags={tags}
         defaultAccountId={account.id}
+        defaultType={account.category.type}
       />
     </div>
   )

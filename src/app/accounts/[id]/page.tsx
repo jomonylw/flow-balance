@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import AppLayout from '@/components/layout/AppLayout'
-import AccountDetailView from '@/components/accounts/AccountDetailView'
+import AccountDetailRouter from '@/components/accounts/AccountDetailRouter'
 
 interface AccountPageProps {
   params: Promise<{ id: string }>
@@ -83,7 +83,7 @@ export default async function AccountPage({ params }: AccountPageProps) {
 
   return (
     <AppLayout>
-      <AccountDetailView
+      <AccountDetailRouter
         account={serializedAccount}
         categories={categories}
         currencies={currencies}
