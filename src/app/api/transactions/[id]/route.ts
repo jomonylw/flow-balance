@@ -92,7 +92,8 @@ export async function PUT(
     // 验证账户和分类是否属于当前用户
     const [account, category] = await Promise.all([
       prisma.account.findFirst({
-        where: { id: accountId, userId: user.id }
+        where: { id: accountId, userId: user.id },
+        include: { category: true }
       }),
       prisma.category.findFirst({
         where: { id: categoryId, userId: user.id }
@@ -105,6 +106,19 @@ export async function PUT(
 
     if (!category) {
       return errorResponse('分类不存在', 400)
+    }
+
+    // 验证账户类型与交易类型的匹配性
+    const accountType = account.category.type
+    if (accountType) {
+      // 流量类账户（收入/支出）的严格验证
+      if (accountType === 'INCOME' && type !== 'INCOME') {
+        return errorResponse('收入类账户只能记录收入交易，请选择正确的交易类型', 400)
+      }
+
+      if (accountType === 'EXPENSE' && type !== 'EXPENSE') {
+        return errorResponse('支出类账户只能记录支出交易，请选择正确的交易类型', 400)
+      }
     }
 
     // 更新交易

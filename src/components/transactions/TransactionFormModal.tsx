@@ -125,14 +125,25 @@ export default function TransactionFormModal({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
 
-    // 如果选择了账户，自动设置对应的分类
+    // 如果选择了账户，自动设置对应的分类和交易类型
     if (name === 'accountId' && value) {
       const selectedAccount = accounts.find(acc => acc.id === value)
       if (selectedAccount) {
+        const accountType = selectedAccount.category?.type
+        let defaultType = formData.type
+
+        // 根据账户类型智能设置默认交易类型
+        if (accountType === 'INCOME') {
+          defaultType = 'INCOME'
+        } else if (accountType === 'EXPENSE') {
+          defaultType = 'EXPENSE'
+        }
+
         setFormData(prev => ({
           ...prev,
           [name]: value,
-          categoryId: selectedAccount.category.id // 自动设置分类
+          categoryId: selectedAccount.category.id, // 自动设置分类
+          type: defaultType // 智能设置交易类型
         }))
       } else {
         setFormData(prev => ({ ...prev, [name]: value }))
@@ -144,6 +155,56 @@ export default function TransactionFormModal({
     // 清除对应字段的错误
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
+
+  // 根据选择的账户获取可用的交易类型选项
+  const getAvailableTransactionTypes = () => {
+    const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
+    const accountType = selectedAccount?.category?.type
+
+    if (!accountType) {
+      return [
+        { value: 'INCOME', label: '收入' },
+        { value: 'EXPENSE', label: '支出' },
+        { value: 'TRANSFER', label: '转账' }
+      ]
+    }
+
+    switch (accountType) {
+      case 'INCOME':
+        return [{ value: 'INCOME', label: '收入' }]
+      case 'EXPENSE':
+        return [{ value: 'EXPENSE', label: '支出' }]
+      default:
+        return [
+          { value: 'INCOME', label: '收入' },
+          { value: 'EXPENSE', label: '支出' },
+          { value: 'TRANSFER', label: '转账' }
+        ]
+    }
+  }
+
+  // 获取账户类型提示信息
+  const getAccountTypeHint = () => {
+    const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
+    const accountType = selectedAccount?.category?.type
+
+    if (!accountType || !selectedAccount) return null
+
+    switch (accountType) {
+      case 'INCOME':
+        return {
+          type: 'info',
+          message: '📊 收入账户用于记录各种收入来源，每笔交易代表一次收入流入。'
+        }
+      case 'EXPENSE':
+        return {
+          type: 'info',
+          message: '📊 支出账户用于记录各种支出项目，每笔交易代表一次支出流出。'
+        }
+      default:
+        return null
     }
   }
 
@@ -215,11 +276,8 @@ export default function TransactionFormModal({
     }
   }
 
-  const typeOptions = [
-    { value: 'INCOME', label: '收入' },
-    { value: 'EXPENSE', label: '支出' },
-    { value: 'TRANSFER', label: '转账' }
-  ]
+  // 使用智能的交易类型选项
+  const typeOptions = getAvailableTransactionTypes()
 
   // 只显示流量类账户（收入/支出）
   const flowAccounts = accounts.filter(account => {
@@ -261,6 +319,21 @@ export default function TransactionFormModal({
             {errors.general}
           </div>
         )}
+
+        {/* 操作说明 */}
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+          <div className="flex items-start">
+            <svg className="h-5 w-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-sm text-blue-700">
+              <p className="font-medium mb-1">💡 操作提示</p>
+              <p>• 此表单用于记录<strong>流量类账户</strong>的交易明细</p>
+              <p>• 如需管理<strong>存量类账户</strong>（资产/负债），请使用"余额更新"功能</p>
+              <p>• 系统会根据选择的账户自动设置对应的交易类型和分类</p>
+            </div>
+          </div>
+        </div>
 
         {/* 基本信息 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -313,6 +386,31 @@ export default function TransactionFormModal({
               </div>
             </div>
           )}
+
+          {/* 显示账户类型提示 */}
+          {(() => {
+            const hint = getAccountTypeHint()
+            if (!hint) return null
+
+            return (
+              <div className={`border rounded-md p-3 ${
+                hint.type === 'info' ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+              }`}>
+                <div className="flex items-start">
+                  <svg className={`h-4 w-4 mt-0.5 mr-2 flex-shrink-0 ${
+                    hint.type === 'info' ? 'text-green-500' : 'text-yellow-500'
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className={`text-sm ${
+                    hint.type === 'info' ? 'text-green-700' : 'text-yellow-700'
+                  }`}>
+                    {hint.message}
+                  </span>
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

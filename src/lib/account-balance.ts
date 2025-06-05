@@ -496,17 +496,26 @@ export async function calculateTotalBalanceWithConversion(
         totalInBaseCurrency += result.convertedAmount
       } else {
         hasConversionErrors = true
-        // 转换失败时使用原始金额（可能不准确）
-        totalInBaseCurrency += result.originalAmount
+        // 转换失败时，如果是相同货币则使用原始金额，否则标记为不可用
+        if (result.fromCurrency === baseCurrency.code) {
+          totalInBaseCurrency += result.originalAmount
+        } else {
+          console.warn(`汇率转换失败: ${result.fromCurrency} -> ${baseCurrency.code}, 金额: ${result.originalAmount}`)
+          // 不添加到总额中，避免数据偏差
+        }
       }
     })
   } catch (error) {
     console.error('批量货币转换失败:', error)
     hasConversionErrors = true
 
-    // 转换失败时，使用原始金额作为近似值
+    // 转换失败时，只使用本位币的金额，其他货币标记为不可用
     Object.values(totalsByOriginalCurrency).forEach(balance => {
-      totalInBaseCurrency += balance.amount
+      if (balance.currencyCode === baseCurrency.code) {
+        totalInBaseCurrency += balance.amount
+      } else {
+        console.warn(`无法转换货币 ${balance.currencyCode} 的金额: ${balance.amount}`)
+      }
     })
   }
 

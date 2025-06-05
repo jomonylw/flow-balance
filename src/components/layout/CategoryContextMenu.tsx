@@ -6,6 +6,7 @@ interface Category {
   id: string
   name: string
   parentId: string | null
+  type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
 }
 
 interface CategoryContextMenuProps {
@@ -13,6 +14,28 @@ interface CategoryContextMenuProps {
   onClose: () => void
   onAction: (action: string) => void
   category: Category
+}
+
+// 辅助函数：获取账户类型标签
+function getAccountTypeLabel(type?: string): string {
+  switch (type) {
+    case 'ASSET': return '资产'
+    case 'LIABILITY': return '负债'
+    case 'INCOME': return '收入'
+    case 'EXPENSE': return '支出'
+    default: return ''
+  }
+}
+
+// 辅助函数：获取分类类型颜色样式
+function getCategoryTypeColor(type?: string): string {
+  switch (type) {
+    case 'ASSET': return 'text-blue-700 hover:bg-blue-50 hover:text-blue-900'
+    case 'LIABILITY': return 'text-orange-700 hover:bg-orange-50 hover:text-orange-900'
+    case 'INCOME': return 'text-green-700 hover:bg-green-50 hover:text-green-900'
+    case 'EXPENSE': return 'text-red-700 hover:bg-red-50 hover:text-red-900'
+    default: return 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+  }
 }
 
 export default function CategoryContextMenu({
@@ -77,6 +100,11 @@ export default function CategoryContextMenu({
 
   if (!isOpen) return null
 
+  // 根据分类类型确定菜单项
+  const categoryType = category.type
+  const isStockCategory = categoryType === 'ASSET' || categoryType === 'LIABILITY'
+  const isFlowCategory = categoryType === 'INCOME' || categoryType === 'EXPENSE'
+
   const menuItems = [
     {
       label: '添加子分类',
@@ -88,13 +116,14 @@ export default function CategoryContextMenu({
       )
     },
     {
-      label: '添加账户',
+      label: `添加${getAccountTypeLabel(categoryType)}账户`,
       action: 'add-account',
       icon: (
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-      )
+      ),
+      className: getCategoryTypeColor(categoryType)
     },
     {
       label: '重命名',
@@ -124,6 +153,18 @@ export default function CategoryContextMenu({
         </svg>
       )
     },
+    // 添加分类类型特定的提示信息
+    ...(categoryType ? [{
+      label: `${getAccountTypeLabel(categoryType)}分类 • ${isStockCategory ? '存量数据' : '流量数据'}`,
+      action: 'info',
+      icon: (
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      className: `${getCategoryTypeColor(categoryType)} cursor-default`,
+      disabled: true
+    }] : []),
     'divider',
     {
       label: '删除',
@@ -156,10 +197,14 @@ export default function CategoryContextMenu({
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                onAction(menuItem.action)
+                if (!menuItem.disabled) {
+                  onAction(menuItem.action)
+                }
               }}
+              disabled={menuItem.disabled}
               className={`
                 flex items-center w-full px-4 py-2 text-sm transition-colors
+                ${menuItem.disabled ? 'cursor-default opacity-75' : ''}
                 ${menuItem.className || 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}
               `}
             >

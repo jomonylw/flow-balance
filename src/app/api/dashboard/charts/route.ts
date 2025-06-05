@@ -65,12 +65,19 @@ export async function GET(request: NextRequest) {
       const monthLabel = format(targetDate, 'yyyy-MM')
 
       try {
-        // 计算该月末的净资产（使用货币转换）
+        // 分离存量类账户（资产/负债）和流量类账户（收入/支出）
+        const stockAccounts = accountsForCalculation.filter(account =>
+          account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
+        )
+
+        const flowAccounts = accountsForCalculation.filter(account =>
+          account.category.type === 'INCOME' || account.category.type === 'EXPENSE'
+        )
+
+        // 计算该月末的净资产（只包含存量类账户）
         const netWorthResult = await calculateTotalBalanceWithConversion(
           user.id,
-          accountsForCalculation.filter(account =>
-            account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
-          ),
+          stockAccounts,
           baseCurrency,
           { asOfDate: monthEnd }
         )
@@ -79,7 +86,8 @@ export async function GET(request: NextRequest) {
         const monthlyIncomeAmounts: Array<{ amount: number; currency: string }> = []
         const monthlyExpenseAmounts: Array<{ amount: number; currency: string }> = []
 
-        accountsForCalculation.forEach(account => {
+        // 只使用流量类账户计算现金流
+        flowAccounts.forEach(account => {
           const accountType = account.category.type
 
           if (accountType === 'INCOME' || accountType === 'EXPENSE') {
@@ -112,13 +120,29 @@ export async function GET(request: NextRequest) {
           convertMultipleCurrencies(user.id, monthlyExpenseAmounts, baseCurrency.code, monthEnd)
         ])
 
-        const monthlyIncomeInBaseCurrency = incomeConversions.reduce((sum, result) =>
-          sum + (result.success ? result.convertedAmount : result.originalAmount), 0
-        )
+        const monthlyIncomeInBaseCurrency = incomeConversions.reduce((sum, result) => {
+          if (result.success) {
+            return sum + result.convertedAmount
+          } else if (result.fromCurrency === baseCurrency.code) {
+            // 只有相同货币时才使用原始金额
+            return sum + result.originalAmount
+          } else {
+            console.warn(`收入汇率转换失败: ${result.fromCurrency} -> ${baseCurrency.code}`)
+            return sum // 不添加转换失败的金额
+          }
+        }, 0)
 
-        const monthlyExpenseInBaseCurrency = expenseConversions.reduce((sum, result) =>
-          sum + (result.success ? result.convertedAmount : result.originalAmount), 0
-        )
+        const monthlyExpenseInBaseCurrency = expenseConversions.reduce((sum, result) => {
+          if (result.success) {
+            return sum + result.convertedAmount
+          } else if (result.fromCurrency === baseCurrency.code) {
+            // 只有相同货币时才使用原始金额
+            return sum + result.originalAmount
+          } else {
+            console.warn(`支出汇率转换失败: ${result.fromCurrency} -> ${baseCurrency.code}`)
+            return sum // 不添加转换失败的金额
+          }
+        }, 0)
 
         const netCashFlow = monthlyIncomeInBaseCurrency - monthlyExpenseInBaseCurrency
 
@@ -131,9 +155,9 @@ export async function GET(request: NextRequest) {
           // 由于我们已经过滤了账户，这里的逻辑需要重新计算
         })
 
-        // 重新计算资产和负债（分别计算）
-        const assetAccounts = accountsForCalculation.filter(account => account.category.type === 'ASSET')
-        const liabilityAccounts = accountsForCalculation.filter(account => account.category.type === 'LIABILITY')
+        // 使用已经过滤的存量类账户分别计算资产和负债
+        const assetAccounts = stockAccounts.filter(account => account.category.type === 'ASSET')
+        const liabilityAccounts = stockAccounts.filter(account => account.category.type === 'LIABILITY')
 
         const [assetResult, liabilityResult] = await Promise.all([
           calculateTotalBalanceWithConversion(user.id, assetAccounts, baseCurrency, { asOfDate: monthEnd }),

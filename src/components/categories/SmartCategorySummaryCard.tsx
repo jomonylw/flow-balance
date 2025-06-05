@@ -108,12 +108,10 @@ export default function SmartCategorySummaryCard({
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const thisYear = new Date(now.getFullYear(), 0, 1)
 
-    // 数据验证 - 检查是否有账户数据
-    if (!category.accounts || category.accounts.length === 0) {
-      // 如果没有直接的账户，尝试从交易中获取数据
-      if (category.transactions && category.transactions.length > 0) {
-        return calculateStockStatsFromTransactions()
-      }
+    // 统一使用账户数据源进行计算
+    const accountsToCalculate = category.accounts || []
+
+    if (accountsToCalculate.length === 0) {
       return {
         currentNetValue: 0,
         lastMonthNetValue: 0,
@@ -124,7 +122,7 @@ export default function SmartCategorySummaryCard({
       }
     }
 
-    // 使用专业的余额计算服务
+    // 使用专业的余额计算服务统一计算
     let currentNetValue = 0
     let lastMonthNetValue = 0
     let yearStartNetValue = 0
@@ -209,9 +207,10 @@ export default function SmartCategorySummaryCard({
     let thisYearFlow = 0
     let transactionCount = 0
 
-    // 数据验证：确保有交易数据
-    if (!category.transactions || category.transactions.length === 0) {
-      console.warn(`Category ${category.name} has no transactions for flow calculation`)
+    // 统一使用账户数据源进行计算
+    const accountsToCalculate = category.accounts || []
+
+    if (accountsToCalculate.length === 0) {
       return {
         totalFlow: 0,
         thisMonthFlow: 0,
@@ -223,35 +222,50 @@ export default function SmartCategorySummaryCard({
       }
     }
 
-    category.transactions.forEach(transaction => {
-      const transactionDate = new Date(transaction.date)
-      const amount = parseFloat(transaction.amount.toString())
-
-      // 数据验证：确保金额为正数
-      if (amount <= 0) {
-        console.warn(`Invalid transaction amount: ${amount} for transaction in category ${category.name}`)
+    // 遍历分类下的所有账户，统计流量数据
+    accountsToCalculate.forEach(account => {
+      // 验证账户数据完整性
+      if (!account || !account.transactions) {
+        console.warn(`Invalid account or missing transactions in category ${category.name}`)
         return
       }
 
-      // 流量类分类只关注对应类型的交易
-      const isRelevantTransaction =
-        (accountType === 'INCOME' && transaction.type === 'INCOME') ||
-        (accountType === 'EXPENSE' && transaction.type === 'EXPENSE')
-
-      if (isRelevantTransaction) {
-        totalFlow += amount
-        transactionCount++
-
-        if (transactionDate >= thisMonth) {
-          thisMonthFlow += amount
-        } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
-          lastMonthFlow += amount
-        }
-
-        if (transactionDate >= thisYear) {
-          thisYearFlow += amount
-        }
+      // 验证账户类型匹配
+      if (account.category?.type !== accountType) {
+        console.warn(`Account ${account.name} type mismatch with category ${category.name}`)
+        return
       }
+
+      account.transactions.forEach(transaction => {
+        const transactionDate = new Date(transaction.date)
+        const amount = parseFloat(transaction.amount.toString())
+
+        // 数据验证：确保金额为正数
+        if (amount <= 0) {
+          console.warn(`Invalid transaction amount: ${amount} for account ${account.name}`)
+          return
+        }
+
+        // 流量类账户只关注对应类型的交易
+        const isRelevantTransaction =
+          (accountType === 'INCOME' && transaction.type === 'INCOME') ||
+          (accountType === 'EXPENSE' && transaction.type === 'EXPENSE')
+
+        if (isRelevantTransaction) {
+          totalFlow += amount
+          transactionCount++
+
+          if (transactionDate >= thisMonth) {
+            thisMonthFlow += amount
+          } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
+            lastMonthFlow += amount
+          }
+
+          if (transactionDate >= thisYear) {
+            thisYearFlow += amount
+          }
+        }
+      })
     })
 
     // 计算变化率（避免除零错误）
