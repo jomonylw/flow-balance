@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as echarts from 'echarts'
 
 interface NetWorthChartProps {
@@ -19,19 +19,51 @@ interface NetWorthChartProps {
     symbol: string
     code: string
   }
+  loading?: boolean
+  error?: string
 }
 
-export default function NetWorthChart({ data, currency }: NetWorthChartProps) {
+export default function NetWorthChart({ data, currency, loading = false, error }: NetWorthChartProps) {
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
+  const [chartError, setChartError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!chartRef.current || !data) return
+    if (!chartRef.current || !data || loading) return
 
-    // 初始化图表
-    if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current)
-    }
+    try {
+      setChartError(null)
+
+      // 数据验证
+      if (!data.xAxis || !Array.isArray(data.xAxis) || data.xAxis.length === 0) {
+        throw new Error('图表缺少有效的X轴数据')
+      }
+
+      if (!data.series || !Array.isArray(data.series) || data.series.length === 0) {
+        throw new Error('图表缺少有效的数据系列')
+      }
+
+      // 验证数据系列
+      data.series.forEach((series, index) => {
+        if (!series.data || !Array.isArray(series.data)) {
+          throw new Error(`数据系列 ${index} 缺少有效数据`)
+        }
+
+        if (series.data.length !== data.xAxis.length) {
+          throw new Error(`数据系列 ${index} 的数据点数量与X轴不匹配`)
+        }
+
+        series.data.forEach((value, dataIndex) => {
+          if (typeof value !== 'number' || isNaN(value)) {
+            throw new Error(`数据系列 ${index} 第 ${dataIndex} 个数据点无效: ${value}`)
+          }
+        })
+      })
+
+      // 初始化图表
+      if (!chartInstance.current) {
+        chartInstance.current = echarts.init(chartRef.current)
+      }
 
     const option = {
       title: {
@@ -128,19 +160,23 @@ export default function NetWorthChart({ data, currency }: NetWorthChartProps) {
       }))
     }
 
-    chartInstance.current.setOption(option)
+      chartInstance.current.setOption(option, true) // true表示不合并，完全替换
 
-    // 响应式处理
-    const handleResize = () => {
-      chartInstance.current?.resize()
+      // 响应式处理
+      const handleResize = () => {
+        chartInstance.current?.resize()
+      }
+
+      window.addEventListener('resize', handleResize)
+
+      return () => {
+        window.removeEventListener('resize', handleResize)
+      }
+    } catch (error) {
+      console.error('图表渲染错误:', error)
+      setChartError(error instanceof Error ? error.message : '图表渲染失败')
     }
-
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [data, currency])
+  }, [data, currency, loading])
 
   useEffect(() => {
     return () => {
@@ -151,10 +187,72 @@ export default function NetWorthChart({ data, currency }: NetWorthChartProps) {
     }
   }, [])
 
+  // 渲染加载状态
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-center h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">正在加载图表数据...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 渲染错误状态
+  if (error || chartError) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-center h-[400px]">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">图表加载失败</h3>
+            <p className="text-sm text-gray-500 mb-4">{error || chartError}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              重新加载
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 渲染空数据状态
+  if (!data || !data.series || data.series.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-center h-[400px]">
+          <div className="text-center">
+            <div className="text-gray-400 mb-4">
+              <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">暂无数据</h3>
+            <p className="text-sm text-gray-500">请添加账户和交易记录以查看净资产趋势</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <div 
-        ref={chartRef} 
+      <div className="mb-4">
+        <h3 className="text-lg font-medium text-gray-900">{data.title}</h3>
+        <p className="text-sm text-gray-500">显示最近的净资产变化趋势</p>
+      </div>
+      <div
+        ref={chartRef}
         style={{ width: '100%', height: '400px' }}
         className="min-h-[400px]"
       />

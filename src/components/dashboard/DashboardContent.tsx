@@ -77,6 +77,7 @@ export default function DashboardContent({
   const [defaultTransactionType, setDefaultTransactionType] = useState<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE')
   const [chartData, setChartData] = useState<any>(null)
   const [isLoadingCharts, setIsLoadingCharts] = useState(true)
+  const [chartError, setChartError] = useState<string | null>(null)
   const [validationResult, setValidationResult] = useState<any>(null)
 
   const handleQuickTransaction = (type: 'INCOME' | 'EXPENSE' | 'TRANSFER') => {
@@ -94,6 +95,8 @@ export default function DashboardContent({
     const fetchChartData = async () => {
       try {
         setIsLoadingCharts(true)
+        setChartError(null)
+
         const response = await fetch('/api/dashboard/charts?months=12')
         if (response.ok) {
           const data = await response.json()
@@ -103,10 +106,15 @@ export default function DashboardContent({
           const chartValidation = validateChartData(data.data)
           if (!chartValidation.isValid) {
             console.warn('Chart data validation failed:', chartValidation.errors)
+            setChartError('图表数据验证失败: ' + chartValidation.errors.join(', '))
           }
+        } else {
+          const errorData = await response.json()
+          setChartError(errorData.error || '获取图表数据失败')
         }
       } catch (error) {
         console.error('Error fetching chart data:', error)
+        setChartError('网络错误，无法获取图表数据')
       } finally {
         setIsLoadingCharts(false)
       }
@@ -184,6 +192,63 @@ export default function DashboardContent({
           欢迎回来，{user.email}！这里是您的财务概览。
         </p>
       </div>
+
+      {/* 数据质量评分 */}
+      {validationResult && validationResult.score !== undefined && (
+        <div className="mb-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">数据质量评分</h3>
+              <div className="flex items-center">
+                <div className={`text-2xl font-bold ${
+                  validationResult.score >= 90 ? 'text-green-600' :
+                  validationResult.score >= 70 ? 'text-yellow-600' :
+                  'text-red-600'
+                }`}>
+                  {validationResult.score}
+                </div>
+                <span className="text-gray-500 ml-1">/100</span>
+              </div>
+            </div>
+
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+              <div
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  validationResult.score >= 90 ? 'bg-green-500' :
+                  validationResult.score >= 70 ? 'bg-yellow-500' :
+                  'bg-red-500'
+                }`}
+                style={{ width: `${validationResult.score}%` }}
+              ></div>
+            </div>
+
+            {validationResult.details && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-gray-900">{validationResult.details.accountsChecked}</div>
+                  <div className="text-gray-500">账户检查</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-gray-900">{validationResult.details.transactionsChecked}</div>
+                  <div className="text-gray-500">交易检查</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-red-600">{validationResult.details.categoriesWithoutType}</div>
+                  <div className="text-gray-500">未设类型</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-red-600">{validationResult.details.invalidTransactions}</div>
+                  <div className="text-gray-500">无效交易</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-yellow-600">{validationResult.details.businessLogicViolations}</div>
+                  <div className="text-gray-500">逻辑违规</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 数据验证提示 */}
       {validationResult && (!validationResult.isValid || validationResult.warnings.length > 0) && (
@@ -404,10 +469,14 @@ export default function DashboardContent({
             <NetWorthChart
               data={chartData.netWorthChart}
               currency={chartData.currency}
+              loading={isLoadingCharts}
+              error={chartError}
             />
             <CashFlowChart
               data={chartData.cashFlowChart}
               currency={chartData.currency}
+              loading={isLoadingCharts}
+              error={chartError}
             />
           </div>
         ) : (

@@ -1,6 +1,8 @@
 /**
  * 数据验证工具
  * 确保存量类和流量类数据的准确性和一致性
+ *
+ * 🔧 优化版本 - 增强验证逻辑和错误处理
  */
 
 interface Account {
@@ -31,6 +33,16 @@ interface ValidationResult {
   errors: string[]
   warnings: string[]
   suggestions: string[]
+  score: number // 数据质量评分 (0-100)
+  details: ValidationDetails
+}
+
+interface ValidationDetails {
+  accountsChecked: number
+  transactionsChecked: number
+  categoriesWithoutType: number
+  invalidTransactions: number
+  businessLogicViolations: number
 }
 
 /**
@@ -108,11 +120,24 @@ export function validateAccountData(accounts: Account[]): ValidationResult {
     }
   })
 
+  // 计算数据质量评分
+  const details: ValidationDetails = {
+    accountsChecked: accounts.length,
+    transactionsChecked: accounts.reduce((sum, acc) => sum + (acc.transactions?.length || 0), 0),
+    categoriesWithoutType: accounts.filter(acc => !acc.category?.type).length,
+    invalidTransactions: 0, // 这里简化处理
+    businessLogicViolations: warnings.filter(w => w.includes('不匹配')).length
+  }
+
+  const score = calculateDataQualityScore(details, errors.length, warnings.length)
+
   return {
     isValid: errors.length === 0,
     errors,
     warnings,
-    suggestions
+    suggestions,
+    score,
+    details
   }
 }
 
@@ -188,12 +213,53 @@ export function validateChartData(data: any): ValidationResult {
     })
   }
 
+  const details: ValidationDetails = {
+    accountsChecked: 0,
+    transactionsChecked: 0,
+    categoriesWithoutType: 0,
+    invalidTransactions: 0,
+    businessLogicViolations: 0
+  }
+
+  const score = calculateDataQualityScore(details, errors.length, warnings.length)
+
   return {
     isValid: errors.length === 0,
     errors,
     warnings,
-    suggestions
+    suggestions,
+    score,
+    details
   }
+}
+
+/**
+ * 计算数据质量评分
+ */
+function calculateDataQualityScore(
+  details: ValidationDetails,
+  errorCount: number,
+  warningCount: number
+): number {
+  if (details.accountsChecked === 0) return 0
+
+  let score = 100
+
+  // 错误扣分（每个错误扣10分）
+  score -= errorCount * 10
+
+  // 警告扣分（每个警告扣5分）
+  score -= warningCount * 5
+
+  // 未设置类型的分类扣分
+  if (details.categoriesWithoutType > 0) {
+    score -= (details.categoriesWithoutType / details.accountsChecked) * 20
+  }
+
+  // 业务逻辑违规扣分
+  score -= details.businessLogicViolations * 3
+
+  return Math.max(0, Math.min(100, score))
 }
 
 /**
@@ -207,7 +273,23 @@ export function validateCategorySummary(category: any, summaryData: any): Valida
   if (!category.type) {
     errors.push(`分类 "${category.name}" 未设置账户类型`)
     suggestions.push('请设置分类的账户类型以获得准确的统计分析')
-    return { isValid: false, errors, warnings, suggestions }
+
+    const details: ValidationDetails = {
+      accountsChecked: 0,
+      transactionsChecked: 0,
+      categoriesWithoutType: 1,
+      invalidTransactions: 0,
+      businessLogicViolations: 0
+    }
+
+    return {
+      isValid: false,
+      errors,
+      warnings,
+      suggestions,
+      score: 0,
+      details
+    }
   }
 
   // 验证存量类分类
@@ -215,7 +297,7 @@ export function validateCategorySummary(category: any, summaryData: any): Valida
     if (!summaryData.currentNetValue && summaryData.currentNetValue !== 0) {
       warnings.push(`存量类分类 "${category.name}" 缺少当前净值数据`)
     }
-    
+
     if (summaryData.transactionCount === 0) {
       suggestions.push(`存量类分类 "${category.name}" 暂无交易记录，建议添加账户并更新余额`)
     }
@@ -226,16 +308,90 @@ export function validateCategorySummary(category: any, summaryData: any): Valida
     if (!summaryData.totalFlow && summaryData.totalFlow !== 0) {
       warnings.push(`流量类分类 "${category.name}" 缺少流量数据`)
     }
-    
+
     if (summaryData.transactionCount === 0) {
       suggestions.push(`流量类分类 "${category.name}" 暂无交易记录，建议添加相关交易`)
     }
   }
 
+  const details: ValidationDetails = {
+    accountsChecked: 1,
+    transactionsChecked: summaryData.transactionCount || 0,
+    categoriesWithoutType: 0,
+    invalidTransactions: 0,
+    businessLogicViolations: 0
+  }
+
+  const score = calculateDataQualityScore(details, errors.length, warnings.length)
+
   return {
     isValid: errors.length === 0,
     errors,
     warnings,
-    suggestions
+    suggestions,
+    score,
+    details
+  }
+}
+
+/**
+ * 验证交易表单数据
+ */
+export function validateTransactionForm(formData: any): ValidationResult {
+  const errors: string[] = []
+  const warnings: string[] = []
+  const suggestions: string[] = []
+
+  // 验证必填字段
+  if (!formData.accountId) {
+    errors.push('请选择账户')
+  }
+
+  if (!formData.categoryId) {
+    errors.push('请选择分类')
+  }
+
+  if (!formData.amount || parseFloat(formData.amount) <= 0) {
+    errors.push('请输入有效的金额')
+  }
+
+  if (!formData.description?.trim()) {
+    errors.push('请输入交易描述')
+  }
+
+  if (!formData.date) {
+    errors.push('请选择交易日期')
+  } else {
+    const transactionDate = new Date(formData.date)
+    if (isNaN(transactionDate.getTime())) {
+      errors.push('请输入有效的日期')
+    } else if (transactionDate > new Date()) {
+      warnings.push('交易日期为未来日期，请确认是否正确')
+    }
+  }
+
+  // 验证金额范围
+  const amount = parseFloat(formData.amount)
+  if (amount > 1000000) {
+    warnings.push('交易金额较大，请确认是否正确')
+  }
+
+  const details: ValidationDetails = {
+    accountsChecked: 0,
+    transactionsChecked: 1,
+    categoriesWithoutType: 0,
+    invalidTransactions: errors.length > 0 ? 1 : 0,
+    businessLogicViolations: 0
+  }
+
+  const score = calculateDataQualityScore(details, errors.length, warnings.length)
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+    suggestions,
+    score,
+    details
   }
 }

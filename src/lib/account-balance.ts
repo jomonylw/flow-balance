@@ -1,11 +1,15 @@
 /**
  * 账户余额计算服务
  * 正确区分存量账户（资产、负债）和流量账户（收入、支出）的余额计算逻辑
+ *
+ * 🔧 优化版本 - 增强数据一致性和错误处理
  */
 
 export interface Transaction {
+  id?: string
   type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
   amount: number
+  date?: string | Date
   currency: {
     code: string
     symbol: string
@@ -17,10 +21,17 @@ export interface Account {
   id: string
   name: string
   category: {
+    id?: string
     name: string
     type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   }
   transactions: Transaction[]
+}
+
+export interface CalculationOptions {
+  asOfDate?: Date
+  includePendingTransactions?: boolean
+  validateData?: boolean
 }
 
 export interface AccountBalance {
@@ -36,26 +47,63 @@ export interface AccountBalance {
 /**
  * 计算单个账户的余额
  * @param account 账户信息
- * @param asOfDate 截止日期（可选，用于计算特定时点的余额）
+ * @param options 计算选项
  * @returns 按币种分组的余额
  */
 export function calculateAccountBalance(
-  account: Account, 
-  asOfDate?: Date
+  account: Account,
+  options: CalculationOptions = {}
 ): Record<string, AccountBalance> {
+  const { asOfDate, validateData = true } = options
   const balances: Record<string, AccountBalance> = {}
-  
-  // 过滤交易（如果指定了截止日期）
-  let transactions = account.transactions
-  if (asOfDate) {
-    transactions = account.transactions.filter(t => 
-      new Date((t as any).date) <= asOfDate
-    )
+
+  // 数据验证
+  if (validateData) {
+    if (!account || !account.transactions) {
+      console.warn(`账户 ${account?.name || 'Unknown'} 缺少交易数据`)
+      return balances
+    }
+
+    if (!account.category?.type) {
+      console.warn(`账户 ${account.name} 未设置账户类型`)
+    }
   }
 
+  // 过滤和验证交易
+  let transactions = account.transactions.filter(transaction => {
+    // 基础验证
+    if (!transaction || typeof transaction.amount !== 'number') {
+      if (validateData) {
+        console.warn(`账户 ${account.name} 中发现无效交易:`, transaction)
+      }
+      return false
+    }
+
+    // 日期过滤
+    if (asOfDate && transaction.date) {
+      const transactionDate = new Date(transaction.date)
+      if (isNaN(transactionDate.getTime())) {
+        if (validateData) {
+          console.warn(`账户 ${account.name} 中发现无效日期:`, transaction.date)
+        }
+        return false
+      }
+      return transactionDate <= asOfDate
+    }
+
+    return true
+  })
+
   transactions.forEach(transaction => {
-    const currencyCode = transaction.currency.code
-    
+    const currencyCode = transaction.currency?.code
+
+    if (!currencyCode) {
+      if (validateData) {
+        console.warn(`账户 ${account.name} 中发现无效币种:`, transaction)
+      }
+      return
+    }
+
     if (!balances[currencyCode]) {
       balances[currencyCode] = {
         currencyCode,
@@ -63,55 +111,80 @@ export function calculateAccountBalance(
         currency: transaction.currency
       }
     }
-    
+
     const amount = transaction.amount
-    
+
     // 根据账户类型和交易类型计算余额
     const accountType = account.category.type
-    
-    switch (accountType) {
-      case 'ASSET':
-        // 资产类账户：收入增加余额，支出减少余额
-        if (transaction.type === 'INCOME') {
-          balances[currencyCode].amount += amount
-        } else if (transaction.type === 'EXPENSE') {
-          balances[currencyCode].amount -= amount
-        }
-        break
-        
-      case 'LIABILITY':
-        // 负债类账户：借入（收入）增加余额，偿还（支出）减少余额
-        if (transaction.type === 'INCOME') {
-          balances[currencyCode].amount += amount
-        } else if (transaction.type === 'EXPENSE') {
-          balances[currencyCode].amount -= amount
-        }
-        break
-        
-      case 'INCOME':
-        // 收入类账户：收入增加余额（累计收入）
-        if (transaction.type === 'INCOME') {
-          balances[currencyCode].amount += amount
-        }
-        break
-        
-      case 'EXPENSE':
-        // 支出类账户：支出增加余额（累计支出）
-        if (transaction.type === 'EXPENSE') {
-          balances[currencyCode].amount += amount
-        }
-        break
-        
-      default:
-        // 兼容旧数据：按原有逻辑处理
-        if (transaction.type === 'INCOME') {
-          balances[currencyCode].amount += amount
-        } else if (transaction.type === 'EXPENSE') {
-          balances[currencyCode].amount -= amount
-        }
+
+    try {
+      switch (accountType) {
+        case 'ASSET':
+          // 资产类账户：收入增加余额，支出减少余额
+          if (transaction.type === 'INCOME') {
+            balances[currencyCode].amount += amount
+          } else if (transaction.type === 'EXPENSE') {
+            balances[currencyCode].amount -= amount
+          } else if (transaction.type === 'TRANSFER') {
+            // 转账交易需要根据具体业务逻辑处理
+            balances[currencyCode].amount += amount
+          }
+          break
+
+        case 'LIABILITY':
+          // 负债类账户：借入（收入）增加余额，偿还（支出）减少余额
+          if (transaction.type === 'INCOME') {
+            balances[currencyCode].amount += amount
+          } else if (transaction.type === 'EXPENSE') {
+            balances[currencyCode].amount -= amount
+          } else if (transaction.type === 'TRANSFER') {
+            balances[currencyCode].amount += amount
+          }
+          break
+
+        case 'INCOME':
+          // 收入类账户：只记录收入交易（累计收入）
+          if (transaction.type === 'INCOME') {
+            balances[currencyCode].amount += amount
+          } else if (validateData && transaction.type !== 'INCOME') {
+            // 对于余额更新交易，不显示警告
+            if (!transaction.description?.includes('余额更新')) {
+              console.warn(`收入类账户 ${account.name} 中发现非收入交易:`, transaction)
+            }
+          }
+          break
+
+        case 'EXPENSE':
+          // 支出类账户：只记录支出交易（累计支出）
+          if (transaction.type === 'EXPENSE') {
+            balances[currencyCode].amount += amount
+          } else if (validateData && transaction.type !== 'EXPENSE') {
+            // 对于余额更新交易，不显示警告
+            if (!transaction.description?.includes('余额更新')) {
+              console.warn(`支出类账户 ${account.name} 中发现非支出交易:`, transaction)
+            }
+          }
+          break
+
+        default:
+          // 未设置账户类型时的兜底处理
+          if (validateData) {
+            console.warn(`账户 ${account.name} 未设置账户类型，使用默认计算方式`)
+          }
+          if (transaction.type === 'INCOME') {
+            balances[currencyCode].amount += amount
+          } else if (transaction.type === 'EXPENSE') {
+            balances[currencyCode].amount -= amount
+          } else if (transaction.type === 'TRANSFER') {
+            balances[currencyCode].amount += amount
+          }
+          break
+      }
+    } catch (error) {
+      if (validateData) {
+        console.error(`计算账户 ${account.name} 余额时发生错误:`, error, transaction)
+      }
     }
-    
-    // 转账交易需要特殊处理，这里简化处理
   })
   
   return balances
@@ -120,33 +193,43 @@ export function calculateAccountBalance(
 /**
  * 计算多个账户的汇总余额
  * @param accounts 账户列表
- * @param asOfDate 截止日期（可选）
+ * @param options 计算选项
  * @returns 按币种分组的汇总余额
  */
 export function calculateTotalBalance(
-  accounts: Account[], 
-  asOfDate?: Date
+  accounts: Account[],
+  options: CalculationOptions = {}
 ): Record<string, AccountBalance> {
   const totalBalances: Record<string, AccountBalance> = {}
-  
+
+  if (!accounts || accounts.length === 0) {
+    return totalBalances
+  }
+
   accounts.forEach(account => {
-    const accountBalances = calculateAccountBalance(account, asOfDate)
-    
-    Object.values(accountBalances).forEach(balance => {
-      const currencyCode = balance.currencyCode
-      
-      if (!totalBalances[currencyCode]) {
-        totalBalances[currencyCode] = {
-          currencyCode,
-          amount: 0,
-          currency: balance.currency
+    try {
+      const accountBalances = calculateAccountBalance(account, options)
+
+      Object.values(accountBalances).forEach(balance => {
+        const currencyCode = balance.currencyCode
+
+        if (!totalBalances[currencyCode]) {
+          totalBalances[currencyCode] = {
+            currencyCode,
+            amount: 0,
+            currency: balance.currency
+          }
         }
+
+        totalBalances[currencyCode].amount += balance.amount
+      })
+    } catch (error) {
+      if (options.validateData !== false) {
+        console.error(`计算账户 ${account?.name || 'Unknown'} 汇总余额时发生错误:`, error)
       }
-      
-      totalBalances[currencyCode].amount += balance.amount
-    })
+    }
   })
-  
+
   return totalBalances
 }
 
