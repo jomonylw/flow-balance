@@ -56,7 +56,29 @@ export default function TransactionList({
 }: TransactionListProps) {
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set())
 
-  const getTypeIcon = (type: string) => {
+  // 判断是否为余额调整记录
+  const isBalanceAdjustment = (transaction: Transaction) => {
+    return transaction.description.includes('余额更新') ||
+           transaction.description.includes('余额调整') ||
+           transaction.notes?.includes('余额更新') ||
+           transaction.notes?.includes('余额调整')
+  }
+
+  const getTypeIcon = (transaction: Transaction) => {
+    const isAdjustment = isBalanceAdjustment(transaction)
+    const type = transaction.type
+
+    if (isAdjustment) {
+      // 余额调整记录使用特殊图标
+      return (
+        <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+          <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </div>
+      )
+    }
+
     switch (type) {
       case 'INCOME':
         return (
@@ -220,16 +242,24 @@ export default function TransactionList({
 
               {/* 交易类型图标 */}
               <div className="flex-shrink-0">
-                {getTypeIcon(transaction.type)}
+                {getTypeIcon(transaction)}
               </div>
 
               {/* 交易信息 */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {transaction.description}
-                    </p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {transaction.description}
+                      </p>
+                      {/* 交易类型标识 */}
+                      {isBalanceAdjustment(transaction) && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          余额调整
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500">
                       <span>{transaction.category.name}</span>
                       {showAccount && transaction.account && (
@@ -240,6 +270,16 @@ export default function TransactionList({
                       )}
                       <span>•</span>
                       <span>{formatDate(transaction.date)}</span>
+                      {/* 交易类型说明 */}
+                      {!isBalanceAdjustment(transaction) && (
+                        <>
+                          <span>•</span>
+                          <span className="text-blue-600">
+                            {transaction.type === 'INCOME' ? '收入交易' :
+                             transaction.type === 'EXPENSE' ? '支出交易' : '转账交易'}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                   

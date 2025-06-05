@@ -27,6 +27,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         include: {
           accounts: {
             include: {
+              category: true,
               transactions: {
                 include: {
                   currency: true
@@ -41,6 +42,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       },
       accounts: {
         include: {
+          category: true,
           transactions: {
             include: {
               currency: true,
@@ -145,6 +147,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       accounts: child.accounts.map(account => ({
         ...account,
         description: account.description || undefined,
+        category: account.category ? {
+          id: account.category.id,
+          name: account.category.name,
+          type: account.category.type
+        } : null,
         transactions: account.transactions.map(transaction => ({
           ...transaction,
           amount: parseFloat(transaction.amount.toString()),
@@ -156,6 +163,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     accounts: category.accounts.map(account => ({
       ...account,
       description: account.description || undefined,
+      category: account.category ? {
+        id: account.category.id,
+        name: account.category.name,
+        type: account.category.type
+      } : null,
       transactions: account.transactions.map(transaction => ({
         ...transaction,
         amount: parseFloat(transaction.amount.toString()),
@@ -174,23 +186,23 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       amount: parseFloat(transaction.amount.toString()),
       date: transaction.date.toISOString(),
       notes: transaction.notes || undefined,
-      account: {
+      account: transaction.account ? {
         id: transaction.account.id,
         name: transaction.account.name,
-        category: {
+        category: transaction.account.category ? {
           name: transaction.account.category.name
-        }
-      },
-      category: {
+        } : null
+      } : null,
+      category: transaction.category ? {
         id: transaction.category.id,
         name: transaction.category.name
-      },
-      tags: transaction.tags.map(tt => ({
+      } : null,
+      tags: transaction.tags ? transaction.tags.map(tt => ({
         tag: {
           ...tt.tag,
           color: tt.tag.color || undefined
         }
-      }))
+      })) : []
     }))
   }
 

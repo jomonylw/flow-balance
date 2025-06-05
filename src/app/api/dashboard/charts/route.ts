@@ -58,31 +58,49 @@ export async function GET(request: NextRequest) {
 
       accounts.forEach(account => {
         const accountType = account.category.type
-        
-        // 计算到月末的余额（存量）
-        const balances = calculateAccountBalance(account, monthEnd)
-        const balance = balances[baseCurrency.code]?.amount || 0
 
-        if (accountType === 'ASSET') {
-          totalAssets += balance
-        } else if (accountType === 'LIABILITY') {
-          totalLiabilities += balance
+        // 数据验证：只处理有明确类型的账户
+        if (!accountType) {
+          console.warn(`Account ${account.name} (ID: ${account.id}) has no type set`)
+          return
         }
 
-        // 计算当月的现金流（流量）
-        const monthlyTransactions = account.transactions.filter(t => {
-          const transactionDate = new Date(t.date)
-          return transactionDate >= monthStart && transactionDate <= monthEnd &&
-                 t.currency.code === baseCurrency.code
-        })
+        // 存量类账户：计算到月末的余额
+        if (accountType === 'ASSET' || accountType === 'LIABILITY') {
+          const balances = calculateAccountBalance(account, monthEnd)
+          const balance = balances[baseCurrency.code]?.amount || 0
 
-        monthlyTransactions.forEach(transaction => {
-          if (accountType === 'INCOME' && transaction.type === 'INCOME') {
-            monthlyIncome += transaction.amount
-          } else if (accountType === 'EXPENSE' && transaction.type === 'EXPENSE') {
-            monthlyExpense += transaction.amount
+          if (accountType === 'ASSET') {
+            totalAssets += balance
+          } else if (accountType === 'LIABILITY') {
+            // 负债余额应该是正数（表示欠款金额）
+            totalLiabilities += Math.abs(balance)
           }
-        })
+        }
+
+        // 流量类账户：计算当月的现金流
+        if (accountType === 'INCOME' || accountType === 'EXPENSE') {
+          const monthlyTransactions = account.transactions.filter(t => {
+            const transactionDate = new Date(t.date)
+            return transactionDate >= monthStart && transactionDate <= monthEnd &&
+                   t.currency.code === baseCurrency.code
+          })
+
+          monthlyTransactions.forEach(transaction => {
+            const amount = parseFloat(transaction.amount.toString())
+            // 数据验证：确保金额为正数
+            if (amount <= 0) {
+              console.warn(`Invalid transaction amount: ${amount} for transaction ${transaction.id}`)
+              return
+            }
+
+            if (accountType === 'INCOME' && transaction.type === 'INCOME') {
+              monthlyIncome += amount
+            } else if (accountType === 'EXPENSE' && transaction.type === 'EXPENSE') {
+              monthlyExpense += amount
+            }
+          })
+        }
       })
 
       const netWorth = totalAssets - totalLiabilities

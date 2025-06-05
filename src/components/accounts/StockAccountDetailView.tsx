@@ -5,6 +5,7 @@ import Link from 'next/link'
 import BalanceUpdateModal from './BalanceUpdateModal'
 import TransactionList from '@/components/transactions/TransactionList'
 import StockAccountSummaryCard from './StockAccountSummaryCard'
+import { calculateAccountBalance } from '@/lib/account-balance'
 
 interface User {
   id: string
@@ -82,23 +83,44 @@ export default function StockAccountDetailView({
     window.location.reload()
   }
 
-  // 计算账户余额
-  const calculateBalance = () => {
-    return account.transactions.reduce((balance, transaction) => {
-      const amount = transaction.amount
-      if (account.category.type === 'ASSET') {
-        return balance + (transaction.type === 'INCOME' ? amount : -amount)
-      } else {
-        return balance + (transaction.type === 'EXPENSE' ? amount : -amount)
-      }
-    }, 0)
-  }
-
-  const balance = calculateBalance()
+  // 使用专业的余额计算服务
+  const accountBalances = calculateAccountBalance(account)
+  const baseCurrencyCode = user.settings?.baseCurrency?.code || 'USD'
+  const balance = accountBalances[baseCurrencyCode]?.amount || 0
   const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* 账户类型提示横幅 */}
+      <div className={`mb-6 p-4 rounded-lg border-l-4 ${
+        account.category.type === 'ASSET'
+          ? 'bg-blue-50 border-blue-400'
+          : 'bg-orange-50 border-orange-400'
+      }`}>
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <svg className={`h-5 w-5 ${
+              account.category.type === 'ASSET' ? 'text-blue-400' : 'text-orange-400'
+            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className={`text-sm font-medium ${
+              account.category.type === 'ASSET' ? 'text-blue-800' : 'text-orange-800'
+            }`}>
+              💡 存量类账户操作提示
+            </p>
+            <p className={`text-sm ${
+              account.category.type === 'ASSET' ? 'text-blue-700' : 'text-orange-700'
+            }`}>
+              {account.category.type === 'ASSET' ? '资产' : '负债'}账户主要通过"更新余额"来管理，
+              记录反映特定时点的账户状况。建议定期核对银行对账单或投资账户余额。
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 面包屑导航 */}
       <nav className="flex mb-6" aria-label="Breadcrumb">
         <ol className="inline-flex items-center space-x-1 md:space-x-3">

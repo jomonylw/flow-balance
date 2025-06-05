@@ -102,7 +102,10 @@ export default function AccountContextMenu({
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
-      )
+      ),
+      className: accountType === 'ASSET'
+        ? 'text-blue-700 hover:bg-blue-50 hover:text-blue-900 font-medium'
+        : 'text-orange-700 hover:bg-orange-50 hover:text-orange-900 font-medium'
     }] : []),
     ...(isFlowAccount ? [{
       label: '添加交易',
@@ -111,7 +114,10 @@ export default function AccountContextMenu({
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
-      )
+      ),
+      className: accountType === 'INCOME'
+        ? 'text-green-700 hover:bg-green-50 hover:text-green-900 font-medium'
+        : 'text-red-700 hover:bg-red-50 hover:text-red-900 font-medium'
     }] : []),
     {
       label: '重命名',

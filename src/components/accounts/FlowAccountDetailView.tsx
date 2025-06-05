@@ -5,6 +5,7 @@ import Link from 'next/link'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
 import TransactionList from '@/components/transactions/TransactionList'
 import FlowAccountSummaryCard from './FlowAccountSummaryCard'
+import { calculateAccountBalance } from '@/lib/account-balance'
 
 interface User {
   id: string
@@ -126,22 +127,44 @@ export default function FlowAccountDetailView({
     window.location.reload()
   }
 
-  // 计算账户累计金额（流量类账户）
-  const calculateFlowTotal = () => {
-    return account.transactions.reduce((total, transaction) => {
-      const isRelevantTransaction = 
-        (account.category.type === 'INCOME' && transaction.type === 'INCOME') ||
-        (account.category.type === 'EXPENSE' && transaction.type === 'EXPENSE')
-      
-      return isRelevantTransaction ? total + transaction.amount : total
-    }, 0)
-  }
-
-  const flowTotal = calculateFlowTotal()
+  // 使用专业的余额计算服务（流量类账户）
+  const accountBalances = calculateAccountBalance(account)
+  const baseCurrencyCode = user.settings?.baseCurrency?.code || 'USD'
+  const flowTotal = accountBalances[baseCurrencyCode]?.amount || 0
   const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* 账户类型提示横幅 */}
+      <div className={`mb-6 p-4 rounded-lg border-l-4 ${
+        account.category.type === 'INCOME'
+          ? 'bg-green-50 border-green-400'
+          : 'bg-red-50 border-red-400'
+      }`}>
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <svg className={`h-5 w-5 ${
+              account.category.type === 'INCOME' ? 'text-green-400' : 'text-red-400'
+            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className={`text-sm font-medium ${
+              account.category.type === 'INCOME' ? 'text-green-800' : 'text-red-800'
+            }`}>
+              📊 流量类账户操作提示
+            </p>
+            <p className={`text-sm ${
+              account.category.type === 'INCOME' ? 'text-green-700' : 'text-red-700'
+            }`}>
+              {account.category.type === 'INCOME' ? '收入' : '支出'}账户通过"添加交易"来记录现金流动，
+              每笔交易反映特定期间的资金流入或流出。建议及时记录每笔收支明细。
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 面包屑导航 */}
       <nav className="flex mb-6" aria-label="Breadcrumb">
         <ol className="inline-flex items-center space-x-1 md:space-x-3">

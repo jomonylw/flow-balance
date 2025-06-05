@@ -6,6 +6,7 @@ import NetWorthChart from './NetWorthChart'
 import CashFlowChart from './CashFlowChart'
 import SmartAccountSummary from './SmartAccountSummary'
 import { calculateAccountBalance } from '@/lib/account-balance'
+import { validateAccountData, validateChartData } from '@/lib/data-validation'
 
 interface User {
   id: string
@@ -76,6 +77,7 @@ export default function DashboardContent({
   const [defaultTransactionType, setDefaultTransactionType] = useState<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE')
   const [chartData, setChartData] = useState<any>(null)
   const [isLoadingCharts, setIsLoadingCharts] = useState(true)
+  const [validationResult, setValidationResult] = useState<any>(null)
 
   const handleQuickTransaction = (type: 'INCOME' | 'EXPENSE' | 'TRANSFER') => {
     setDefaultTransactionType(type)
@@ -96,6 +98,12 @@ export default function DashboardContent({
         if (response.ok) {
           const data = await response.json()
           setChartData(data.data)
+
+          // 验证图表数据
+          const chartValidation = validateChartData(data.data)
+          if (!chartValidation.isValid) {
+            console.warn('Chart data validation failed:', chartValidation.errors)
+          }
         }
       } catch (error) {
         console.error('Error fetching chart data:', error)
@@ -106,6 +114,34 @@ export default function DashboardContent({
 
     fetchChartData()
   }, [])
+
+  // 验证账户数据
+  useEffect(() => {
+    const accountsForValidation = accounts.map(account => ({
+      id: account.id,
+      name: account.name,
+      category: {
+        id: account.category.id,
+        name: account.category.name,
+        type: account.category.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+      },
+      transactions: (account.transactions || []).map(t => ({
+        id: t.id,
+        type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER',
+        amount: t.amount,
+        date: t.date,
+        description: t.description,
+        currency: t.currency
+      }))
+    }))
+
+    const validation = validateAccountData(accountsForValidation)
+    setValidationResult(validation)
+
+    if (!validation.isValid) {
+      console.warn('Account data validation failed:', validation.errors)
+    }
+  }, [accounts])
 
   // 计算账户余额
   const accountsWithBalances = accounts.map(account => {
@@ -148,6 +184,77 @@ export default function DashboardContent({
           欢迎回来，{user.email}！这里是您的财务概览。
         </p>
       </div>
+
+      {/* 数据验证提示 */}
+      {validationResult && (!validationResult.isValid || validationResult.warnings.length > 0) && (
+        <div className="mb-6">
+          {!validationResult.isValid && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">数据验证错误</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <ul className="list-disc pl-5 space-y-1">
+                      {validationResult.errors.map((error: string, index: number) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {validationResult.warnings.length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800">数据验证警告</h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <ul className="list-disc pl-5 space-y-1">
+                      {validationResult.warnings.map((warning: string, index: number) => (
+                        <li key={index}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {validationResult.suggestions.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">优化建议</h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <ul className="list-disc pl-5 space-y-1">
+                      {validationResult.suggestions.map((suggestion: string, index: number) => (
+                        <li key={index}>{suggestion}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 智能财务统计 */}
       <div className="mb-8">
