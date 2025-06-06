@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
 import TransactionList from '@/components/transactions/TransactionList'
 import FlowAccountSummaryCard from './FlowAccountSummaryCard'
+import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
 
 interface User {
@@ -76,8 +78,10 @@ export default function FlowAccountDetailView({
   tags,
   user
 }: FlowAccountDetailViewProps) {
+  const router = useRouter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<any>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const handleAddTransaction = () => {
     setEditingTransaction(null)
@@ -129,6 +133,25 @@ export default function FlowAccountDetailView({
   const handleTransactionSuccess = () => {
     // 刷新页面以更新数据
     window.location.reload()
+  }
+
+  const handleDeleteAccount = async () => {
+    try {
+      const response = await fetch(`/api/accounts/${account.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // 删除成功，返回到主页面
+        router.push('/')
+      } else {
+        const error = await response.json()
+        alert(error.message || '删除失败')
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      alert('删除失败')
+    }
   }
 
   // 使用专业的余额计算服务（流量类账户）
@@ -215,15 +238,27 @@ export default function FlowAccountDetailView({
           </div>
         </div>
         
-        <button
-          onClick={handleAddTransaction}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          添加交易
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={handleAddTransaction}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            添加交易
+          </button>
+
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md shadow-sm text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            删除账户
+          </button>
+        </div>
       </div>
 
       {/* 账户摘要卡片 */}
@@ -272,6 +307,16 @@ export default function FlowAccountDetailView({
         tags={tags}
         defaultAccountId={account.id}
         defaultType={account.category.type as 'INCOME' | 'EXPENSE' | 'TRANSFER'}
+      />
+
+      {/* 删除确认模态框 */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        title="删除账户"
+        message={`确定要删除账户"${account.name}"吗？此操作不可撤销。`}
+        confirmLabel="删除"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setShowDeleteConfirm(false)}
       />
     </div>
   )

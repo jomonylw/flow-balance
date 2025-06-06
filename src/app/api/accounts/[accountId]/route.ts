@@ -126,7 +126,34 @@ export async function DELETE(
     })
 
     if (transactionCount > 0) {
-      return errorResponse('该账户存在交易记录，无法删除', 400)
+      // 获取账户类型以提供更详细的错误信息
+      const account = await prisma.account.findUnique({
+        where: { id: accountId },
+        include: { category: true }
+      })
+
+      const accountType = account?.category?.type
+      const isStockAccount = accountType === 'ASSET' || accountType === 'LIABILITY'
+
+      if (isStockAccount) {
+        // 检查是否只有余额调整交易
+        const balanceAdjustmentCount = await prisma.transaction.count({
+          where: {
+            accountId: accountId,
+            type: 'BALANCE_ADJUSTMENT'
+          }
+        })
+
+        const otherTransactionCount = transactionCount - balanceAdjustmentCount
+
+        if (otherTransactionCount > 0) {
+          return errorResponse(`该账户存在 ${otherTransactionCount} 条普通交易记录和 ${balanceAdjustmentCount} 条余额调整记录，无法删除。请先删除相关交易记录。`, 400)
+        } else {
+          return errorResponse(`该账户存在 ${balanceAdjustmentCount} 条余额调整记录，无法删除。如需删除账户，请先清空余额历史记录。`, 400)
+        }
+      } else {
+        return errorResponse(`该账户存在 ${transactionCount} 条交易记录，无法删除。请先删除相关交易记录。`, 400)
+      }
     }
 
     // 删除账户

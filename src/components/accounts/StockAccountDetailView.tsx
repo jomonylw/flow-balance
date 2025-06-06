@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import BalanceUpdateModal from './BalanceUpdateModal'
 import TransactionList from '@/components/transactions/TransactionList'
 import StockAccountSummaryCard from './StockAccountSummaryCard'
+import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
 
 interface User {
@@ -72,7 +74,9 @@ export default function StockAccountDetailView({
   tags,
   user
 }: StockAccountDetailViewProps) {
+  const router = useRouter()
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const handleUpdateBalance = () => {
     setIsBalanceUpdateModalOpen(true)
@@ -81,6 +85,65 @@ export default function StockAccountDetailView({
   const handleBalanceUpdateSuccess = () => {
     // 刷新页面以更新数据
     window.location.reload()
+  }
+
+  const handleDeleteAccount = async () => {
+    try {
+      const response = await fetch(`/api/accounts/${account.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // 删除成功，返回到主页面
+        router.push('/')
+      } else {
+        const error = await response.json()
+        const errorMessage = error.message || '删除失败'
+
+        // 检查是否是存量账户的余额记录问题
+        if (errorMessage.includes('余额调整记录')) {
+          // 提供清空余额历史的选项
+          const shouldClearBalance = confirm(
+            `${errorMessage}\n\n是否要清空该账户的余额历史记录？清空后可以删除账户。\n\n注意：此操作将删除所有余额调整记录，不可撤销。`
+          )
+
+          if (shouldClearBalance) {
+            await handleClearBalanceHistory()
+            return
+          }
+        }
+
+        alert(errorMessage)
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      alert('删除失败')
+    }
+  }
+
+  const handleClearBalanceHistory = async () => {
+    try {
+      const response = await fetch(`/api/accounts/${account.id}/clear-balance`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        alert(result.message || '余额历史已清空')
+
+        // 清空成功后，再次尝试删除账户
+        const shouldDeleteAccount = confirm('余额历史已清空，是否继续删除账户？')
+        if (shouldDeleteAccount) {
+          await handleDeleteAccount()
+        }
+      } else {
+        const error = await response.json()
+        alert(error.message || '清空余额历史失败')
+      }
+    } catch (error) {
+      console.error('Error clearing balance history:', error)
+      alert('清空余额历史失败')
+    }
   }
 
   // 使用专业的余额计算服务
@@ -167,15 +230,27 @@ export default function StockAccountDetailView({
           </div>
         </div>
 
-        <button
-          onClick={handleUpdateBalance}
-          className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 touch-manipulation w-full sm:w-auto"
-        >
-          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          更新余额
-        </button>
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+          <button
+            onClick={handleUpdateBalance}
+            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 touch-manipulation"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            更新余额
+          </button>
+
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="inline-flex items-center justify-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md shadow-sm text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 touch-manipulation"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            删除账户
+          </button>
+        </div>
       </div>
 
       {/* 账户摘要卡片 */}
@@ -222,6 +297,16 @@ export default function StockAccountDetailView({
         currencies={currencies}
         currentBalance={balance}
         currencyCode={user.settings?.baseCurrency?.code || 'USD'}
+      />
+
+      {/* 删除确认模态框 */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        title="删除账户"
+        message={`确定要删除账户"${account.name}"吗？此操作不可撤销。`}
+        confirmLabel="删除"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setShowDeleteConfirm(false)}
       />
     </div>
   )

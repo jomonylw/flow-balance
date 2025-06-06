@@ -191,7 +191,7 @@ if (accountType === 'INCOME' || accountType === 'EXPENSE') {
 
 **技术实现**：
 ```typescript
-// 余额更新API：/api/transactions/balance-update
+// 余额更新API：/api/balance-update
 // 创建调整交易记录余额变化
 const balanceChange = newBalance - currentBalance
 const transactionType = balanceChange >= 0 ? 'INCOME' : 'EXPENSE'

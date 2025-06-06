@@ -205,11 +205,54 @@ export default function AccountTreeItem({
         onDataChange()
       } else {
         const error = await response.json()
-        alert(error.message || '删除失败')
+        const errorMessage = error.message || '删除失败'
+
+        // 检查是否是存量账户的余额记录问题
+        const accountType = account.category?.type
+        const isStockAccount = accountType === 'ASSET' || accountType === 'LIABILITY'
+
+        if (isStockAccount && errorMessage.includes('余额调整记录')) {
+          // 提供清空余额历史的选项
+          const shouldClearBalance = confirm(
+            `${errorMessage}\n\n是否要清空该账户的余额历史记录？清空后可以删除账户。\n\n注意：此操作将删除所有余额调整记录，不可撤销。`
+          )
+
+          if (shouldClearBalance) {
+            await handleClearBalanceHistory()
+            return
+          }
+        }
+
+        alert(errorMessage)
       }
     } catch (error) {
       console.error('Error deleting account:', error)
       alert('删除失败')
+    }
+  }
+
+  const handleClearBalanceHistory = async () => {
+    try {
+      const response = await fetch(`/api/accounts/${account.id}/clear-balance`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        alert(result.message || '余额历史已清空')
+
+        // 清空成功后，再次尝试删除账户
+        const shouldDeleteAccount = confirm('余额历史已清空，是否继续删除账户？')
+        if (shouldDeleteAccount) {
+          await handleDelete()
+        }
+      } else {
+        const error = await response.json()
+        alert(error.message || '清空余额历史失败')
+      }
+    } catch (error) {
+      console.error('Error clearing balance history:', error)
+      alert('清空余额历史失败')
     }
   }
 
@@ -330,9 +373,10 @@ export default function AccountTreeItem({
             setShowContextMenu(true)
           }}
           onContextMenu={handleContextMenu}
-          className="mr-2 p-1 rounded hover:bg-gray-200 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="mr-2 p-1 rounded hover:bg-gray-200 opacity-60 group-hover:opacity-100 transition-opacity"
+          title="更多操作"
         >
-          <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
           </svg>
         </button>

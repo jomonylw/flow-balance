@@ -43,7 +43,7 @@ const newBalance = updateType === 'absolute'
 ```
 
 ### 2. 余额更新API
-**文件**: `src/app/api/transactions/balance-update/route.ts`
+**文件**: `src/app/api/balance-update/route.ts`
 
 **核心逻辑**：
 - 验证账户类型（只允许资产/负债账户）

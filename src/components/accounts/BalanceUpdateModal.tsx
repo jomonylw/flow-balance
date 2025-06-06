@@ -113,7 +113,7 @@ export default function BalanceUpdateModal({
         : newBalance
 
       // 创建余额调整交易
-      const response = await fetch('/api/transactions/balance-update', {
+      const response = await fetch('/api/balance-update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
