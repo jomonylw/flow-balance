@@ -1,5 +1,22 @@
 'use client'
 
+/**
+ * 从交易备注中提取余额变化金额
+ * @param notes 交易备注
+ * @returns 变化金额，如果无法提取则返回null
+ */
+function extractBalanceChangeFromNotes(notes: string): number | null {
+  if (!notes) return null
+
+  // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
+  const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
+  if (match && match[1]) {
+    return parseFloat(match[1])
+  }
+
+  return null
+}
+
 interface Category {
   id: string
   name: string
@@ -9,13 +26,14 @@ interface Category {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
   amount: number
   date: string
   currency: {
     code: string
     symbol: string
   }
+  notes?: string
 }
 
 interface StockCategorySummaryCardProps {
@@ -63,10 +81,14 @@ export default function StockCategorySummaryCard({
 
         // 根据分类类型和交易类型计算净值变化
         let netValueChange = 0
-        if (accountType === 'ASSET') {
+        if (transaction.type === 'BALANCE_ADJUSTMENT') {
+          // 余额调整：从备注中提取实际变化金额
+          const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+          netValueChange = changeAmount || amount
+        } else if (accountType === 'ASSET') {
           netValueChange = transaction.type === 'INCOME' ? amount : -amount
         } else if (accountType === 'LIABILITY') {
-          netValueChange = transaction.type === 'EXPENSE' ? amount : -amount
+          netValueChange = transaction.type === 'INCOME' ? amount : -amount
         }
 
         currentNetValue += netValueChange

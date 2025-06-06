@@ -40,7 +40,7 @@ interface Transaction {
   accountId: string
   categoryId: string
   currencyCode: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
   amount: number
   description: string
   notes?: string
@@ -93,12 +93,18 @@ export default function TransactionFormModal({
   // 初始化表单数据
   useEffect(() => {
     if (transaction) {
-      // 编辑模式
+      // 编辑模式 - 检查是否为余额调整交易
+      if (transaction.type === 'BALANCE_ADJUSTMENT') {
+        // 余额调整交易不能通过普通交易表单编辑
+        setErrors({ general: '余额调整记录不能通过交易表单编辑，请使用余额更新功能' })
+        return
+      }
+
       setFormData({
         accountId: transaction.accountId,
         categoryId: transaction.categoryId,
         currencyCode: transaction.currencyCode,
-        type: transaction.type,
+        type: transaction.type as 'INCOME' | 'EXPENSE' | 'TRANSFER', // 确保类型安全
         amount: transaction.amount.toString(),
         description: transaction.description,
         notes: transaction.notes || '',

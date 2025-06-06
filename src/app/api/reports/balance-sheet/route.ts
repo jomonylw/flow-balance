@@ -4,6 +4,23 @@ import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
 
 /**
+ * 从交易备注中提取余额变化金额
+ * @param notes 交易备注
+ * @returns 变化金额，如果无法提取则返回null
+ */
+function extractBalanceChangeFromNotes(notes: string): number | null {
+  if (!notes) return null
+
+  // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
+  const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
+  if (match && match[1]) {
+    return parseFloat(match[1])
+  }
+
+  return null
+}
+
+/**
  * 个人资产负债表 API
  * 反映特定时间点的资产、负债和净资产状况（存量概念）
  */
@@ -73,15 +90,32 @@ export async function GET(request: NextRequest) {
         if (!balances[currencyCode]) {
           balances[currencyCode] = 0
         }
-        
+
         const amount = parseFloat(transaction.amount.toString()) // 确保转换为number
 
-        // 资产类账户：收入增加，支出减少
-        // 负债类账户：借入（收入）增加，偿还（支出）减少
-        if (transaction.type === 'INCOME') {
-          balances[currencyCode] += amount
-        } else if (transaction.type === 'EXPENSE') {
-          balances[currencyCode] -= amount
+        // 根据账户类型和交易类型正确计算余额
+        if (account.category.type === 'ASSET') {
+          // 资产类账户：收入增加资产，支出减少资产
+          if (transaction.type === 'INCOME') {
+            balances[currencyCode] += amount
+          } else if (transaction.type === 'EXPENSE') {
+            balances[currencyCode] -= amount
+          } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
+            // 余额调整：根据备注中的变化金额
+            const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+            balances[currencyCode] += changeAmount || amount
+          }
+        } else if (account.category.type === 'LIABILITY') {
+          // 负债类账户：借入（收入）增加负债，偿还（支出）减少负债
+          if (transaction.type === 'INCOME') {
+            balances[currencyCode] += amount
+          } else if (transaction.type === 'EXPENSE') {
+            balances[currencyCode] -= amount
+          } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
+            // 余额调整：根据备注中的变化金额
+            const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+            balances[currencyCode] += changeAmount || amount
+          }
         }
         // 转账交易需要特殊处理，这里简化处理
       })

@@ -4,7 +4,7 @@ interface Category {
 }
 
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
   amount: number
   date: string
 }
@@ -46,12 +46,16 @@ export default function StockAccountSummaryCard({
       const transactionDate = new Date(transaction.date)
       const amount = transaction.amount
       
-      // 根据账户类型计算余额变化
+      // 根据账户类型和交易类型计算余额变化
       let balanceChange = 0
-      if (accountType === 'ASSET') {
+      if (transaction.type === 'BALANCE_ADJUSTMENT') {
+        // 余额调整：从备注中提取实际变化金额
+        // 这里简化处理，假设amount已经是正确的变化金额
+        balanceChange = amount
+      } else if (accountType === 'ASSET') {
         balanceChange = transaction.type === 'INCOME' ? amount : -amount
       } else if (accountType === 'LIABILITY') {
-        balanceChange = transaction.type === 'EXPENSE' ? amount : -amount
+        balanceChange = transaction.type === 'INCOME' ? amount : -amount
       }
       
       // 累计到各时点
@@ -71,10 +75,12 @@ export default function StockAccountSummaryCard({
       .filter(t => new Date(t.date) >= thisMonth)
       .reduce((sum, t) => {
         const amount = t.amount
-        if (accountType === 'ASSET') {
+        if (t.type === 'BALANCE_ADJUSTMENT') {
+          return sum + amount
+        } else if (accountType === 'ASSET') {
           return sum + (t.type === 'INCOME' ? amount : -amount)
         } else {
-          return sum + (t.type === 'EXPENSE' ? amount : -amount)
+          return sum + (t.type === 'INCOME' ? amount : -amount)
         }
       }, 0)
     

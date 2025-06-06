@@ -1,5 +1,5 @@
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
   amount: number
   date: string
 }
@@ -28,10 +28,11 @@ export default function TransactionStats({
     let incomeCount = 0
     let expenseCount = 0
     let transferCount = 0
+    let balanceAdjustmentCount = 0
 
     transactions.forEach(transaction => {
       const transactionDate = new Date(transaction.date)
-      
+
       if (transaction.type === 'INCOME') {
         totalIncome += transaction.amount
         incomeCount++
@@ -50,6 +51,9 @@ export default function TransactionStats({
         }
       } else if (transaction.type === 'TRANSFER') {
         transferCount++
+      } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
+        // 余额调整不计入收支统计，只计数
+        balanceAdjustmentCount++
       }
     })
 

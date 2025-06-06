@@ -8,12 +8,30 @@
 
 import { convertMultipleCurrencies, ConversionResult } from './currency-conversion'
 
+/**
+ * 从交易备注中提取余额变化金额
+ * @param notes 交易备注
+ * @returns 变化金额，如果无法提取则返回null
+ */
+function extractBalanceChangeFromNotes(notes: string): number | null {
+  if (!notes) return null
+
+  // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
+  const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
+  if (match && match[1]) {
+    return parseFloat(match[1])
+  }
+
+  return null
+}
+
 export interface Transaction {
   id?: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
   amount: number
   date?: string | Date
   description?: string
+  notes?: string | null
   currency: {
     code: string
     symbol: string
@@ -150,7 +168,7 @@ export function calculateAccountBalance(
     try {
       switch (accountType) {
         case 'ASSET':
-          // 资产类账户：收入增加余额，支出减少余额
+          // 资产类账户：收入增加余额，支出减少余额，余额调整直接应用
           if (transaction.type === 'INCOME') {
             balances[currencyCode].amount += amount
           } else if (transaction.type === 'EXPENSE') {
@@ -158,41 +176,63 @@ export function calculateAccountBalance(
           } else if (transaction.type === 'TRANSFER') {
             // 转账交易需要根据具体业务逻辑处理
             balances[currencyCode].amount += amount
+          } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
+            // 余额调整：根据交易备注中的变化金额确定方向
+            const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+            if (changeAmount !== null) {
+              balances[currencyCode].amount += changeAmount
+            } else {
+              // 如果无法提取变化金额，使用正值（这种情况不应该发生）
+              balances[currencyCode].amount += amount
+            }
           }
           break
 
         case 'LIABILITY':
-          // 负债类账户：借入（收入）增加余额，偿还（支出）减少余额
+          // 负债类账户：借入（收入）增加余额，偿还（支出）减少余额，余额调整直接应用
           if (transaction.type === 'INCOME') {
             balances[currencyCode].amount += amount
           } else if (transaction.type === 'EXPENSE') {
             balances[currencyCode].amount -= amount
           } else if (transaction.type === 'TRANSFER') {
             balances[currencyCode].amount += amount
+          } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
+            // 余额调整：根据交易备注中的变化金额确定方向
+            const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+            if (changeAmount !== null) {
+              balances[currencyCode].amount += changeAmount
+            } else {
+              // 如果无法提取变化金额，使用正值（这种情况不应该发生）
+              balances[currencyCode].amount += amount
+            }
           }
           break
 
         case 'INCOME':
-          // 收入类账户：只记录收入交易（累计收入）
+          // 收入类账户：只记录收入交易（累计收入），不应该有余额调整
           if (transaction.type === 'INCOME') {
             balances[currencyCode].amount += amount
-          } else if (validateData) {
-            // 对于余额更新交易，不显示警告
-            if (!transaction.description?.includes('余额更新')) {
-              console.warn(`收入类账户 ${account.name} 中发现非收入交易:`, transaction)
+          } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
+            if (validateData) {
+              console.warn(`收入类账户 ${account.name} 不应该有余额调整交易:`, transaction)
             }
+          } else if (validateData) {
+            // 对于其他类型的交易，显示警告
+            console.warn(`收入类账户 ${account.name} 中发现非收入交易:`, transaction)
           }
           break
 
         case 'EXPENSE':
-          // 支出类账户：只记录支出交易（累计支出）
+          // 支出类账户：只记录支出交易（累计支出），不应该有余额调整
           if (transaction.type === 'EXPENSE') {
             balances[currencyCode].amount += amount
-          } else if (validateData) {
-            // 对于余额更新交易，不显示警告
-            if (!transaction.description?.includes('余额更新')) {
-              console.warn(`支出类账户 ${account.name} 中发现非支出交易:`, transaction)
+          } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
+            if (validateData) {
+              console.warn(`支出类账户 ${account.name} 不应该有余额调整交易:`, transaction)
             }
+          } else if (validateData) {
+            // 对于其他类型的交易，显示警告
+            console.warn(`支出类账户 ${account.name} 中发现非支出交易:`, transaction)
           }
           break
 
@@ -207,6 +247,14 @@ export function calculateAccountBalance(
             balances[currencyCode].amount -= amount
           } else if (transaction.type === 'TRANSFER') {
             balances[currencyCode].amount += amount
+          } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
+            // 对于未分类账户，余额调整按变化金额处理
+            const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+            if (changeAmount !== null) {
+              balances[currencyCode].amount += changeAmount
+            } else {
+              balances[currencyCode].amount += amount
+            }
           }
           break
       }

@@ -18,7 +18,7 @@ interface Account {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
   amount: number
   date: string
   description: string
@@ -145,19 +145,24 @@ export function validateAccountData(accounts: Account[]): ValidationResult {
  * 验证交易类型与账户类型的匹配性
  */
 function validateTransactionAccountType(
-  transactionType: 'INCOME' | 'EXPENSE' | 'TRANSFER',
+  transactionType: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT',
   accountType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
 ): boolean {
   switch (accountType) {
     case 'ASSET':
     case 'LIABILITY':
-      // 存量类账户可以有任何类型的交易（用于余额调整）
-      return true
+      // 存量类账户：普通交易应该被禁止，只允许余额调整
+      if (transactionType === 'BALANCE_ADJUSTMENT') {
+        return true
+      } else {
+        // 普通交易在存量类账户中应该被标记为问题
+        return false
+      }
     case 'INCOME':
-      // 收入类账户主要应该有收入交易
+      // 收入类账户只应该有收入交易
       return transactionType === 'INCOME'
     case 'EXPENSE':
-      // 支出类账户主要应该有支出交易
+      // 支出类账户只应该有支出交易
       return transactionType === 'EXPENSE'
     default:
       return false

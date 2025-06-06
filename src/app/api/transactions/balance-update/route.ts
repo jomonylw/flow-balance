@@ -63,20 +63,17 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建余额调整交易
-    // 对于存量类账户，我们创建一个特殊的调整交易来记录余额变化
-    const transactionType = changeAmount >= 0 ? 'INCOME' : 'EXPENSE'
-    const transactionAmount = Math.abs(changeAmount)
-
+    // 对于存量类账户，我们创建专门的BALANCE_ADJUSTMENT类型交易来记录余额变化
     const transaction = await prisma.transaction.create({
       data: {
         userId: user.id,
         accountId,
         categoryId: account.categoryId,
         currencyCode,
-        type: transactionType,
-        amount: transactionAmount,
+        type: 'BALANCE_ADJUSTMENT',
+        amount: Math.abs(changeAmount), // 存储绝对值，方向通过账户类型和业务逻辑确定
         description: `余额${updateType === 'absolute' ? '更新' : '调整'} - ${account.name}`,
-        notes: notes || `余额${updateType === 'absolute' ? '更新' : '调整'}：${currency.symbol}${newBalance?.toFixed(2) || 'N/A'}`,
+        notes: notes || `余额${updateType === 'absolute' ? '更新' : '调整'}：${currency.symbol}${newBalance?.toFixed(2) || 'N/A'}。变化金额：${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)}`,
         date: new Date(updateDate)
       },
       include: {

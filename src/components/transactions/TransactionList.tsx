@@ -27,7 +27,7 @@ interface Account {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
   amount: number
   description: string
   notes?: string
@@ -59,7 +59,8 @@ export default function TransactionList({
 
   // 判断是否为余额调整记录
   const isBalanceAdjustment = (transaction: Transaction) => {
-    return transaction.description.includes('余额更新') ||
+    return transaction.type === 'BALANCE_ADJUSTMENT' ||
+           transaction.description.includes('余额更新') ||
            transaction.description.includes('余额调整') ||
            transaction.notes?.includes('余额更新') ||
            transaction.notes?.includes('余额调整')
@@ -105,6 +106,14 @@ export default function TransactionList({
             </svg>
           </div>
         )
+      case 'BALANCE_ADJUSTMENT':
+        return (
+          <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+            <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </div>
+        )
       default:
         return (
           <div className="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
@@ -119,7 +128,7 @@ export default function TransactionList({
   const getAmountDisplay = (transaction: Transaction) => {
     const amount = transaction.amount.toFixed(2)
     const symbol = transaction.currency.symbol || currencySymbol
-    
+
     switch (transaction.type) {
       case 'INCOME':
         return <span className="text-green-600 font-medium">+{symbol}{amount}</span>
@@ -127,9 +136,31 @@ export default function TransactionList({
         return <span className="text-red-600 font-medium">-{symbol}{amount}</span>
       case 'TRANSFER':
         return <span className="text-blue-600 font-medium">{symbol}{amount}</span>
+      case 'BALANCE_ADJUSTMENT':
+        // 余额调整：从备注中提取实际变化金额来显示正负号
+        const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+        if (changeAmount !== null) {
+          const sign = changeAmount >= 0 ? '+' : ''
+          return <span className="text-purple-600 font-medium">{sign}{symbol}{Math.abs(changeAmount).toFixed(2)}</span>
+        } else {
+          return <span className="text-purple-600 font-medium">{symbol}{amount}</span>
+        }
       default:
         return <span className="text-gray-600 font-medium">{symbol}{amount}</span>
     }
+  }
+
+  // 从交易备注中提取余额变化金额
+  const extractBalanceChangeFromNotes = (notes: string): number | null => {
+    if (!notes) return null
+
+    // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
+    const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
+    if (match && match[1]) {
+      return parseFloat(match[1])
+    }
+
+    return null
   }
 
   const formatDate = (dateString: string) => {

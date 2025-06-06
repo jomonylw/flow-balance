@@ -3,10 +3,28 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 
+/**
+ * 从交易备注中提取余额变化金额
+ * @param notes 交易备注
+ * @returns 变化金额，如果无法提取则返回null
+ */
+function extractBalanceChangeFromNotes(notes: string): number | null {
+  if (!notes) return null
+
+  // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
+  const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
+  if (match && match[1]) {
+    return parseFloat(match[1])
+  }
+
+  return null
+}
+
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
   amount: number
   date: string
+  notes?: string
 }
 
 interface Category {
@@ -114,10 +132,14 @@ export default function SmartCategoryChart({
         
         dayTransactions.forEach(transaction => {
           const amount = transaction.amount
-          if (accountType === 'ASSET') {
+          if (transaction.type === 'BALANCE_ADJUSTMENT') {
+            // 余额调整：从备注中提取实际变化金额
+            const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+            cumulativeBalance += changeAmount || amount
+          } else if (accountType === 'ASSET') {
             cumulativeBalance += transaction.type === 'INCOME' ? amount : -amount
           } else if (accountType === 'LIABILITY') {
-            cumulativeBalance += transaction.type === 'EXPENSE' ? amount : -amount
+            cumulativeBalance += transaction.type === 'INCOME' ? amount : -amount
           }
         })
         
@@ -137,10 +159,14 @@ export default function SmartCategoryChart({
         
         monthTransactions.forEach(transaction => {
           const amount = transaction.amount
-          if (accountType === 'ASSET') {
+          if (transaction.type === 'BALANCE_ADJUSTMENT') {
+            // 余额调整：从备注中提取实际变化金额
+            const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+            cumulativeBalance += changeAmount || amount
+          } else if (accountType === 'ASSET') {
             cumulativeBalance += transaction.type === 'INCOME' ? amount : -amount
           } else if (accountType === 'LIABILITY') {
-            cumulativeBalance += transaction.type === 'EXPENSE' ? amount : -amount
+            cumulativeBalance += transaction.type === 'INCOME' ? amount : -amount
           }
         })
         
@@ -179,11 +205,15 @@ export default function SmartCategoryChart({
         startDate = new Date(now.getFullYear(), now.getMonth(), 1)
     }
 
-    // 过滤相关交易
-    const relevantTransactions = transactions.filter(t => 
-      (accountType === 'INCOME' && t.type === 'INCOME') ||
-      (accountType === 'EXPENSE' && t.type === 'EXPENSE')
-    )
+    // 过滤相关交易（流量类账户不应该有余额调整）
+    const relevantTransactions = transactions.filter(t => {
+      if (t.type === 'BALANCE_ADJUSTMENT') {
+        console.warn(`流量类分类 ${category.name} 不应该有余额调整交易`)
+        return false
+      }
+      return (accountType === 'INCOME' && t.type === 'INCOME') ||
+             (accountType === 'EXPENSE' && t.type === 'EXPENSE')
+    })
 
     const dates: string[] = []
     const amounts: number[] = []

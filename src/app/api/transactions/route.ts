@@ -137,11 +137,12 @@ export async function POST(request: NextRequest) {
     // 验证账户类型与交易类型的匹配性
     const accountType = account.category.type
     if (accountType) {
-      // 存量类账户（资产/负债）的验证
+      // 存量类账户（资产/负债）严格禁止创建普通交易
       if (accountType === 'ASSET' || accountType === 'LIABILITY') {
-        // 存量类账户建议使用"余额更新"功能，而不是直接添加交易
-        // 但为了兼容性，我们允许但给出警告
-        console.warn(`存量类账户 ${account.name} 直接添加交易，建议使用余额更新功能`)
+        return errorResponse(
+          `存量类账户"${account.name}"不能直接添加交易记录。请使用"更新余额"功能来管理${accountType === 'ASSET' ? '资产' : '负债'}账户的余额变化。`,
+          400
+        )
       }
 
       // 流量类账户（收入/支出）的严格验证
@@ -151,6 +152,11 @@ export async function POST(request: NextRequest) {
 
       if (accountType === 'EXPENSE' && type !== 'EXPENSE') {
         return errorResponse('支出类账户只能记录支出交易，请选择正确的交易类型', 400)
+      }
+
+      // 禁止在普通交易中使用BALANCE_ADJUSTMENT类型
+      if (type === 'BALANCE_ADJUSTMENT') {
+        return errorResponse('BALANCE_ADJUSTMENT类型只能通过余额更新功能使用', 400)
       }
     }
 

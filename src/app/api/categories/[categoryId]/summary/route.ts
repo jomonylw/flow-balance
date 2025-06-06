@@ -2,6 +2,23 @@ import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
+
+/**
+ * 从交易备注中提取余额变化金额
+ * @param notes 交易备注
+ * @returns 变化金额，如果无法提取则返回null
+ */
+function extractBalanceChangeFromNotes(notes: string): number | null {
+  if (!notes) return null
+
+  // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
+  const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
+  if (match && match[1]) {
+    return parseFloat(match[1])
+  }
+
+  return null
+}
 import { calculateAccountBalance } from '@/lib/account-balance'
 
 export async function GET(
@@ -120,6 +137,7 @@ export async function GET(
     const transactionSummary: Record<string, {
       income: number;
       expense: number;
+      balanceAdjustment: number;
       count: number;
       currencies: Set<string>;
     }> = {}
@@ -133,6 +151,7 @@ export async function GET(
         transactionSummary[currencyCode] = {
           income: 0,
           expense: 0,
+          balanceAdjustment: 0,
           count: 0,
           currencies: new Set()
         }
@@ -142,8 +161,17 @@ export async function GET(
       transactionSummary[currencyCode].count++
       transactionSummary[currencyCode].currencies.add(currencyCode)
 
-      // 对于存量类分类，交易类型的含义不同
-      if (categoryType === 'ASSET' || categoryType === 'LIABILITY') {
+      // 根据交易类型和分类类型处理
+      if (transaction.type === 'BALANCE_ADJUSTMENT') {
+        // 余额调整：只有存量类分类应该有这种交易
+        if (categoryType === 'ASSET' || categoryType === 'LIABILITY') {
+          // 从备注中提取实际变化金额
+          const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+          transactionSummary[currencyCode].balanceAdjustment += changeAmount || amount
+        } else {
+          console.warn(`流量类分类 ${category.name} 不应该有余额调整交易`)
+        }
+      } else if (categoryType === 'ASSET' || categoryType === 'LIABILITY') {
         // 存量类：INCOME表示增加，EXPENSE表示减少
         if (transaction.type === 'INCOME') {
           transactionSummary[currencyCode].income += amount
@@ -164,24 +192,28 @@ export async function GET(
     const summaryForResponse = Object.entries(transactionSummary).reduce((acc, [currency, data]) => {
       let net = 0
       if (categoryType === 'ASSET') {
-        // 资产：收入增加资产，支出减少资产
-        net = data.income - data.expense
+        // 资产：收入增加资产，支出减少资产，余额调整直接应用
+        net = data.income - data.expense + (data.balanceAdjustment || 0)
       } else if (categoryType === 'LIABILITY') {
-        // 负债：支出增加负债，收入减少负债
-        net = data.expense - data.income
+        // 负债：借入（收入）增加负债，偿还（支出）减少负债，余额调整直接应用
+        net = data.income - data.expense + (data.balanceAdjustment || 0)
       } else {
-        // 流量类：收入减支出
+        // 流量类：收入减支出，不应该有余额调整
         net = data.income - data.expense
+        if (data.balanceAdjustment && data.balanceAdjustment !== 0) {
+          console.warn(`流量类分类 ${category.name} 不应该有余额调整交易`)
+        }
       }
 
       acc[currency] = {
         income: data.income,
         expense: data.expense,
+        balanceAdjustment: data.balanceAdjustment || 0,
         count: data.count,
         net: net
       }
       return acc
-    }, {} as Record<string, { income: number; expense: number; count: number; net: number }>)
+    }, {} as Record<string, { income: number; expense: number; balanceAdjustment: number; count: number; net: number }>)
 
     // 获取最近的交易
     const recentTransactions = transactions.slice(0, 10)
