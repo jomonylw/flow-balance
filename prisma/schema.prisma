@@ -190,7 +190,6 @@ model Transaction {
 enum TransactionType {
   INCOME             // 收入
   EXPENSE            // 支出
-  TRANSFER           // 转账
   BALANCE_ADJUSTMENT // 余额调整（仅用于存量类账户）
 
   @@map("transaction_types")

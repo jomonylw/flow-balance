@@ -56,7 +56,7 @@ export default function EnhancedTransactionForm({
     accountId: '',
     categoryId: '',
     currencyCode: 'USD',
-    type: 'EXPENSE' as 'INCOME' | 'EXPENSE' | 'TRANSFER',
+    type: 'EXPENSE' as 'INCOME' | 'EXPENSE',
     amount: '',
     description: '',
     notes: '',

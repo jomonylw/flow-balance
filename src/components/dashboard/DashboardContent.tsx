@@ -24,7 +24,7 @@ interface Account {
     type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   }
   transactions?: Array<{
-    type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+    type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
     amount: number
     currency: {
       code: string
@@ -77,13 +77,13 @@ export default function DashboardContent({
   baseCurrency
 }: DashboardContentProps) {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
-  const [defaultTransactionType, setDefaultTransactionType] = useState<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE')
+  const [defaultTransactionType, setDefaultTransactionType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE')
   const [chartData, setChartData] = useState<any>(null)
   const [isLoadingCharts, setIsLoadingCharts] = useState(true)
   const [chartError, setChartError] = useState<string | null>(null)
   const [validationResult, setValidationResult] = useState<any>(null)
 
-  const handleQuickTransaction = (type: 'INCOME' | 'EXPENSE' | 'TRANSFER') => {
+  const handleQuickTransaction = (type: 'INCOME' | 'EXPENSE') => {
     setDefaultTransactionType(type)
     setIsTransactionModalOpen(true)
   }
@@ -138,7 +138,7 @@ export default function DashboardContent({
       },
       transactions: (account.transactions || []).map((t, index) => ({
         id: `${account.id}-${index}`, // 生成假的交易 ID
-        type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER',
+        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
         amount: t.amount,
         date: new Date().toISOString(), // 使用当前日期作为占位符
         description: '交易记录', // 使用默认描述
@@ -167,7 +167,7 @@ export default function DashboardContent({
         type: account.category.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
       },
       transactions: (account.transactions || []).map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER',
+        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
         amount: t.amount, // amount已经是number类型了
         currency: t.currency
       }))
@@ -436,15 +436,7 @@ export default function DashboardContent({
             </svg>
             记支出
           </button>
-          <button
-            onClick={() => handleQuickTransaction('TRANSFER')}
-            className="flex items-center justify-center px-4 py-3 border border-blue-200 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors touch-manipulation sm:col-span-1 col-span-1"
-          >
-            <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
-            转账
-          </button>
+
         </div>
       </div>
 

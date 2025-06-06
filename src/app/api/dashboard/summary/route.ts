@@ -39,7 +39,7 @@ export async function GET() {
       name: account.name,
       category: account.category,
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER',
+        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
         amount: parseFloat(t.amount.toString()),
         currency: t.currency
       }))

@@ -28,7 +28,7 @@ interface Account {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
   amount: number
   description: string
   notes?: string
@@ -106,14 +106,7 @@ export default function TransactionList({
             </svg>
           </div>
         )
-      case 'TRANSFER':
-        return (
-          <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-            <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
-          </div>
-        )
+
       case 'BALANCE_ADJUSTMENT':
         return (
           <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -142,8 +135,7 @@ export default function TransactionList({
         return <span className="text-green-600 font-medium">+{symbol}{amount}</span>
       case 'EXPENSE':
         return <span className="text-red-600 font-medium">-{symbol}{amount}</span>
-      case 'TRANSFER':
-        return <span className="text-blue-600 font-medium">{symbol}{amount}</span>
+
       case 'BALANCE_ADJUSTMENT':
         // 余额调整：从备注中提取实际变化金额来显示正负号
         const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
@@ -343,8 +335,7 @@ export default function TransactionList({
                             <>
                               <span> • </span>
                               <span className="text-blue-600">
-                                {transaction.type === 'INCOME' ? '收入' :
-                                 transaction.type === 'EXPENSE' ? '支出' : '转账'}
+                                {transaction.type === 'INCOME' ? '收入' : '支出'}
                               </span>
                             </>
                           )}
@@ -439,8 +430,7 @@ export default function TransactionList({
                         <>
                           <span>•</span>
                           <span className="text-blue-600">
-                            {transaction.type === 'INCOME' ? '收入交易' :
-                             transaction.type === 'EXPENSE' ? '支出交易' : '转账交易'}
+                            {transaction.type === 'INCOME' ? '收入交易' : '支出交易'}
                           </span>
                         </>
                       )}

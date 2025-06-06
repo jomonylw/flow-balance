@@ -1,5 +1,5 @@
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
   amount: number
   date: string
 }
@@ -27,7 +27,6 @@ export default function TransactionStats({
     let lastMonthExpense = 0
     let incomeCount = 0
     let expenseCount = 0
-    let transferCount = 0
     let balanceAdjustmentCount = 0
 
     transactions.forEach(transaction => {
@@ -49,8 +48,6 @@ export default function TransactionStats({
         } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
           lastMonthExpense += transaction.amount
         }
-      } else if (transaction.type === 'TRANSFER') {
-        transferCount++
       } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
         // 余额调整不计入收支统计，只计数
         balanceAdjustmentCount++
@@ -74,7 +71,6 @@ export default function TransactionStats({
       monthlyChange,
       incomeCount,
       expenseCount,
-      transferCount,
       totalCount: transactions.length
     }
   }

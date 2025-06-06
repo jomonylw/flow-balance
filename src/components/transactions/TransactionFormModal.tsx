@@ -40,7 +40,7 @@ interface Transaction {
   accountId: string
   categoryId: string
   currencyCode: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
   amount: number
   description: string
   notes?: string
@@ -59,7 +59,7 @@ interface TransactionFormModalProps {
   tags: Tag[]
   defaultAccountId?: string
   defaultCategoryId?: string
-  defaultType?: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  defaultType?: 'INCOME' | 'EXPENSE'
 }
 
 export default function TransactionFormModal({
@@ -79,7 +79,7 @@ export default function TransactionFormModal({
     accountId: '',
     categoryId: '',
     currencyCode: 'USD',
-    type: 'EXPENSE' as 'INCOME' | 'EXPENSE' | 'TRANSFER',
+    type: 'EXPENSE' as 'INCOME' | 'EXPENSE',
     amount: '',
     description: '',
     notes: '',
@@ -104,7 +104,7 @@ export default function TransactionFormModal({
         accountId: transaction.accountId,
         categoryId: transaction.categoryId,
         currencyCode: transaction.currencyCode,
-        type: transaction.type as 'INCOME' | 'EXPENSE' | 'TRANSFER', // 确保类型安全
+        type: transaction.type as 'INCOME' | 'EXPENSE', // 确保类型安全
         amount: transaction.amount.toString(),
         description: transaction.description,
         notes: transaction.notes || '',
@@ -172,8 +172,7 @@ export default function TransactionFormModal({
     if (!accountType) {
       return [
         { value: 'INCOME', label: '收入' },
-        { value: 'EXPENSE', label: '支出' },
-        { value: 'TRANSFER', label: '转账' }
+        { value: 'EXPENSE', label: '支出' }
       ]
     }
 
@@ -185,8 +184,7 @@ export default function TransactionFormModal({
       default:
         return [
           { value: 'INCOME', label: '收入' },
-          { value: 'EXPENSE', label: '支出' },
-          { value: 'TRANSFER', label: '转账' }
+          { value: 'EXPENSE', label: '支出' }
         ]
     }
   }

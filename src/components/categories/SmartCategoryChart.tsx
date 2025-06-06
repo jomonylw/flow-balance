@@ -21,7 +21,7 @@ function extractBalanceChangeFromNotes(notes: string): number | null {
 }
 
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
   amount: number
   date: string
   notes?: string

@@ -72,7 +72,7 @@ export async function GET(
       total: account.transactions.length,
       income: account.transactions.filter(t => t.type === 'INCOME').length,
       expense: account.transactions.filter(t => t.type === 'EXPENSE').length,
-      transfer: account.transactions.filter(t => t.type === 'TRANSFER').length
+      balanceAdjustment: account.transactions.filter(t => t.type === 'BALANCE_ADJUSTMENT').length
     }
 
     // 按月统计交易（最近12个月）

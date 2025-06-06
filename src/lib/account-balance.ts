@@ -27,7 +27,7 @@ function extractBalanceChangeFromNotes(notes: string): number | null {
 
 export interface Transaction {
   id?: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
   amount: number
   date?: string | Date
   description?: string
@@ -173,9 +173,6 @@ export function calculateAccountBalance(
             balances[currencyCode].amount += amount
           } else if (transaction.type === 'EXPENSE') {
             balances[currencyCode].amount -= amount
-          } else if (transaction.type === 'TRANSFER') {
-            // 转账交易需要根据具体业务逻辑处理
-            balances[currencyCode].amount += amount
           } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
             // 余额调整：根据交易备注中的变化金额确定方向
             const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
@@ -194,8 +191,6 @@ export function calculateAccountBalance(
             balances[currencyCode].amount += amount
           } else if (transaction.type === 'EXPENSE') {
             balances[currencyCode].amount -= amount
-          } else if (transaction.type === 'TRANSFER') {
-            balances[currencyCode].amount += amount
           } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
             // 余额调整：根据交易备注中的变化金额确定方向
             const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
@@ -245,8 +240,6 @@ export function calculateAccountBalance(
             balances[currencyCode].amount += amount
           } else if (transaction.type === 'EXPENSE') {
             balances[currencyCode].amount -= amount
-          } else if (transaction.type === 'TRANSFER') {
-            balances[currencyCode].amount += amount
           } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
             // 对于未分类账户，余额调整按变化金额处理
             const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')

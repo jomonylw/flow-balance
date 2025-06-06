@@ -13,7 +13,7 @@ interface Account {
 }
 
 interface QuickTransactionButtonProps {
-  type: 'income' | 'expense' | 'transfer'
+  type: 'income' | 'expense'
   accounts: Account[]
   categories: Category[]
 }
@@ -36,7 +36,6 @@ export default function QuickTransactionButton({
     switch (type) {
       case 'income': return '记收入'
       case 'expense': return '记支出'
-      case 'transfer': return '转账'
       default: return '记账'
     }
   }
@@ -55,12 +54,7 @@ export default function QuickTransactionButton({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
           </svg>
         )
-      case 'transfer':
-        return (
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-          </svg>
-        )
+
       default:
         return null
     }
@@ -70,7 +64,7 @@ export default function QuickTransactionButton({
     switch (type) {
       case 'income': return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
       case 'expense': return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-      case 'transfer': return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+
       default: return 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
     }
   }

@@ -42,7 +42,7 @@ interface Tag {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
   amount: number
   description: string
   notes?: string
@@ -335,7 +335,7 @@ export default function FlowAccountDetailView({
         currencies={currencies}
         tags={tags}
         defaultAccountId={account.id}
-        defaultType={account.category.type as 'INCOME' | 'EXPENSE' | 'TRANSFER'}
+        defaultType={account.category.type as 'INCOME' | 'EXPENSE'}
       />
 
       {/* 删除确认模态框 */}
