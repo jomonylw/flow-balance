@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import ConfirmationModal from '@/components/ui/ConfirmationModal'
 
 interface Category {
   id: string
@@ -62,6 +63,7 @@ export default function TransactionList({
   allowDeleteBalanceAdjustment = false
 }: TransactionListProps) {
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set())
+  const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false)
 
   // 判断是否为余额调整记录
   const isBalanceAdjustment = (transaction: Transaction) => {
@@ -216,10 +218,15 @@ export default function TransactionList({
 
   const handleBatchDeleteClick = () => {
     if (onBatchDelete && selectedTransactions.size > 0) {
-      if (confirm(`确定要删除选中的 ${selectedTransactions.size} 条记录吗？此操作不可撤销。`)) {
-        onBatchDelete(Array.from(selectedTransactions))
-        setSelectedTransactions(new Set()) // 清空选择
-      }
+      setShowBatchDeleteConfirm(true)
+    }
+  }
+
+  const handleConfirmBatchDelete = () => {
+    if (onBatchDelete && selectedTransactions.size > 0) {
+      onBatchDelete(Array.from(selectedTransactions))
+      setSelectedTransactions(new Set()) // 清空选择
+      setShowBatchDeleteConfirm(false)
     }
   }
 
@@ -512,6 +519,18 @@ export default function TransactionList({
           </div>
         ))}
       </div>
+
+      {/* 批量删除确认模态框 */}
+      <ConfirmationModal
+        isOpen={showBatchDeleteConfirm}
+        title="批量删除确认"
+        message={`确定要删除选中的 ${selectedTransactions.size} 条记录吗？此操作不可撤销。`}
+        confirmLabel="确认删除"
+        cancelLabel="取消"
+        onConfirm={handleConfirmBatchDelete}
+        onCancel={() => setShowBatchDeleteConfirm(false)}
+        variant="danger"
+      />
     </div>
   )
 }

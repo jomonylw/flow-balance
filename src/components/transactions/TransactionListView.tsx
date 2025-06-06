@@ -5,6 +5,8 @@ import TransactionFormModal from './TransactionFormModal'
 import TransactionList from './TransactionList'
 import TransactionFilters from './TransactionFilters'
 import TransactionStats from './TransactionStats'
+import ConfirmationModal from '@/components/ui/ConfirmationModal'
+import { useToast } from '@/contexts/ToastContext'
 
 interface User {
   id: string
@@ -82,10 +84,13 @@ export default function TransactionListView({
   tags,
   user
 }: TransactionListViewProps) {
+  const { showSuccess, showError } = useToast()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<any>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -164,26 +169,33 @@ export default function TransactionListView({
     setPagination(prev => ({ ...prev, page }))
   }
 
-  const handleDeleteTransaction = async (transactionId: string) => {
-    if (!confirm('确定要删除这笔交易吗？')) {
-      return
-    }
+  const handleDeleteTransaction = (transactionId: string) => {
+    setDeletingTransactionId(transactionId)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deletingTransactionId) return
 
     try {
-      const response = await fetch(`/api/transactions/${transactionId}`, {
+      const response = await fetch(`/api/transactions/${deletingTransactionId}`, {
         method: 'DELETE'
       })
 
       const result = await response.json()
 
       if (result.success) {
+        showSuccess('删除成功', '交易记录已删除')
         loadTransactions()
       } else {
-        alert('删除失败：' + result.error)
+        showError('删除失败', result.error || '未知错误')
       }
     } catch (error) {
       console.error('Error deleting transaction:', error)
-      alert('删除失败，请稍后重试')
+      showError('删除失败', '网络错误，请稍后重试')
+    } finally {
+      setShowDeleteConfirm(false)
+      setDeletingTransactionId(null)
     }
   }
 
@@ -296,6 +308,21 @@ export default function TransactionListView({
         categories={categories}
         currencies={currencies}
         tags={tags}
+      />
+
+      {/* 删除确认模态框 */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        title="删除交易"
+        message="确定要删除这笔交易吗？此操作不可撤销。"
+        confirmLabel="确认删除"
+        cancelLabel="取消"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setShowDeleteConfirm(false)
+          setDeletingTransactionId(null)
+        }}
+        variant="danger"
       />
     </div>
   )

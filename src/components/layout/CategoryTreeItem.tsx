@@ -8,6 +8,7 @@ import InputDialog from '@/components/ui/InputDialog'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import CategorySelector from '@/components/ui/CategorySelector'
 import CategorySettingsModal from '@/components/ui/CategorySettingsModal'
+import { useToast } from '@/contexts/ToastContext'
 
 interface Category {
   id: string
@@ -34,6 +35,7 @@ export default function CategoryTreeItem({
   onToggle,
   onDataChange
 }: CategoryTreeItemProps) {
+  const { showSuccess, showError } = useToast()
   const pathname = usePathname()
   const router = useRouter()
   const [showContextMenu, setShowContextMenu] = useState(false)
@@ -139,14 +141,15 @@ export default function CategoryTreeItem({
 
       if (response.ok) {
         setShowRenameDialog(false)
+        showSuccess('重命名成功', `分类已重命名`)
         onDataChange()
       } else {
         const error = await response.json()
-        alert(error.message || '重命名失败')
+        showError('重命名失败', error.message || '未知错误')
       }
     } catch (error) {
       console.error('Error renaming category:', error)
-      alert('重命名失败')
+      showError('重命名失败', '网络错误，请稍后重试')
     }
   }
 
@@ -158,14 +161,15 @@ export default function CategoryTreeItem({
 
       if (response.ok) {
         setShowDeleteConfirm(false)
+        showSuccess('删除成功', `分类"${category.name}"已删除`)
         onDataChange()
       } else {
         const error = await response.json()
-        alert(error.message || '删除失败')
+        showError('删除失败', error.message || '未知错误')
       }
     } catch (error) {
       console.error('Error deleting category:', error)
-      alert('删除失败')
+      showError('删除失败', '网络错误，请稍后重试')
     }
   }
 
@@ -184,14 +188,15 @@ export default function CategoryTreeItem({
 
       if (response.ok) {
         setShowCategorySelector(false)
+        showSuccess('移动成功', `分类已移动`)
         onDataChange()
       } else {
         const error = await response.json()
-        alert(error.message || '移动失败')
+        showError('移动失败', error.message || '未知错误')
       }
     } catch (error) {
       console.error('Error moving category:', error)
-      alert('移动失败')
+      showError('移动失败', '网络错误，请稍后重试')
     }
   }
 
@@ -210,14 +215,15 @@ export default function CategoryTreeItem({
 
       if (response.ok) {
         setShowAddSubcategoryDialog(false)
+        showSuccess('添加成功', '子分类已添加')
         onDataChange()
       } else {
         const error = await response.json()
-        alert(error.message || '添加子分类失败')
+        showError('添加失败', error.message || '添加子分类失败')
       }
     } catch (error) {
       console.error('Error adding subcategory:', error)
-      alert('添加子分类失败')
+      showError('添加失败', '网络错误，请稍后重试')
     }
   }
 
@@ -236,14 +242,15 @@ export default function CategoryTreeItem({
 
       if (response.ok) {
         setShowAddAccountDialog(false)
+        showSuccess('添加成功', '账户已添加')
         onDataChange()
       } else {
         const error = await response.json()
-        alert(error.message || '添加账户失败')
+        showError('添加失败', error.message || '添加账户失败')
       }
     } catch (error) {
       console.error('Error adding account:', error)
-      alert('添加账户失败')
+      showError('添加失败', '网络错误，请稍后重试')
     }
   }
 
@@ -263,14 +270,15 @@ export default function CategoryTreeItem({
 
       if (response.ok) {
         setShowSettingsModal(false)
+        showSuccess('保存成功', '分类设置已保存')
         onDataChange()
       } else {
         const error = await response.json()
-        alert(error.message || '保存设置失败')
+        showError('保存失败', error.message || '保存设置失败')
       }
     } catch (error) {
       console.error('Error saving category settings:', error)
-      alert('保存设置失败')
+      showError('保存失败', '网络错误，请稍后重试')
     }
   }
 
@@ -373,8 +381,10 @@ export default function CategoryTreeItem({
         title="删除分类"
         message={`确定要删除分类"${category.name}"吗？此操作不可撤销。`}
         confirmLabel="删除"
+        cancelLabel="取消"
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
+        variant="danger"
       />
 
       {/* 分类选择器 */}

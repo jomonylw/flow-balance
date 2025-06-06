@@ -6,10 +6,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import AccountContextMenu from './AccountContextMenu'
 import InputDialog from '@/components/ui/InputDialog'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
+import DeleteConfirmModal from '@/components/ui/DeleteConfirmModal'
 import CategorySelector from '@/components/ui/CategorySelector'
 import AccountSettingsModal from '@/components/ui/AccountSettingsModal'
 import BalanceUpdateModal from '@/components/accounts/BalanceUpdateModal'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
+import { useToast } from '@/contexts/ToastContext'
 
 interface Account {
   id: string
@@ -37,6 +39,7 @@ export default function AccountTreeItem({
   onDataChange,
   onNavigate
 }: AccountTreeItemProps) {
+  const { showSuccess, showError } = useToast()
   const pathname = usePathname()
   const router = useRouter()
   const [showContextMenu, setShowContextMenu] = useState(false)
@@ -186,11 +189,11 @@ export default function AccountTreeItem({
         onDataChange()
       } else {
         const error = await response.json()
-        alert(error.message || '重命名失败')
+        showError('重命名失败', error.message || '未知错误')
       }
     } catch (error) {
       console.error('Error renaming account:', error)
-      alert('重命名失败')
+      showError('重命名失败', '网络错误，请稍后重试')
     }
   }
 
@@ -202,32 +205,15 @@ export default function AccountTreeItem({
 
       if (response.ok) {
         setShowDeleteConfirm(false)
+        showSuccess('删除成功', `账户"${account.name}"已删除`)
         onDataChange()
       } else {
         const error = await response.json()
-        const errorMessage = error.message || '删除失败'
-
-        // 检查是否是存量账户的余额记录问题
-        const accountType = account.category?.type
-        const isStockAccount = accountType === 'ASSET' || accountType === 'LIABILITY'
-
-        if (isStockAccount && errorMessage.includes('余额调整记录')) {
-          // 提供清空余额历史的选项
-          const shouldClearBalance = confirm(
-            `${errorMessage}\n\n是否要清空该账户的余额历史记录？清空后可以删除账户。\n\n注意：此操作将删除所有余额调整记录，不可撤销。`
-          )
-
-          if (shouldClearBalance) {
-            await handleClearBalanceHistory()
-            return
-          }
-        }
-
-        alert(errorMessage)
+        showError('删除失败', error.message || '未知错误')
       }
     } catch (error) {
       console.error('Error deleting account:', error)
-      alert('删除失败')
+      showError('删除失败', '网络错误，请稍后重试')
     }
   }
 
@@ -239,20 +225,17 @@ export default function AccountTreeItem({
 
       if (response.ok) {
         const result = await response.json()
-        alert(result.message || '余额历史已清空')
+        showSuccess('清空成功', result.message || '余额历史已清空')
 
-        // 清空成功后，再次尝试删除账户
-        const shouldDeleteAccount = confirm('余额历史已清空，是否继续删除账户？')
-        if (shouldDeleteAccount) {
-          await handleDelete()
-        }
+        // 清空成功后，直接删除账户
+        await handleDelete()
       } else {
         const error = await response.json()
-        alert(error.message || '清空余额历史失败')
+        showError('清空失败', error.message || '清空余额历史失败')
       }
     } catch (error) {
       console.error('Error clearing balance history:', error)
-      alert('清空余额历史失败')
+      showError('清空失败', '网络错误，请稍后重试')
     }
   }
 
@@ -275,11 +258,11 @@ export default function AccountTreeItem({
         onDataChange()
       } else {
         const error = await response.json()
-        alert(error.message || '移动失败')
+        showError('移动失败', error.message || '未知错误')
       }
     } catch (error) {
       console.error('Error moving account:', error)
-      alert('移动失败')
+      showError('移动失败', '网络错误，请稍后重试')
     }
   }
 
@@ -406,13 +389,17 @@ export default function AccountTreeItem({
       />
 
       {/* 删除确认对话框 */}
-      <ConfirmationModal
+      <DeleteConfirmModal
         isOpen={showDeleteConfirm}
         title="删除账户"
-        message={`确定要删除账户"${account.name}"吗？此操作不可撤销。`}
-        confirmLabel="删除"
+        itemName={account.name}
+        itemType="账户"
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
+        hasRelatedData={account.category?.type === 'ASSET' || account.category?.type === 'LIABILITY'}
+        relatedDataMessage="该账户存在余额调整记录，需要先清空相关数据才能删除。"
+        onClearRelatedData={handleClearBalanceHistory}
+        clearDataLabel="清空余额历史并删除"
       />
 
       {/* 分类选择器 */}

@@ -9,6 +9,8 @@ import CategoryChart from './CategoryChart'
 import SmartCategorySummaryCard from './SmartCategorySummaryCard'
 import SmartCategoryChart from './SmartCategoryChart'
 import MonthlySummaryChart from '@/components/charts/MonthlySummaryChart'
+import ConfirmationModal from '@/components/ui/ConfirmationModal'
+import { useToast } from '@/contexts/ToastContext'
 
 interface User {
   id: string
@@ -100,12 +102,15 @@ export default function CategoryDetailView({
   tags,
   user
 }: CategoryDetailViewProps) {
+  const { showSuccess, showError } = useToast()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<any>(null)
   const [timeRange, setTimeRange] = useState('thisMonth')
   const [summaryData, setSummaryData] = useState<any>(null)
   const [monthlyData, setMonthlyData] = useState<any>(null)
   const [isLoadingSummary, setIsLoadingSummary] = useState(true)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
 
   // 获取分类汇总数据
   useEffect(() => {
@@ -165,27 +170,34 @@ export default function CategoryDetailView({
     setIsTransactionModalOpen(true)
   }
 
-  const handleDeleteTransaction = async (transactionId: string) => {
-    if (!confirm('确定要删除这笔交易吗？')) {
-      return
-    }
+  const handleDeleteTransaction = (transactionId: string) => {
+    setDeletingTransactionId(transactionId)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deletingTransactionId) return
 
     try {
-      const response = await fetch(`/api/transactions/${transactionId}`, {
+      const response = await fetch(`/api/transactions/${deletingTransactionId}`, {
         method: 'DELETE'
       })
 
       const result = await response.json()
 
       if (result.success) {
+        showSuccess('删除成功', '交易记录已删除')
         // 刷新页面以更新数据
         window.location.reload()
       } else {
-        alert('删除失败：' + (result.error || '未知错误'))
+        showError('删除失败', result.error || '未知错误')
       }
     } catch (error) {
       console.error('Delete transaction error:', error)
-      alert('删除失败：网络错误')
+      showError('删除失败', '网络错误，请稍后重试')
+    } finally {
+      setShowDeleteConfirm(false)
+      setDeletingTransactionId(null)
     }
   }
 
@@ -571,6 +583,21 @@ export default function CategoryDetailView({
         currencies={currencies}
         tags={tags}
         defaultCategoryId={category.id}
+      />
+
+      {/* 删除确认模态框 */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        title="删除交易"
+        message="确定要删除这笔交易吗？此操作不可撤销。"
+        confirmLabel="确认删除"
+        cancelLabel="取消"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setShowDeleteConfirm(false)
+          setDeletingTransactionId(null)
+        }}
+        variant="danger"
       />
     </div>
   )

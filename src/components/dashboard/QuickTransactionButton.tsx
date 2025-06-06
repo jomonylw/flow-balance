@@ -1,5 +1,7 @@
 'use client'
 
+import { useToast } from '@/contexts/ToastContext'
+
 interface Category {
   id: string
   name: string
@@ -16,16 +18,18 @@ interface QuickTransactionButtonProps {
   categories: Category[]
 }
 
-export default function QuickTransactionButton({ 
-  type, 
-  accounts, 
-  categories 
+export default function QuickTransactionButton({
+  type,
+  accounts,
+  categories
 }: QuickTransactionButtonProps) {
+  const { showInfo } = useToast()
+
   const handleClick = () => {
     // 这里将来会打开交易表单模态框
     console.log(`Quick ${type} transaction clicked`)
     // 暂时显示提示
-    alert(`${getTypeLabel(type)}功能即将推出！`)
+    showInfo('功能开发中', `${getTypeLabel(type)}功能即将推出！`)
   }
 
   const getTypeLabel = (type: string) => {

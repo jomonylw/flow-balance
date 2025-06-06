@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Currency } from '@prisma/client'
+import { useToast } from '@/contexts/ToastContext'
 
 interface ExchangeRateData {
   id: string
@@ -27,6 +28,7 @@ export default function ExchangeRateList({
   onDelete,
   onRefresh
 }: ExchangeRateListProps) {
+  const { showSuccess, showError } = useToast()
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
 
@@ -39,15 +41,16 @@ export default function ExchangeRateList({
       })
 
       if (response.ok) {
+        showSuccess('删除成功', '汇率已删除')
         onDelete(rateId)
         setShowDeleteConfirm(null)
       } else {
         const data = await response.json()
-        alert(`删除失败: ${data.error || '未知错误'}`)
+        showError('删除失败', data.error || '未知错误')
       }
     } catch (error) {
       console.error('删除汇率失败:', error)
-      alert('删除失败: 网络错误')
+      showError('删除失败', '网络错误，请稍后重试')
     } finally {
       setDeletingId(null)
     }

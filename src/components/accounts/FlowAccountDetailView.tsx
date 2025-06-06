@@ -8,6 +8,7 @@ import TransactionList from '@/components/transactions/TransactionList'
 import FlowAccountSummaryCard from './FlowAccountSummaryCard'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
+import { useToast } from '@/contexts/ToastContext'
 
 interface User {
   id: string
@@ -78,6 +79,7 @@ export default function FlowAccountDetailView({
   tags,
   user
 }: FlowAccountDetailViewProps) {
+  const { showSuccess, showError, showInfo } = useToast()
   const router = useRouter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<any>(null)
@@ -107,10 +109,6 @@ export default function FlowAccountDetailView({
   }
 
   const handleDeleteTransaction = async (transactionId: string) => {
-    if (!confirm('确定要删除这笔交易吗？')) {
-      return
-    }
-
     try {
       const response = await fetch(`/api/transactions/${transactionId}`, {
         method: 'DELETE'
@@ -119,14 +117,15 @@ export default function FlowAccountDetailView({
       const result = await response.json()
 
       if (result.success) {
+        showSuccess('删除成功', '交易记录已删除')
         // 刷新页面以更新数据
         window.location.reload()
       } else {
-        alert('删除失败：' + (result.error || '未知错误'))
+        showError('删除失败', result.error || '未知错误')
       }
     } catch (error) {
       console.error('Delete transaction error:', error)
-      alert('删除失败：网络错误')
+      showError('删除失败', '网络错误，请稍后重试')
     }
   }
 
@@ -142,21 +141,22 @@ export default function FlowAccountDetailView({
       })
 
       if (response.ok) {
+        showSuccess('删除成功', `账户"${account.name}"已删除`)
         // 删除成功，返回到主页面
         router.push('/')
       } else {
         const error = await response.json()
-        alert(error.message || '删除失败')
+        showError('删除失败', error.message || '未知错误')
       }
     } catch (error) {
       console.error('Error deleting account:', error)
-      alert('删除失败')
+      showError('删除失败', '网络错误，请稍后重试')
     }
   }
 
   // 批量编辑功能（暂时隐藏）
   const handleBatchEdit = (transactionIds: string[]) => {
-    alert(`批量编辑功能开发中，选中了 ${transactionIds.length} 条记录`)
+    showInfo('功能开发中', `批量编辑功能开发中，选中了 ${transactionIds.length} 条记录`)
     // TODO: 实现批量编辑功能
   }
 
@@ -170,15 +170,15 @@ export default function FlowAccountDetailView({
       const successCount = results.filter(r => r.ok).length
 
       if (successCount === transactionIds.length) {
-        alert(`成功删除 ${successCount} 条记录`)
+        showSuccess('批量删除成功', `成功删除 ${successCount} 条记录`)
         window.location.reload()
       } else {
-        alert(`删除了 ${successCount}/${transactionIds.length} 条记录，部分删除失败`)
+        showError('部分删除失败', `删除了 ${successCount}/${transactionIds.length} 条记录，部分删除失败`)
         window.location.reload()
       }
     } catch (error) {
       console.error('Batch delete error:', error)
-      alert('批量删除失败：网络错误')
+      showError('批量删除失败', '网络错误，请稍后重试')
     }
   }
 

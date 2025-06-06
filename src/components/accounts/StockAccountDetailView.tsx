@@ -8,6 +8,7 @@ import TransactionList from '@/components/transactions/TransactionList'
 import StockAccountSummaryCard from './StockAccountSummaryCard'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
+import { useToast } from '@/contexts/ToastContext'
 
 interface User {
   id: string
@@ -74,9 +75,11 @@ export default function StockAccountDetailView({
   tags,
   user
 }: StockAccountDetailViewProps) {
+  const { showSuccess, showError, showInfo } = useToast()
   const router = useRouter()
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<any>(null)
 
   const handleUpdateBalance = () => {
@@ -103,22 +106,16 @@ export default function StockAccountDetailView({
 
         // 检查是否是存量账户的余额记录问题
         if (errorMessage.includes('余额调整记录')) {
-          // 提供清空余额历史的选项
-          const shouldClearBalance = confirm(
-            `${errorMessage}\n\n是否要清空该账户的余额历史记录？清空后可以删除账户。\n\n注意：此操作将删除所有余额调整记录，不可撤销。`
-          )
-
-          if (shouldClearBalance) {
-            await handleClearBalanceHistory()
-            return
-          }
+          // 显示错误信息，用户可以通过删除确认模态框处理
+          showError('删除失败', `${errorMessage}。请使用"清空余额历史并删除"选项。`)
+          return
         }
 
-        alert(errorMessage)
+        showError('删除失败', errorMessage)
       }
     } catch (error) {
       console.error('Error deleting account:', error)
-      alert('删除失败')
+      showError('删除失败', '网络错误，请稍后重试')
     }
   }
 
@@ -130,28 +127,21 @@ export default function StockAccountDetailView({
 
       if (response.ok) {
         const result = await response.json()
-        alert(result.message || '余额历史已清空')
+        showSuccess('清空成功', result.message || '余额历史已清空')
 
-        // 清空成功后，再次尝试删除账户
-        const shouldDeleteAccount = confirm('余额历史已清空，是否继续删除账户？')
-        if (shouldDeleteAccount) {
-          await handleDeleteAccount()
-        }
+        // 清空成功后，直接删除账户
+        await handleDeleteAccount()
       } else {
         const error = await response.json()
-        alert(error.message || '清空余额历史失败')
+        showError('清空失败', error.message || '清空余额历史失败')
       }
     } catch (error) {
       console.error('Error clearing balance history:', error)
-      alert('清空余额历史失败')
+      showError('清空失败', '网络错误，请稍后重试')
     }
   }
 
   const handleDeleteBalanceRecord = async (transactionId: string) => {
-    if (!confirm('确定要删除这条余额记录吗？')) {
-      return
-    }
-
     try {
       const response = await fetch(`/api/transactions/${transactionId}`, {
         method: 'DELETE'
@@ -160,14 +150,15 @@ export default function StockAccountDetailView({
       const result = await response.json()
 
       if (result.success) {
+        showSuccess('删除成功', '余额记录已删除')
         // 刷新页面以更新数据
         window.location.reload()
       } else {
-        alert('删除失败：' + (result.error || '未知错误'))
+        showError('删除失败', result.error || '未知错误')
       }
     } catch (error) {
       console.error('Delete balance record error:', error)
-      alert('删除失败：网络错误')
+      showError('删除失败', '网络错误，请稍后重试')
     }
   }
 
@@ -178,7 +169,7 @@ export default function StockAccountDetailView({
 
   // 批量编辑功能（暂时隐藏）
   const handleBatchEdit = (transactionIds: string[]) => {
-    alert(`批量编辑功能开发中，选中了 ${transactionIds.length} 条记录`)
+    showInfo('功能开发中', `批量编辑功能开发中，选中了 ${transactionIds.length} 条记录`)
     // TODO: 实现批量编辑功能
   }
 
@@ -192,15 +183,15 @@ export default function StockAccountDetailView({
       const successCount = results.filter(r => r.ok).length
 
       if (successCount === transactionIds.length) {
-        alert(`成功删除 ${successCount} 条记录`)
+        showSuccess('批量删除成功', `成功删除 ${successCount} 条记录`)
         window.location.reload()
       } else {
-        alert(`删除了 ${successCount}/${transactionIds.length} 条记录，部分删除失败`)
+        showError('部分删除失败', `删除了 ${successCount}/${transactionIds.length} 条记录，部分删除失败`)
         window.location.reload()
       }
     } catch (error) {
       console.error('Batch delete error:', error)
-      alert('批量删除失败：网络错误')
+      showError('批量删除失败', '网络错误，请稍后重试')
     }
   }
 
@@ -338,11 +329,7 @@ export default function StockAccountDetailView({
               </span>
               {account.transactions.length > 0 && (
                 <button
-                  onClick={() => {
-                    if (confirm('确定要清空所有余额记录吗？此操作不可撤销。')) {
-                      handleClearBalanceHistory()
-                    }
-                  }}
+                  onClick={() => setShowClearConfirm(true)}
                   className="inline-flex items-center px-3 py-1 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
                   <svg className="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -390,6 +377,22 @@ export default function StockAccountDetailView({
         confirmLabel="删除"
         onConfirm={handleDeleteAccount}
         onCancel={() => setShowDeleteConfirm(false)}
+        variant="danger"
+      />
+
+      {/* 清空记录确认模态框 */}
+      <ConfirmationModal
+        isOpen={showClearConfirm}
+        title="清空余额记录"
+        message="确定要清空所有余额记录吗？此操作不可撤销。"
+        confirmLabel="确认清空"
+        cancelLabel="取消"
+        onConfirm={() => {
+          setShowClearConfirm(false)
+          handleClearBalanceHistory()
+        }}
+        onCancel={() => setShowClearConfirm(false)}
+        variant="warning"
       />
     </div>
   )
