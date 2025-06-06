@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
+import QuickBalanceUpdateModal from '@/components/dashboard/QuickBalanceUpdateModal'
 import NetWorthChart from './NetWorthChart'
 import CashFlowChart from './CashFlowChart'
 import SmartAccountSummary from './SmartAccountSummary'
@@ -77,6 +78,7 @@ export default function DashboardContent({
   baseCurrency
 }: DashboardContentProps) {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
+  const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
   const [defaultTransactionType, setDefaultTransactionType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE')
   const [chartData, setChartData] = useState<any>(null)
   const [isLoadingCharts, setIsLoadingCharts] = useState(true)
@@ -86,6 +88,10 @@ export default function DashboardContent({
   const handleQuickTransaction = (type: 'INCOME' | 'EXPENSE') => {
     setDefaultTransactionType(type)
     setIsTransactionModalOpen(true)
+  }
+
+  const handleQuickBalanceUpdate = () => {
+    setIsBalanceUpdateModalOpen(true)
   }
 
   const handleTransactionSuccess = () => {
@@ -436,7 +442,15 @@ export default function DashboardContent({
             </svg>
             记支出
           </button>
-
+          <button
+            onClick={handleQuickBalanceUpdate}
+            className="flex items-center justify-center px-4 py-3 border border-blue-200 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors touch-manipulation"
+          >
+            <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            更新余额
+          </button>
         </div>
       </div>
 
@@ -548,6 +562,16 @@ export default function DashboardContent({
         currencies={currencies}
         tags={tags}
         defaultType={defaultTransactionType}
+      />
+
+      {/* 快速余额更新模态框 */}
+      <QuickBalanceUpdateModal
+        isOpen={isBalanceUpdateModalOpen}
+        onClose={() => setIsBalanceUpdateModalOpen(false)}
+        onSuccess={handleTransactionSuccess}
+        accounts={accountsWithBalances}
+        currencies={currencies}
+        baseCurrency={baseCurrency}
       />
     </PageContainer>
   )
