@@ -51,9 +51,10 @@ export default function SelectField({
         required={required}
         disabled={disabled}
         className={`
-          w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
+          w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md shadow-sm
           text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-          disabled:bg-gray-50 disabled:text-gray-500
+          disabled:bg-gray-50 disabled:text-gray-500 appearance-none bg-white
+          text-base sm:text-sm min-h-[44px] sm:min-h-[auto]
           ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}
         `}
       >

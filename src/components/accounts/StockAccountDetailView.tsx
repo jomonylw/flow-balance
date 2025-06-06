@@ -90,9 +90,9 @@ export default function StockAccountDetailView({
   const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       {/* 账户类型提示横幅 */}
-      <div className={`mb-6 p-4 rounded-lg border-l-4 ${
+      <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border-l-4 ${
         account.category.type === 'ASSET'
           ? 'bg-blue-50 border-blue-400'
           : 'bg-orange-50 border-orange-400'
@@ -122,14 +122,14 @@ export default function StockAccountDetailView({
       </div>
 
       {/* 面包屑导航 */}
-      <nav className="flex mb-6" aria-label="Breadcrumb">
-        <ol className="inline-flex items-center space-x-1 md:space-x-3">
+      <nav className="flex mb-4 sm:mb-6 overflow-x-auto" aria-label="Breadcrumb">
+        <ol className="inline-flex items-center space-x-1 sm:space-x-3 whitespace-nowrap">
           <li className="inline-flex items-center">
             <Link
               href="/dashboard"
-              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600"
+              className="inline-flex items-center text-xs sm:text-sm font-medium text-gray-700 hover:text-blue-600"
             >
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
               </svg>
               Dashboard
@@ -137,10 +137,10 @@ export default function StockAccountDetailView({
           </li>
           <li>
             <div className="flex items-center">
-              <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-4 h-4 sm:w-6 sm:h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
               </svg>
-              <span className="ml-1 text-sm font-medium text-gray-500 md:ml-2">
+              <span className="ml-1 sm:ml-2 text-xs sm:text-sm font-medium text-gray-500 truncate max-w-[150px] sm:max-w-none">
                 {account.name}
               </span>
             </div>
@@ -149,27 +149,27 @@ export default function StockAccountDetailView({
       </nav>
 
       {/* 账户标题和操作 */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{account.name}</h1>
-          <p className="mt-2 text-gray-600">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 sm:mb-6 space-y-4 sm:space-y-0">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">{account.name}</h1>
+          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
             {account.category.name}
             {account.description && ` • ${account.description}`}
           </p>
           <div className="mt-2">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              account.category.type === 'ASSET' 
-                ? 'bg-blue-100 text-blue-800' 
+            <span className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              account.category.type === 'ASSET'
+                ? 'bg-blue-100 text-blue-800'
                 : 'bg-orange-100 text-orange-800'
             }`}>
               {account.category.type === 'ASSET' ? '资产账户' : '负债账户'} • 存量数据
             </span>
           </div>
         </div>
-        
+
         <button
           onClick={handleUpdateBalance}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 touch-manipulation w-full sm:w-auto"
         >
           <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -179,7 +179,7 @@ export default function StockAccountDetailView({
       </div>
 
       {/* 账户摘要卡片 */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <StockAccountSummaryCard
           account={account}
           balance={balance}
@@ -189,16 +189,16 @@ export default function StockAccountDetailView({
 
       {/* 余额变化记录 */}
       <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">
               余额变化记录
             </h2>
-            <span className="text-sm text-gray-500">
+            <span className="text-xs sm:text-sm text-gray-500">
               共 {account.transactions.length} 笔记录
             </span>
           </div>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">
             记录账户余额的历史变化，包括余额更新和相关交易
           </p>
         </div>

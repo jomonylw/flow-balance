@@ -18,7 +18,7 @@ export async function GET() {
       include: { baseCurrency: true }
     })
 
-    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥' }
+    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
 
     // 获取账户余额汇总
     const accounts = await prisma.account.findMany({

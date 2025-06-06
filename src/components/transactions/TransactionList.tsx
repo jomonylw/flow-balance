@@ -5,6 +5,7 @@ import { useState } from 'react'
 interface Category {
   id: string
   name: string
+  type?: 'INCOME' | 'EXPENSE' | 'ASSET' | 'LIABILITY'
 }
 
 interface Currency {
@@ -172,12 +173,12 @@ export default function TransactionList({
 
   if (transactions.length === 0) {
     return (
-      <div className="p-8 text-center text-gray-500">
-        <svg className="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="p-6 sm:p-8 text-center text-gray-500">
+        <svg className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
-        <p className="text-lg font-medium">暂无交易记录</p>
-        <p className="text-sm mt-1">开始记录您的第一笔交易吧！</p>
+        <p className="text-base sm:text-lg font-medium">暂无交易记录</p>
+        <p className="text-xs sm:text-sm mt-1">开始记录您的第一笔交易吧！</p>
       </div>
     )
   }
@@ -186,16 +187,16 @@ export default function TransactionList({
     <div>
       {/* 批量操作栏 */}
       {!readOnly && selectedTransactions.size > 0 && (
-        <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-blue-700">
+        <div className="bg-blue-50 border-b border-blue-200 px-4 sm:px-6 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+            <span className="text-xs sm:text-sm text-blue-700">
               已选择 {selectedTransactions.size} 项
             </span>
             <div className="flex space-x-2">
-              <button className="text-sm text-blue-600 hover:text-blue-500">
+              <button className="text-xs sm:text-sm text-blue-600 hover:text-blue-500 touch-manipulation">
                 批量编辑
               </button>
-              <button className="text-sm text-red-600 hover:text-red-500">
+              <button className="text-xs sm:text-sm text-red-600 hover:text-red-500 touch-manipulation">
                 批量删除
               </button>
             </div>
@@ -203,8 +204,8 @@ export default function TransactionList({
         </div>
       )}
 
-      {/* 表头 */}
-      <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+      {/* 表头 - 移动端隐藏 */}
+      <div className="hidden sm:block bg-gray-50 px-4 sm:px-6 py-3 border-b border-gray-200">
         <div className="flex items-center">
           {!readOnly && (
             <input
@@ -225,11 +226,98 @@ export default function TransactionList({
         {transactions.map(transaction => (
           <div
             key={transaction.id}
-            className={`p-6 hover:bg-gray-50 transition-colors ${
+            className={`p-4 sm:p-6 hover:bg-gray-50 transition-colors ${
               selectedTransactions.has(transaction.id) ? 'bg-blue-50' : ''
             }`}
           >
-            <div className="flex items-center space-x-4">
+            {/* 移动端布局 */}
+            <div className="sm:hidden">
+              <div className="flex items-start space-x-3">
+                {/* 选择框和图标 */}
+                <div className="flex flex-col items-center space-y-2">
+                  {!readOnly && (
+                    <input
+                      type="checkbox"
+                      checked={selectedTransactions.has(transaction.id)}
+                      onChange={() => handleSelectTransaction(transaction.id)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  )}
+                  <div className="flex-shrink-0">
+                    {getTypeIcon(transaction)}
+                  </div>
+                </div>
+
+                {/* 交易信息 */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {transaction.description}
+                        </p>
+                        {isBalanceAdjustment(transaction) && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            余额调整
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500">
+                        <div>{transaction.category.name}</div>
+                        <div className="flex items-center space-x-1 mt-0.5">
+                          {showAccount && transaction.account && (
+                            <span>{transaction.account.name} • </span>
+                          )}
+                          <span>{formatDate(transaction.date)}</span>
+                          {!isBalanceAdjustment(transaction) && (
+                            <>
+                              <span> • </span>
+                              <span className="text-blue-600">
+                                {transaction.type === 'INCOME' ? '收入' :
+                                 transaction.type === 'EXPENSE' ? '支出' : '转账'}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end space-y-2">
+                      <div className="text-right">
+                        {getAmountDisplay(transaction)}
+                      </div>
+                      {!readOnly && (
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => onEdit(transaction)}
+                            className="p-1 text-gray-400 hover:text-gray-600 focus:outline-none touch-manipulation"
+                            title="编辑交易"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          {onDelete && (
+                            <button
+                              onClick={() => onDelete(transaction.id)}
+                              className="p-1 text-gray-400 hover:text-red-600 focus:outline-none touch-manipulation"
+                              title="删除交易"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 桌面端布局 */}
+            <div className="hidden sm:flex items-center space-x-4">
               {/* 选择框 */}
               {!readOnly && (
                 <input
@@ -282,7 +370,7 @@ export default function TransactionList({
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
                       {getAmountDisplay(transaction)}
@@ -316,32 +404,35 @@ export default function TransactionList({
                   </div>
                 </div>
 
-                {/* 标签 */}
-                {transaction.tags.length > 0 && (
-                  <div className="flex items-center space-x-1 mt-2">
-                    {transaction.tags.slice(0, 3).map(({ tag }) => (
-                      <span
-                        key={tag.id}
-                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                        style={tag.color ? { backgroundColor: tag.color + '20', color: tag.color } : {}}
-                      >
-                        {tag.name}
-                      </span>
-                    ))}
-                    {transaction.tags.length > 3 && (
-                      <span className="text-xs text-gray-500">
-                        +{transaction.tags.length - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
+            {/* 标签和备注 - 共享布局 */}
+            <div className="mt-2 sm:ml-12">
+              {/* 标签 */}
+              {transaction.tags.length > 0 && (
+                <div className="flex items-center flex-wrap gap-1 mb-2">
+                  {transaction.tags.slice(0, 3).map(({ tag }) => (
+                    <span
+                      key={tag.id}
+                      className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                      style={tag.color ? { backgroundColor: tag.color + '20', color: tag.color } : {}}
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                  {transaction.tags.length > 3 && (
+                    <span className="text-xs text-gray-500">
+                      +{transaction.tags.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
 
-                {/* 备注 */}
-                {transaction.notes && (
-                  <p className="text-xs text-gray-500 mt-2 italic">
-                    {transaction.notes}
-                  </p>
-                )}
+              {/* 备注 */}
+              {transaction.notes && (
+                <p className="text-xs text-gray-500 italic">
+                  {transaction.notes}
+                </p>
+              )}
+            </div>
               </div>
             </div>
           </div>

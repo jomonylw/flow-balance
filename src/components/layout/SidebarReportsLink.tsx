@@ -3,7 +3,11 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-export default function SidebarReportsLink() {
+interface SidebarReportsLinkProps {
+  onNavigate?: () => void
+}
+
+export default function SidebarReportsLink({ onNavigate }: SidebarReportsLinkProps) {
   const pathname = usePathname()
   const isActive = pathname === '/reports'
 
@@ -11,10 +15,11 @@ export default function SidebarReportsLink() {
     <div className="mb-6">
       <Link
         href="/reports"
+        onClick={onNavigate}
         className={`
           flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors
-          ${isActive 
-            ? 'bg-green-100 text-green-700 border border-green-200' 
+          ${isActive
+            ? 'bg-green-100 text-green-700 border border-green-200'
             : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
           }
         `}

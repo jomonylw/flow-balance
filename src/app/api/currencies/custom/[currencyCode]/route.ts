@@ -4,9 +4,9 @@ import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     currencyCode: string
-  }
+  }>
 }
 
 /**

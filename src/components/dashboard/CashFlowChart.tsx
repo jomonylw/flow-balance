@@ -66,16 +66,19 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
       },
       legend: {
         data: data.series.map(s => s.name),
-        top: 30,
+        top: window.innerWidth < 768 ? 25 : 30,
         textStyle: {
-          color: '#374151'
-        }
+          color: '#374151',
+          fontSize: window.innerWidth < 768 ? 10 : 12
+        },
+        itemWidth: window.innerWidth < 768 ? 15 : 25,
+        itemHeight: window.innerWidth < 768 ? 10 : 14
       },
       grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
-        top: '15%',
+        left: window.innerWidth < 768 ? '8%' : '3%',
+        right: window.innerWidth < 768 ? '8%' : '4%',
+        bottom: window.innerWidth < 768 ? '8%' : '3%',
+        top: window.innerWidth < 768 ? '20%' : '15%',
         containLabel: true
       },
       xAxis: {
@@ -83,7 +86,9 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
         data: data.xAxis,
         axisLabel: {
           color: '#6b7280',
-          rotate: 45
+          rotate: window.innerWidth < 768 ? 45 : 0,
+          fontSize: window.innerWidth < 768 ? 10 : 12,
+          interval: window.innerWidth < 768 ? 'auto' : 0
         },
         axisLine: {
           lineStyle: {
@@ -187,11 +192,11 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
   }, [])
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div 
-        ref={chartRef} 
-        style={{ width: '100%', height: '400px' }}
-        className="min-h-[400px]"
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+      <div
+        ref={chartRef}
+        style={{ width: '100%', height: window.innerWidth < 768 ? '300px' : '400px' }}
+        className="min-h-[300px] sm:min-h-[400px]"
       />
     </div>
   )

@@ -94,7 +94,7 @@ export default async function AccountPage({ params }: AccountPageProps) {
         user={{
           ...user,
           settings: userSettings ? {
-            baseCurrency: userSettings.baseCurrency
+            baseCurrency: userSettings.baseCurrency || undefined
           } : undefined
         }}
       />

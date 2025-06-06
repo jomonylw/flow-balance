@@ -22,7 +22,7 @@ interface User {
 interface Category {
   id: string
   name: string
-  type: 'INCOME' | 'EXPENSE'
+  type?: 'INCOME' | 'EXPENSE' | 'ASSET' | 'LIABILITY'
 }
 
 interface Currency {
@@ -47,6 +47,10 @@ interface Transaction {
   category: Category
   currency: Currency
   tags: { tag: Tag }[]
+  account?: {
+    id: string
+    name: string
+  }
 }
 
 interface Account {
@@ -137,28 +141,28 @@ export default function FlowAccountDetailView({
     <div className="p-6 max-w-7xl mx-auto">
       {/* 账户类型提示横幅 */}
       <div className={`mb-6 p-4 rounded-lg border-l-4 ${
-        account.category.type === 'INCOME'
+        (account.category.type === 'INCOME')
           ? 'bg-green-50 border-green-400'
           : 'bg-red-50 border-red-400'
       }`}>
         <div className="flex items-center">
           <div className="flex-shrink-0">
             <svg className={`h-5 w-5 ${
-              account.category.type === 'INCOME' ? 'text-green-400' : 'text-red-400'
+              (account.category.type === 'INCOME') ? 'text-green-400' : 'text-red-400'
             }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div className="ml-3">
             <p className={`text-sm font-medium ${
-              account.category.type === 'INCOME' ? 'text-green-800' : 'text-red-800'
+              (account.category.type === 'INCOME') ? 'text-green-800' : 'text-red-800'
             }`}>
               📊 流量类账户操作提示
             </p>
             <p className={`text-sm ${
-              account.category.type === 'INCOME' ? 'text-green-700' : 'text-red-700'
+              (account.category.type === 'INCOME') ? 'text-green-700' : 'text-red-700'
             }`}>
-              {account.category.type === 'INCOME' ? '收入' : '支出'}账户通过"添加交易"来记录现金流动，
+              {(account.category.type === 'INCOME') ? '收入' : '支出'}账户通过"添加交易"来记录现金流动，
               每笔交易反映特定期间的资金流入或流出。建议及时记录每笔收支明细。
             </p>
           </div>
@@ -202,11 +206,11 @@ export default function FlowAccountDetailView({
           </p>
           <div className="mt-2">
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              account.category.type === 'INCOME' 
-                ? 'bg-green-100 text-green-800' 
+              (account.category.type === 'INCOME')
+                ? 'bg-green-100 text-green-800'
                 : 'bg-red-100 text-red-800'
             }`}>
-              {account.category.type === 'INCOME' ? '收入账户' : '支出账户'} • 流量数据
+              {(account.category.type === 'INCOME') ? '收入账户' : '支出账户'} • 流量数据
             </span>
           </div>
         </div>
@@ -243,7 +247,7 @@ export default function FlowAccountDetailView({
             </span>
           </div>
           <p className="text-sm text-gray-600 mt-1">
-            记录{account.category.type === 'INCOME' ? '收入' : '支出'}的详细流水和现金流动
+            记录{(account.category.type === 'INCOME') ? '收入' : '支出'}的详细流水和现金流动
           </p>
         </div>
         
@@ -267,7 +271,7 @@ export default function FlowAccountDetailView({
         currencies={currencies}
         tags={tags}
         defaultAccountId={account.id}
-        defaultType={account.category.type}
+        defaultType={account.category.type as 'INCOME' | 'EXPENSE' | 'TRANSFER'}
       />
     </div>
   )

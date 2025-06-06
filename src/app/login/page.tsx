@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
+import { Suspense } from 'react'
 import AuthLayout from '@/components/auth/AuthLayout'
 import LoginForm from '@/components/auth/LoginForm'
 
@@ -11,11 +12,13 @@ export default async function LoginPage() {
   }
 
   return (
-    <AuthLayout 
-      title="登录" 
+    <AuthLayout
+      title="登录"
       subtitle="登录您的 Flow Balance 账户"
     >
-      <LoginForm />
+      <Suspense fallback={<div>Loading...</div>}>
+        <LoginForm />
+      </Suspense>
     </AuthLayout>
   )
 }

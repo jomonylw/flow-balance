@@ -1,11 +1,22 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import TopUserStatusBar from './TopUserStatusBar'
-import NavigationSidebar from './NavigationSidebar'
+import AppLayoutClient from './AppLayoutClient'
 
 interface AppLayoutProps {
   children: React.ReactNode
+}
+
+interface User {
+  id: string
+  email: string
+  settings?: {
+    baseCurrency?: {
+      code: string
+      name: string
+      symbol: string
+    }
+  }
 }
 
 export default async function AppLayout({ children }: AppLayoutProps) {
@@ -24,25 +35,17 @@ export default async function AppLayout({ children }: AppLayoutProps) {
   const userWithSettings = {
     ...user,
     settings: userSettings ? {
-      baseCurrency: userSettings.baseCurrency
+      baseCurrency: userSettings.baseCurrency ? {
+        code: userSettings.baseCurrency.code,
+        name: userSettings.baseCurrency.name,
+        symbol: userSettings.baseCurrency.symbol
+      } : undefined
     } : undefined
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* 顶部用户状态栏 */}
-      <TopUserStatusBar user={userWithSettings} />
-
-      {/* 主内容区域 */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* 左侧导航栏 */}
-        <NavigationSidebar user={user} />
-
-        {/* 右侧主内容 */}
-        <main className="flex-1 overflow-y-auto bg-white">
-          {children}
-        </main>
-      </div>
-    </div>
+    <AppLayoutClient user={userWithSettings}>
+      {children}
+    </AppLayoutClient>
   )
 }

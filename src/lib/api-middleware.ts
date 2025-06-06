@@ -183,7 +183,7 @@ function getClientId(request: NextRequest, user: any): string {
   }
   
   const forwarded = request.headers.get('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0] : request.ip || 'unknown'
+  const ip = forwarded ? forwarded.split(',')[0] : 'unknown'
   return `ip:${ip}`
 }
 
@@ -206,7 +206,7 @@ function logApiRequest(
     duration,
     timestamp: new Date().toISOString(),
     userAgent: request.headers.get('user-agent'),
-    ip: request.headers.get('x-forwarded-for') || request.ip
+    ip: request.headers.get('x-forwarded-for') || 'unknown'
   }
   
   // 在生产环境中，这里应该使用专业的日志服务

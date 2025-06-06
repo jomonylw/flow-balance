@@ -46,7 +46,7 @@ export default async function TransactionsPage() {
         user={{
           ...user,
           settings: userSettings ? {
-            baseCurrency: userSettings.baseCurrency
+            baseCurrency: userSettings.baseCurrency || undefined
           } : undefined
         }}
       />

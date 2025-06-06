@@ -132,13 +132,23 @@ async function getStockCategoryMonthlyData(
 
   // 为每个账户计算月末余额
   for (const account of accounts) {
+    // 序列化账户数据，将 Decimal 转换为 number
+    const serializedAccount = {
+      ...account,
+      transactions: account.transactions.map(transaction => ({
+        ...transaction,
+        amount: parseFloat(transaction.amount.toString()),
+        date: transaction.date.toISOString()
+      }))
+    }
+
     // 为每个月计算该账户的余额
     Object.keys(monthlyData).forEach(monthKey => {
       const [year, month] = monthKey.split('-')
       const monthEnd = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999) // 月末最后一刻
 
       // 计算截止到该月末的余额
-      const balancesAtMonthEnd = calculateAccountBalance(account, {
+      const balancesAtMonthEnd = calculateAccountBalance(serializedAccount, {
         asOfDate: monthEnd,
         validateData: false // 减少日志输出
       })

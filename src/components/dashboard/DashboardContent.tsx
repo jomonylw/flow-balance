@@ -6,6 +6,7 @@ import NetWorthChart from './NetWorthChart'
 import CashFlowChart from './CashFlowChart'
 import SmartAccountSummary from './SmartAccountSummary'
 import ExchangeRateAlert from './ExchangeRateAlert'
+import PageContainer from '../ui/PageContainer'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { validateAccountData, validateChartData } from '@/lib/data-validation'
 
@@ -18,6 +19,7 @@ interface Account {
   id: string
   name: string
   category: {
+    id?: string
     name: string
     type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   }
@@ -130,17 +132,20 @@ export default function DashboardContent({
       id: account.id,
       name: account.name,
       category: {
-        id: account.category.id,
+        id: account.id, // 使用账户 ID 作为分类 ID 的占位符
         name: account.category.name,
         type: account.category.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
       },
-      transactions: (account.transactions || []).map(t => ({
-        id: t.id,
+      transactions: (account.transactions || []).map((t, index) => ({
+        id: `${account.id}-${index}`, // 生成假的交易 ID
         type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER',
         amount: t.amount,
-        date: t.date,
-        description: t.description,
-        currency: t.currency
+        date: new Date().toISOString(), // 使用当前日期作为占位符
+        description: '交易记录', // 使用默认描述
+        currency: {
+          code: t.currency.code,
+          symbol: t.currency.symbol
+        }
       }))
     }))
 
@@ -185,22 +190,18 @@ export default function DashboardContent({
   })
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* 页面标题 */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-2 text-gray-600">
-          欢迎回来，{user.email}！这里是您的财务概览。
-        </p>
-      </div>
+    <PageContainer
+      title="Dashboard"
+      subtitle={`欢迎回来，${user.email}！这里是您的财务概览。`}
+    >
 
       {/* 汇率设置提醒 */}
-      <ExchangeRateAlert className="mb-6" />
+      <ExchangeRateAlert className="mb-4 sm:mb-6" />
 
       {/* 数据质量评分 */}
       {validationResult && validationResult.score !== undefined && (
-        <div className="mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
+        <div className="mb-4 sm:mb-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">数据质量评分</h3>
               <div className="flex items-center">
@@ -227,26 +228,26 @@ export default function DashboardContent({
             </div>
 
             {validationResult.details && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-gray-900">{validationResult.details.accountsChecked}</div>
-                  <div className="text-gray-500">账户检查</div>
+                  <div className="text-base sm:text-lg font-semibold text-gray-900">{validationResult.details.accountsChecked}</div>
+                  <div className="text-xs sm:text-sm text-gray-500">账户检查</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-gray-900">{validationResult.details.transactionsChecked}</div>
-                  <div className="text-gray-500">交易检查</div>
+                  <div className="text-base sm:text-lg font-semibold text-gray-900">{validationResult.details.transactionsChecked}</div>
+                  <div className="text-xs sm:text-sm text-gray-500">交易检查</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-red-600">{validationResult.details.categoriesWithoutType}</div>
-                  <div className="text-gray-500">未设类型</div>
+                  <div className="text-base sm:text-lg font-semibold text-red-600">{validationResult.details.categoriesWithoutType}</div>
+                  <div className="text-xs sm:text-sm text-gray-500">未设类型</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-red-600">{validationResult.details.invalidTransactions}</div>
-                  <div className="text-gray-500">无效交易</div>
+                  <div className="text-base sm:text-lg font-semibold text-red-600">{validationResult.details.invalidTransactions}</div>
+                  <div className="text-xs sm:text-sm text-gray-500">无效交易</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold text-yellow-600">{validationResult.details.businessLogicViolations}</div>
-                  <div className="text-gray-500">逻辑违规</div>
+                <div className="text-center col-span-2 sm:col-span-1">
+                  <div className="text-base sm:text-lg font-semibold text-yellow-600">{validationResult.details.businessLogicViolations}</div>
+                  <div className="text-xs sm:text-sm text-gray-500">逻辑违规</div>
                 </div>
               </div>
             )}
@@ -412,32 +413,32 @@ export default function DashboardContent({
       </div>
 
       {/* 快速操作 */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 sm:mb-8">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
           快速操作
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button 
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <button
             onClick={() => handleQuickTransaction('INCOME')}
-            className="flex items-center justify-center px-4 py-3 border border-green-200 rounded-md text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors"
+            className="flex items-center justify-center px-4 py-3 border border-green-200 rounded-md text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors touch-manipulation"
           >
             <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             记收入
           </button>
-          <button 
+          <button
             onClick={() => handleQuickTransaction('EXPENSE')}
-            className="flex items-center justify-center px-4 py-3 border border-red-200 rounded-md text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
+            className="flex items-center justify-center px-4 py-3 border border-red-200 rounded-md text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 transition-colors touch-manipulation"
           >
             <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
             </svg>
             记支出
           </button>
-          <button 
+          <button
             onClick={() => handleQuickTransaction('TRANSFER')}
-            className="flex items-center justify-center px-4 py-3 border border-blue-200 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+            className="flex items-center justify-center px-4 py-3 border border-blue-200 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors touch-manipulation sm:col-span-1 col-span-1"
           >
             <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -469,18 +470,16 @@ export default function DashboardContent({
             </div>
           </div>
         ) : chartData ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
             <NetWorthChart
               data={chartData.netWorthChart}
               currency={chartData.currency}
               loading={isLoadingCharts}
-              error={chartError}
+              error={chartError || undefined}
             />
             <CashFlowChart
               data={chartData.cashFlowChart}
               currency={chartData.currency}
-              loading={isLoadingCharts}
-              error={chartError}
             />
           </div>
         ) : (
@@ -545,12 +544,19 @@ export default function DashboardContent({
         isOpen={isTransactionModalOpen}
         onClose={() => setIsTransactionModalOpen(false)}
         onSuccess={handleTransactionSuccess}
-        accounts={accounts}
+        accounts={accounts.map(account => ({
+          ...account,
+          category: {
+            id: account.category.id || account.id, // 使用账户 ID 作为分类 ID 的占位符
+            name: account.category.name,
+            type: account.category.type
+          }
+        }))}
         categories={categories}
         currencies={currencies}
         tags={tags}
         defaultType={defaultTransactionType}
       />
-    </div>
+    </PageContainer>
   )
 }

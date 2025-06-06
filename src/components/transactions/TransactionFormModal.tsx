@@ -336,7 +336,7 @@ export default function TransactionFormModal({
         </div>
 
         {/* 基本信息 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <SelectField
             name="type"
             label="交易类型"
@@ -413,7 +413,7 @@ export default function TransactionFormModal({
           })()}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <InputField
             type="number"
             name="amount"
@@ -469,7 +469,7 @@ export default function TransactionFormModal({
                   type="button"
                   onClick={() => handleTagToggle(tag.id)}
                   className={`
-                    inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors
+                    inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors touch-manipulation
                     ${formData.tagIds.includes(tag.id)
                       ? 'bg-blue-100 text-blue-800 border border-blue-200'
                       : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
@@ -489,11 +489,11 @@ export default function TransactionFormModal({
         )}
 
         {/* 操作按钮 */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
           >
             取消
           </button>

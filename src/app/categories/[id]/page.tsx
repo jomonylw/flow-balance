@@ -30,7 +30,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
               category: true,
               transactions: {
                 include: {
-                  currency: true
+                  currency: true,
+                  category: true,
+                  tags: {
+                    include: {
+                      tag: true
+                    }
+                  }
                 }
               }
             }
@@ -142,8 +148,16 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   // 序列化 Decimal 对象
   const serializedCategory = {
     ...category,
+    parent: category.parent ? {
+      id: category.parent.id,
+      name: category.parent.name,
+      type: category.parent.type,
+      parentId: category.parent.parentId,
+      transactions: []
+    } : undefined,
     children: category.children.map(child => ({
       ...child,
+      transactions: [], // Add empty transactions array for children
       accounts: child.accounts.map(account => ({
         ...account,
         description: account.description || undefined,
@@ -151,12 +165,26 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           id: account.category.id,
           name: account.category.name,
           type: account.category.type
-        } : null,
+        } : {
+          id: 'unknown',
+          name: 'Unknown'
+        },
         transactions: account.transactions.map(transaction => ({
           ...transaction,
           amount: parseFloat(transaction.amount.toString()),
           date: transaction.date.toISOString(),
-          notes: transaction.notes || undefined
+          notes: transaction.notes || undefined,
+          account: {
+            id: account.id,
+            name: account.name,
+            category: { name: account.category?.name || 'Unknown' }
+          },
+          tags: transaction.tags?.map(tt => ({
+            tag: {
+              ...tt.tag,
+              color: tt.tag.color || undefined
+            }
+          })) || []
         }))
       }))
     })),
@@ -167,12 +195,20 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         id: account.category.id,
         name: account.category.name,
         type: account.category.type
-      } : null,
+      } : {
+        id: 'unknown',
+        name: 'Unknown'
+      },
       transactions: account.transactions.map(transaction => ({
         ...transaction,
         amount: parseFloat(transaction.amount.toString()),
         date: transaction.date.toISOString(),
         notes: transaction.notes || undefined,
+        account: {
+          id: account.id,
+          name: account.name,
+          category: { name: account.category?.name || 'Unknown' }
+        },
         tags: transaction.tags.map(tt => ({
           tag: {
             ...tt.tag,
@@ -191,12 +227,19 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         name: transaction.account.name,
         category: transaction.account.category ? {
           name: transaction.account.category.name
-        } : null
-      } : null,
+        } : { name: 'Unknown' }
+      } : {
+        id: 'unknown',
+        name: 'Unknown Account',
+        category: { name: 'Unknown' }
+      },
       category: transaction.category ? {
         id: transaction.category.id,
         name: transaction.category.name
-      } : null,
+      } : {
+        id: 'unknown',
+        name: 'Unknown Category'
+      },
       tags: transaction.tags ? transaction.tags.map(tt => ({
         tag: {
           ...tt.tag,
@@ -210,8 +253,20 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     <AppLayout>
       <CategoryDetailView
         category={serializedCategory}
-        accounts={accounts}
-        categories={categories}
+        accounts={accounts.map(account => ({
+          ...account,
+          description: account.description || undefined,
+          category: {
+            id: account.category?.id || 'unknown',
+            name: account.category?.name || 'Unknown',
+            type: account.category?.type
+          },
+          transactions: []
+        }))}
+        categories={categories.map(cat => ({
+          ...cat,
+          transactions: []
+        }))}
         currencies={currencies}
         tags={tags.map(tag => ({
           ...tag,
@@ -220,7 +275,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         user={{
           ...user,
           settings: userSettings ? {
-            baseCurrency: userSettings.baseCurrency
+            baseCurrency: userSettings.baseCurrency || undefined
           } : undefined
         }}
       />

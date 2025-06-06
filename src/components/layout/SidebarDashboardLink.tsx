@@ -3,7 +3,11 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-export default function SidebarDashboardLink() {
+interface SidebarDashboardLinkProps {
+  onNavigate?: () => void
+}
+
+export default function SidebarDashboardLink({ onNavigate }: SidebarDashboardLinkProps) {
   const pathname = usePathname()
   const isActive = pathname === '/dashboard'
 
@@ -11,10 +15,11 @@ export default function SidebarDashboardLink() {
     <div className="mb-6">
       <Link
         href="/dashboard"
+        onClick={onNavigate}
         className={`
           flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors
-          ${isActive 
-            ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+          ${isActive
+            ? 'bg-blue-100 text-blue-700 border border-blue-200'
             : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
           }
         `}

@@ -173,7 +173,7 @@ export default function MonthlySummaryChart({
       series: [
         {
           name: '收入',
-          type: 'bar',
+          type: 'bar' as const,
           data: incomeData,
           itemStyle: {
             color: '#10b981'
@@ -186,7 +186,7 @@ export default function MonthlySummaryChart({
         },
         {
           name: '支出',
-          type: 'bar',
+          type: 'bar' as const,
           data: expenseData.map(val => -val), // 显示为负值
           itemStyle: {
             color: '#ef4444'
@@ -199,7 +199,7 @@ export default function MonthlySummaryChart({
         },
         {
           name: '净收支',
-          type: 'line',
+          type: 'line' as const,
           data: balanceData,
           itemStyle: {
             color: '#3b82f6'
@@ -261,7 +261,7 @@ export default function MonthlySummaryChart({
 
       return {
         name: accountName,
-        type: 'bar',
+        type: 'bar' as const,
         stack: 'total',
         data,
         itemStyle: {

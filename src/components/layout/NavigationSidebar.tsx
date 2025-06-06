@@ -14,9 +14,15 @@ interface User {
 
 interface NavigationSidebarProps {
   user: User
+  isMobile?: boolean
+  onNavigate?: () => void
 }
 
-export default function NavigationSidebar({ user }: NavigationSidebarProps) {
+export default function NavigationSidebar({
+  user,
+  isMobile = false,
+  onNavigate
+}: NavigationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [categories, setCategories] = useState([])
   const [accounts, setAccounts] = useState([])
@@ -92,7 +98,13 @@ export default function NavigationSidebar({ user }: NavigationSidebarProps) {
   }
 
   return (
-    <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
+    <div className={`
+      ${isMobile ? 'w-full' : 'w-80'}
+      bg-gray-50 border-r border-gray-200 flex flex-col h-full
+    `}>
+      {/* 移动端顶部间距 */}
+      {isMobile && <div className="h-16" />}
+
       {/* 搜索框 */}
       <div className="p-4 border-b border-gray-200">
         <SidebarSearchBox
@@ -105,17 +117,17 @@ export default function NavigationSidebar({ user }: NavigationSidebarProps) {
       <div className="flex-1 overflow-y-auto overflow-x-visible">
         <div className="p-4 space-y-4">
           {/* Dashboard 链接 */}
-          <SidebarDashboardLink />
+          <SidebarDashboardLink onNavigate={onNavigate} />
 
           {/* 报表链接 */}
-          <SidebarReportsLink />
+          <SidebarReportsLink onNavigate={onNavigate} />
 
           {/* 分类和账户树 */}
           <div>
             <h3 className="text-sm font-medium text-gray-900 mb-3">
               账户分类
             </h3>
-            
+
             {isLoading ? (
               <div className="space-y-2">
                 {/* 加载骨架屏 */}
@@ -126,11 +138,12 @@ export default function NavigationSidebar({ user }: NavigationSidebarProps) {
                 ))}
               </div>
             ) : (
-              <CategoryAccountTree 
+              <CategoryAccountTree
                 categories={categories}
                 accounts={accounts}
                 searchQuery={searchQuery}
                 onDataChange={handleDataChange}
+                onNavigate={onNavigate}
               />
             )}
           </div>

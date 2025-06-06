@@ -61,9 +61,17 @@ interface Transaction {
   description: string
   notes?: string
   date: string
-  account: Account
+  category: {
+    id: string
+    name: string
+    type?: 'INCOME' | 'EXPENSE' | 'ASSET' | 'LIABILITY'
+  }
   currency: Currency
   tags: { tag: Tag }[]
+  account?: {
+    id: string
+    name: string
+  }
 }
 
 interface StockCategoryDetailViewProps {

@@ -29,6 +29,7 @@ interface Transaction {
   currency: {
     code: string
     symbol: string
+    name: string
   }
 }
 
@@ -128,6 +129,18 @@ export default function SmartCategorySummaryCard({
     let yearStartNetValue = 0
     let totalTransactions = 0
 
+    // 安全检查：确保 accounts 存在
+    if (!category.accounts) {
+      return {
+        currentNetValue: 0,
+        lastMonthNetValue: 0,
+        yearStartNetValue: 0,
+        monthlyChange: 0,
+        yearToDateChange: 0,
+        transactionCount: 0
+      }
+    }
+
     category.accounts.forEach(account => {
       // 验证账户数据完整性
       if (!account) {
@@ -148,16 +161,40 @@ export default function SmartCategorySummaryCard({
       }
 
       try {
+        // 确保账户符合 calculateAccountBalance 的类型要求
+        if (!account.category?.name) {
+          console.warn(`Account ${account.name} has invalid category`)
+          return
+        }
+
+        // 构造符合 calculateAccountBalance 要求的账户对象
+        const accountForCalculation = {
+          ...account,
+          category: {
+            id: account.category.id,
+            name: account.category.name,
+            type: account.category.type
+          },
+          transactions: account.transactions.map(transaction => ({
+            ...transaction,
+            currency: {
+              code: transaction.currency.code,
+              symbol: transaction.currency.symbol,
+              name: transaction.currency.name || transaction.currency.code // 如果没有 name，使用 code 作为 fallback
+            }
+          }))
+        }
+
         // 计算当前余额
-        const currentBalances = calculateAccountBalance(account)
+        const currentBalances = calculateAccountBalance(accountForCalculation)
         const currentBalance = Object.values(currentBalances)[0]?.amount || 0
 
         // 计算上月末余额
-        const lastMonthBalances = calculateAccountBalance(account, new Date(thisMonth.getTime() - 1))
+        const lastMonthBalances = calculateAccountBalance(accountForCalculation, { asOfDate: new Date(thisMonth.getTime() - 1) })
         const lastMonthBalance = Object.values(lastMonthBalances)[0]?.amount || 0
 
         // 计算年初余额
-        const yearStartBalances = calculateAccountBalance(account, new Date(thisYear.getTime() - 1))
+        const yearStartBalances = calculateAccountBalance(accountForCalculation, { asOfDate: new Date(thisYear.getTime() - 1) })
         const yearStartBalance = Object.values(yearStartBalances)[0]?.amount || 0
 
         // 对于负债账户，取绝对值

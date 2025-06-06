@@ -12,11 +12,11 @@ export default async function ReportsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">财务报表</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold">财务报表</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-2">
             查看您的资产负债表和现金流量表，了解财务状况和现金流动情况
           </p>
         </div>
@@ -31,15 +31,15 @@ export default async function ReportsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="text-blue-700">
-          <div className="space-y-2 text-sm">
+          <div className="space-y-2 text-xs sm:text-sm">
             <p><strong>资产负债表</strong>：反映特定时间点的财务状况（存量概念）</p>
-            <ul className="list-disc list-inside ml-4 space-y-1">
+            <ul className="list-disc list-inside ml-2 sm:ml-4 space-y-1">
               <li><strong>资产</strong>：您拥有的现金、银行存款、投资、房产等</li>
               <li><strong>负债</strong>：您欠的信用卡、贷款、应付款等</li>
               <li><strong>净资产</strong>：资产减去负债，反映您的真实财富</li>
             </ul>
             <p><strong>现金流量表</strong>：反映特定时期内的现金流动情况（流量概念）</p>
-            <ul className="list-disc list-inside ml-4 space-y-1">
+            <ul className="list-disc list-inside ml-2 sm:ml-4 space-y-1">
               <li><strong>经营活动</strong>：日常收入支出产生的现金流</li>
               <li><strong>投资活动</strong>：投资理财相关的现金流</li>
               <li><strong>筹资活动</strong>：借贷还款相关的现金流</li>
@@ -85,7 +85,7 @@ export default async function ReportsPage() {
           <CardTitle>使用说明</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 text-xs sm:text-sm">
             <div>
               <h4 className="font-semibold mb-2">资产负债表使用技巧</h4>
               <ul className="space-y-1 text-gray-600">

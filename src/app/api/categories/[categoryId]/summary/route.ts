@@ -43,6 +43,7 @@ export async function GET(
         categoryId: categoryId
       },
       include: {
+        category: true,
         transactions: {
           include: {
             currency: true
@@ -53,8 +54,18 @@ export async function GET(
 
     // 计算账户余额（使用专业的余额计算服务）
     const accountSummaries = accounts.map(account => {
+      // 序列化账户数据，将 Decimal 转换为 number
+      const serializedAccount = {
+        ...account,
+        transactions: account.transactions.map(transaction => ({
+          ...transaction,
+          amount: parseFloat(transaction.amount.toString()),
+          date: transaction.date.toISOString()
+        }))
+      }
+
       // 使用统一的余额计算方法
-      const accountBalances = calculateAccountBalance(account)
+      const accountBalances = calculateAccountBalance(serializedAccount)
 
       // 转换为简单的余额记录格式
       const balances: Record<string, number> = {}

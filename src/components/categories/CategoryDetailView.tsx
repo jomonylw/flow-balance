@@ -27,9 +27,11 @@ interface Account {
   name: string
   description?: string
   category: {
+    id: string
     name: string
+    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   }
-  transactions?: Transaction[]
+  transactions: Transaction[]
 }
 
 interface Currency {
@@ -51,7 +53,18 @@ interface Transaction {
   description: string
   notes?: string
   date: string
-  account: Account
+  category: {
+    id: string
+    name: string
+    type?: 'INCOME' | 'EXPENSE' | 'ASSET' | 'LIABILITY'
+  }
+  account: {
+    id: string
+    name: string
+    category: {
+      name: string
+    }
+  }
   currency: Currency
   tags: { tag: Tag }[]
 }

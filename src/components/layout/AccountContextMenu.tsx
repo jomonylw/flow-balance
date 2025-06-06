@@ -7,6 +7,11 @@ interface Account {
   name: string
   categoryId: string
   description?: string
+  category?: {
+    id?: string
+    name?: string
+    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  }
 }
 
 interface AccountContextMenuProps {
@@ -79,7 +84,7 @@ export default function AccountContextMenu({
   if (!isOpen) return null
 
   // 根据账户类型确定菜单项
-  const accountType = account.category.type
+  const accountType = account.category?.type
   const isStockAccount = accountType === 'ASSET' || accountType === 'LIABILITY'
   const isFlowAccount = accountType === 'INCOME' || accountType === 'EXPENSE'
 

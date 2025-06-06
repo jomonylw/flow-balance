@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       include: { baseCurrency: true }
     })
 
-    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥' }
+    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
 
     // 获取所有账户及其交易
     const accounts = await prisma.account.findMany({
@@ -123,11 +123,11 @@ export async function GET(request: NextRequest) {
         const monthlyIncomeInBaseCurrency = incomeConversions.reduce((sum, result) => {
           if (result.success) {
             return sum + result.convertedAmount
-          } else if (result.fromCurrency === baseCurrency.code) {
+          } else if (result.originalCurrency === baseCurrency.code) {
             // 只有相同货币时才使用原始金额
             return sum + result.originalAmount
           } else {
-            console.warn(`收入汇率转换失败: ${result.fromCurrency} -> ${baseCurrency.code}`)
+            console.warn(`收入汇率转换失败: ${result.originalCurrency} -> ${baseCurrency.code}`)
             return sum // 不添加转换失败的金额
           }
         }, 0)
@@ -135,11 +135,11 @@ export async function GET(request: NextRequest) {
         const monthlyExpenseInBaseCurrency = expenseConversions.reduce((sum, result) => {
           if (result.success) {
             return sum + result.convertedAmount
-          } else if (result.fromCurrency === baseCurrency.code) {
+          } else if (result.originalCurrency === baseCurrency.code) {
             // 只有相同货币时才使用原始金额
             return sum + result.originalAmount
           } else {
-            console.warn(`支出汇率转换失败: ${result.fromCurrency} -> ${baseCurrency.code}`)
+            console.warn(`支出汇率转换失败: ${result.originalCurrency} -> ${baseCurrency.code}`)
             return sum // 不添加转换失败的金额
           }
         }, 0)

@@ -78,7 +78,7 @@ export function PopoverTrigger({ asChild, children, onClick }: PopoverTriggerPro
       onClick: (e: React.MouseEvent) => {
         e.preventDefault()
         if (onClick) onClick()
-        if (children.props.onClick) {
+        if (children.props && typeof children.props === 'object' && 'onClick' in children.props && typeof children.props.onClick === 'function') {
           children.props.onClick(e)
         }
       }

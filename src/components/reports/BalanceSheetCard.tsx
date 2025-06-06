@@ -152,7 +152,7 @@ export default function BalanceSheetCard() {
                   selected={asOfDate}
                   onSelect={(date) => {
                     if (date) {
-                      setAsOfDate(date)
+                      setAsOfDate(Array.isArray(date) ? date[0] : date)
                       setIsCalendarOpen(false)
                     }
                   }}

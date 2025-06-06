@@ -211,7 +211,7 @@ export default function CashFlowCard() {
                   selected={startDate}
                   onSelect={(date) => {
                     if (date) {
-                      setStartDate(date)
+                      setStartDate(Array.isArray(date) ? date[0] : date)
                       setIsStartCalendarOpen(false)
                     }
                   }}
@@ -233,7 +233,7 @@ export default function CashFlowCard() {
                   selected={endDate}
                   onSelect={(date) => {
                     if (date) {
-                      setEndDate(date)
+                      setEndDate(Array.isArray(date) ? date[0] : date)
                       setIsEndCalendarOpen(false)
                     }
                   }}

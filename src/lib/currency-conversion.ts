@@ -18,6 +18,7 @@ export interface ExchangeRateData {
 export interface ConversionResult {
   originalAmount: number
   originalCurrency: string
+  fromCurrency: string
   convertedAmount: number
   targetCurrency: string
   exchangeRate: number
@@ -116,6 +117,7 @@ export async function convertCurrency(
       return {
         originalAmount: amount,
         originalCurrency: fromCurrency,
+        fromCurrency,
         convertedAmount: amount,
         targetCurrency: toCurrency,
         exchangeRate: 1,
@@ -130,6 +132,7 @@ export async function convertCurrency(
     return {
       originalAmount: amount,
       originalCurrency: fromCurrency,
+      fromCurrency,
       convertedAmount,
       targetCurrency: toCurrency,
       exchangeRate: exchangeRateData.rate,
@@ -141,6 +144,7 @@ export async function convertCurrency(
     return {
       originalAmount: amount,
       originalCurrency: fromCurrency,
+      fromCurrency,
       convertedAmount: amount,
       targetCurrency: toCurrency,
       exchangeRate: 1,

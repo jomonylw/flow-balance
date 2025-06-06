@@ -22,7 +22,9 @@ interface Account {
   id: string
   name: string
   category: {
+    id?: string
     name: string
+    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   }
 }
 
@@ -283,7 +285,14 @@ export default function TransactionListView({
         onClose={() => setIsTransactionModalOpen(false)}
         onSuccess={handleTransactionSuccess}
         transaction={editingTransaction}
-        accounts={accounts}
+        accounts={accounts.map(account => ({
+          ...account,
+          category: {
+            id: account.category?.id || account.id,
+            name: account.category?.name || '未分类',
+            type: account.category?.type
+          }
+        }))}
         categories={categories}
         currencies={currencies}
         tags={tags}

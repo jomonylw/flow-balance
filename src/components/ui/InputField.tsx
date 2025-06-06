@@ -15,6 +15,7 @@ interface InputFieldProps {
   className?: string
   help?: string
   autoFocus?: boolean
+  step?: string
 }
 
 const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
@@ -30,7 +31,8 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
     disabled = false,
     className = '',
     help,
-    autoFocus = false
+    autoFocus = false,
+    step
   }, ref) => {
     return (
       <div className={`space-y-2 ${className}`}>
@@ -53,10 +55,12 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
           required={required}
           disabled={disabled}
           autoFocus={autoFocus}
+          step={step}
           className={`
-            w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
-            text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500
+            w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md shadow-sm
+            text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500
             focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500
+            text-base sm:text-sm min-h-[44px] sm:min-h-[auto]
             ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}
           `}
         />

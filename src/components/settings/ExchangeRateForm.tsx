@@ -85,12 +85,13 @@ export default function ExchangeRateForm({
     if (error) setError('')
   }
 
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: value
     }))
-    
+
     if (error) setError('')
   }
 
@@ -233,7 +234,7 @@ export default function ExchangeRateForm({
             onChange={handleInputChange}
             required
             step="0.000001"
-            min="0"
+
             help="1单位源货币 = ? 单位目标货币"
           />
 

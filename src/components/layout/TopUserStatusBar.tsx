@@ -18,9 +18,15 @@ interface User {
 
 interface TopUserStatusBarProps {
   user: User
+  onMenuClick?: () => void
+  showMenuButton?: boolean
 }
 
-export default function TopUserStatusBar({ user }: TopUserStatusBarProps) {
+export default function TopUserStatusBar({
+  user,
+  onMenuClick,
+  showMenuButton = false
+}: TopUserStatusBarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const router = useRouter()
 
@@ -42,15 +48,28 @@ export default function TopUserStatusBar({ user }: TopUserStatusBarProps) {
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3">
       <div className="flex items-center justify-between">
-        {/* 左侧：产品 Logo */}
+        {/* 左侧：移动端菜单按钮 + Logo */}
         <div className="flex items-center">
+          {/* 移动端菜单按钮 */}
+          {showMenuButton && (
+            <button
+              onClick={onMenuClick}
+              className="mr-3 p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden"
+              aria-label="打开菜单"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
+
           <div className="flex items-center space-x-3">
             <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-gray-900">Flow Balance</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900">Flow Balance</h1>
           </div>
         </div>
 

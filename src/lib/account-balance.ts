@@ -13,6 +13,7 @@ export interface Transaction {
   type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
   amount: number
   date?: string | Date
+  description?: string
   currency: {
     code: string
     symbol: string
@@ -175,7 +176,7 @@ export function calculateAccountBalance(
           // 收入类账户：只记录收入交易（累计收入）
           if (transaction.type === 'INCOME') {
             balances[currencyCode].amount += amount
-          } else if (validateData && transaction.type !== 'INCOME') {
+          } else if (validateData) {
             // 对于余额更新交易，不显示警告
             if (!transaction.description?.includes('余额更新')) {
               console.warn(`收入类账户 ${account.name} 中发现非收入交易:`, transaction)
@@ -187,7 +188,7 @@ export function calculateAccountBalance(
           // 支出类账户：只记录支出交易（累计支出）
           if (transaction.type === 'EXPENSE') {
             balances[currencyCode].amount += amount
-          } else if (validateData && transaction.type !== 'EXPENSE') {
+          } else if (validateData) {
             // 对于余额更新交易，不显示警告
             if (!transaction.description?.includes('余额更新')) {
               console.warn(`支出类账户 ${account.name} 中发现非支出交易:`, transaction)

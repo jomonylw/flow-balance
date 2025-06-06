@@ -17,6 +17,11 @@ interface Account {
   name: string
   categoryId: string
   description?: string
+  category: {
+    id: string
+    name: string
+    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  }
 }
 
 interface CategoryAccountTreeProps {
@@ -24,13 +29,15 @@ interface CategoryAccountTreeProps {
   accounts: Account[]
   searchQuery: string
   onDataChange: () => void
+  onNavigate?: () => void
 }
 
-export default function CategoryAccountTree({ 
-  categories, 
-  accounts, 
+export default function CategoryAccountTree({
+  categories,
+  accounts,
   searchQuery,
-  onDataChange 
+  onDataChange,
+  onNavigate
 }: CategoryAccountTreeProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
 
@@ -151,6 +158,7 @@ export default function CategoryAccountTree({
                 account={account}
                 level={level + 1}
                 onDataChange={onDataChange}
+                onNavigate={onNavigate}
               />
             ))}
           </div>

@@ -8,7 +8,7 @@ import { successResponse, errorResponse, unauthorizedResponse, validationErrorRe
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -16,7 +16,7 @@ export async function GET(
       return unauthorizedResponse()
     }
 
-    const { id } = params
+    const { id } = await params
 
     const exchangeRate = await prisma.exchangeRate.findFirst({
       where: {
@@ -51,7 +51,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -59,7 +59,7 @@ export async function PUT(
       return unauthorizedResponse()
     }
 
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     const { rate, effectiveDate, notes } = body
 
@@ -141,7 +141,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -149,7 +149,7 @@ export async function DELETE(
       return unauthorizedResponse()
     }
 
-    const { id } = params
+    const { id } = await params
 
     // 验证汇率是否属于当前用户
     const existingRate = await prisma.exchangeRate.findFirst({

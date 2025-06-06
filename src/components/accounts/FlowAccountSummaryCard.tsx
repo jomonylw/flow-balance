@@ -1,6 +1,6 @@
 interface Category {
   name: string
-  type: 'INCOME' | 'EXPENSE'
+  type?: 'INCOME' | 'EXPENSE' | 'ASSET' | 'LIABILITY'
 }
 
 interface Transaction {
@@ -28,7 +28,7 @@ export default function FlowAccountSummaryCard({
   balance,
   currencySymbol
 }: FlowAccountSummaryCardProps) {
-  const accountType = account.category.type
+  const accountType = account.category.type || 'EXPENSE'
 
   // 流量类账户统计（收入/支出）
   const calculateFlowStats = () => {

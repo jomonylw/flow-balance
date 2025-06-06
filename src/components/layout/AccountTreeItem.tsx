@@ -28,12 +28,14 @@ interface AccountTreeItemProps {
   account: Account
   level: number
   onDataChange: () => void
+  onNavigate?: () => void
 }
 
 export default function AccountTreeItem({
   account,
   level,
-  onDataChange
+  onDataChange,
+  onNavigate
 }: AccountTreeItemProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -140,6 +142,7 @@ export default function AccountTreeItem({
     switch (action) {
       case 'view-details':
         router.push(`/accounts/${account.id}`)
+        onNavigate?.()
         break
       case 'add-transaction':
         setShowTransactionModal(true)
@@ -301,6 +304,7 @@ export default function AccountTreeItem({
         <div className="flex-1 py-2">
           <Link
             href={`/accounts/${account.id}`}
+            onClick={onNavigate}
             className={`
               text-sm truncate block
               ${isActive ? 'text-blue-700 font-medium' : 'text-gray-600 hover:text-gray-900'}

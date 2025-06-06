@@ -68,16 +68,17 @@ export default function UserSettingsPage({
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">账户设置</h1>
-        <p className="text-gray-600 mt-2">管理您的个人资料、安全设置和偏好</p>
+    <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">账户设置</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-2">管理您的个人资料、安全设置和偏好</p>
       </div>
 
       <div className="bg-white shadow rounded-lg">
         {/* 标签页导航 */}
         <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
+          {/* 桌面端导航 */}
+          <nav className="hidden sm:flex space-x-8 px-6">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -93,10 +94,25 @@ export default function UserSettingsPage({
               </button>
             ))}
           </nav>
+
+          {/* 移动端下拉选择 */}
+          <div className="sm:hidden px-4 py-3">
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value as TabType)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {tabs.map((tab) => (
+                <option key={tab.id} value={tab.id}>
+                  {tab.icon} {tab.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* 标签页内容 */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {renderTabContent()}
         </div>
       </div>

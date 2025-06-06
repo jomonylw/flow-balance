@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import * as echarts from 'echarts'
+import { useIsMobile, useResponsive } from '@/hooks/useResponsive'
+import { getChartHeight } from '@/lib/responsive'
 
 interface NetWorthChartProps {
   data: {
@@ -27,6 +29,8 @@ export default function NetWorthChart({ data, currency, loading = false, error }
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
   const [chartError, setChartError] = useState<string | null>(null)
+  const isMobile = useIsMobile()
+  const chartHeight = getChartHeight()
 
   useEffect(() => {
     if (!chartRef.current || !data || loading) return
@@ -70,7 +74,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
         text: data.title,
         left: 'center',
         textStyle: {
-          fontSize: 16,
+          fontSize: isMobile ? 14 : 16,
           fontWeight: 'bold',
           color: '#374151'
         }
@@ -83,11 +87,12 @@ export default function NetWorthChart({ data, currency, loading = false, error }
             backgroundColor: '#6a7985'
           }
         },
+        confine: true, // 限制在图表区域内
         formatter: function(params: any) {
           let result = `<div style="font-weight: bold; margin-bottom: 5px;">${params[0].axisValue}</div>`
           params.forEach((param: any) => {
-            const value = param.value >= 0 ? 
-              `${currency.symbol}${param.value.toLocaleString()}` : 
+            const value = param.value >= 0 ?
+              `${currency.symbol}${param.value.toLocaleString()}` :
               `-${currency.symbol}${Math.abs(param.value).toLocaleString()}`
             result += `<div style="margin: 2px 0;">
               <span style="display: inline-block; width: 10px; height: 10px; background-color: ${param.color}; border-radius: 50%; margin-right: 5px;"></span>
@@ -99,16 +104,19 @@ export default function NetWorthChart({ data, currency, loading = false, error }
       },
       legend: {
         data: data.series.map(s => s.name),
-        top: 30,
+        top: isMobile ? 25 : 30,
         textStyle: {
-          color: '#374151'
-        }
+          color: '#374151',
+          fontSize: isMobile ? 10 : 12
+        },
+        itemWidth: isMobile ? 15 : 25,
+        itemHeight: isMobile ? 10 : 14
       },
       grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
-        top: '15%',
+        left: isMobile ? '8%' : '3%',
+        right: isMobile ? '8%' : '4%',
+        bottom: isMobile ? '8%' : '3%',
+        top: isMobile ? '20%' : '15%',
         containLabel: true
       },
       xAxis: {
@@ -117,7 +125,9 @@ export default function NetWorthChart({ data, currency, loading = false, error }
         data: data.xAxis,
         axisLabel: {
           color: '#6b7280',
-          rotate: 45
+          rotate: isMobile ? 45 : 0,
+          fontSize: isMobile ? 10 : 12,
+          interval: isMobile ? 'auto' : 0
         },
         axisLine: {
           lineStyle: {
@@ -129,11 +139,16 @@ export default function NetWorthChart({ data, currency, loading = false, error }
         type: 'value',
         axisLabel: {
           color: '#6b7280',
+          fontSize: isMobile ? 10 : 12,
           formatter: function(value: number) {
             if (Math.abs(value) >= 10000) {
-              return `${currency.symbol}${(value / 10000).toFixed(1)}万`
+              return isMobile ?
+                `${(value / 10000).toFixed(1)}万` :
+                `${currency.symbol}${(value / 10000).toFixed(1)}万`
             }
-            return `${currency.symbol}${value.toLocaleString()}`
+            return isMobile ?
+              `${value.toLocaleString()}` :
+              `${currency.symbol}${value.toLocaleString()}`
           }
         },
         axisLine: {
@@ -190,11 +205,11 @@ export default function NetWorthChart({ data, currency, loading = false, error }
   // 渲染加载状态
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-center h-[400px]">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="flex items-center justify-center h-[300px] sm:h-[400px]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">正在加载图表数据...</p>
+            <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-sm sm:text-base text-gray-500">正在加载图表数据...</p>
           </div>
         </div>
       </div>
@@ -246,15 +261,15 @@ export default function NetWorthChart({ data, currency, loading = false, error }
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6">
       <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900">{data.title}</h3>
-        <p className="text-sm text-gray-500">显示最近的净资产变化趋势</p>
+        <h3 className="text-base sm:text-lg font-medium text-gray-900">{data.title}</h3>
+        <p className="text-xs sm:text-sm text-gray-500">显示最近的净资产变化趋势</p>
       </div>
       <div
         ref={chartRef}
-        style={{ width: '100%', height: '400px' }}
-        className="min-h-[400px]"
+        style={{ width: '100%', height: `${chartHeight}px` }}
+        className={`min-h-[${chartHeight}px]`}
       />
     </div>
   )
