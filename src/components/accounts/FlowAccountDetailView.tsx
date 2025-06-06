@@ -154,6 +154,34 @@ export default function FlowAccountDetailView({
     }
   }
 
+  // 批量编辑功能（暂时隐藏）
+  const handleBatchEdit = (transactionIds: string[]) => {
+    alert(`批量编辑功能开发中，选中了 ${transactionIds.length} 条记录`)
+    // TODO: 实现批量编辑功能
+  }
+
+  const handleBatchDelete = async (transactionIds: string[]) => {
+    try {
+      const deletePromises = transactionIds.map(id =>
+        fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const successCount = results.filter(r => r.ok).length
+
+      if (successCount === transactionIds.length) {
+        alert(`成功删除 ${successCount} 条记录`)
+        window.location.reload()
+      } else {
+        alert(`删除了 ${successCount}/${transactionIds.length} 条记录，部分删除失败`)
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error('Batch delete error:', error)
+      alert('批量删除失败：网络错误')
+    }
+  }
+
   // 使用专业的余额计算服务（流量类账户）
   const accountBalances = calculateAccountBalance(account)
   const baseCurrencyCode = user.settings?.baseCurrency?.code || 'USD'
@@ -290,6 +318,7 @@ export default function FlowAccountDetailView({
           transactions={account.transactions}
           onEdit={handleEditTransaction}
           onDelete={handleDeleteTransaction}
+          onBatchDelete={handleBatchDelete} // 批量删除
           currencySymbol={currencySymbol}
           showAccount={false}
         />

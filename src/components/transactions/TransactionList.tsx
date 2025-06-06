@@ -42,18 +42,24 @@ interface TransactionListProps {
   transactions: Transaction[]
   onEdit: (transaction: Transaction) => void
   onDelete?: (transactionId: string) => void
+  onBatchEdit?: (transactionIds: string[]) => void // 批量编辑回调
+  onBatchDelete?: (transactionIds: string[]) => void // 批量删除回调
   currencySymbol: string
   showAccount?: boolean
   readOnly?: boolean
+  allowDeleteBalanceAdjustment?: boolean // 是否允许删除余额调整记录
 }
 
 export default function TransactionList({
   transactions,
   onEdit,
   onDelete,
+  onBatchEdit,
+  onBatchDelete,
   currencySymbol,
   showAccount = true,
-  readOnly = false
+  readOnly = false,
+  allowDeleteBalanceAdjustment = false
 }: TransactionListProps) {
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set())
 
@@ -202,6 +208,21 @@ export default function TransactionList({
     }
   }
 
+  const handleBatchEditClick = () => {
+    if (onBatchEdit && selectedTransactions.size > 0) {
+      onBatchEdit(Array.from(selectedTransactions))
+    }
+  }
+
+  const handleBatchDeleteClick = () => {
+    if (onBatchDelete && selectedTransactions.size > 0) {
+      if (confirm(`确定要删除选中的 ${selectedTransactions.size} 条记录吗？此操作不可撤销。`)) {
+        onBatchDelete(Array.from(selectedTransactions))
+        setSelectedTransactions(new Set()) // 清空选择
+      }
+    }
+  }
+
   if (transactions.length === 0) {
     return (
       <div className="p-6 sm:p-8 text-center text-gray-500">
@@ -224,12 +245,23 @@ export default function TransactionList({
               已选择 {selectedTransactions.size} 项
             </span>
             <div className="flex space-x-2">
-              <button className="text-xs sm:text-sm text-blue-600 hover:text-blue-500 touch-manipulation">
-                批量编辑
-              </button>
-              <button className="text-xs sm:text-sm text-red-600 hover:text-red-500 touch-manipulation">
-                批量删除
-              </button>
+              {/* 暂时隐藏批量编辑功能 */}
+              {/* {onBatchEdit && (
+                <button
+                  onClick={handleBatchEditClick}
+                  className="text-xs sm:text-sm text-blue-600 hover:text-blue-500 touch-manipulation"
+                >
+                  批量编辑
+                </button>
+              )} */}
+              {onBatchDelete && (
+                <button
+                  onClick={handleBatchDeleteClick}
+                  className="text-xs sm:text-sm text-red-600 hover:text-red-500 touch-manipulation"
+                >
+                  批量删除
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -319,20 +351,26 @@ export default function TransactionList({
                       </div>
                       {!readOnly && (
                         <div className="flex items-center space-x-1">
+                          {/* 编辑按钮：所有记录都允许编辑 */}
                           <button
                             onClick={() => onEdit(transaction)}
                             className="p-1 text-gray-400 hover:text-gray-600 focus:outline-none touch-manipulation"
-                            title="编辑交易"
+                            title={isBalanceAdjustment(transaction) ? "编辑余额记录" : "编辑交易"}
                           >
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
+
+                          {/* 删除按钮：根据交易类型和设置决定是否显示 */}
                           {onDelete && (
+                            (isBalanceAdjustment(transaction) && allowDeleteBalanceAdjustment) ||
+                            (!isBalanceAdjustment(transaction))
+                          ) && (
                             <button
                               onClick={() => onDelete(transaction.id)}
                               className="p-1 text-gray-400 hover:text-red-600 focus:outline-none touch-manipulation"
-                              title="删除交易"
+                              title={isBalanceAdjustment(transaction) ? "删除余额记录" : "删除交易"}
                             >
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -409,21 +447,26 @@ export default function TransactionList({
 
                     {!readOnly && (
                       <div className="flex items-center space-x-2">
+                        {/* 编辑按钮：所有记录都允许编辑 */}
                         <button
                           onClick={() => onEdit(transaction)}
                           className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                          title="编辑交易"
+                          title={isBalanceAdjustment(transaction) ? "编辑余额记录" : "编辑交易"}
                         >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
 
+                        {/* 删除按钮：根据交易类型和设置决定是否显示 */}
                         {onDelete && (
+                          (isBalanceAdjustment(transaction) && allowDeleteBalanceAdjustment) ||
+                          (!isBalanceAdjustment(transaction))
+                        ) && (
                           <button
                             onClick={() => onDelete(transaction.id)}
                             className="text-gray-400 hover:text-red-600 focus:outline-none"
-                            title="删除交易"
+                            title={isBalanceAdjustment(transaction) ? "删除余额记录" : "删除交易"}
                           >
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -30,6 +30,7 @@ interface BalanceUpdateModalProps {
   currencies: Currency[]
   currentBalance?: number
   currencyCode?: string
+  editingTransaction?: any // 要编辑的交易记录
 }
 
 export default function BalanceUpdateModal({
@@ -39,7 +40,8 @@ export default function BalanceUpdateModal({
   account,
   currencies,
   currentBalance = 0,
-  currencyCode = 'USD'
+  currencyCode = 'USD',
+  editingTransaction
 }: BalanceUpdateModalProps) {
   const [formData, setFormData] = useState({
     newBalance: '',
@@ -55,16 +57,29 @@ export default function BalanceUpdateModal({
   // 初始化表单数据
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        newBalance: currentBalance.toString(),
-        currencyCode: currencyCode,
-        updateDate: new Date().toISOString().split('T')[0],
-        notes: '',
-        updateType: 'absolute'
-      })
+      if (editingTransaction) {
+        // 编辑模式：从现有交易记录加载数据
+        const transactionDate = new Date(editingTransaction.date).toISOString().split('T')[0]
+        setFormData({
+          newBalance: editingTransaction.amount.toString(),
+          currencyCode: editingTransaction.currencyCode,
+          updateDate: transactionDate,
+          notes: editingTransaction.notes || '',
+          updateType: 'absolute' // 编辑时默认为绝对值模式
+        })
+      } else {
+        // 新建模式
+        setFormData({
+          newBalance: currentBalance.toString(),
+          currencyCode: currencyCode,
+          updateDate: new Date().toISOString().split('T')[0],
+          notes: '',
+          updateType: 'absolute'
+        })
+      }
       setErrors({})
     }
-  }, [isOpen, currentBalance, currencyCode])
+  }, [isOpen, currentBalance, currencyCode, editingTransaction])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -107,35 +122,61 @@ export default function BalanceUpdateModal({
     setIsLoading(true)
 
     try {
-      const newBalance = parseFloat(formData.newBalance)
-      const balanceChange = formData.updateType === 'absolute' 
-        ? newBalance - currentBalance 
-        : newBalance
-
-      // 创建余额调整交易
-      const response = await fetch('/api/balance-update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          accountId: account.id,
-          currencyCode: formData.currencyCode,
-          balanceChange,
-          newBalance: formData.updateType === 'absolute' ? newBalance : currentBalance + newBalance,
-          updateDate: formData.updateDate,
-          notes: formData.notes || `余额${formData.updateType === 'absolute' ? '更新' : '调整'}`,
-          updateType: formData.updateType
+      if (editingTransaction) {
+        // 编辑模式：更新现有交易
+        const response = await fetch(`/api/transactions/${editingTransaction.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            amount: parseFloat(formData.newBalance),
+            currencyCode: formData.currencyCode,
+            date: formData.updateDate,
+            notes: formData.notes || `余额记录更新`,
+            description: `余额更新 - ${account.name}`
+          })
         })
-      })
 
-      const result = await response.json()
+        const result = await response.json()
 
-      if (result.success) {
-        onSuccess()
-        onClose()
+        if (result.success) {
+          onSuccess()
+          onClose()
+        } else {
+          setErrors({ general: result.error || '更新失败' })
+        }
       } else {
-        setErrors({ general: result.error || '更新失败' })
+        // 新建模式：创建新的余额调整交易
+        const newBalance = parseFloat(formData.newBalance)
+        const balanceChange = formData.updateType === 'absolute'
+          ? newBalance - currentBalance
+          : newBalance
+
+        const response = await fetch('/api/balance-update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            accountId: account.id,
+            currencyCode: formData.currencyCode,
+            balanceChange,
+            newBalance: formData.updateType === 'absolute' ? newBalance : currentBalance + newBalance,
+            updateDate: formData.updateDate,
+            notes: formData.notes || `余额${formData.updateType === 'absolute' ? '更新' : '调整'}`,
+            updateType: formData.updateType
+          })
+        })
+
+        const result = await response.json()
+
+        if (result.success) {
+          onSuccess()
+          onClose()
+        } else {
+          setErrors({ general: result.error || '更新失败' })
+        }
       }
     } catch (error) {
       console.error('Balance update error:', error)
@@ -183,7 +224,7 @@ export default function BalanceUpdateModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`更新余额 - ${account.name}`}
+      title={`${editingTransaction ? '编辑余额记录' : '更新余额'} - ${account.name}`}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -317,7 +358,7 @@ export default function BalanceUpdateModal({
           </button>
           <AuthButton
             type="submit"
-            label="更新余额"
+            label={editingTransaction ? "保存修改" : "更新余额"}
             isLoading={isLoading}
             disabled={isLoading}
           />

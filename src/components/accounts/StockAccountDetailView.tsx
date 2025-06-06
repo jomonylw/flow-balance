@@ -77,6 +77,7 @@ export default function StockAccountDetailView({
   const router = useRouter()
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<any>(null)
 
   const handleUpdateBalance = () => {
     setIsBalanceUpdateModalOpen(true)
@@ -143,6 +144,63 @@ export default function StockAccountDetailView({
     } catch (error) {
       console.error('Error clearing balance history:', error)
       alert('清空余额历史失败')
+    }
+  }
+
+  const handleDeleteBalanceRecord = async (transactionId: string) => {
+    if (!confirm('确定要删除这条余额记录吗？')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/transactions/${transactionId}`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // 刷新页面以更新数据
+        window.location.reload()
+      } else {
+        alert('删除失败：' + (result.error || '未知错误'))
+      }
+    } catch (error) {
+      console.error('Delete balance record error:', error)
+      alert('删除失败：网络错误')
+    }
+  }
+
+  const handleEditTransaction = (transaction: any) => {
+    setEditingTransaction(transaction)
+    setIsBalanceUpdateModalOpen(true)
+  }
+
+  // 批量编辑功能（暂时隐藏）
+  const handleBatchEdit = (transactionIds: string[]) => {
+    alert(`批量编辑功能开发中，选中了 ${transactionIds.length} 条记录`)
+    // TODO: 实现批量编辑功能
+  }
+
+  const handleBatchDelete = async (transactionIds: string[]) => {
+    try {
+      const deletePromises = transactionIds.map(id =>
+        fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const successCount = results.filter(r => r.ok).length
+
+      if (successCount === transactionIds.length) {
+        alert(`成功删除 ${successCount} 条记录`)
+        window.location.reload()
+      } else {
+        alert(`删除了 ${successCount}/${transactionIds.length} 条记录，部分删除失败`)
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error('Batch delete error:', error)
+      alert('批量删除失败：网络错误')
     }
   }
 
@@ -266,37 +324,62 @@ export default function StockAccountDetailView({
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900">
-              余额变化记录
-            </h2>
-            <span className="text-xs sm:text-sm text-gray-500">
-              共 {account.transactions.length} 笔记录
-            </span>
+            <div>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+                余额变化记录
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                记录账户余额的历史变化，包括余额更新和相关交易
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <span className="text-xs sm:text-sm text-gray-500">
+                共 {account.transactions.length} 笔记录
+              </span>
+              {account.transactions.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (confirm('确定要清空所有余额记录吗？此操作不可撤销。')) {
+                      handleClearBalanceHistory()
+                    }
+                  }}
+                  className="inline-flex items-center px-3 py-1 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  <svg className="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  清空记录
+                </button>
+              )}
+            </div>
           </div>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            记录账户余额的历史变化，包括余额更新和相关交易
-          </p>
         </div>
         
         <TransactionList
           transactions={account.transactions}
-          onEdit={() => {}} // 存量类账户不支持编辑交易
-          onDelete={undefined} // 存量类账户不支持删除交易
+          onEdit={handleEditTransaction} // 支持编辑余额记录
+          onDelete={handleDeleteBalanceRecord} // 允许删除余额调整记录
+          onBatchDelete={handleBatchDelete} // 批量删除
           currencySymbol={currencySymbol}
           showAccount={false}
-          readOnly={true} // 只读模式
+          readOnly={false} // 允许操作
+          allowDeleteBalanceAdjustment={true} // 允许删除余额调整记录
         />
       </div>
 
       {/* 余额更新模态框 */}
       <BalanceUpdateModal
         isOpen={isBalanceUpdateModalOpen}
-        onClose={() => setIsBalanceUpdateModalOpen(false)}
+        onClose={() => {
+          setIsBalanceUpdateModalOpen(false)
+          setEditingTransaction(null)
+        }}
         onSuccess={handleBalanceUpdateSuccess}
         account={account}
         currencies={currencies}
         currentBalance={balance}
         currencyCode={user.settings?.baseCurrency?.code || 'USD'}
+        editingTransaction={editingTransaction}
       />
 
       {/* 删除确认模态框 */}
