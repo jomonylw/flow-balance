@@ -11,6 +11,7 @@ import SmartCategoryChart from './SmartCategoryChart'
 import MonthlySummaryChart from '@/components/charts/MonthlySummaryChart'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface User {
   id: string
@@ -102,6 +103,7 @@ export default function CategoryDetailView({
   tags,
   user
 }: CategoryDetailViewProps) {
+  const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<any>(null)
@@ -186,15 +188,15 @@ export default function CategoryDetailView({
       const result = await response.json()
 
       if (result.success) {
-        showSuccess('删除成功', '交易记录已删除')
+        showSuccess(t('success.deleted'), t('transaction.record.deleted'))
         // 重新获取数据，但不重载页面
         handleTransactionSuccess()
       } else {
-        showError('删除失败', result.error || '未知错误')
+        showError(t('common.delete.failed'), result.error || t('error.unknown'))
       }
     } catch (error) {
       console.error('Delete transaction error:', error)
-      showError('删除失败', '网络错误，请稍后重试')
+      showError(t('common.delete.failed'), t('error.network'))
     } finally {
       setShowDeleteConfirm(false)
       setDeletingTransactionId(null)
@@ -329,7 +331,7 @@ export default function CategoryDetailView({
               <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
               </svg>
-              Dashboard
+              {t('nav.dashboard')}
             </Link>
           </li>
           <li>
@@ -374,14 +376,14 @@ export default function CategoryDetailView({
               <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              添加交易
+              {t('transaction.create')}
             </button>
           )}
 
           {/* 存量类分类的提示 */}
           {isStockCategory && (
             <div className="text-sm text-gray-500 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-              💡 存量类分类为只读模式，请在具体账户页面进行余额更新操作
+              💡 {t('category.stock.readonly.tip')}
             </div>
           )}
         </div>
@@ -409,7 +411,7 @@ export default function CategoryDetailView({
         <div className="mb-8">
           <div className="bg-white shadow rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              分类汇总
+              {t('category.summary')}
             </h2>
 
             {/* 总余额/净收支 */}
@@ -417,7 +419,7 @@ export default function CategoryDetailView({
               {summaryData.transactionSummary && Object.entries(summaryData.transactionSummary).map(([currency, data]: [string, any]) => (
                 <div key={currency} className="text-center p-4 bg-gray-50 rounded-lg">
                   <div className="text-sm text-gray-500 mb-1">
-                    {currency} {isStockCategory ? '净余额' : '净收支'}
+                    {currency} {isStockCategory ? t('category.net.balance') : t('category.net.cash.flow')}
                   </div>
                   <div className={`text-xl font-semibold ${
                     data.net >= 0 ? 'text-green-600' : 'text-red-600'
@@ -426,8 +428,8 @@ export default function CategoryDetailView({
                   </div>
                   <div className="text-xs text-gray-400 mt-1">
                     {isStockCategory
-                      ? `增加: ${currencySymbol}${data.income.toFixed(2)} | 减少: ${currencySymbol}${data.expense.toFixed(2)}`
-                      : `收入: ${currencySymbol}${data.income.toFixed(2)} | 支出: ${currencySymbol}${data.expense.toFixed(2)}`
+                      ? `${t('category.increase')}: ${currencySymbol}${data.income.toFixed(2)} | ${t('category.decrease')}: ${currencySymbol}${data.expense.toFixed(2)}`
+                      : `${t('category.income')}: ${currencySymbol}${data.income.toFixed(2)} | ${t('category.expense')}: ${currencySymbol}${data.expense.toFixed(2)}`
                     }
                   </div>
                 </div>
@@ -437,7 +439,7 @@ export default function CategoryDetailView({
             {/* 子分类汇总 */}
             {summaryData.children && summaryData.children.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-md font-medium text-gray-800 mb-3">子分类</h3>
+                <h3 className="text-md font-medium text-gray-800 mb-3">{t('category.subcategories')}</h3>
                 <div className="space-y-2">
                   {summaryData.children.map((child: any) => (
                     <div key={child.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -449,7 +451,7 @@ export default function CategoryDetailView({
                       </Link>
                       <div className="text-sm text-gray-600">
                         <span className="text-gray-500">
-                          子分类
+                          {t('category.subcategory')}
                         </span>
                       </div>
                     </div>
@@ -461,7 +463,7 @@ export default function CategoryDetailView({
             {/* 直属账户汇总 */}
             {summaryData.accounts && summaryData.accounts.length > 0 && (
               <div>
-                <h3 className="text-md font-medium text-gray-800 mb-3">账户</h3>
+                <h3 className="text-md font-medium text-gray-800 mb-3">{t('category.accounts')}</h3>
                 <div className="space-y-2">
                   {summaryData.accounts.map((account: any) => (
                     <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -481,7 +483,7 @@ export default function CategoryDetailView({
                         ))}
                         {(!account.balances || Object.keys(account.balances).length === 0) && (
                           <span className="text-gray-500">
-                            {account.transactionCount} 笔交易
+                            {t('account.transaction.count.value', { count: account.transactionCount })}
                           </span>
                         )}
                       </div>
@@ -502,8 +504,8 @@ export default function CategoryDetailView({
             stockMonthlyData={isStockCategory ? monthlyData.monthlyData : undefined}
             baseCurrency={monthlyData.baseCurrency}
             title={isStockCategory
-              ? `${category.name} - 月度账户余额汇总`
-              : `${category.name} - 月度收支汇总`
+              ? `${category.name} - ${t('category.monthly.balance.summary')}`
+              : `${category.name} - ${t('category.monthly.cash.flow.summary')}`
             }
             height={400}
             chartType={isStockCategory ? "stock" : "flow"}
@@ -516,17 +518,17 @@ export default function CategoryDetailView({
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              趋势分析
+              {t('category.trend.analysis')}
             </h2>
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
               className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="thisMonth">本月</option>
-              <option value="last3Months">近3个月</option>
-              <option value="last6Months">近6个月</option>
-              <option value="thisYear">今年</option>
+              <option value="thisMonth">{t('time.this.month')}</option>
+              <option value="last3Months">{t('time.last.3.months')}</option>
+              <option value="last6Months">{t('time.last.6.months')}</option>
+              <option value="thisYear">{t('time.this.year')}</option>
             </select>
           </div>
         </div>
@@ -553,10 +555,10 @@ export default function CategoryDetailView({
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              交易记录
+              {t('account.transactions')}
             </h2>
             <span className="text-sm text-gray-500">
-              共 {category.transactions.length} 笔交易
+              {t('account.total.transactions', { count: category.transactions.length })}
             </span>
           </div>
         </div>
@@ -587,10 +589,10 @@ export default function CategoryDetailView({
       {/* 删除确认模态框 */}
       <ConfirmationModal
         isOpen={showDeleteConfirm}
-        title="删除交易"
-        message="确定要删除这笔交易吗？此操作不可撤销。"
-        confirmLabel="确认删除"
-        cancelLabel="取消"
+        title={t('transaction.delete')}
+        message={t('confirm.delete.transaction')}
+        confirmLabel={t('common.confirm.delete')}
+        cancelLabel={t('common.cancel')}
         onConfirm={handleConfirmDelete}
         onCancel={() => {
           setShowDeleteConfirm(false)

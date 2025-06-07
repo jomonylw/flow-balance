@@ -2,12 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface SidebarReportsLinkProps {
   onNavigate?: () => void
 }
 
 export default function SidebarReportsLink({ onNavigate }: SidebarReportsLinkProps) {
+  const { t } = useLanguage()
   const pathname = usePathname()
   const isActive = pathname === '/reports'
 
@@ -38,13 +40,13 @@ export default function SidebarReportsLink({ onNavigate }: SidebarReportsLinkPro
               d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 00-2 2h-2a2 2 0 00-2 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2z" 
             />
           </svg>
-          财务报表
+          {t('nav.reports')}
         </div>
         
         <div className="flex items-center space-x-1">
           {/* 新功能标识 */}
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            新
+            {t('common.new')}
           </span>
           <button className="text-gray-400 hover:text-gray-600 focus:outline-none">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

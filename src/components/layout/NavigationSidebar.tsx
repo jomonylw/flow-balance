@@ -6,6 +6,7 @@ import SidebarDashboardLink from './SidebarDashboardLink'
 import SidebarReportsLink from './SidebarReportsLink'
 import CategoryAccountTree from './CategoryAccountTree'
 import TopCategoryModal from '@/components/ui/TopCategoryModal'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface User {
   id: string
@@ -46,6 +47,7 @@ export default function NavigationSidebar({
   isMobile = false,
   onNavigate
 }: NavigationSidebarProps) {
+  const { t } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -222,7 +224,7 @@ export default function NavigationSidebar({
           {/* 分类和账户树 */}
           <div>
             <h3 className="text-sm font-medium text-gray-900 mb-3">
-              账户分类
+              {t('sidebar.categories')}
             </h3>
 
             <div className="relative">
@@ -240,7 +242,7 @@ export default function NavigationSidebar({
                 <div className="absolute top-0 right-0 z-10">
                   {/* 小型加载指示器 - 在有数据时显示 */}
                   <div className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs">
-                    更新中...
+                    {t('sidebar.updating')}
                   </div>
                 </div>
               )}
@@ -266,7 +268,7 @@ export default function NavigationSidebar({
           <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
-          添加顶级分类
+          {t('sidebar.add.top.category')}
         </button>
       </div>
 

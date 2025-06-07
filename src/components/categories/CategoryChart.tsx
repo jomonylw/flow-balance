@@ -305,7 +305,7 @@ export default function CategoryChart({
 
   const formatDateLabel = (dateStr: string, timeRange: string) => {
     const date = new Date(dateStr)
-    
+
     switch (timeRange) {
       case 'thisMonth':
         return date.getDate().toString()
@@ -313,7 +313,7 @@ export default function CategoryChart({
       case 'last6Months':
         return `${date.getMonth() + 1}/${date.getDate()}`
       case 'thisYear':
-        return `${date.getMonth() + 1}月`
+        return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`
       default:
         return date.getDate().toString()
     }

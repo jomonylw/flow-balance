@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import InputField from '@/components/ui/InputField'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function ChangePasswordForm() {
+  const { t } = useLanguage()
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -36,23 +38,23 @@ export default function ChangePasswordForm() {
     const newErrors: Record<string, string> = {}
 
     if (!formData.currentPassword) {
-      newErrors.currentPassword = '请输入当前密码'
+      newErrors.currentPassword = t('password.validation.current.required')
     }
 
     if (!formData.newPassword) {
-      newErrors.newPassword = '请输入新密码'
+      newErrors.newPassword = t('password.validation.new.required')
     } else if (formData.newPassword.length < 6) {
-      newErrors.newPassword = '新密码长度至少为6位'
+      newErrors.newPassword = t('password.validation.new.length')
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = '请确认新密码'
+      newErrors.confirmPassword = t('password.validation.confirm.required')
     } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = '两次输入的密码不一致'
+      newErrors.confirmPassword = t('password.validation.confirm.mismatch')
     }
 
     if (formData.currentPassword === formData.newPassword) {
-      newErrors.newPassword = '新密码不能与当前密码相同'
+      newErrors.newPassword = t('password.validation.same.as.current')
     }
 
     setErrors(newErrors)
@@ -84,18 +86,18 @@ export default function ChangePasswordForm() {
       const data = await response.json()
 
       if (response.ok) {
-        setMessage('密码修改成功')
+        setMessage(t('password.change.success'))
         setFormData({
           currentPassword: '',
           newPassword: '',
           confirmPassword: ''
         })
       } else {
-        setErrors({ general: data.error || '密码修改失败' })
+        setErrors({ general: data.error || t('password.change.failed') })
       }
     } catch (error) {
       console.error('Change password error:', error)
-      setErrors({ general: '网络错误，请稍后重试' })
+      setErrors({ general: t('settings.network.error') })
     } finally {
       setIsLoading(false)
     }
@@ -131,17 +133,17 @@ export default function ChangePasswordForm() {
         <div className="mb-4">
           <h3 className="text-lg font-medium text-gray-900 flex items-center">
             <span className="mr-2">🔒</span>
-            修改密码
+            {t('password.change')}
           </h3>
-          <p className="text-sm text-gray-600 mt-1">为了账户安全，请定期更换密码</p>
+          <p className="text-sm text-gray-600 mt-1">{t('password.change.description')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <InputField
             type="password"
             name="currentPassword"
-            label="当前密码"
-            placeholder="请输入当前密码"
+            label={t('password.current')}
+            placeholder={t('password.current.placeholder')}
             value={formData.currentPassword}
             onChange={handleInputChange}
             error={errors.currentPassword}
@@ -151,20 +153,20 @@ export default function ChangePasswordForm() {
           <InputField
             type="password"
             name="newPassword"
-            label="新密码"
-            placeholder="请输入新密码（至少6位）"
+            label={t('password.new')}
+            placeholder={t('password.new.placeholder')}
             value={formData.newPassword}
             onChange={handleInputChange}
             error={errors.newPassword}
             required
-            help="密码长度至少为6位，建议使用字母、数字和特殊字符的组合"
+            help={t('password.new.help')}
           />
 
           <InputField
             type="password"
             name="confirmPassword"
-            label="确认新密码"
-            placeholder="请再次输入新密码"
+            label={t('password.confirm')}
+            placeholder={t('password.confirm.placeholder')}
             value={formData.confirmPassword}
             onChange={handleInputChange}
             error={errors.confirmPassword}
@@ -183,10 +185,10 @@ export default function ChangePasswordForm() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  修改中...
+                  {t('password.changing')}
                 </span>
               ) : (
-                '修改密码'
+                t('password.change')
               )}
             </button>
           </div>
@@ -197,24 +199,24 @@ export default function ChangePasswordForm() {
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6">
         <h4 className="text-sm font-medium text-yellow-800 mb-3 flex items-center">
           <span className="mr-2">⚠️</span>
-          安全提示
+          {t('password.security.tips')}
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-yellow-700">
           <div className="flex items-start">
             <span className="mr-2">•</span>
-            <span>密码长度至少为6位</span>
+            <span>{t('password.tip.length')}</span>
           </div>
           <div className="flex items-start">
             <span className="mr-2">•</span>
-            <span>建议使用字母、数字和特殊字符的组合</span>
+            <span>{t('password.tip.combination')}</span>
           </div>
           <div className="flex items-start">
             <span className="mr-2">•</span>
-            <span>定期更换密码以确保账户安全</span>
+            <span>{t('password.tip.regular.change')}</span>
           </div>
           <div className="flex items-start">
             <span className="mr-2">•</span>
-            <span>不要在多个网站使用相同密码</span>
+            <span>{t('password.tip.unique')}</span>
           </div>
         </div>
       </div>
@@ -223,31 +225,31 @@ export default function ChangePasswordForm() {
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6">
         <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
           <span className="mr-2">🛡️</span>
-          其他安全选项
+          {t('password.other.security.options')}
         </h4>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">两步验证</p>
-              <p className="text-xs text-gray-500">增强账户安全性</p>
+              <p className="text-sm font-medium text-gray-900">{t('password.two.factor.auth')}</p>
+              <p className="text-xs text-gray-500">{t('password.two.factor.description')}</p>
             </div>
             <button
               disabled
               className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
             >
-              即将推出
+              {t('password.coming.soon')}
             </button>
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">登录历史</p>
-              <p className="text-xs text-gray-500">查看最近的登录记录</p>
+              <p className="text-sm font-medium text-gray-900">{t('password.login.history')}</p>
+              <p className="text-xs text-gray-500">{t('password.login.history.description')}</p>
             </div>
             <button
               disabled
               className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
             >
-              即将推出
+              {t('password.coming.soon')}
             </button>
           </div>
         </div>

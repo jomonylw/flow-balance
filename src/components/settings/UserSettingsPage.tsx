@@ -11,6 +11,7 @@ import CurrencyManagement from './CurrencyManagement'
 import DataManagementSection from './DataManagementSection'
 import ExchangeRateManagement from './ExchangeRateManagement'
 import TagManagement from './TagManagement'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface UserSettingsPageProps {
   user: User
@@ -39,6 +40,7 @@ export default function UserSettingsPage({
   userSettings,
   currencies
 }: UserSettingsPageProps) {
+  const { t } = useLanguage()
   const searchParams = useSearchParams()
   const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState<TabType>('profile')
@@ -55,52 +57,52 @@ export default function UserSettingsPage({
   const settingGroups: SettingGroup[] = [
     {
       id: 'personal',
-      title: '个人设置',
-      description: '管理您的个人资料和账户安全',
+      title: t('settings.personal.settings'),
+      description: t('settings.personal.settings.description'),
       icon: '👤',
       items: [
         {
           id: 'profile',
-          label: '个人资料',
-          description: '更新您的基本信息',
+          label: t('settings.profile'),
+          description: t('settings.profile.description'),
           icon: '👤',
           status: user.email ? 'complete' : 'incomplete'
         },
         {
           id: 'security',
-          label: '安全设置',
-          description: '修改密码和安全选项',
+          label: t('settings.security'),
+          description: t('settings.security.description'),
           icon: '🔒'
         },
         {
           id: 'preferences',
-          label: '偏好设置',
-          description: '设置本位币和日期格式',
+          label: t('settings.preferences.tab'),
+          description: t('settings.preferences.description'),
           icon: '⚙️',
           status: userSettings?.baseCurrencyCode ? 'complete' : 'warning'
         },
         {
           id: 'currencies',
-          label: '货币管理',
-          description: '管理可用的货币类型',
+          label: t('settings.currencies'),
+          description: t('settings.currencies.description'),
           icon: '💰'
         },
         {
           id: 'exchange-rates',
-          label: '汇率管理',
-          description: '设置和更新汇率信息',
+          label: t('settings.exchange.rates'),
+          description: t('settings.exchange.rates.description'),
           icon: '💱'
         },
         {
           id: 'tags',
-          label: '标签管理',
-          description: '创建和管理交易标签',
+          label: t('settings.tags'),
+          description: t('settings.tags.description'),
           icon: '🏷️'
         },
         {
           id: 'data',
-          label: '数据管理',
-          description: '导出数据或删除账户',
+          label: t('settings.data'),
+          description: t('settings.data.description'),
           icon: '📊'
         }
       ]
@@ -166,8 +168,8 @@ export default function UserSettingsPage({
         <div className="p-4">
           {/* 页面标题 */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">账户设置</h1>
-            <p className="text-sm text-gray-600 mt-1">管理您的个人资料、安全设置和偏好</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('settings.page.title')}</h1>
+            <p className="text-sm text-gray-600 mt-1">{t('settings.page.description')}</p>
           </div>
 
           {/* 设置分组卡片 */}
@@ -223,8 +225,8 @@ export default function UserSettingsPage({
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">账户设置</h1>
-        <p className="text-base text-gray-600 mt-2">管理您的个人资料、安全设置和偏好</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('settings.page.title')}</h1>
+        <p className="text-base text-gray-600 mt-2">{t('settings.page.description')}</p>
       </div>
 
       {/* 桌面端两栏布局 */}
@@ -267,25 +269,25 @@ export default function UserSettingsPage({
 
           {/* 快捷操作卡片 */}
           <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">快捷操作</h4>
+            <h4 className="text-sm font-medium text-gray-900 mb-3">{t('settings.quick.actions')}</h4>
             <div className="space-y-2">
               <button
                 onClick={() => setActiveTab('preferences')}
                 className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
               >
-                ⚙️ 系统偏好
+                ⚙️ {t('settings.system.preferences')}
               </button>
               <button
                 onClick={() => setActiveTab('currencies')}
                 className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
               >
-                💰 管理货币
+                💰 {t('settings.currency.management')}
               </button>
               <button
                 onClick={() => setActiveTab('security')}
                 className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
               >
-                🔒 修改密码
+                🔒 {t('password.change')}
               </button>
             </div>
           </div>
@@ -311,9 +313,9 @@ export default function UserSettingsPage({
                     {currentItem.status && (
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(currentItem.status)}`}>
                         {getStatusIcon(currentItem.status)} {
-                          currentItem.status === 'complete' ? '已完成' :
-                          currentItem.status === 'warning' ? '需要注意' :
-                          currentItem.status === 'incomplete' ? '未完成' : ''
+                          currentItem.status === 'complete' ? t('settings.status.complete') :
+                          currentItem.status === 'warning' ? t('settings.status.warning') :
+                          currentItem.status === 'incomplete' ? t('settings.status.incomplete') : ''
                         }
                       </span>
                     )}

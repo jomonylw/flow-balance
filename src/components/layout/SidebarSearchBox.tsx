@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface SidebarSearchBoxProps {
   value: string
@@ -8,6 +9,7 @@ interface SidebarSearchBoxProps {
 }
 
 export default function SidebarSearchBox({ value, onChange }: SidebarSearchBoxProps) {
+  const { t } = useLanguage()
   const [isFocused, setIsFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -49,7 +51,7 @@ export default function SidebarSearchBox({ value, onChange }: SidebarSearchBoxPr
       <input
         ref={inputRef}
         type="text"
-        placeholder="搜索分类或账户..."
+        placeholder={t('sidebar.search.placeholder')}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setIsFocused(true)}

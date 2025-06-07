@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import InputField from '@/components/ui/InputField'
 import AuthButton from '@/components/ui/AuthButton'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function LoginForm() {
+  const { t } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
@@ -36,13 +38,13 @@ export default function LoginForm() {
     const newErrors: Record<string, string> = {}
 
     if (!formData.email) {
-      newErrors.email = '请输入邮箱'
+      newErrors.email = t('form.required')
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = '邮箱格式不正确'
+      newErrors.email = t('form.invalid.email')
     }
 
     if (!formData.password) {
-      newErrors.password = '请输入密码'
+      newErrors.password = t('form.required')
     }
 
     setErrors(newErrors)
@@ -81,11 +83,11 @@ export default function LoginForm() {
         }
         router.refresh()
       } else {
-        setGeneralError(result.error || '登录失败')
+        setGeneralError(result.error || t('auth.login.failed'))
       }
     } catch (error) {
       console.error('Login error:', error)
-      setGeneralError('网络错误，请稍后重试')
+      setGeneralError(t('error.network'))
     } finally {
       setIsLoading(false)
     }
@@ -102,8 +104,8 @@ export default function LoginForm() {
       <InputField
         type="email"
         name="email"
-        label="邮箱"
-        placeholder="请输入您的邮箱"
+        label={t('auth.email')}
+        placeholder={t('auth.email.placeholder')}
         value={formData.email}
         onChange={handleChange}
         error={errors.email}
@@ -113,8 +115,8 @@ export default function LoginForm() {
       <InputField
         type="password"
         name="password"
-        label="密码"
-        placeholder="请输入您的密码"
+        label={t('auth.password')}
+        placeholder={t('auth.password.placeholder')}
         value={formData.password}
         onChange={handleChange}
         error={errors.password}
@@ -123,7 +125,7 @@ export default function LoginForm() {
 
       <AuthButton
         type="submit"
-        label="登录"
+        label={t('auth.login')}
         isLoading={isLoading}
         disabled={isLoading}
       />
@@ -133,16 +135,16 @@ export default function LoginForm() {
           href="/forgot-password" 
           className="text-sm text-blue-600 hover:text-blue-500"
         >
-          忘记密码？
+          {t('auth.forgot.password')}？
         </Link>
         
         <div className="text-sm text-gray-600">
-          还没有账户？{' '}
-          <Link 
-            href="/signup" 
+          {t('auth.no.account')}？{' '}
+          <Link
+            href="/signup"
             className="text-blue-600 hover:text-blue-500 font-medium"
           >
-            立即注册
+            {t('auth.signup.now')}
           </Link>
         </div>
       </div>

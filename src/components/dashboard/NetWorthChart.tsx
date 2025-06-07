@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as echarts from 'echarts'
 import { useIsMobile, useResponsive } from '@/hooks/useResponsive'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { getChartHeight } from '@/lib/responsive'
 
 interface NetWorthChartProps {
@@ -26,6 +27,7 @@ interface NetWorthChartProps {
 }
 
 export default function NetWorthChart({ data, currency, loading = false, error }: NetWorthChartProps) {
+  const { t } = useLanguage()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
   const [chartError, setChartError] = useState<string | null>(null)
@@ -258,8 +260,8 @@ export default function NetWorthChart({ data, currency, loading = false, error }
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">暂无数据</h3>
-            <p className="text-sm text-gray-500">请添加账户和交易记录以查看净资产趋势</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('chart.no.data')}</h3>
+            <p className="text-sm text-gray-500">{t('dashboard.add.accounts.transactions.first')}</p>
           </div>
         </div>
       </div>
@@ -270,7 +272,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
     <div className="bg-white rounded-lg shadow p-4 sm:p-6">
       <div className="mb-4">
         <h3 className="text-base sm:text-lg font-medium text-gray-900">{data.title}</h3>
-        <p className="text-xs sm:text-sm text-gray-500">显示最近的净资产变化趋势</p>
+        <p className="text-xs sm:text-sm text-gray-500">{t('chart.net.worth.trend.description')}</p>
       </div>
       <div
         ref={chartRef}

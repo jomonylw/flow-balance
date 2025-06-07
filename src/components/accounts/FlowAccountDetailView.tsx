@@ -9,6 +9,7 @@ import FlowAccountSummaryCard from './FlowAccountSummaryCard'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { useToast } from '@/contexts/ToastContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 
 interface User {
@@ -80,6 +81,7 @@ export default function FlowAccountDetailView({
   tags,
   user
 }: FlowAccountDetailViewProps) {
+  const { t } = useLanguage()
   const { showSuccess, showError, showInfo } = useToast()
   const router = useRouter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
@@ -157,7 +159,7 @@ export default function FlowAccountDetailView({
 
   // 批量编辑功能（暂时隐藏）
   const handleBatchEdit = (transactionIds: string[]) => {
-    showInfo('功能开发中', `批量编辑功能开发中，选中了 ${transactionIds.length} 条记录`)
+    showInfo(t('feature.in.development'), t('batch.edit.development', { count: transactionIds.length }))
     // TODO: 实现批量编辑功能
   }
 
@@ -171,15 +173,15 @@ export default function FlowAccountDetailView({
       const successCount = results.filter(r => r.ok).length
 
       if (successCount === transactionIds.length) {
-        showSuccess('批量删除成功', `成功删除 ${successCount} 条记录`)
+        showSuccess(t('success.batch.deleted'), t('batch.delete.success', { count: successCount }))
         router.refresh()
       } else {
-        showError('部分删除失败', `删除了 ${successCount}/${transactionIds.length} 条记录，部分删除失败`)
+        showError(t('error.partial.delete'), t('batch.delete.partial', { success: successCount, total: transactionIds.length }))
         router.refresh()
       }
     } catch (error) {
       console.error('Batch delete error:', error)
-      showError('批量删除失败', '网络错误，请稍后重试')
+      showError(t('error.batch.delete.failed'), t('error.network'))
     }
   }
 
@@ -209,13 +211,14 @@ export default function FlowAccountDetailView({
             <p className={`text-sm font-medium ${
               (account.category.type === 'INCOME') ? 'text-green-800' : 'text-red-800'
             }`}>
-              📊 流量类账户操作提示
+              📊 {t('account.flow.operation.tips')}
             </p>
             <p className={`text-sm ${
               (account.category.type === 'INCOME') ? 'text-green-700' : 'text-red-700'
             }`}>
-              {(account.category.type === 'INCOME') ? '收入' : '支出'}账户通过"添加交易"来记录现金流动，
-              每笔交易反映特定期间的资金流入或流出。建议及时记录每笔收支明细。
+              {t('account.flow.operation.description', {
+                type: account.category.type === 'INCOME' ? t('type.income') : t('type.expense')
+              })}
             </p>
           </div>
         </div>
@@ -232,7 +235,7 @@ export default function FlowAccountDetailView({
               <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
               </svg>
-              Dashboard
+              {t('nav.dashboard')}
             </Link>
           </li>
           <li>
@@ -262,7 +265,7 @@ export default function FlowAccountDetailView({
                 ? 'bg-green-100 text-green-800'
                 : 'bg-red-100 text-red-800'
             }`}>
-              {(account.category.type === 'INCOME') ? '收入账户' : '支出账户'} • 流量数据
+              {account.category.type === 'INCOME' ? t('type.income.account') : t('type.expense.account')} • {t('type.flow.data')}
             </span>
           </div>
         </div>
@@ -275,7 +278,7 @@ export default function FlowAccountDetailView({
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            添加交易
+            {t('account.add.transaction')}
           </button>
 
           <button
@@ -285,7 +288,7 @@ export default function FlowAccountDetailView({
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            删除账户
+            {t('account.delete')}
           </button>
         </div>
       </div>
@@ -304,14 +307,16 @@ export default function FlowAccountDetailView({
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              交易记录
+              {t('account.transactions')}
             </h2>
             <span className="text-sm text-gray-500">
-              共 {account.transactions.length} 笔交易
+              {t('account.total.transactions', { count: account.transactions.length })}
             </span>
           </div>
           <p className="text-sm text-gray-600 mt-1">
-            记录{(account.category.type === 'INCOME') ? '收入' : '支出'}的详细流水和现金流动
+            {t('account.transaction.description', {
+              type: account.category.type === 'INCOME' ? t('type.income') : t('type.expense')
+            })}
           </p>
         </div>
         
@@ -342,9 +347,9 @@ export default function FlowAccountDetailView({
       {/* 删除确认模态框 */}
       <ConfirmationModal
         isOpen={showDeleteConfirm}
-        title="删除账户"
-        message={`确定要删除账户"${account.name}"吗？此操作不可撤销。`}
-        confirmLabel="删除"
+        title={t('account.delete')}
+        message={t('confirm.delete.account.message', { name: account.name })}
+        confirmLabel={t('common.delete')}
         onConfirm={handleDeleteAccount}
         onCancel={() => setShowDeleteConfirm(false)}
       />

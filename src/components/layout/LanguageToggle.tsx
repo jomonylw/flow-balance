@@ -1,28 +1,24 @@
 'use client'
 
-import { useState } from 'react'
-
-type Language = 'zh' | 'en'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface LanguageToggleProps {
   className?: string
 }
 
 export default function LanguageToggle({ className = '' }: LanguageToggleProps) {
-  const [currentLanguage, setCurrentLanguage] = useState<Language>('zh')
+  const { language, setLanguage, t } = useLanguage()
 
   const toggleLanguage = () => {
-    const newLanguage = currentLanguage === 'zh' ? 'en' : 'zh'
-    setCurrentLanguage(newLanguage)
-    // 这里可以添加实际的语言切换逻辑
-    console.log('Language switched to:', newLanguage)
+    const newLanguage = language === 'zh' ? 'en' : 'zh'
+    setLanguage(newLanguage)
   }
 
-  const getLanguageLabel = (lang: Language) => {
+  const getLanguageLabel = (lang: 'zh' | 'en') => {
     return lang === 'zh' ? '中文' : 'English'
   }
 
-  const getLanguageIcon = (lang: Language) => {
+  const getLanguageIcon = (lang: 'zh' | 'en') => {
     if (lang === 'zh') {
       return (
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -46,18 +42,18 @@ export default function LanguageToggle({ className = '' }: LanguageToggleProps) 
         transition-all duration-200 group relative
         ${className}
       `}
-      title={`切换到${getLanguageLabel(currentLanguage === 'zh' ? 'en' : 'zh')}`}
+      title={`${t('common.switch.to')} ${getLanguageLabel(language === 'zh' ? 'en' : 'zh')}`}
     >
       <div className="flex items-center space-x-1">
-        {getLanguageIcon(currentLanguage)}
+        {getLanguageIcon(language)}
         <span className="text-xs font-medium hidden sm:block">
-          {currentLanguage.toUpperCase()}
+          {language.toUpperCase()}
         </span>
       </div>
       
       {/* 悬停提示 */}
       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-        {getLanguageLabel(currentLanguage === 'zh' ? 'en' : 'zh')}
+        {getLanguageLabel(language === 'zh' ? 'en' : 'zh')}
       </div>
     </button>
   )

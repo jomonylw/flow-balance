@@ -7,6 +7,7 @@ import SelectField from '@/components/ui/SelectField'
 import TextAreaField from '@/components/ui/TextAreaField'
 import AuthButton from '@/components/ui/AuthButton'
 import { useToast } from '@/contexts/ToastContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Account {
   id: string
@@ -76,6 +77,7 @@ export default function TransactionFormModal({
   defaultCategoryId,
   defaultType
 }: TransactionFormModalProps) {
+  const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const [formData, setFormData] = useState({
     accountId: '',
@@ -102,7 +104,7 @@ export default function TransactionFormModal({
       // 编辑模式 - 检查是否为余额调整交易
       if (transaction.type === 'BALANCE_ADJUSTMENT') {
         // 余额调整交易不能通过普通交易表单编辑
-        setErrors({ general: '余额调整记录不能通过交易表单编辑，请使用余额更新功能' })
+        setErrors({ general: t('transaction.modal.balance.adjustment.error') })
         return
       }
 
@@ -277,17 +279,17 @@ export default function TransactionFormModal({
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.accountId) newErrors.accountId = '请选择账户'
-    if (!formData.categoryId) newErrors.categoryId = '请选择分类'
-    if (!formData.currencyCode) newErrors.currencyCode = '请选择币种'
-    if (!formData.type) newErrors.type = '请选择交易类型'
+    if (!formData.accountId) newErrors.accountId = t('transaction.modal.select.account')
+    if (!formData.categoryId) newErrors.categoryId = t('transaction.modal.select.category')
+    if (!formData.currencyCode) newErrors.currencyCode = t('transaction.modal.select.currency')
+    if (!formData.type) newErrors.type = t('transaction.modal.select.type')
     if (!formData.amount) {
-      newErrors.amount = '请输入金额'
+      newErrors.amount = t('transaction.modal.enter.amount')
     } else if (isNaN(parseFloat(formData.amount)) || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = '金额必须是大于0的数字'
+      newErrors.amount = t('transaction.modal.amount.positive')
     }
-    if (!formData.description) newErrors.description = '请输入描述'
-    if (!formData.date) newErrors.date = '请选择日期'
+    if (!formData.description) newErrors.description = t('transaction.modal.enter.description')
+    if (!formData.date) newErrors.date = t('transaction.modal.select.date')
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -323,11 +325,11 @@ export default function TransactionFormModal({
         onSuccess()
         onClose()
       } else {
-        setErrors({ general: result.error || '操作失败' })
+        setErrors({ general: result.error || t('transaction.modal.operation.failed') })
       }
     } catch (error) {
       console.error('Transaction form error:', error)
-      setErrors({ general: '网络错误，请稍后重试' })
+      setErrors({ general: t('error.network') })
     } finally {
       setIsLoading(false)
     }
@@ -367,7 +369,7 @@ export default function TransactionFormModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={transaction ? '编辑交易' : '新增交易'}
+      title={transaction ? t('transaction.modal.edit.title') : t('transaction.modal.title')}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -384,10 +386,10 @@ export default function TransactionFormModal({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="text-sm text-blue-700">
-              <p className="font-medium mb-1">💡 操作提示</p>
-              <p>• 此表单用于记录<strong>流量类账户</strong>的交易明细</p>
-              <p>• 如需管理<strong>存量类账户</strong>（资产/负债），请使用"余额更新"功能</p>
-              <p>• 系统会根据选择的账户自动设置对应的交易类型和分类</p>
+              <p className="font-medium mb-1">{t('transaction.modal.operation.tips')}</p>
+              <p>{t('transaction.modal.flow.account.tip')}</p>
+              <p>{t('transaction.modal.stock.account.tip')}</p>
+              <p>{t('transaction.modal.auto.category.tip')}</p>
             </div>
           </div>
         </div>
@@ -396,7 +398,7 @@ export default function TransactionFormModal({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <SelectField
             name="type"
-            label="交易类型"
+            label={t('transaction.modal.transaction.type')}
             value={formData.type}
             onChange={handleChange}
             options={typeOptions}
@@ -407,7 +409,7 @@ export default function TransactionFormModal({
           <InputField
             type="date"
             name="date"
-            label="交易日期"
+            label={t('transaction.modal.transaction.date')}
             value={formData.date}
             onChange={handleChange}
             error={errors.date}
@@ -418,13 +420,13 @@ export default function TransactionFormModal({
         <div className="space-y-4">
           <SelectField
             name="accountId"
-            label="账户"
+            label={t('transaction.modal.account')}
             value={formData.accountId}
             onChange={handleChange}
             options={accountOptions}
             error={errors.accountId}
             required
-            help="只能选择收入或支出类账户进行交易记录"
+            help={t('transaction.modal.account.help')}
           />
 
           {/* 显示自动选择的分类 */}
@@ -435,7 +437,7 @@ export default function TransactionFormModal({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="text-sm text-blue-700">
-                  分类已自动设置为：
+                  {t('transaction.modal.category.auto.set')}
                   <span className="font-medium ml-1">
                     {categories.find(cat => cat.id === formData.categoryId)?.name || '未知分类'}
                   </span>
@@ -474,7 +476,7 @@ export default function TransactionFormModal({
           <InputField
             type="number"
             name="amount"
-            label="金额"
+            label={t('transaction.modal.amount')}
             value={formData.amount}
             onChange={handleChange}
             placeholder="0.00"
@@ -484,7 +486,7 @@ export default function TransactionFormModal({
 
           <SelectField
             name="currencyCode"
-            label="币种"
+            label={t('transaction.modal.currency')}
             value={formData.currencyCode}
             onChange={handleChange}
             options={currencyOptions}
@@ -496,20 +498,20 @@ export default function TransactionFormModal({
         <InputField
           type="text"
           name="description"
-          label="描述"
+          label={t('transaction.modal.description')}
           value={formData.description}
           onChange={handleChange}
-          placeholder="请输入交易描述"
+          placeholder={t('transaction.modal.description.placeholder')}
           error={errors.description}
           required
         />
 
         <TextAreaField
           name="notes"
-          label="备注"
+          label={t('transaction.modal.notes')}
           value={formData.notes}
           onChange={handleChange}
-          placeholder="可选的备注信息"
+          placeholder={t('transaction.modal.notes.placeholder')}
           rows={3}
         />
 
@@ -517,14 +519,14 @@ export default function TransactionFormModal({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="block text-sm font-medium text-gray-700">
-              标签
+              {t('transaction.modal.tags')}
             </label>
             <button
               type="button"
               onClick={() => setShowNewTagForm(!showNewTagForm)}
               className="text-sm text-blue-600 hover:text-blue-800 font-medium"
             >
-              {showNewTagForm ? '取消' : '+ 创建新标签'}
+              {showNewTagForm ? t('transaction.modal.cancel.new.tag') : t('transaction.modal.create.new.tag')}
             </button>
           </div>
 
@@ -536,7 +538,7 @@ export default function TransactionFormModal({
                   type="text"
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
-                  placeholder="输入标签名称"
+                  placeholder={t('transaction.modal.tag.name.placeholder')}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -551,11 +553,11 @@ export default function TransactionFormModal({
                   disabled={isCreatingTag || !newTagName.trim()}
                   className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isCreatingTag ? '创建中...' : '创建'}
+                  {isCreatingTag ? t('transaction.modal.creating') : t('transaction.modal.create')}
                 </button>
               </div>
               <p className="text-xs text-gray-500">
-                创建后的标签会自动添加到当前交易中
+                {t('transaction.modal.tag.auto.add.tip')}
               </p>
             </div>
           )}
@@ -590,13 +592,13 @@ export default function TransactionFormModal({
           {/* 无标签提示 */}
           {availableTags.length === 0 && !showNewTagForm && (
             <div className="text-center py-4 border border-gray-200 rounded-md bg-gray-50">
-              <p className="text-sm text-gray-500">还没有标签</p>
+              <p className="text-sm text-gray-500">{t('transaction.modal.no.tags')}</p>
               <button
                 type="button"
                 onClick={() => setShowNewTagForm(true)}
                 className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
-                创建第一个标签
+                {t('transaction.modal.create.first.tag')}
               </button>
             </div>
           )}
@@ -609,11 +611,11 @@ export default function TransactionFormModal({
             onClick={onClose}
             className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation"
           >
-            取消
+            {t('transaction.modal.cancel')}
           </button>
           <AuthButton
             type="submit"
-            label={transaction ? '更新交易' : '创建交易'}
+            label={transaction ? t('transaction.modal.update.transaction') : t('transaction.modal.create.transaction')}
             isLoading={isLoading}
             disabled={isLoading}
           />

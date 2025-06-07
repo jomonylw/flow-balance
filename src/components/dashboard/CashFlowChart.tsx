@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface CashFlowChartProps {
   data: {
@@ -22,6 +23,7 @@ interface CashFlowChartProps {
 }
 
 export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
+  const { t } = useLanguage()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
 
@@ -124,7 +126,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
         },
         {
           type: 'value',
-          name: '净现金流',
+          name: t('dashboard.net.cash.flow'),
           position: 'right',
           axisLabel: {
             color: '#6b7280',

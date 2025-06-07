@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Currency {
   code: string
@@ -29,6 +30,8 @@ interface AccountBalancesCardProps {
 }
 
 export default function AccountBalancesCard({ accounts, baseCurrency }: AccountBalancesCardProps) {
+  const { t } = useLanguage()
+
   // 计算每个账户的余额
   const accountsWithBalances = accounts.map(account => {
     let balance = 0
@@ -62,15 +65,15 @@ export default function AccountBalancesCard({ accounts, baseCurrency }: AccountB
           </div>
           <div className="ml-3">
             <h3 className="text-sm font-medium text-gray-500">
-              账户余额
+              {t('dashboard.account.balances.card')}
             </h3>
           </div>
         </div>
-        <Link 
-          href="/accounts" 
+        <Link
+          href="/accounts"
           className="text-sm text-blue-600 hover:text-blue-500"
         >
-          查看全部
+          {t('dashboard.view.all')}
         </Link>
       </div>
 
@@ -113,17 +116,17 @@ export default function AccountBalancesCard({ accounts, baseCurrency }: AccountB
         
         {accountsWithBalances.length === 0 && (
           <div className="text-center py-4 text-gray-500 text-sm">
-            暂无账户数据
+            {t('dashboard.no.account.data')}
           </div>
         )}
-        
+
         {accountsWithBalances.length > 5 && (
           <div className="text-center pt-2">
-            <Link 
-              href="/accounts" 
+            <Link
+              href="/accounts"
               className="text-sm text-blue-600 hover:text-blue-500"
             >
-              查看其他 {accountsWithBalances.length - 5} 个账户
+              {t('dashboard.view.other.accounts', { count: accountsWithBalances.length - 5 })}
             </Link>
           </div>
         )}

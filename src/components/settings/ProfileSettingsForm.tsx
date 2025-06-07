@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { User } from '@prisma/client'
 import InputField from '@/components/ui/InputField'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface ProfileSettingsFormProps {
   user: User
 }
 
 export default function ProfileSettingsForm({ user }: ProfileSettingsFormProps) {
+  const { t } = useLanguage()
   const [formData, setFormData] = useState({
     email: user.email,
     nickname: user.email.split('@')[0] // 临时使用邮箱前缀作为昵称
@@ -49,13 +51,13 @@ export default function ProfileSettingsForm({ user }: ProfileSettingsFormProps) 
       const data = await response.json()
 
       if (response.ok) {
-        setMessage('个人资料更新成功')
+        setMessage(t('settings.profile.updated'))
       } else {
-        setError(data.error || '更新失败')
+        setError(data.error || t('settings.update.failed'))
       }
     } catch (error) {
       console.error('Update profile error:', error)
-      setError('网络错误，请稍后重试')
+      setError(t('settings.network.error'))
     } finally {
       setIsLoading(false)
     }
@@ -91,30 +93,30 @@ export default function ProfileSettingsForm({ user }: ProfileSettingsFormProps) 
         <div className="mb-4">
           <h3 className="text-lg font-medium text-gray-900 flex items-center">
             <span className="mr-2">👤</span>
-            基本信息
+            {t('settings.basic.info')}
           </h3>
-          <p className="text-sm text-gray-600 mt-1">更新您的个人信息</p>
+          <p className="text-sm text-gray-600 mt-1">{t('settings.basic.info.description')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <InputField
             type="email"
             name="email"
-            label="邮箱地址"
+            label={t('settings.email.address')}
             value={formData.email}
             onChange={handleInputChange}
             disabled={true}
-            help="邮箱地址不可修改"
+            help={t('settings.email.readonly')}
           />
 
           <InputField
             type="text"
             name="nickname"
-            label="显示昵称"
-            placeholder="请输入您的昵称"
+            label={t('settings.display.name')}
+            placeholder={t('settings.name.placeholder')}
             value={formData.nickname}
             onChange={handleInputChange}
-            help="这将作为您在应用中的显示名称"
+            help={t('settings.name.help')}
           />
 
           <div className="pt-4 border-t border-gray-200">
@@ -129,10 +131,10 @@ export default function ProfileSettingsForm({ user }: ProfileSettingsFormProps) 
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  保存中...
+                  {t('common.loading')}
                 </span>
               ) : (
-                '保存更改'
+                t('settings.save.changes')
               )}
             </button>
           </div>
@@ -150,15 +152,15 @@ export default function ProfileSettingsForm({ user }: ProfileSettingsFormProps) 
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">头像设置</h4>
+            <h4 className="text-sm font-medium text-gray-900 mb-2">{t('settings.avatar.settings')}</h4>
             <p className="text-sm text-gray-600 mb-4">
-              头像上传功能将在后续版本中提供。目前使用默认头像。
+              {t('settings.avatar.description')}
             </p>
             <button
               disabled
               className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed text-sm"
             >
-              上传头像（即将推出）
+              {t('settings.avatar.upload')}
             </button>
           </div>
         </div>
@@ -168,16 +170,16 @@ export default function ProfileSettingsForm({ user }: ProfileSettingsFormProps) 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
         <h4 className="text-sm font-medium text-blue-900 mb-3 flex items-center">
           <span className="mr-2">📊</span>
-          账户统计
+          {t('settings.account.stats')}
         </h4>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-blue-700 font-medium">注册时间</p>
+            <p className="text-blue-700 font-medium">{t('settings.registration.date')}</p>
             <p className="text-blue-600">{new Date(user.createdAt).toLocaleDateString()}</p>
           </div>
           <div>
-            <p className="text-blue-700 font-medium">账户状态</p>
-            <p className="text-blue-600">正常</p>
+            <p className="text-blue-700 font-medium">{t('settings.account.status')}</p>
+            <p className="text-blue-600">{t('settings.status.normal')}</p>
           </div>
         </div>
       </div>

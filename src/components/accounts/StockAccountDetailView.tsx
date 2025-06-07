@@ -9,6 +9,7 @@ import StockAccountSummaryCard from './StockAccountSummaryCard'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { useToast } from '@/contexts/ToastContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 
 interface User {
@@ -76,6 +77,7 @@ export default function StockAccountDetailView({
   tags,
   user
 }: StockAccountDetailViewProps) {
+  const { t } = useLanguage()
   const { showSuccess, showError, showInfo } = useToast()
   const router = useRouter()
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
@@ -103,20 +105,20 @@ export default function StockAccountDetailView({
         router.push('/')
       } else {
         const error = await response.json()
-        const errorMessage = error.message || '删除失败'
+        const errorMessage = error.message || t('common.delete.failed')
 
         // 检查是否是存量账户的余额记录问题
         if (errorMessage.includes('余额调整记录')) {
           // 显示错误信息，用户可以通过删除确认模态框处理
-          showError('删除失败', `${errorMessage}。请使用"清空余额历史并删除"选项。`)
+          showError(t('common.delete.failed'), `${errorMessage}。${t('account.use.clear.option')}`)
           return
         }
 
-        showError('删除失败', errorMessage)
+        showError(t('common.delete.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Error deleting account:', error)
-      showError('删除失败', '网络错误，请稍后重试')
+      showError(t('common.delete.failed'), t('error.network'))
     }
   }
 
@@ -128,17 +130,17 @@ export default function StockAccountDetailView({
 
       if (response.ok) {
         const result = await response.json()
-        showSuccess('清空成功', result.message || '余额历史已清空')
+        showSuccess(t('success.cleared'), result.message || t('account.balance.history.cleared'))
 
         // 清空成功后，直接删除账户
         await handleDeleteAccount()
       } else {
         const error = await response.json()
-        showError('清空失败', error.message || '清空余额历史失败')
+        showError(t('error.clear.failed'), error.message || t('account.balance.history.clear.failed'))
       }
     } catch (error) {
       console.error('Error clearing balance history:', error)
-      showError('清空失败', '网络错误，请稍后重试')
+      showError(t('error.clear.failed'), t('error.network'))
     }
   }
 
@@ -151,15 +153,15 @@ export default function StockAccountDetailView({
       const result = await response.json()
 
       if (result.success) {
-        showSuccess('删除成功', '余额记录已删除')
+        showSuccess(t('success.deleted'), t('account.balance.record.deleted'))
         // 重新获取数据，但不重载页面
         router.refresh()
       } else {
-        showError('删除失败', result.error || '未知错误')
+        showError(t('common.delete.failed'), result.error || t('error.unknown'))
       }
     } catch (error) {
       console.error('Delete balance record error:', error)
-      showError('删除失败', '网络错误，请稍后重试')
+      showError(t('common.delete.failed'), t('error.network'))
     }
   }
 
@@ -170,7 +172,7 @@ export default function StockAccountDetailView({
 
   // 批量编辑功能（暂时隐藏）
   const handleBatchEdit = (transactionIds: string[]) => {
-    showInfo('功能开发中', `批量编辑功能开发中，选中了 ${transactionIds.length} 条记录`)
+    showInfo(t('feature.in.development'), t('batch.edit.development', { count: transactionIds.length }))
     // TODO: 实现批量编辑功能
   }
 
@@ -184,15 +186,15 @@ export default function StockAccountDetailView({
       const successCount = results.filter(r => r.ok).length
 
       if (successCount === transactionIds.length) {
-        showSuccess('批量删除成功', `成功删除 ${successCount} 条记录`)
+        showSuccess(t('success.batch.deleted'), t('batch.delete.success', { count: successCount }))
         router.refresh()
       } else {
-        showError('部分删除失败', `删除了 ${successCount}/${transactionIds.length} 条记录，部分删除失败`)
+        showError(t('error.partial.delete'), t('batch.delete.partial', { success: successCount, total: transactionIds.length }))
         router.refresh()
       }
     } catch (error) {
       console.error('Batch delete error:', error)
-      showError('批量删除失败', '网络错误，请稍后重试')
+      showError(t('error.batch.delete.failed'), t('error.network'))
     }
   }
 
@@ -222,13 +224,14 @@ export default function StockAccountDetailView({
             <p className={`text-sm font-medium ${
               account.category.type === 'ASSET' ? 'text-blue-800' : 'text-orange-800'
             }`}>
-              💡 存量类账户操作提示
+              💡 {t('account.stock.operation.tips')}
             </p>
             <p className={`text-sm ${
               account.category.type === 'ASSET' ? 'text-blue-700' : 'text-orange-700'
             }`}>
-              {account.category.type === 'ASSET' ? '资产' : '负债'}账户主要通过"更新余额"来管理，
-              记录反映特定时点的账户状况。建议定期核对银行对账单或投资账户余额。
+              {t('account.stock.operation.description', {
+                type: account.category.type === 'ASSET' ? t('type.asset') : t('type.liability')
+              })}
             </p>
           </div>
         </div>
@@ -245,7 +248,7 @@ export default function StockAccountDetailView({
               <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
               </svg>
-              Dashboard
+              {t('nav.dashboard')}
             </Link>
           </li>
           <li>
@@ -275,7 +278,7 @@ export default function StockAccountDetailView({
                 ? 'bg-blue-100 text-blue-800'
                 : 'bg-orange-100 text-orange-800'
             }`}>
-              {account.category.type === 'ASSET' ? '资产账户' : '负债账户'} • 存量数据
+              {account.category.type === 'ASSET' ? t('type.asset.account') : t('type.liability.account')} • {t('type.stock.data')}
             </span>
           </div>
         </div>
@@ -288,7 +291,7 @@ export default function StockAccountDetailView({
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            更新余额
+            {t('account.update.balance')}
           </button>
 
           <button
@@ -298,7 +301,7 @@ export default function StockAccountDetailView({
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            删除账户
+            {t('account.delete')}
           </button>
         </div>
       </div>
@@ -318,15 +321,15 @@ export default function StockAccountDetailView({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
             <div>
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">
-                余额变化记录
+                {t('account.balance.history')}
               </h2>
               <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                记录账户余额的历史变化，包括余额更新和相关交易
+                {t('account.balance.history.description')}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
               <span className="text-xs sm:text-sm text-gray-500">
-                共 {account.transactions.length} 笔记录
+                {t('account.total.records', { count: account.transactions.length })}
               </span>
               {account.transactions.length > 0 && (
                 <button
@@ -336,7 +339,7 @@ export default function StockAccountDetailView({
                   <svg className="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                  清空记录
+                  {t('account.clear.records')}
                 </button>
               )}
             </div>
@@ -373,9 +376,9 @@ export default function StockAccountDetailView({
       {/* 删除确认模态框 */}
       <ConfirmationModal
         isOpen={showDeleteConfirm}
-        title="删除账户"
-        message={`确定要删除账户"${account.name}"吗？此操作不可撤销。`}
-        confirmLabel="删除"
+        title={t('account.delete')}
+        message={t('confirm.delete.account.message', { name: account.name })}
+        confirmLabel={t('common.delete')}
         onConfirm={handleDeleteAccount}
         onCancel={() => setShowDeleteConfirm(false)}
         variant="danger"
@@ -384,10 +387,10 @@ export default function StockAccountDetailView({
       {/* 清空记录确认模态框 */}
       <ConfirmationModal
         isOpen={showClearConfirm}
-        title="清空余额记录"
-        message="确定要清空所有余额记录吗？此操作不可撤销。"
-        confirmLabel="确认清空"
-        cancelLabel="取消"
+        title={t('account.clear.balance.records')}
+        message={t('confirm.clear.balance.records')}
+        confirmLabel={t('common.confirm.clear')}
+        cancelLabel={t('common.cancel')}
         onConfirm={() => {
           setShowClearConfirm(false)
           handleClearBalanceHistory()

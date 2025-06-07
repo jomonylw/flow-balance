@@ -5,6 +5,7 @@ import Modal from '@/components/ui/Modal'
 import InputField from '@/components/ui/InputField'
 import SelectField from '@/components/ui/SelectField'
 import AuthButton from '@/components/ui/AuthButton'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Currency {
   code: string
@@ -43,6 +44,7 @@ export default function BalanceUpdateModal({
   currencyCode = 'USD',
   editingTransaction
 }: BalanceUpdateModalProps) {
+  const { t } = useLanguage()
   const [formData, setFormData] = useState({
     newBalance: '',
     currencyCode: currencyCode,
@@ -133,8 +135,8 @@ export default function BalanceUpdateModal({
             amount: parseFloat(formData.newBalance),
             currencyCode: formData.currencyCode,
             date: formData.updateDate,
-            notes: formData.notes || `余额记录更新`,
-            description: `余额更新 - ${account.name}`
+            notes: formData.notes || t('balance.update.modal.balance.record.update'),
+            description: `${t('balance.update.modal.balance.update')} - ${account.name}`
           })
         })
 
@@ -144,7 +146,7 @@ export default function BalanceUpdateModal({
           onSuccess()
           onClose()
         } else {
-          setErrors({ general: result.error || '更新失败' })
+          setErrors({ general: result.error || t('balance.update.modal.update.failed') })
         }
       } else {
         // 新建模式：创建新的余额调整交易
@@ -164,7 +166,7 @@ export default function BalanceUpdateModal({
             balanceChange,
             newBalance: formData.updateType === 'absolute' ? newBalance : currentBalance + newBalance,
             updateDate: formData.updateDate,
-            notes: formData.notes || `余额${formData.updateType === 'absolute' ? '更新' : '调整'}`,
+            notes: formData.notes || `${formData.updateType === 'absolute' ? t('balance.update.modal.balance.update') : t('balance.update.modal.balance.adjustment')}`,
             updateType: formData.updateType
           })
         })
@@ -175,12 +177,12 @@ export default function BalanceUpdateModal({
           onSuccess()
           onClose()
         } else {
-          setErrors({ general: result.error || '更新失败' })
+          setErrors({ general: result.error || t('balance.update.modal.update.failed') })
         }
       }
     } catch (error) {
       console.error('Balance update error:', error)
-      setErrors({ general: '网络错误，请稍后重试' })
+      setErrors({ general: t('error.network') })
     } finally {
       setIsLoading(false)
     }
@@ -199,8 +201,8 @@ export default function BalanceUpdateModal({
   }))
 
   const updateTypeOptions = [
-    { value: 'absolute', label: '设置为新余额' },
-    { value: 'adjustment', label: '调整金额' }
+    { value: 'absolute', label: t('balance.update.modal.set.new.balance') },
+    { value: 'adjustment', label: t('balance.update.modal.adjust.amount') }
   ]
 
   const selectedCurrency = (currencies || []).find(c => c.code === formData.currencyCode)
@@ -224,7 +226,7 @@ export default function BalanceUpdateModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${editingTransaction ? '编辑余额记录' : '更新余额'} - ${account.name}`}
+      title={`${editingTransaction ? t('balance.update.modal.edit.title') : t('balance.update.modal.title')} - ${account.name}`}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -246,10 +248,10 @@ export default function BalanceUpdateModal({
             }`}></div>
             <div>
               <p className="font-medium text-gray-900">
-                {accountType === 'ASSET' ? '资产账户' : '负债账户'} • 存量数据
+                {accountType === 'ASSET' ? t('balance.update.modal.asset.account') : t('balance.update.modal.liability.account')} • {t('balance.update.modal.stock.data')}
               </p>
               <p className="text-sm text-gray-600">
-                当前余额: {currencySymbol}{currentBalance.toFixed(2)}
+                {t('balance.update.modal.current.balance')}: {currencySymbol}{currentBalance.toFixed(2)}
               </p>
             </div>
           </div>
@@ -259,7 +261,7 @@ export default function BalanceUpdateModal({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SelectField
             name="updateType"
-            label="更新方式"
+            label={t('balance.update.modal.update.method')}
             value={formData.updateType}
             onChange={handleChange}
             options={updateTypeOptions}
@@ -269,7 +271,7 @@ export default function BalanceUpdateModal({
 
           <SelectField
             name="currencyCode"
-            label="币种"
+            label={t('balance.update.modal.currency')}
             value={formData.currencyCode}
             onChange={handleChange}
             options={currencyOptions}
@@ -282,11 +284,11 @@ export default function BalanceUpdateModal({
           <InputField
             type="number"
             name="newBalance"
-            label={formData.updateType === 'absolute' ? '新余额' : '调整金额'}
+            label={formData.updateType === 'absolute' ? t('balance.update.modal.new.balance') : t('balance.update.modal.adjustment.amount')}
             value={formData.newBalance}
             onChange={handleChange}
             error={errors.newBalance}
-            placeholder={formData.updateType === 'absolute' ? '输入新的账户余额' : '输入调整金额（正数增加，负数减少）'}
+            placeholder={formData.updateType === 'absolute' ? t('balance.update.modal.new.balance.placeholder') : t('balance.update.modal.adjustment.placeholder')}
             step="0.01"
             required
           />
@@ -294,7 +296,7 @@ export default function BalanceUpdateModal({
           <InputField
             type="date"
             name="updateDate"
-            label="更新日期"
+            label={t('balance.update.modal.update.date')}
             value={formData.updateDate}
             onChange={handleChange}
             error={errors.updateDate}
@@ -305,22 +307,22 @@ export default function BalanceUpdateModal({
         {/* 预览计算结果 */}
         {formData.newBalance && !isNaN(parseFloat(formData.newBalance)) && (
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">更新预览</h4>
+            <h4 className="font-medium text-gray-900 mb-2">{t('balance.update.modal.preview')}</h4>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">当前余额:</span>
+                <span className="text-gray-600">{t('balance.update.modal.current.balance.label')}</span>
                 <span>{currencySymbol}{currentBalance.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">
-                  {formData.updateType === 'absolute' ? '新余额:' : '调整后余额:'}
+                  {formData.updateType === 'absolute' ? t('balance.update.modal.new.balance.label') : t('balance.update.modal.adjusted.balance.label')}
                 </span>
                 <span className="font-medium">
                   {currencySymbol}{calculateNewBalance().toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between border-t pt-1">
-                <span className="text-gray-600">变化金额:</span>
+                <span className="text-gray-600">{t('balance.update.modal.change.amount')}</span>
                 <span className={`font-medium ${
                   calculateChange() >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
@@ -334,7 +336,7 @@ export default function BalanceUpdateModal({
         {/* 备注 */}
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            备注说明
+            {t('balance.update.modal.notes')}
           </label>
           <textarea
             id="notes"
@@ -343,7 +345,7 @@ export default function BalanceUpdateModal({
             onChange={handleChange}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="可选：说明余额变化的原因，如银行对账、投资收益等"
+            placeholder={t('balance.update.modal.notes.placeholder')}
           />
         </div>
 
@@ -354,11 +356,11 @@ export default function BalanceUpdateModal({
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            取消
+            {t('balance.update.modal.cancel')}
           </button>
           <AuthButton
             type="submit"
-            label={editingTransaction ? "保存修改" : "更新余额"}
+            label={editingTransaction ? t('balance.update.modal.save.changes') : t('balance.update.modal.update.balance')}
             isLoading={isLoading}
             disabled={isLoading}
           />

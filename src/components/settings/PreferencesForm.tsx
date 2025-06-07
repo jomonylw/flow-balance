@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { UserSettings, Currency } from '@prisma/client'
 import SelectField from '@/components/ui/SelectField'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface PreferencesFormProps {
   userSettings: (UserSettings & { baseCurrency: Currency }) | null
@@ -10,6 +11,7 @@ interface PreferencesFormProps {
 }
 
 export default function PreferencesForm({ userSettings, currencies }: PreferencesFormProps) {
+  const { t } = useLanguage()
   const [formData, setFormData] = useState({
     baseCurrencyCode: userSettings?.baseCurrencyCode || '',
     dateFormat: userSettings?.dateFormat || 'YYYY-MM-DD',
@@ -55,14 +57,14 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
   ]
 
   const themeOptions = [
-    { value: 'light', label: '明亮模式' },
-    { value: 'dark', label: '深色模式' },
-    { value: 'system', label: '跟随系统' }
+    { value: 'light', label: t('preferences.theme.light') },
+    { value: 'dark', label: t('preferences.theme.dark') },
+    { value: 'system', label: t('preferences.theme.system') }
   ]
 
   const languageOptions = [
-    { value: 'zh', label: '中文' },
-    { value: 'en', label: 'English' }
+    { value: 'zh', label: t('preferences.language.zh') },
+    { value: 'en', label: t('preferences.language.en') }
   ]
 
   const currencyOptions = userCurrencies.map(currency => ({
@@ -100,7 +102,7 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
       const data = await response.json()
 
       if (response.ok) {
-        setMessage('偏好设置更新成功')
+        setMessage(t('settings.preferences.updated'))
 
         // 应用主题设置
         if (formData.theme) {
@@ -120,11 +122,11 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
           // 这里可以添加实际的语言切换逻辑
         }
       } else {
-        setError(data.error || '更新失败')
+        setError(data.error || t('settings.update.failed'))
       }
     } catch (error) {
       console.error('Update preferences error:', error)
-      setError('网络错误，请稍后重试')
+      setError(t('error.network'))
     } finally {
       setIsLoading(false)
     }
@@ -160,28 +162,28 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
         <div className="mb-4">
           <h3 className="text-lg font-medium text-gray-900 flex items-center">
             <span className="mr-2">🎨</span>
-            外观设置
+            {t('preferences.appearance.settings')}
           </h3>
-          <p className="text-sm text-gray-600 mt-1">配置主题和语言偏好</p>
+          <p className="text-sm text-gray-600 mt-1">{t('preferences.appearance.description')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <SelectField
             name="theme"
-            label="主题设置"
+            label={t('preferences.theme.setting')}
             value={formData.theme}
             onChange={handleSelectChange}
             options={themeOptions}
-            help="选择您偏好的主题模式。设置后将作为默认选项。"
+            help={t('preferences.theme.help')}
           />
 
           <SelectField
             name="language"
-            label="语言设置"
+            label={t('preferences.language.setting')}
             value={formData.language}
             onChange={handleSelectChange}
             options={languageOptions}
-            help="选择界面显示语言。设置后将作为默认选项。"
+            help={t('preferences.language.help')}
           />
 
           <div className="pt-4 border-t border-gray-200">
@@ -196,10 +198,10 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  保存中...
+                  {t('common.loading')}
                 </span>
               ) : (
-                '保存设置'
+                t('common.save')
               )}
             </button>
           </div>
@@ -211,19 +213,19 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
         <div className="mb-4">
           <h3 className="text-lg font-medium text-gray-900 flex items-center">
             <span className="mr-2">💰</span>
-            货币设置
+            {t('preferences.currency.settings')}
           </h3>
-          <p className="text-sm text-gray-600 mt-1">配置您的主要货币和显示偏好</p>
+          <p className="text-sm text-gray-600 mt-1">{t('preferences.currency.settings.description')}</p>
         </div>
 
         <div className="space-y-4">
           <SelectField
             name="baseCurrencyCode"
-            label="本位币"
+            label={t('preferences.base.currency')}
             value={formData.baseCurrencyCode}
             onChange={handleSelectChange}
             options={currencyOptions}
-            help="选择您的主要货币，用于汇总和报告。只能从您的可用货币中选择。"
+            help={t('preferences.base.currency.help')}
           />
 
           {userCurrencies.length === 0 && (
@@ -233,9 +235,9 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
                 <div>
-                  <p className="text-sm font-medium text-yellow-800">需要设置可用货币</p>
+                  <p className="text-sm font-medium text-yellow-800">{t('preferences.currency.setup.needed')}</p>
                   <p className="text-sm text-yellow-700 mt-1">
-                    您还没有设置可用货币。请先在"货币管理"页面添加您需要使用的货币。
+                    {t('preferences.currency.setup.description')}
                   </p>
                 </div>
               </div>
@@ -244,11 +246,11 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
 
           <SelectField
             name="dateFormat"
-            label="日期格式"
+            label={t('preferences.date.format')}
             value={formData.dateFormat}
             onChange={handleSelectChange}
             options={dateFormatOptions}
-            help="选择您偏好的日期显示格式"
+            help={t('preferences.date.format.help')}
           />
         </div>
       </div>
@@ -257,17 +259,17 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
         <h4 className="text-sm font-medium text-blue-800 mb-3 flex items-center">
           <span className="mr-2">ℹ️</span>
-          关于本位币
+          {t('preferences.about.base.currency')}
         </h4>
         <div className="text-sm text-blue-700 space-y-2">
           <p>
-            本位币是您的主要货币，用于计算净资产和生成财务报告。
+            {t('preferences.base.currency.description')}
           </p>
           <p>
-            如果您有多种货币的账户，系统会自动进行汇率转换来统一显示。
+            {t('preferences.multi.currency.note')}
           </p>
           <p className="font-medium">
-            建议选择您最常使用的货币作为本位币。
+            {t('preferences.base.currency.recommendation')}
           </p>
         </div>
       </div>
@@ -276,20 +278,20 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
         <h4 className="text-sm font-medium text-blue-800 mb-3 flex items-center">
           <span className="mr-2">ℹ️</span>
-          设置说明
+          {t('preferences.settings.note')}
         </h4>
         <div className="text-sm text-blue-700 space-y-2">
           <p>
-            <strong>主题设置：</strong>选择您偏好的界面主题。"跟随系统"会根据您的设备设置自动切换。
+            <strong>{t('preferences.theme.setting')}：</strong>{t('preferences.theme.description')}
           </p>
           <p>
-            <strong>语言设置：</strong>选择界面显示语言。目前支持中文和英文。
+            <strong>{t('preferences.language.setting')}：</strong>{t('preferences.language.description')}
           </p>
           <p>
-            <strong>本位币：</strong>用于计算净资产和生成财务报告的主要货币。
+            <strong>{t('preferences.base.currency')}：</strong>{t('preferences.currency.description')}
           </p>
           <p className="font-medium">
-            这些设置将作为您的默认偏好保存，与页面顶部的临时设置不同。
+            {t('preferences.default.note')}
           </p>
         </div>
       </div>

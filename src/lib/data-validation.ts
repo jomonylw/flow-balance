@@ -3,6 +3,7 @@
  * 确保存量类和流量类数据的准确性和一致性
  *
  * 🔧 优化版本 - 增强验证逻辑和错误处理
+ * 🌐 支持国际化 - 使用翻译键生成多语言错误信息
  */
 
 interface Account {
@@ -37,6 +38,9 @@ interface ValidationResult {
   details: ValidationDetails
 }
 
+// 翻译函数类型
+type TranslationFunction = (key: string, params?: Record<string, string | number>) => string
+
 interface ValidationDetails {
   accountsChecked: number
   transactionsChecked: number
@@ -46,7 +50,107 @@ interface ValidationDetails {
 }
 
 /**
- * 验证账户数据的完整性和一致性
+ * 验证账户数据的完整性和一致性（支持国际化）
+ */
+export function validateAccountDataWithI18n(accounts: Account[], t: TranslationFunction): ValidationResult {
+  const errors: string[] = []
+  const warnings: string[] = []
+  const suggestions: string[] = []
+
+  accounts.forEach(account => {
+    // 验证账户类型设置
+    if (!account.category.type) {
+      errors.push(`账户 "${account.name}" 未设置账户类型`)
+      suggestions.push(`请为账户 "${account.name}" 设置正确的账户类型（资产、负债、收入、支出）`)
+    }
+
+    // 验证交易数据
+    account.transactions.forEach(transaction => {
+      // 验证交易金额
+      if (transaction.amount <= 0) {
+        errors.push(`账户 "${account.name}" 中存在无效的交易金额: ${transaction.amount}`)
+      }
+
+      // 验证交易类型与账户类型的匹配
+      if (account.category.type) {
+        const isValidCombination = validateTransactionAccountType(
+          transaction.type,
+          account.category.type
+        )
+        if (!isValidCombination) {
+          warnings.push(
+            t('validation.account.type.mismatch', {
+              accountName: account.name,
+              accountType: account.category.type,
+              transactionType: transaction.type
+            })
+          )
+        }
+      }
+
+      // 验证交易日期
+      const transactionDate = new Date(transaction.date)
+      if (isNaN(transactionDate.getTime())) {
+        errors.push(`账户 "${account.name}" 中存在无效的交易日期: ${transaction.date}`)
+      }
+
+      // 验证交易描述
+      if (!transaction.description || transaction.description.trim() === '') {
+        warnings.push(`账户 "${account.name}" 中存在空的交易描述`)
+      }
+    })
+
+    // 验证存量类账户的特殊规则
+    if (account.category.type === 'ASSET' || account.category.type === 'LIABILITY') {
+      const balanceAdjustments = account.transactions.filter(t =>
+        t.description.includes('余额更新') || t.description.includes('余额调整')
+      )
+
+      if (balanceAdjustments.length === 0 && account.transactions.length > 0) {
+        suggestions.push(
+          t('validation.stock.account.suggestion', { accountName: account.name })
+        )
+      }
+    }
+
+    // 验证流量类账户的特殊规则
+    if (account.category.type === 'INCOME' || account.category.type === 'EXPENSE') {
+      const relevantTransactions = account.transactions.filter(t =>
+        (account.category.type === 'INCOME' && t.type === 'INCOME') ||
+        (account.category.type === 'EXPENSE' && t.type === 'EXPENSE')
+      )
+
+      if (relevantTransactions.length !== account.transactions.length) {
+        warnings.push(
+          `流量类账户 "${account.name}" 中存在不匹配的交易类型`
+        )
+      }
+    }
+  })
+
+  // 计算数据质量评分
+  const details: ValidationDetails = {
+    accountsChecked: accounts.length,
+    transactionsChecked: accounts.reduce((sum, acc) => sum + (acc.transactions?.length || 0), 0),
+    categoriesWithoutType: accounts.filter(acc => !acc.category?.type).length,
+    invalidTransactions: 0, // 这里简化处理
+    businessLogicViolations: warnings.filter(w => w.includes('不匹配') || w.includes('mismatched')).length
+  }
+
+  const score = calculateDataQualityScore(details, errors.length, warnings.length)
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+    suggestions,
+    score,
+    details
+  }
+}
+
+/**
+ * 验证账户数据的完整性和一致性（原版本，保持向后兼容）
  */
 export function validateAccountData(accounts: Account[]): ValidationResult {
   const errors: string[] = []

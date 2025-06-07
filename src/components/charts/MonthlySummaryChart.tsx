@@ -103,7 +103,7 @@ export default function MonthlySummaryChart({
     // 格式化月份显示
     const formattedMonths = months.map(month => {
       const [year, monthNum] = month.split('-')
-      return `${year}年${monthNum}月`
+      return `${year}/${monthNum.padStart(2, '0')}`
     })
 
     // 配置图表选项
@@ -229,7 +229,7 @@ export default function MonthlySummaryChart({
     const months = Object.keys(stockMonthlyData).sort()
     const formattedMonths = months.map(month => {
       const [year, monthNum] = month.split('-')
-      return `${year}年${monthNum}月`
+      return `${year}/${monthNum.padStart(2, '0')}`
     })
 
     // 获取所有账户名称

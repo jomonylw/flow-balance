@@ -2,12 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface SidebarDashboardLinkProps {
   onNavigate?: () => void
 }
 
 export default function SidebarDashboardLink({ onNavigate }: SidebarDashboardLinkProps) {
+  const { t } = useLanguage()
   const pathname = usePathname()
   const isActive = pathname === '/dashboard'
 
@@ -44,7 +46,7 @@ export default function SidebarDashboardLink({ onNavigate }: SidebarDashboardLin
               d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" 
             />
           </svg>
-          Dashboard
+          {t('nav.dashboard')}
         </div>
         
         <button className="text-gray-400 hover:text-gray-600 focus:outline-none">

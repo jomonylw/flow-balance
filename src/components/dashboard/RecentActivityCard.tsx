@@ -1,3 +1,5 @@
+import { useLanguage } from '@/contexts/LanguageContext'
+
 interface Currency {
   code: string
   name: string
@@ -19,6 +21,7 @@ interface RecentActivityCardProps {
 }
 
 export default function RecentActivityCard({ transactions, baseCurrency }: RecentActivityCardProps) {
+  const { t } = useLanguage()
   // 计算最近7天的收支情况
   const calculateRecentActivity = () => {
     const sevenDaysAgo = new Date()
@@ -63,31 +66,31 @@ export default function RecentActivityCard({ transactions, baseCurrency }: Recen
         <div className="ml-5 w-0 flex-1">
           <dl>
             <dt className="text-sm font-medium text-gray-500 truncate">
-              最近7天活动
+              {t('dashboard.recent.activity.card')}
             </dt>
             <dd className="flex items-baseline">
               <div className={`text-2xl font-semibold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {net >= 0 ? '+' : ''}{currencySymbol}{net.toFixed(2)}
               </div>
               <div className="ml-2 flex items-baseline text-sm font-medium text-gray-500">
-                {count} 笔交易
+                {t('dashboard.transactions.count', { count })}
               </div>
             </dd>
           </dl>
         </div>
       </div>
-      
+
       {/* 详细信息 */}
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="text-gray-500">收入</span>
+            <span className="text-gray-500">{t('dashboard.income')}</span>
             <div className="font-medium text-green-600">
               +{currencySymbol}{income.toFixed(2)}
             </div>
           </div>
           <div>
-            <span className="text-gray-500">支出</span>
+            <span className="text-gray-500">{t('dashboard.expense')}</span>
             <div className="font-medium text-red-600">
               -{currencySymbol}{expense.toFixed(2)}
             </div>

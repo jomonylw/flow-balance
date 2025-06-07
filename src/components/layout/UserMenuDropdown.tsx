@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface UserMenuDropdownProps {
   isOpen: boolean
@@ -10,6 +11,7 @@ interface UserMenuDropdownProps {
 }
 
 export default function UserMenuDropdown({ isOpen, onClose, onLogout }: UserMenuDropdownProps) {
+  const { t } = useLanguage()
   const menuRef = useRef<HTMLDivElement>(null)
 
   // 点击外部关闭菜单
@@ -61,12 +63,12 @@ export default function UserMenuDropdown({ isOpen, onClose, onLogout }: UserMenu
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between">
-                <span>财务报表</span>
+                <span>{t('nav.reports')}</span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border border-blue-200">
-                  新功能
+                  {t('common.new')}
                 </span>
               </div>
-              <div className="text-xs text-gray-500 mt-0.5">查看详细财务数据</div>
+              <div className="text-xs text-gray-500 mt-0.5">{t('menu.reports.description')}</div>
             </div>
           </Link>
 
@@ -83,8 +85,8 @@ export default function UserMenuDropdown({ isOpen, onClose, onLogout }: UserMenu
               </svg>
             </div>
             <div className="flex-1">
-              <div>账户设置</div>
-              <div className="text-xs text-gray-500 mt-0.5">管理账户和偏好设置</div>
+              <div>{t('nav.settings')}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{t('menu.settings.description')}</div>
             </div>
           </Link>
         </div>
@@ -110,9 +112,9 @@ export default function UserMenuDropdown({ isOpen, onClose, onLogout }: UserMenu
             </div>
             <div className="flex-1">
               <div>
-                <span>帮助中心</span>
+                <span>{t('nav.help')}</span>
               </div>
-              <div className="text-xs text-gray-500 mt-0.5">获取使用帮助和支持</div>
+              <div className="text-xs text-gray-500 mt-0.5">{t('menu.help.description')}</div>
             </div>
           </button>
         </div>
@@ -136,9 +138,9 @@ export default function UserMenuDropdown({ isOpen, onClose, onLogout }: UserMenu
             </div>
             <div className="flex-1">
               <div>
-                <span>退出登录</span>
+                <span>{t('nav.logout')}</span>
               </div>
-              <div className="text-xs text-red-500 mt-0.5">安全退出当前账户</div>
+              <div className="text-xs text-red-500 mt-0.5">{t('menu.logout.description')}</div>
             </div>
           </button>
         </div>

@@ -5,6 +5,7 @@ import Modal from './Modal'
 import InputField from './InputField'
 import TextAreaField from './TextAreaField'
 import AuthButton from './AuthButton'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Account {
   id: string
@@ -47,6 +48,7 @@ export default function AccountSettingsModal({
   onSave,
   account
 }: AccountSettingsModalProps) {
+  const { t } = useLanguage()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [selectedColor, setSelectedColor] = useState('')
@@ -83,36 +85,36 @@ export default function AccountSettingsModal({
     switch (accountType) {
       case 'ASSET':
         return {
-          label: '资产类账户',
-          description: '存量概念 - 记录资产的当前余额状态',
+          label: t('account.type.asset'),
+          description: t('account.type.asset.description'),
           color: 'text-green-700',
-          features: ['余额更新', '资产统计', '净资产计算']
+          features: [t('account.feature.balance.update'), t('account.feature.asset.stats'), t('account.feature.net.worth')]
         }
       case 'LIABILITY':
         return {
-          label: '负债类账户',
-          description: '存量概念 - 记录负债的当前余额状态',
+          label: t('account.type.liability'),
+          description: t('account.type.liability.description'),
           color: 'text-red-700',
-          features: ['余额更新', '负债统计', '净资产计算']
+          features: [t('account.feature.balance.update'), t('account.feature.liability.stats'), t('account.feature.net.worth')]
         }
       case 'INCOME':
         return {
-          label: '收入类账户',
-          description: '流量概念 - 记录收入的累计金额',
+          label: t('account.type.income'),
+          description: t('account.type.income.description'),
           color: 'text-blue-700',
-          features: ['收入记录', '现金流统计', '趋势分析']
+          features: [t('account.feature.transaction.record'), t('account.feature.income.stats'), t('account.feature.cash.flow')]
         }
       case 'EXPENSE':
         return {
-          label: '支出类账户',
-          description: '流量概念 - 记录支出的累计金额',
+          label: t('account.type.expense'),
+          description: t('account.type.expense.description'),
           color: 'text-orange-700',
-          features: ['支出记录', '现金流统计', '趋势分析']
+          features: [t('account.feature.expense.stats'), t('account.feature.income.stats'), t('account.feature.cash.flow')]
         }
       default:
         return {
-          label: '未分类账户',
-          description: '请为此账户的分类设置正确的账户类型',
+          label: t('account.type.unknown'),
+          description: t('account.type.unknown.description'),
           color: 'text-gray-700',
           features: []
         }
@@ -122,7 +124,7 @@ export default function AccountSettingsModal({
   const typeInfo = getAccountTypeInfo()
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="账户设置" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('account.settings')} size="lg">
       <div className="space-y-6">
         {/* 账户类型信息 */}
         <div className="bg-gray-50 rounded-lg p-4">
@@ -148,37 +150,37 @@ export default function AccountSettingsModal({
 
         {/* 基本信息 */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">基本信息</h3>
-          
+          <h3 className="text-lg font-medium text-gray-900">{t('account.settings.basic.info')}</h3>
+
           <InputField
             name="name"
-            label="账户名称"
+            label={t('account.settings.account.name')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            placeholder="请输入账户名称"
+            placeholder={t('account.settings.name.placeholder')}
           />
 
           <TextAreaField
             name="description"
-            label="账户描述"
+            label={t('account.settings.account.description')}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="请输入账户描述（可选）"
+            placeholder={t('account.settings.description.placeholder')}
             rows={3}
           />
         </div>
 
         {/* 颜色设置 */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">显示设置</h3>
-          
+          <h3 className="text-lg font-medium text-gray-900">{t('account.settings.display.settings')}</h3>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              账户颜色
+              {t('account.settings.account.color')}
             </label>
             <p className="text-sm text-gray-500 mb-4">
-              选择一个颜色来在图表和统计中区分此账户
+              {t('account.settings.color.help')}
             </p>
             
             <div className="grid grid-cols-6 gap-3">
@@ -209,12 +211,12 @@ export default function AccountSettingsModal({
             </div>
             
             <div className="mt-3 flex items-center space-x-2">
-              <div 
+              <div
                 className="w-4 h-4 rounded border border-gray-300"
                 style={{ backgroundColor: selectedColor }}
               />
               <span className="text-sm text-gray-600">
-                预览：{COLOR_OPTIONS.find(c => c.value === selectedColor)?.label}
+                {t('account.color.preview', { color: COLOR_OPTIONS.find(c => c.value === selectedColor)?.label || '' })}
               </span>
             </div>
           </div>
@@ -227,10 +229,10 @@ export default function AccountSettingsModal({
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
           >
-            取消
+            {t('common.cancel')}
           </button>
           <AuthButton
-            label={isLoading ? '保存中...' : '保存设置'}
+            label={isLoading ? t('account.settings.saving') : t('account.settings.save')}
             onClick={handleSave}
             isLoading={isLoading}
             disabled={!name.trim()}

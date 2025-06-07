@@ -1,5 +1,7 @@
 'use client'
 
+import { useLanguage } from '@/contexts/LanguageContext'
+
 interface Currency {
   code: string
   symbol: string
@@ -30,6 +32,8 @@ export default function CurrencyConversionStatus({
   hasErrors = false,
   className = ''
 }: CurrencyConversionStatusProps) {
+  const { t } = useLanguage()
+
   if (conversionDetails.length === 0) {
     return null
   }
@@ -41,11 +45,11 @@ export default function CurrencyConversionStatus({
     <div className={`bg-white rounded-lg shadow p-4 ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium text-gray-900">
-          💱 货币转换状态
+          💱 {t('currency.conversion.status')}
         </h3>
         <div className="flex items-center space-x-2">
           <span className="text-xs text-gray-500">
-            本位币: {baseCurrency.symbol} {baseCurrency.name}
+            {t('currency.base.currency')}: {baseCurrency.symbol} {baseCurrency.name}
           </span>
         </div>
       </div>
@@ -57,7 +61,7 @@ export default function CurrencyConversionStatus({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
             <span className="text-yellow-800">
-              部分数据因汇率缺失而使用原始金额，可能不准确
+              {t('currency.conversion.partial.error')}
             </span>
           </div>
         </div>
@@ -68,7 +72,7 @@ export default function CurrencyConversionStatus({
         {successfulConversions.length > 0 && (
           <div>
             <div className="text-xs font-medium text-green-700 mb-1">
-              ✅ 成功转换 ({successfulConversions.length})
+              ✅ {t('currency.conversion.successful')} ({successfulConversions.length})
             </div>
             <div className="space-y-1">
               {successfulConversions.slice(0, 3).map((conversion, index) => (
@@ -83,7 +87,7 @@ export default function CurrencyConversionStatus({
               ))}
               {successfulConversions.length > 3 && (
                 <div className="text-xs text-gray-500">
-                  还有 {successfulConversions.length - 3} 个成功转换...
+                  {t('currency.conversion.more.successful', { count: successfulConversions.length - 3 })}
                 </div>
               )}
             </div>
@@ -94,7 +98,7 @@ export default function CurrencyConversionStatus({
         {failedConversions.length > 0 && (
           <div>
             <div className="text-xs font-medium text-red-700 mb-1">
-              ❌ 转换失败 ({failedConversions.length})
+              ❌ {t('currency.conversion.failed')} ({failedConversions.length})
             </div>
             <div className="space-y-1">
               {failedConversions.slice(0, 3).map((conversion, index) => (
@@ -103,7 +107,7 @@ export default function CurrencyConversionStatus({
                     <span>
                       {conversion.originalCurrency} → {conversion.targetCurrency}
                     </span>
-                    <span className="text-red-500">缺失汇率</span>
+                    <span className="text-red-500">{t('currency.conversion.missing.rate')}</span>
                   </div>
                   {conversion.error && (
                     <div className="text-xs text-red-500 mt-1">
@@ -114,7 +118,7 @@ export default function CurrencyConversionStatus({
               ))}
               {failedConversions.length > 3 && (
                 <div className="text-xs text-red-500">
-                  还有 {failedConversions.length - 3} 个失败转换...
+                  {t('currency.conversion.more.failed', { count: failedConversions.length - 3 })}
                 </div>
               )}
             </div>
@@ -128,7 +132,7 @@ export default function CurrencyConversionStatus({
             href="/settings?tab=exchange-rates"
             className="text-xs text-blue-600 hover:text-blue-800 font-medium"
           >
-            设置缺失的汇率 →
+            {t('currency.conversion.setup.missing')}
           </a>
         </div>
       )}

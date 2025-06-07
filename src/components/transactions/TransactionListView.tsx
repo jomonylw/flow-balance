@@ -7,6 +7,7 @@ import TransactionFilters from './TransactionFilters'
 import TransactionStats from './TransactionStats'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface User {
   id: string
@@ -84,6 +85,7 @@ export default function TransactionListView({
   tags,
   user
 }: TransactionListViewProps) {
+  const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -185,14 +187,14 @@ export default function TransactionListView({
       const result = await response.json()
 
       if (result.success) {
-        showSuccess('删除成功', '交易记录已删除')
+        showSuccess(t('success.deleted'), t('transaction.record.deleted'))
         loadTransactions()
       } else {
-        showError('删除失败', result.error || '未知错误')
+        showError(t('common.delete.failed'), result.error || t('error.unknown'))
       }
     } catch (error) {
       console.error('Error deleting transaction:', error)
-      showError('删除失败', '网络错误，请稍后重试')
+      showError(t('common.delete.failed'), t('error.network'))
     } finally {
       setShowDeleteConfirm(false)
       setDeletingTransactionId(null)
@@ -204,9 +206,9 @@ export default function TransactionListView({
       {/* 页面标题 */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">交易管理</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('transaction.list')}</h1>
           <p className="mt-2 text-gray-600">
-            管理您的所有交易记录
+            {t('transaction.list.subtitle')}
           </p>
         </div>
         
@@ -217,7 +219,7 @@ export default function TransactionListView({
           <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
-          添加交易
+          {t('transaction.create')}
         </button>
       </div>
 
@@ -244,11 +246,11 @@ export default function TransactionListView({
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              交易记录
+              {t('account.transactions')}
             </h2>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500">
-                共 {pagination.total} 笔交易
+                {t('account.total.transactions', { count: pagination.total })}
               </span>
               {pagination.totalPages > 1 && (
                 <div className="flex items-center space-x-2">
@@ -257,7 +259,7 @@ export default function TransactionListView({
                     disabled={pagination.page === 1}
                     className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
-                    上一页
+                    {t('common.previous')}
                   </button>
                   <span className="text-sm text-gray-500">
                     {pagination.page} / {pagination.totalPages}
@@ -267,7 +269,7 @@ export default function TransactionListView({
                     disabled={pagination.page === pagination.totalPages}
                     className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
-                    下一页
+                    {t('common.next')}
                   </button>
                 </div>
               )}
@@ -278,7 +280,7 @@ export default function TransactionListView({
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-500">加载中...</p>
+            <p className="mt-2 text-gray-500">{t('common.loading')}</p>
           </div>
         ) : (
           <TransactionList
@@ -313,10 +315,10 @@ export default function TransactionListView({
       {/* 删除确认模态框 */}
       <ConfirmationModal
         isOpen={showDeleteConfirm}
-        title="删除交易"
-        message="确定要删除这笔交易吗？此操作不可撤销。"
-        confirmLabel="确认删除"
-        cancelLabel="取消"
+        title={t('transaction.delete')}
+        message={t('confirm.delete.transaction')}
+        confirmLabel={t('common.confirm.delete')}
+        cancelLabel={t('common.cancel')}
         onConfirm={handleConfirmDelete}
         onCancel={() => {
           setShowDeleteConfirm(false)

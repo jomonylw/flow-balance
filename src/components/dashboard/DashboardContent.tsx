@@ -9,7 +9,8 @@ import SmartAccountSummary from './SmartAccountSummary'
 import ExchangeRateAlert from './ExchangeRateAlert'
 import PageContainer from '../ui/PageContainer'
 import { calculateAccountBalance } from '@/lib/account-balance'
-import { validateAccountData, validateChartData } from '@/lib/data-validation'
+import { validateAccountData, validateAccountDataWithI18n, validateChartData } from '@/lib/data-validation'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface User {
   id: string
@@ -77,6 +78,7 @@ export default function DashboardContent({
   tags,
   baseCurrency
 }: DashboardContentProps) {
+  const { t } = useLanguage()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
   const [defaultTransactionType, setDefaultTransactionType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE')
@@ -155,15 +157,15 @@ export default function DashboardContent({
           const chartValidation = validateChartData(data.data)
           if (!chartValidation.isValid) {
             console.warn('Chart data validation failed:', chartValidation.errors)
-            setChartError('图表数据验证失败: ' + chartValidation.errors.join(', '))
+            setChartError(t('dashboard.chart.data.validation.failed', { errors: chartValidation.errors.join(', ') }))
           }
         } else {
           const errorData = await response.json()
-          setChartError(errorData.error || '获取图表数据失败')
+          setChartError(errorData.error || t('dashboard.chart.data.fetch.failed'))
         }
       } catch (error) {
         console.error('Error fetching chart data:', error)
-        setChartError('网络错误，无法获取图表数据')
+        setChartError(t('dashboard.network.error.charts'))
       } finally {
         setIsLoadingCharts(false)
       }
@@ -195,13 +197,13 @@ export default function DashboardContent({
       }))
     }))
 
-    const validation = validateAccountData(accountsForValidation)
+    const validation = validateAccountDataWithI18n(accountsForValidation, t)
     setValidationResult(validation)
 
     if (!validation.isValid) {
       console.warn('Account data validation failed:', validation.errors)
     }
-  }, [accounts])
+  }, [accounts, t])
 
   // 计算账户余额
   const accountsWithBalances = accounts.map(account => {
@@ -241,8 +243,8 @@ export default function DashboardContent({
 
   return (
     <PageContainer
-      title="Dashboard"
-      subtitle={`欢迎回来，${user.email}！这里是您的财务概览。`}
+      title={t('dashboard.title')}
+      subtitle={t('dashboard.welcome', { email: user.email })}
     >
 
       {/* 汇率设置提醒 */}
@@ -253,7 +255,7 @@ export default function DashboardContent({
         <div className="mb-4 sm:mb-6">
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">数据质量评分</h3>
+              <h3 className="text-lg font-medium text-gray-900">{t('dashboard.data.quality.score')}</h3>
               <div className="flex items-center">
                 <div className={`text-2xl font-bold ${
                   validationResult.score >= 90 ? 'text-green-600' :
@@ -281,23 +283,23 @@ export default function DashboardContent({
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
                 <div className="text-center">
                   <div className="text-base sm:text-lg font-semibold text-gray-900">{validationResult.details.accountsChecked}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">账户检查</div>
+                  <div className="text-xs sm:text-sm text-gray-500">{t('dashboard.accounts.checked')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-base sm:text-lg font-semibold text-gray-900">{validationResult.details.transactionsChecked}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">交易检查</div>
+                  <div className="text-xs sm:text-sm text-gray-500">{t('dashboard.transactions.checked')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-base sm:text-lg font-semibold text-red-600">{validationResult.details.categoriesWithoutType}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">未设类型</div>
+                  <div className="text-xs sm:text-sm text-gray-500">{t('dashboard.categories.without.type')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-base sm:text-lg font-semibold text-red-600">{validationResult.details.invalidTransactions}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">无效交易</div>
+                  <div className="text-xs sm:text-sm text-gray-500">{t('dashboard.invalid.transactions')}</div>
                 </div>
                 <div className="text-center col-span-2 sm:col-span-1">
                   <div className="text-base sm:text-lg font-semibold text-yellow-600">{validationResult.details.businessLogicViolations}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">逻辑违规</div>
+                  <div className="text-xs sm:text-sm text-gray-500">{t('dashboard.business.logic.violations')}</div>
                 </div>
               </div>
             )}
@@ -317,7 +319,7 @@ export default function DashboardContent({
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">数据验证错误</h3>
+                  <h3 className="text-sm font-medium text-red-800">{t('dashboard.validation.errors')}</h3>
                   <div className="mt-2 text-sm text-red-700">
                     <ul className="list-disc pl-5 space-y-1">
                       {validationResult.errors.map((error: string, index: number) => (
@@ -339,7 +341,7 @@ export default function DashboardContent({
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-yellow-800">数据验证警告</h3>
+                  <h3 className="text-sm font-medium text-yellow-800">{t('dashboard.validation.warnings')}</h3>
                   <div className="mt-2 text-sm text-yellow-700">
                     <ul className="list-disc pl-5 space-y-1">
                       {validationResult.warnings.map((warning: string, index: number) => (
@@ -361,7 +363,7 @@ export default function DashboardContent({
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">优化建议</h3>
+                  <h3 className="text-sm font-medium text-blue-800">{t('validation.optimization.suggestions')}</h3>
                   <div className="mt-2 text-sm text-blue-700">
                     <ul className="list-disc pl-5 space-y-1">
                       {validationResult.suggestions.map((suggestion: string, index: number) => (
@@ -379,9 +381,9 @@ export default function DashboardContent({
       {/* 智能财务统计 */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          财务概览
+          {t('dashboard.financial.overview')}
           <span className="ml-2 text-sm font-normal text-gray-500">
-            (使用API数据，确保计算准确性)
+            ({t('dashboard.api.data.note')})
           </span>
         </h2>
         {isLoadingSummary ? (
@@ -402,7 +404,7 @@ export default function DashboardContent({
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-700">总资产</p>
+                  <p className="text-sm font-medium text-blue-700">{t('dashboard.total.assets.card')}</p>
                   <p className="text-2xl font-bold text-blue-900">
                     {summaryData.netWorth.currency.symbol}
                     {(() => {
@@ -418,7 +420,10 @@ export default function DashboardContent({
                     {summaryData.accountBalances.filter((acc: any) =>
                       acc.category.type === 'ASSET' &&
                       Object.values(acc.balances).some((balance: any) => Math.abs(balance) > 0.01)
-                    ).length} 个账户
+                    ).length} {t('dashboard.accounts.count', { count: summaryData.accountBalances.filter((acc: any) =>
+                      acc.category.type === 'ASSET' &&
+                      Object.values(acc.balances).some((balance: any) => Math.abs(balance) > 0.01)
+                    ).length }).replace(/\d+\s*/, '')}
                   </p>
                 </div>
                 <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -433,7 +438,7 @@ export default function DashboardContent({
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-red-700">总负债</p>
+                  <p className="text-sm font-medium text-red-700">{t('dashboard.total.liabilities.card')}</p>
                   <p className="text-2xl font-bold text-red-900">
                     {summaryData.netWorth.currency.symbol}
                     {(() => {
@@ -451,7 +456,10 @@ export default function DashboardContent({
                     {summaryData.accountBalances.filter((acc: any) =>
                       acc.category.type === 'LIABILITY' &&
                       Object.values(acc.balances).some((balance: any) => Math.abs(balance) > 0.01)
-                    ).length} 个账户
+                    ).length} {t('dashboard.accounts.count', { count: summaryData.accountBalances.filter((acc: any) =>
+                      acc.category.type === 'LIABILITY' &&
+                      Object.values(acc.balances).some((balance: any) => Math.abs(balance) > 0.01)
+                    ).length }).replace(/\d+\s*/, '')}
                   </p>
                 </div>
                 <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
@@ -466,14 +474,14 @@ export default function DashboardContent({
             <div className={`${summaryData.netWorth.amount >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm font-medium ${summaryData.netWorth.amount >= 0 ? 'text-green-700' : 'text-red-700'}`}>净资产</p>
+                  <p className={`text-sm font-medium ${summaryData.netWorth.amount >= 0 ? 'text-green-700' : 'text-red-700'}`}>{t('dashboard.net.worth.card')}</p>
                   <p className={`text-2xl font-bold ${summaryData.netWorth.amount >= 0 ? 'text-green-900' : 'text-red-900'}`}>
                     {summaryData.netWorth.amount >= 0 ? '+' : '-'}
                     {summaryData.netWorth.currency.symbol}
                     {Math.abs(summaryData.netWorth.amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p className={`text-xs mt-1 ${summaryData.netWorth.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    资产 - 负债
+                    {t('dashboard.assets.minus.liabilities')}
                   </p>
                 </div>
                 <div className={`h-8 w-8 ${summaryData.netWorth.amount >= 0 ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center`}>
@@ -488,7 +496,7 @@ export default function DashboardContent({
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-700">本月净收入</p>
+                  <p className="text-sm font-medium text-purple-700">{t('dashboard.monthly.net.income')}</p>
                   <p className={`text-2xl font-bold ${summaryData.recentActivity.summaryInBaseCurrency.net >= 0 ? 'text-green-900' : 'text-red-900'}`}>
                     {summaryData.recentActivity.summaryInBaseCurrency.net >= 0 ? '+' : ''}
                     {summaryData.recentActivity.baseCurrency.symbol}
@@ -506,14 +514,14 @@ export default function DashboardContent({
               </div>
               <div className="mt-3 space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-green-600">收入:</span>
+                  <span className="text-green-600">{t('dashboard.income.label')}</span>
                   <span className="text-green-800 font-medium">
                     +{summaryData.recentActivity.baseCurrency.symbol}
                     {summaryData.recentActivity.summaryInBaseCurrency.income.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-red-600">支出:</span>
+                  <span className="text-red-600">{t('dashboard.expense.label')}</span>
                   <span className="text-red-800 font-medium">
                     -{summaryData.recentActivity.baseCurrency.symbol}
                     {summaryData.recentActivity.summaryInBaseCurrency.expense.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -545,7 +553,7 @@ export default function DashboardContent({
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">
-                  账户数量
+                  {t('dashboard.account.count')}
                 </dt>
                 <dd className="text-2xl font-semibold text-gray-900">
                   {stats.accountCount}
@@ -568,7 +576,7 @@ export default function DashboardContent({
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">
-                  交易记录
+                  {t('dashboard.transaction.records')}
                 </dt>
                 <dd className="text-2xl font-semibold text-gray-900">
                   {stats.transactionCount}
@@ -591,7 +599,7 @@ export default function DashboardContent({
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">
-                  分类数量
+                  {t('dashboard.category.count')}
                 </dt>
                 <dd className="text-2xl font-semibold text-gray-900">
                   {stats.categoryCount}
@@ -605,7 +613,7 @@ export default function DashboardContent({
       {/* 快速操作 */}
       <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 sm:mb-8">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
-          快速操作
+          {t('dashboard.quick.actions')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <button
@@ -615,7 +623,7 @@ export default function DashboardContent({
             <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            记收入
+            {t('dashboard.record.income')}
           </button>
           <button
             onClick={() => handleQuickTransaction('EXPENSE')}
@@ -624,7 +632,7 @@ export default function DashboardContent({
             <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
             </svg>
-            记支出
+            {t('dashboard.record.expense')}
           </button>
           <button
             onClick={handleQuickBalanceUpdate}
@@ -633,7 +641,7 @@ export default function DashboardContent({
             <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            更新余额
+            {t('dashboard.update.balance')}
           </button>
         </div>
       </div>
@@ -641,7 +649,7 @@ export default function DashboardContent({
       {/* 图表展示区域 */}
       <div className="space-y-6">
         <h2 className="text-lg font-semibold text-gray-900">
-          📊 财务趋势分析
+          📊 {t('dashboard.financial.trend.analysis')}
         </h2>
 
         {isLoadingCharts ? (
@@ -678,8 +686,8 @@ export default function DashboardContent({
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              <p className="mt-2">暂无图表数据</p>
-              <p className="text-sm">请先添加一些交易记录</p>
+              <p className="mt-2">{t('dashboard.no.chart.data')}</p>
+              <p className="text-sm">{t('dashboard.add.accounts.transactions.first')}</p>
             </div>
           </div>
         )}

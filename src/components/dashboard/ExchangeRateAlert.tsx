@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface MissingRateInfo {
   fromCurrency: string
@@ -23,6 +24,7 @@ interface ExchangeRateAlertProps {
 }
 
 export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertProps) {
+  const { t } = useLanguage()
   const [missingRates, setMissingRates] = useState<MissingRateInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [dismissed, setDismissed] = useState(false)
@@ -39,7 +41,7 @@ export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertP
         setMissingRates(data.data.missingRates || [])
       }
     } catch (error) {
-      console.error('获取缺失汇率失败:', error)
+      console.error(t('exchange.rate.fetch.failed'), error)
     } finally {
       setLoading(false)
     }
@@ -73,11 +75,11 @@ export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertP
         </div>
         <div className="ml-3 flex-1">
           <h3 className="text-sm font-medium text-yellow-800">
-            需要设置汇率
+            {t('exchange.rate.alert.title')}
           </h3>
           <div className="mt-2 text-sm text-yellow-700">
             <p>
-              您有 <strong>{missingRates.length}</strong> 个货币对需要设置汇率，以确保统计数据的准确性：
+              {t('exchange.rate.alert.description', { count: missingRates.length })}
             </p>
             <ul className="mt-2 space-y-1">
               {missingRates.slice(0, 3).map((missing, index) => (
@@ -88,7 +90,7 @@ export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertP
               ))}
               {missingRates.length > 3 && (
                 <li className="text-yellow-600">
-                  还有 {missingRates.length - 3} 个货币对...
+                  {t('exchange.rate.alert.more.pairs', { count: missingRates.length - 3 })}
                 </li>
               )}
             </ul>
@@ -98,13 +100,13 @@ export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertP
               href="/settings?tab=exchange-rates"
               className="bg-yellow-100 text-yellow-800 px-3 py-2 rounded-md text-sm font-medium hover:bg-yellow-200 transition-colors"
             >
-              立即设置汇率
+              {t('exchange.rate.alert.setup.now')}
             </Link>
             <button
               onClick={handleDismiss}
               className="text-yellow-700 text-sm font-medium hover:text-yellow-800"
             >
-              暂时忽略
+              {t('exchange.rate.alert.ignore')}
             </button>
           </div>
         </div>
@@ -114,7 +116,7 @@ export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertP
               onClick={handleDismiss}
               className="inline-flex bg-yellow-50 rounded-md p-1.5 text-yellow-400 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-yellow-50 focus:ring-yellow-600"
             >
-              <span className="sr-only">关闭</span>
+              <span className="sr-only">{t('exchange.rate.alert.close')}</span>
               <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
