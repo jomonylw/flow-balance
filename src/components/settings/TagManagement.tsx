@@ -219,7 +219,7 @@ export default function TagManagement() {
                     <button
                       onClick={() => handleDeleteTag(tag)}
                       className="text-red-600 hover:text-red-800 text-sm font-medium"
-                      disabled={tag._count?.transactions && tag._count.transactions > 0}
+                      disabled={Boolean(tag._count?.transactions && tag._count.transactions > 0)}
                     >
                       删除
                     </button>
@@ -306,11 +306,9 @@ export default function TagManagement() {
             </button>
             <AuthButton
               type="submit"
+              label={editingTag ? '更新标签' : '创建标签'}
               isLoading={isSubmitting}
-              loadingText={editingTag ? '更新中...' : '创建中...'}
-            >
-              {editingTag ? '更新标签' : '创建标签'}
-            </AuthButton>
+            />
           </div>
         </form>
       </Modal>

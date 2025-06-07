@@ -103,77 +103,153 @@ export default function ChangePasswordForm() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900">安全设置</h3>
-        <p className="text-sm text-gray-600">修改您的登录密码</p>
-      </div>
-
+      {/* 消息提示 */}
       {message && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-          {message}
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            {message}
+          </div>
         </div>
       )}
 
       {errors.general && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {errors.general}
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {errors.general}
+          </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <InputField
-          type="password"
-          name="currentPassword"
-          label="当前密码"
-          placeholder="请输入当前密码"
-          value={formData.currentPassword}
-          onChange={handleInputChange}
-          error={errors.currentPassword}
-          required
-        />
-
-        <InputField
-          type="password"
-          name="newPassword"
-          label="新密码"
-          placeholder="请输入新密码（至少6位）"
-          value={formData.newPassword}
-          onChange={handleInputChange}
-          error={errors.newPassword}
-          required
-        />
-
-        <InputField
-          type="password"
-          name="confirmPassword"
-          label="确认新密码"
-          placeholder="请再次输入新密码"
-          value={formData.confirmPassword}
-          onChange={handleInputChange}
-          error={errors.confirmPassword}
-          required
-        />
-
-        <div className="pt-4">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? '修改中...' : '修改密码'}
-          </button>
+      {/* 密码修改表单 */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
+        <div className="mb-4">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+            <span className="mr-2">🔒</span>
+            修改密码
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">为了账户安全，请定期更换密码</p>
         </div>
-      </form>
 
-      <div className="border-t pt-6">
-        <div className="bg-yellow-50 p-4 rounded-md">
-          <h4 className="text-sm font-medium text-yellow-800 mb-2">安全提示</h4>
-          <ul className="text-sm text-yellow-700 space-y-1">
-            <li>• 密码长度至少为6位</li>
-            <li>• 建议使用字母、数字和特殊字符的组合</li>
-            <li>• 定期更换密码以确保账户安全</li>
-            <li>• 不要在多个网站使用相同密码</li>
-          </ul>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <InputField
+            type="password"
+            name="currentPassword"
+            label="当前密码"
+            placeholder="请输入当前密码"
+            value={formData.currentPassword}
+            onChange={handleInputChange}
+            error={errors.currentPassword}
+            required
+          />
+
+          <InputField
+            type="password"
+            name="newPassword"
+            label="新密码"
+            placeholder="请输入新密码（至少6位）"
+            value={formData.newPassword}
+            onChange={handleInputChange}
+            error={errors.newPassword}
+            required
+            help="密码长度至少为6位，建议使用字母、数字和特殊字符的组合"
+          />
+
+          <InputField
+            type="password"
+            name="confirmPassword"
+            label="确认新密码"
+            placeholder="请再次输入新密码"
+            value={formData.confirmPassword}
+            onChange={handleInputChange}
+            error={errors.confirmPassword}
+            required
+          />
+
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  修改中...
+                </span>
+              ) : (
+                '修改密码'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* 安全提示 */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6">
+        <h4 className="text-sm font-medium text-yellow-800 mb-3 flex items-center">
+          <span className="mr-2">⚠️</span>
+          安全提示
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-yellow-700">
+          <div className="flex items-start">
+            <span className="mr-2">•</span>
+            <span>密码长度至少为6位</span>
+          </div>
+          <div className="flex items-start">
+            <span className="mr-2">•</span>
+            <span>建议使用字母、数字和特殊字符的组合</span>
+          </div>
+          <div className="flex items-start">
+            <span className="mr-2">•</span>
+            <span>定期更换密码以确保账户安全</span>
+          </div>
+          <div className="flex items-start">
+            <span className="mr-2">•</span>
+            <span>不要在多个网站使用相同密码</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 其他安全选项 */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6">
+        <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+          <span className="mr-2">🛡️</span>
+          其他安全选项
+        </h4>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-900">两步验证</p>
+              <p className="text-xs text-gray-500">增强账户安全性</p>
+            </div>
+            <button
+              disabled
+              className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
+            >
+              即将推出
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-900">登录历史</p>
+              <p className="text-xs text-gray-500">查看最近的登录记录</p>
+            </div>
+            <button
+              disabled
+              className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
+            >
+              即将推出
+            </button>
+          </div>
         </div>
       </div>
     </div>
