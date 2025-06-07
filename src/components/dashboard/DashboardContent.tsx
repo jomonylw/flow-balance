@@ -190,7 +190,11 @@ export default function DashboardContent({
     return {
       id: account.id,
       name: account.name,
-      category: account.category,
+      category: {
+        id: account.category.id || account.id, // 使用账户 ID 作为分类 ID 的占位符
+        name: account.category.name,
+        type: account.category.type
+      },
       balances: balancesRecord
     }
   })

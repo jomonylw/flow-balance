@@ -350,11 +350,10 @@ export default function QuickBalanceUpdateModal({
           </button>
           <AuthButton
             type="submit"
-            loading={isLoading}
+            label="更新余额"
+            isLoading={isLoading}
             disabled={!formData.accountId || !formData.newBalance}
-          >
-            更新余额
-          </AuthButton>
+          />
         </div>
       </form>
     </Modal>
