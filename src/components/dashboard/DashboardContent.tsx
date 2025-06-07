@@ -84,6 +84,8 @@ export default function DashboardContent({
   const [isLoadingCharts, setIsLoadingCharts] = useState(true)
   const [chartError, setChartError] = useState<string | null>(null)
   const [validationResult, setValidationResult] = useState<any>(null)
+  const [summaryData, setSummaryData] = useState<any>(null)
+  const [isLoadingSummary, setIsLoadingSummary] = useState(true)
 
   const handleQuickTransaction = (type: 'INCOME' | 'EXPENSE') => {
     setDefaultTransactionType(type)
@@ -98,6 +100,28 @@ export default function DashboardContent({
     // 刷新页面以更新数据
     window.location.reload()
   }
+
+  // 获取财务概览数据
+  useEffect(() => {
+    const fetchSummaryData = async () => {
+      try {
+        setIsLoadingSummary(true)
+        const response = await fetch('/api/dashboard/summary')
+        if (response.ok) {
+          const data = await response.json()
+          setSummaryData(data.data)
+        } else {
+          console.error('Failed to fetch summary data')
+        }
+      } catch (error) {
+        console.error('Error fetching summary data:', error)
+      } finally {
+        setIsLoadingSummary(false)
+      }
+    }
+
+    fetchSummaryData()
+  }, [])
 
   // 获取图表数据
   useEffect(() => {
@@ -341,13 +365,153 @@ export default function DashboardContent({
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           财务概览
           <span className="ml-2 text-sm font-normal text-gray-500">
-            (区分存量和流量数据)
+            (使用API数据，确保计算准确性)
           </span>
         </h2>
-        <SmartAccountSummary
-          accounts={accountsWithBalances}
-          baseCurrency={baseCurrency}
-        />
+        {isLoadingSummary ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg shadow p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : summaryData ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* 总资产 */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-700">总资产</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {summaryData.netWorth.currency.symbol}
+                    {(() => {
+                      const assetAccounts = summaryData.accountBalances.filter((acc: any) => acc.category.type === 'ASSET')
+                      const totalAssets = assetAccounts.reduce((sum: number, acc: any) => {
+                        const balance = acc.balances[summaryData.netWorth.currency.code] || 0
+                        return sum + Math.max(0, balance) // 只计算正余额
+                      }, 0)
+                      return totalAssets.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    })()}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {summaryData.accountBalances.filter((acc: any) =>
+                      acc.category.type === 'ASSET' &&
+                      Object.values(acc.balances).some((balance: any) => Math.abs(balance) > 0.01)
+                    ).length} 个账户
+                  </p>
+                </div>
+                <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* 总负债 */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-red-700">总负债</p>
+                  <p className="text-2xl font-bold text-red-900">
+                    {summaryData.netWorth.currency.symbol}
+                    {(() => {
+                      const liabilityAccounts = summaryData.accountBalances.filter((acc: any) => acc.category.type === 'LIABILITY')
+                      const totalLiabilities = liabilityAccounts.reduce((sum: number, acc: any) => {
+                        const balance = acc.balances[summaryData.netWorth.currency.code] || 0
+                        // 负债账户的余额：正数表示欠债，负数表示多付了
+                        // 总负债应该显示所有正余额的总和（实际欠债金额）
+                        return sum + Math.max(0, balance)
+                      }, 0)
+                      return totalLiabilities.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    })()}
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    {summaryData.accountBalances.filter((acc: any) =>
+                      acc.category.type === 'LIABILITY' &&
+                      Object.values(acc.balances).some((balance: any) => Math.abs(balance) > 0.01)
+                    ).length} 个账户
+                  </p>
+                </div>
+                <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* 净资产 */}
+            <div className={`${summaryData.netWorth.amount >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm font-medium ${summaryData.netWorth.amount >= 0 ? 'text-green-700' : 'text-red-700'}`}>净资产</p>
+                  <p className={`text-2xl font-bold ${summaryData.netWorth.amount >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                    {summaryData.netWorth.amount >= 0 ? '+' : '-'}
+                    {summaryData.netWorth.currency.symbol}
+                    {Math.abs(summaryData.netWorth.amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className={`text-xs mt-1 ${summaryData.netWorth.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    资产 - 负债
+                  </p>
+                </div>
+                <div className={`h-8 w-8 ${summaryData.netWorth.amount >= 0 ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center`}>
+                  <svg className={`h-5 w-5 ${summaryData.netWorth.amount >= 0 ? 'text-green-600' : 'text-red-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* 本月现金流 */}
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-700">本月净收入</p>
+                  <p className={`text-2xl font-bold ${summaryData.recentActivity.summaryInBaseCurrency.net >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                    {summaryData.recentActivity.summaryInBaseCurrency.net >= 0 ? '+' : ''}
+                    {summaryData.recentActivity.baseCurrency.symbol}
+                    {Math.abs(summaryData.recentActivity.summaryInBaseCurrency.net).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    {summaryData.recentActivity.period}
+                  </p>
+                </div>
+                <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="mt-3 space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-green-600">收入:</span>
+                  <span className="text-green-800 font-medium">
+                    +{summaryData.recentActivity.baseCurrency.symbol}
+                    {summaryData.recentActivity.summaryInBaseCurrency.income.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-red-600">支出:</span>
+                  <span className="text-red-800 font-medium">
+                    -{summaryData.recentActivity.baseCurrency.symbol}
+                    {summaryData.recentActivity.summaryInBaseCurrency.expense.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <SmartAccountSummary
+            accounts={accountsWithBalances}
+            baseCurrency={baseCurrency}
+          />
+        )}
       </div>
 
       {/* 基础统计卡片 */}
@@ -465,7 +629,7 @@ export default function DashboardContent({
         </h2>
 
         {isLoadingCharts ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="animate-pulse">
                 <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
@@ -480,7 +644,7 @@ export default function DashboardContent({
             </div>
           </div>
         ) : chartData ? (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+          <div className="space-y-6">
             <NetWorthChart
               data={chartData.netWorthChart}
               currency={chartData.currency}
@@ -523,17 +687,25 @@ export default function DashboardContent({
               <p>✅ <strong>分类设置功能</strong> - 账户类型管理</p>
               <p>✅ <strong>专业财务报表</strong> - 资产负债表、现金流量表</p>
               <p>✅ <strong>智能统计面板</strong> - 区分存量和流量数据</p>
+              <p>✅ <strong>账户详情页面</strong> - 存量/流量差异化展示</p>
+              <p>✅ <strong>分类汇总页面</strong> - 层级聚合统计</p>
+              <p>✅ <strong>交易列表页面</strong> - 完整的交易管理</p>
+              <p>✅ <strong>图表可视化</strong> - ECharts 集成完成</p>
+              <p>✅ <strong>多币种汇率转换</strong> - 手动汇率设置</p>
+              <p>✅ <strong>货币管理系统</strong> - 用户自定义可用货币</p>
+              <p>✅ <strong>余额更新功能</strong> - 存量类账户专用</p>
+              <p>✅ <strong>响应式设计</strong> - PC/移动端适配</p>
             </div>
           </div>
           <div>
             <h3 className="font-medium text-blue-700 mb-2">🚧 开发中功能</h3>
             <div className="space-y-2 text-sm text-gray-600">
-              <p>🚧 账户详情页面 - 开发中</p>
-              <p>🚧 分类汇总页面 - 开发中</p>
-              <p>🚧 交易列表页面 - 开发中</p>
-              <p>✅ 图表可视化 - ECharts 集成完成</p>
-              <p>🚧 多币种汇率转换</p>
-              <p>🚧 数据导出功能</p>
+              <p>🚧 数据导出功能 - PDF/Excel 报表导出</p>
+              <p>🚧 预算管理 - 预算 vs 实际对比</p>
+              <p>🚧 财务指标分析 - 关键指标计算</p>
+              <p>🚧 数据备份恢复 - 云端同步</p>
+              <p>🚧 高级图表 - 更多可视化选项</p>
+              <p>🚧 自动分类 - AI 智能分类建议</p>
             </div>
           </div>
         </div>
@@ -545,6 +717,19 @@ export default function DashboardContent({
             <p>• <strong>分类设置</strong>：可以为大类设置账户类型，子分类自动继承</p>
             <p>• <strong>专业报表</strong>：标准的个人资产负债表和现金流量表</p>
             <p>• <strong>智能面板</strong>：根据账户类型显示不同的统计信息和录入选项</p>
+            <p>• <strong>多币种支持</strong>：完整的货币管理和汇率转换系统</p>
+            <p>• <strong>差异化操作</strong>：存量类账户"更新余额"，流量类账户"添加交易"</p>
+          </div>
+        </div>
+
+        <div className="mt-6 p-4 bg-green-50 rounded-lg">
+          <h4 className="font-medium text-green-900 mb-2">🎯 最新完成功能</h4>
+          <div className="text-sm text-green-800 space-y-1">
+            <p>• <strong>业务流程优化</strong>：全面审查并优化存量流量处理逻辑</p>
+            <p>• <strong>数据一致性</strong>：统一余额计算，确保图表数据准确性</p>
+            <p>• <strong>用户体验提升</strong>：智能化操作界面，类型特定的视觉反馈</p>
+            <p>• <strong>货币管理完善</strong>：用户可自定义货币，支持手动汇率设置</p>
+            <p>• <strong>专业财务工具</strong>：企业级个人财务管理功能</p>
           </div>
         </div>
       </div>
