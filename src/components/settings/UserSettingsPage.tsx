@@ -9,6 +9,7 @@ import PreferencesForm from './PreferencesForm'
 import CurrencyManagement from './CurrencyManagement'
 import DataManagementSection from './DataManagementSection'
 import ExchangeRateManagement from './ExchangeRateManagement'
+import TagManagement from './TagManagement'
 
 interface UserSettingsPageProps {
   user: User
@@ -16,7 +17,7 @@ interface UserSettingsPageProps {
   currencies: Currency[]
 }
 
-type TabType = 'profile' | 'security' | 'preferences' | 'currencies' | 'exchange-rates' | 'data'
+type TabType = 'profile' | 'security' | 'preferences' | 'currencies' | 'exchange-rates' | 'tags' | 'data'
 
 export default function UserSettingsPage({
   user,
@@ -29,7 +30,7 @@ export default function UserSettingsPage({
   useEffect(() => {
     // 检查URL参数中是否指定了标签页
     const tab = searchParams.get('tab') as TabType
-    if (tab && ['profile', 'security', 'preferences', 'currencies', 'exchange-rates', 'data'].includes(tab)) {
+    if (tab && ['profile', 'security', 'preferences', 'currencies', 'exchange-rates', 'tags', 'data'].includes(tab)) {
       setActiveTab(tab)
     }
   }, [searchParams])
@@ -40,6 +41,7 @@ export default function UserSettingsPage({
     { id: 'preferences' as TabType, label: '偏好设置', icon: '⚙️' },
     { id: 'currencies' as TabType, label: '货币管理', icon: '💰' },
     { id: 'exchange-rates' as TabType, label: '汇率管理', icon: '💱' },
+    { id: 'tags' as TabType, label: '标签管理', icon: '🏷️' },
     { id: 'data' as TabType, label: '数据管理', icon: '📊' }
   ]
 
@@ -60,6 +62,8 @@ export default function UserSettingsPage({
         return <CurrencyManagement />
       case 'exchange-rates':
         return <ExchangeRateManagement currencies={currencies} />
+      case 'tags':
+        return <TagManagement />
       case 'data':
         return <DataManagementSection />
       default:

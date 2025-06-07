@@ -6,6 +6,7 @@ import InputField from '@/components/ui/InputField'
 import SelectField from '@/components/ui/SelectField'
 import TextAreaField from '@/components/ui/TextAreaField'
 import AuthButton from '@/components/ui/AuthButton'
+import { useToast } from '@/contexts/ToastContext'
 
 interface Account {
   id: string
@@ -75,6 +76,7 @@ export default function TransactionFormModal({
   defaultCategoryId,
   defaultType
 }: TransactionFormModalProps) {
+  const { showSuccess, showError } = useToast()
   const [formData, setFormData] = useState({
     accountId: '',
     categoryId: '',
@@ -89,6 +91,10 @@ export default function TransactionFormModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [availableTags, setAvailableTags] = useState<Tag[]>(tags)
+  const [showNewTagForm, setShowNewTagForm] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [isCreatingTag, setIsCreatingTag] = useState(false)
 
   // 初始化表单数据
   useEffect(() => {
@@ -127,6 +133,11 @@ export default function TransactionFormModal({
     }
     setErrors({})
   }, [transaction, defaultAccountId, defaultCategoryId, defaultType, isOpen])
+
+  // 更新可用标签列表
+  useEffect(() => {
+    setAvailableTags(tags)
+  }, [tags])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -219,6 +230,48 @@ export default function TransactionFormModal({
         ? prev.tagIds.filter(id => id !== tagId)
         : [...prev.tagIds, tagId]
     }))
+  }
+
+  const handleCreateTag = async () => {
+    if (!newTagName.trim()) {
+      showError('验证失败', '标签名称不能为空')
+      return
+    }
+
+    try {
+      setIsCreatingTag(true)
+      const response = await fetch('/api/tags', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: newTagName.trim(),
+          color: null
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        const newTag = result.data
+        setAvailableTags(prev => [...prev, newTag])
+        setFormData(prev => ({
+          ...prev,
+          tagIds: [...prev.tagIds, newTag.id]
+        }))
+        setNewTagName('')
+        setShowNewTagForm(false)
+        showSuccess('创建成功', '标签已创建并添加到当前交易')
+      } else {
+        showError('创建失败', result.error || '创建标签失败')
+      }
+    } catch (error) {
+      console.error('Error creating tag:', error)
+      showError('创建失败', '网络错误，请稍后重试')
+    } finally {
+      setIsCreatingTag(false)
+    }
   }
 
   const validateForm = () => {
@@ -461,13 +514,56 @@ export default function TransactionFormModal({
         />
 
         {/* 标签选择 */}
-        {tags.length > 0 && (
-          <div className="space-y-2">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
             <label className="block text-sm font-medium text-gray-700">
               标签
             </label>
+            <button
+              type="button"
+              onClick={() => setShowNewTagForm(!showNewTagForm)}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              {showNewTagForm ? '取消' : '+ 创建新标签'}
+            </button>
+          </div>
+
+          {/* 创建新标签表单 */}
+          {showNewTagForm && (
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-3 space-y-3">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  placeholder="输入标签名称"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleCreateTag()
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateTag}
+                  disabled={isCreatingTag || !newTagName.trim()}
+                  className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCreatingTag ? '创建中...' : '创建'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">
+                创建后的标签会自动添加到当前交易中
+              </p>
+            </div>
+          )}
+
+          {/* 现有标签选择 */}
+          {availableTags.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {tags.map(tag => (
+              {availableTags.map(tag => (
                 <button
                   key={tag.id}
                   type="button"
@@ -489,8 +585,22 @@ export default function TransactionFormModal({
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
+
+          {/* 无标签提示 */}
+          {availableTags.length === 0 && !showNewTagForm && (
+            <div className="text-center py-4 border border-gray-200 rounded-md bg-gray-50">
+              <p className="text-sm text-gray-500">还没有标签</p>
+              <button
+                type="button"
+                onClick={() => setShowNewTagForm(true)}
+                className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                创建第一个标签
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* 操作按钮 */}
         <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">

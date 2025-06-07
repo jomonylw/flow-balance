@@ -16,6 +16,13 @@ export async function GET() {
       },
       orderBy: {
         name: 'asc'
+      },
+      include: {
+        _count: {
+          select: {
+            transactions: true
+          }
+        }
       }
     })
 
@@ -36,15 +43,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, color } = body
 
-    if (!name) {
+    if (!name || typeof name !== 'string') {
       return errorResponse('标签名称不能为空', 400)
+    }
+
+    // 验证标签名称长度
+    if (name.trim().length === 0) {
+      return errorResponse('标签名称不能为空', 400)
+    }
+
+    if (name.length > 50) {
+      return errorResponse('标签名称不能超过50个字符', 400)
+    }
+
+    // 验证颜色格式（如果提供）
+    if (color && typeof color !== 'string') {
+      return errorResponse('颜色格式不正确', 400)
     }
 
     // 检查同一用户下是否已存在同名标签
     const existingTag = await prisma.tag.findFirst({
       where: {
         userId: user.id,
-        name
+        name: name.trim()
       }
     })
 
@@ -55,7 +76,7 @@ export async function POST(request: NextRequest) {
     const tag = await prisma.tag.create({
       data: {
         userId: user.id,
-        name,
+        name: name.trim(),
         color: color || null
       }
     })
