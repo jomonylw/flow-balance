@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import BaseContextMenu, { MenuItem } from './BaseContextMenu'
 
 interface Account {
   id: string
@@ -21,79 +21,46 @@ interface AccountContextMenuProps {
   account: Account
 }
 
+// 辅助函数：获取账户类型标签
+function getAccountTypeLabel(type?: string): string {
+  switch (type) {
+    case 'ASSET': return '资产'
+    case 'LIABILITY': return '负债'
+    case 'INCOME': return '收入'
+    case 'EXPENSE': return '支出'
+    default: return '账户'
+  }
+}
+
+// 辅助函数：获取账户类型颜色
+function getAccountTypeColor(type?: string): string {
+  switch (type) {
+    case 'ASSET': return 'text-blue-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 hover:text-blue-800'
+    case 'LIABILITY': return 'text-orange-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 hover:text-orange-800'
+    case 'INCOME': return 'text-green-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 hover:text-green-800'
+    case 'EXPENSE': return 'text-red-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-800'
+    default: return 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+  }
+}
+
 export default function AccountContextMenu({
   isOpen,
   onClose,
   onAction,
   account
 }: AccountContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null)
-  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose()
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isOpen, onClose])
-
-  // 计算菜单位置，避免超出视口
-  useEffect(() => {
-    if (isOpen && menuRef.current) {
-      const triggerElement = menuRef.current.parentElement
-      if (!triggerElement) return
-
-      const triggerRect = triggerElement.getBoundingClientRect()
-      const menuWidth = 192 // w-48 = 12rem = 192px
-      const viewportWidth = window.innerWidth
-      const viewportHeight = window.innerHeight
-
-      let left = triggerRect.right + 8 // 默认显示在右侧，8px间距
-      let top = triggerRect.top
-
-      // 如果右侧空间不够，显示在左侧
-      if (left + menuWidth > viewportWidth - 20) {
-        left = triggerRect.left - menuWidth - 8
-      }
-
-      // 确保不超出视口顶部和底部
-      if (top < 20) {
-        top = 20
-      } else if (top + 300 > viewportHeight - 20) { // 假设菜单高度约300px
-        top = viewportHeight - 320
-      }
-
-      setMenuStyle({
-        position: 'fixed',
-        left: `${left}px`,
-        top: `${top}px`,
-        zIndex: 9999
-      })
-    }
-  }, [isOpen])
-
-  if (!isOpen) return null
-
   // 根据账户类型确定菜单项
   const accountType = account.category?.type
   const isStockAccount = accountType === 'ASSET' || accountType === 'LIABILITY'
   const isFlowAccount = accountType === 'INCOME' || accountType === 'EXPENSE'
 
-  const menuItems = [
+  const menuItems: (MenuItem | 'divider')[] = [
     {
       label: '查看详情',
       action: 'view-details',
+      description: '查看账户详细信息和历史记录',
       icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
@@ -103,50 +70,56 @@ export default function AccountContextMenu({
     ...(isStockAccount ? [{
       label: '更新余额',
       action: 'update-balance',
+      description: `调整${getAccountTypeLabel(accountType)}账户余额`,
+      badge: '存量',
+      badgeColor: accountType === 'ASSET' ? 'blue' : 'yellow',
       icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-4 w-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
       ),
-      className: accountType === 'ASSET'
-        ? 'text-blue-700 hover:bg-blue-50 hover:text-blue-900 font-medium'
-        : 'text-orange-700 hover:bg-orange-50 hover:text-orange-900 font-medium'
+      className: getAccountTypeColor(accountType)
     }] : []),
     ...(isFlowAccount ? [{
       label: '添加交易',
       action: 'add-transaction',
+      description: `记录${getAccountTypeLabel(accountType)}交易`,
+      badge: '流量',
+      badgeColor: accountType === 'INCOME' ? 'green' : 'red',
       icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-4 w-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
       ),
-      className: accountType === 'INCOME'
-        ? 'text-green-700 hover:bg-green-50 hover:text-green-900 font-medium'
-        : 'text-red-700 hover:bg-red-50 hover:text-red-900 font-medium'
+      className: getAccountTypeColor(accountType)
     }] : []),
+    'divider',
     {
-      label: '重命名',
+      label: '重命名账户',
       action: 'rename',
+      description: '修改账户名称和描述',
       icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
       )
     },
     {
-      label: '移动到其他分类',
+      label: '移动分类',
       action: 'move',
+      description: '将账户移动到其他分类',
       icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
         </svg>
       )
     },
     {
-      label: '设置',
+      label: '账户设置',
       action: 'settings',
+      description: '配置账户属性和权限',
       icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
@@ -154,49 +127,26 @@ export default function AccountContextMenu({
     },
     'divider',
     {
-      label: '删除',
+      label: '删除账户',
       action: 'delete',
+      description: '永久删除此账户及其数据',
       icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-4 w-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
       ),
-      className: 'text-red-700 hover:bg-red-50 hover:text-red-900'
+      className: 'text-red-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-800'
     }
   ]
 
   return (
-    <div
-      ref={menuRef}
-      className="w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-      style={menuStyle}
-    >
-      <div className="py-1">
-        {menuItems.map((item, index) => {
-          if (item === 'divider') {
-            return <div key={index} className="border-t border-gray-100 my-1" />
-          }
-
-          const menuItem = item as any
-          return (
-            <button
-              key={menuItem.action}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onAction(menuItem.action)
-              }}
-              className={`
-                flex items-center w-full px-4 py-2 text-sm transition-colors
-                ${menuItem.className || 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}
-              `}
-            >
-              <span className="mr-3">{menuItem.icon}</span>
-              {menuItem.label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
+    <BaseContextMenu
+      isOpen={isOpen}
+      onClose={onClose}
+      onAction={onAction}
+      menuItems={menuItems}
+      title={`${account.name} • ${getAccountTypeLabel(accountType)}`}
+      width="lg"
+    />
   )
 }

@@ -12,7 +12,9 @@ interface PreferencesFormProps {
 export default function PreferencesForm({ userSettings, currencies }: PreferencesFormProps) {
   const [formData, setFormData] = useState({
     baseCurrencyCode: userSettings?.baseCurrencyCode || '',
-    dateFormat: userSettings?.dateFormat || 'YYYY-MM-DD'
+    dateFormat: userSettings?.dateFormat || 'YYYY-MM-DD',
+    theme: (userSettings as any)?.theme || 'system',
+    language: (userSettings as any)?.language || 'zh'
   })
   const [userCurrencies, setUserCurrencies] = useState<Currency[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -21,7 +23,17 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
 
   useEffect(() => {
     fetchUserCurrencies()
-  }, [])
+
+    // 初始化主题和语言设置（优先使用数据库设置，其次是localStorage）
+    const savedTheme = localStorage.getItem('theme')
+    const savedLanguage = localStorage.getItem('language')
+
+    setFormData(prev => ({
+      ...prev,
+      theme: (userSettings as any)?.theme || savedTheme || 'system',
+      language: (userSettings as any)?.language || savedLanguage || 'zh'
+    }))
+  }, [userSettings])
 
   const fetchUserCurrencies = async () => {
     try {
@@ -40,6 +52,17 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
     { value: 'DD/MM/YYYY', label: '01/01/2024 (DD/MM/YYYY)' },
     { value: 'MM/DD/YYYY', label: '01/01/2024 (MM/DD/YYYY)' },
     { value: 'DD-MM-YYYY', label: '01-01-2024 (DD-MM-YYYY)' }
+  ]
+
+  const themeOptions = [
+    { value: 'light', label: '明亮模式' },
+    { value: 'dark', label: '深色模式' },
+    { value: 'system', label: '跟随系统' }
+  ]
+
+  const languageOptions = [
+    { value: 'zh', label: '中文' },
+    { value: 'en', label: 'English' }
   ]
 
   const currencyOptions = userCurrencies.map(currency => ({
@@ -78,6 +101,24 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
 
       if (response.ok) {
         setMessage('偏好设置更新成功')
+
+        // 应用主题设置
+        if (formData.theme) {
+          const root = document.documentElement
+          if (formData.theme === 'system') {
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+            root.classList.toggle('dark', systemPrefersDark)
+          } else {
+            root.classList.toggle('dark', formData.theme === 'dark')
+          }
+          localStorage.setItem('theme', formData.theme)
+        }
+
+        // 应用语言设置
+        if (formData.language) {
+          localStorage.setItem('language', formData.language)
+          // 这里可以添加实际的语言切换逻辑
+        }
       } else {
         setError(data.error || '更新失败')
       }
@@ -114,6 +155,57 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
         </div>
       )}
 
+      {/* 外观设置 */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
+        <div className="mb-4">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+            <span className="mr-2">🎨</span>
+            外观设置
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">配置主题和语言偏好</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <SelectField
+            name="theme"
+            label="主题设置"
+            value={formData.theme}
+            onChange={handleSelectChange}
+            options={themeOptions}
+            help="选择您偏好的主题模式。设置后将作为默认选项。"
+          />
+
+          <SelectField
+            name="language"
+            label="语言设置"
+            value={formData.language}
+            onChange={handleSelectChange}
+            options={languageOptions}
+            help="选择界面显示语言。设置后将作为默认选项。"
+          />
+
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  保存中...
+                </span>
+              ) : (
+                '保存设置'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
       {/* 货币设置 */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
         <div className="mb-4">
@@ -124,7 +216,7 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
           <p className="text-sm text-gray-600 mt-1">配置您的主要货币和显示偏好</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <SelectField
             name="baseCurrencyCode"
             label="本位币"
@@ -158,27 +250,7 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
             options={dateFormatOptions}
             help="选择您偏好的日期显示格式"
           />
-
-          <div className="pt-4 border-t border-gray-200">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  保存中...
-                </span>
-              ) : (
-                '保存设置'
-              )}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
 
       {/* 本位币说明 */}
@@ -200,49 +272,25 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
         </div>
       </div>
 
-      {/* 其他偏好设置 */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6">
-        <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
-          <span className="mr-2">⚙️</span>
-          其他偏好设置
+      {/* 设置说明 */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
+        <h4 className="text-sm font-medium text-blue-800 mb-3 flex items-center">
+          <span className="mr-2">ℹ️</span>
+          设置说明
         </h4>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">主题设置</p>
-              <p className="text-xs text-gray-500">深色/浅色主题切换</p>
-            </div>
-            <button
-              disabled
-              className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
-            >
-              即将推出
-            </button>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">语言设置</p>
-              <p className="text-xs text-gray-500">界面语言选择</p>
-            </div>
-            <button
-              disabled
-              className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
-            >
-              即将推出
-            </button>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">通知设置</p>
-              <p className="text-xs text-gray-500">邮件和推送通知</p>
-            </div>
-            <button
-              disabled
-              className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
-            >
-              即将推出
-            </button>
-          </div>
+        <div className="text-sm text-blue-700 space-y-2">
+          <p>
+            <strong>主题设置：</strong>选择您偏好的界面主题。"跟随系统"会根据您的设备设置自动切换。
+          </p>
+          <p>
+            <strong>语言设置：</strong>选择界面显示语言。目前支持中文和英文。
+          </p>
+          <p>
+            <strong>本位币：</strong>用于计算净资产和生成财务报告的主要货币。
+          </p>
+          <p className="font-medium">
+            这些设置将作为您的默认偏好保存，与页面顶部的临时设置不同。
+          </p>
         </div>
       </div>
     </div>

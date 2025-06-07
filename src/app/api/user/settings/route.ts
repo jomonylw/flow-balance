@@ -11,7 +11,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { baseCurrencyCode, dateFormat } = body
+    const { baseCurrencyCode, dateFormat, theme, language } = body
 
     // 验证币种代码
     if (baseCurrencyCode) {
@@ -30,6 +30,18 @@ export async function PUT(request: NextRequest) {
       return validationErrorResponse('无效的日期格式')
     }
 
+    // 验证主题设置
+    const validThemes = ['light', 'dark', 'system']
+    if (theme && !validThemes.includes(theme)) {
+      return validationErrorResponse('无效的主题设置')
+    }
+
+    // 验证语言设置
+    const validLanguages = ['zh', 'en']
+    if (language && !validLanguages.includes(language)) {
+      return validationErrorResponse('无效的语言设置')
+    }
+
     // 获取或创建用户设置
     const existingSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id }
@@ -42,7 +54,9 @@ export async function PUT(request: NextRequest) {
         where: { userId: user.id },
         data: {
           ...(baseCurrencyCode && { baseCurrencyCode }),
-          ...(dateFormat && { dateFormat })
+          ...(dateFormat && { dateFormat }),
+          ...(theme && { theme }),
+          ...(language && { language })
         },
         include: { baseCurrency: true }
       })
@@ -52,7 +66,9 @@ export async function PUT(request: NextRequest) {
         data: {
           userId: user.id,
           baseCurrencyCode: baseCurrencyCode || 'USD',
-          dateFormat: dateFormat || 'YYYY-MM-DD'
+          dateFormat: dateFormat || 'YYYY-MM-DD',
+          theme: theme || 'system',
+          language: language || 'zh'
         },
         include: { baseCurrency: true }
       })

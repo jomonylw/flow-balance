@@ -54,8 +54,8 @@ export default function UserSettingsPage({
   // 设置项目分组
   const settingGroups: SettingGroup[] = [
     {
-      id: 'account',
-      title: '账户信息',
+      id: 'personal',
+      title: '个人设置',
       description: '管理您的个人资料和账户安全',
       icon: '👤',
       items: [
@@ -71,15 +71,7 @@ export default function UserSettingsPage({
           label: '安全设置',
           description: '修改密码和安全选项',
           icon: '🔒'
-        }
-      ]
-    },
-    {
-      id: 'preferences',
-      title: '系统偏好',
-      description: '配置应用程序的行为和显示选项',
-      icon: '⚙️',
-      items: [
+        },
         {
           id: 'preferences',
           label: '偏好设置',
@@ -98,29 +90,13 @@ export default function UserSettingsPage({
           label: '汇率管理',
           description: '设置和更新汇率信息',
           icon: '💱'
-        }
-      ]
-    },
-    {
-      id: 'content',
-      title: '内容管理',
-      description: '管理您的标签和分类',
-      icon: '🏷️',
-      items: [
+        },
         {
           id: 'tags',
           label: '标签管理',
           description: '创建和管理交易标签',
           icon: '🏷️'
-        }
-      ]
-    },
-    {
-      id: 'data',
-      title: '数据操作',
-      description: '导出数据和账户管理',
-      icon: '📊',
-      items: [
+        },
         {
           id: 'data',
           label: '数据管理',
@@ -198,17 +174,6 @@ export default function UserSettingsPage({
           <div className="space-y-4">
             {settingGroups.map((group) => (
               <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
-                {/* 分组标题 */}
-                <div className="px-4 py-3 border-b border-gray-200">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">{group.icon}</span>
-                    <div>
-                      <h3 className="text-base font-medium text-gray-900">{group.title}</h3>
-                      <p className="text-xs text-gray-500">{group.description}</p>
-                    </div>
-                  </div>
-                </div>
-
                 {/* 设置项目列表 */}
                 <div className="divide-y divide-gray-200">
                   {group.items.map((item) => (
@@ -269,17 +234,6 @@ export default function UserSettingsPage({
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             {settingGroups.map((group) => (
               <div key={group.id} className="border-b border-gray-200 last:border-b-0">
-                {/* 分组标题 */}
-                <div className="px-4 py-3 bg-gray-50">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">{group.icon}</span>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900">{group.title}</h3>
-                      <p className="text-xs text-gray-500">{group.description}</p>
-                    </div>
-                  </div>
-                </div>
-
                 {/* 设置项目列表 */}
                 <div className="divide-y divide-gray-100">
                   {group.items.map((item) => (
@@ -316,10 +270,10 @@ export default function UserSettingsPage({
             <h4 className="text-sm font-medium text-gray-900 mb-3">快捷操作</h4>
             <div className="space-y-2">
               <button
-                onClick={() => setActiveTab('data')}
+                onClick={() => setActiveTab('preferences')}
                 className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
               >
-                📤 导出我的数据
+                ⚙️ 系统偏好
               </button>
               <button
                 onClick={() => setActiveTab('currencies')}

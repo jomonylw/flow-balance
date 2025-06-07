@@ -39,6 +39,8 @@ model UserSettings {
   userId           String @unique
   baseCurrencyCode String? // 本位币代码，可为空（初始设置时）
   dateFormat       String @default("YYYY-MM-DD")
+  theme            String @default("system") // 主题设置：light, dark, system
+  language         String @default("zh") // 语言设置：zh, en
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
