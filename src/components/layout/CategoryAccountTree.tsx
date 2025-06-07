@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import CategoryTreeItem from './CategoryTreeItem'
 import AccountTreeItem from './AccountTreeItem'
 
@@ -28,7 +28,10 @@ interface CategoryAccountTreeProps {
   categories: Category[]
   accounts: Account[]
   searchQuery: string
-  onDataChange: () => void
+  onDataChange: (options?: {
+    type?: 'category' | 'account' | 'full'
+    silent?: boolean
+  }) => void
   onNavigate?: () => void
 }
 
@@ -39,7 +42,33 @@ export default function CategoryAccountTree({
   onDataChange,
   onNavigate
 }: CategoryAccountTreeProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  // 直接从 localStorage 初始化状态
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedState = localStorage.getItem('categoryTreeExpandedState')
+        if (savedState) {
+          const expandedIds = JSON.parse(savedState)
+          return new Set(expandedIds)
+        }
+      } catch (error) {
+        console.error('Error loading expanded state from localStorage:', error)
+      }
+    }
+    return new Set()
+  })
+
+  // 保存展开状态到 localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const expandedIds = Array.from(expandedCategories)
+        localStorage.setItem('categoryTreeExpandedState', JSON.stringify(expandedIds))
+      } catch (error) {
+        console.error('Error saving expanded state to localStorage:', error)
+      }
+    }
+  }, [expandedCategories])
 
   // 构建树状结构
   const categoryTree = useMemo(() => {

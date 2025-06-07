@@ -29,7 +29,10 @@ interface Account {
 interface AccountTreeItemProps {
   account: Account
   level: number
-  onDataChange: () => void
+  onDataChange: (options?: {
+    type?: 'category' | 'account' | 'full'
+    silent?: boolean
+  }) => void
   onNavigate?: () => void
 }
 
@@ -186,7 +189,7 @@ export default function AccountTreeItem({
 
       if (response.ok) {
         setShowRenameDialog(false)
-        onDataChange()
+        onDataChange({ type: 'account', silent: true })
       } else {
         const error = await response.json()
         showError('重命名失败', error.message || '未知错误')
@@ -206,7 +209,7 @@ export default function AccountTreeItem({
       if (response.ok) {
         setShowDeleteConfirm(false)
         showSuccess('删除成功', `账户"${account.name}"已删除`)
-        onDataChange()
+        onDataChange({ type: 'account', silent: true })
       } else {
         const error = await response.json()
         showError('删除失败', error.message || '未知错误')
@@ -255,7 +258,7 @@ export default function AccountTreeItem({
 
       if (response.ok) {
         setShowCategorySelector(false)
-        onDataChange()
+        onDataChange({ type: 'account', silent: true })
       } else {
         const error = await response.json()
         showError('移动失败', error.message || '未知错误')
@@ -267,12 +270,12 @@ export default function AccountTreeItem({
   }
 
   const handleBalanceUpdateSuccess = () => {
-    onDataChange()
+    onDataChange({ type: 'account', silent: true })
     setShowBalanceUpdateModal(false)
   }
 
   const handleTransactionSuccess = () => {
-    onDataChange()
+    onDataChange({ type: 'account', silent: true })
     setShowTransactionModal(false)
   }
 
@@ -292,7 +295,7 @@ export default function AccountTreeItem({
       })
 
       if (response.ok) {
-        onDataChange()
+        onDataChange({ type: 'account', silent: true })
       } else {
         const error = await response.json()
         throw new Error(error.message || '保存失败')

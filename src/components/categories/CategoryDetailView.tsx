@@ -187,8 +187,8 @@ export default function CategoryDetailView({
 
       if (result.success) {
         showSuccess('删除成功', '交易记录已删除')
-        // 刷新页面以更新数据
-        window.location.reload()
+        // 重新获取数据，但不重载页面
+        handleTransactionSuccess()
       } else {
         showError('删除失败', result.error || '未知错误')
       }
@@ -225,8 +225,7 @@ export default function CategoryDetailView({
     }
 
     fetchSummaryData()
-    // 刷新页面以更新交易列表
-    window.location.reload()
+    // 注意：交易列表会通过 fetchSummaryData 中的数据更新自动刷新
   }
 
   // 计算分类统计

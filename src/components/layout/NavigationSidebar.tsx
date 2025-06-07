@@ -12,6 +12,29 @@ interface User {
   email: string
 }
 
+interface Category {
+  id: string
+  name: string
+  type: string
+  parentId: string | null
+  order: number
+  [key: string]: any
+}
+
+interface Account {
+  id: string
+  name: string
+  categoryId: string
+  currency: string
+  description?: string
+  category: {
+    id: string
+    name: string
+    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  }
+  [key: string]: any
+}
+
 interface NavigationSidebarProps {
   user: User
   isMobile?: boolean
@@ -24,8 +47,8 @@ export default function NavigationSidebar({
   onNavigate
 }: NavigationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [categories, setCategories] = useState([])
-  const [accounts, setAccounts] = useState([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [accounts, setAccounts] = useState<Account[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showAddTopCategoryModal, setShowAddTopCategoryModal] = useState(false)
 
@@ -64,9 +87,83 @@ export default function NavigationSidebar({
     setShowAddTopCategoryModal(true)
   }
 
-  const handleDataChange = () => {
-    // 重新获取数据
-    window.location.reload()
+  // 智能数据更新：支持局部更新和完整刷新
+  const handleDataChange = async (options?: {
+    type?: 'category' | 'account' | 'full'
+    silent?: boolean // 静默更新，不显示加载状态
+  }) => {
+    const { type = 'full', silent = false } = options || {}
+
+    try {
+      if (!silent) {
+        setIsLoading(true)
+      }
+
+      if (type === 'category' || type === 'full') {
+        const categoriesRes = await fetch('/api/categories')
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json()
+          setCategories(categoriesData.data || [])
+        }
+      }
+
+      if (type === 'account' || type === 'full') {
+        const accountsRes = await fetch('/api/accounts')
+        if (accountsRes.ok) {
+          const accountsData = await accountsRes.json()
+          setAccounts(accountsData.data || [])
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing sidebar data:', error)
+    } finally {
+      if (!silent) {
+        setIsLoading(false)
+      }
+    }
+  }
+
+
+
+  // 乐观更新：立即更新UI，然后同步数据
+  const updateCategoryOptimistic = (categoryId: string, updates: Partial<Category>) => {
+    setCategories((prev) => prev.map(cat =>
+      cat.id === categoryId ? { ...cat, ...updates } : cat
+    ))
+    // 静默同步数据以确保一致性
+    setTimeout(() => handleDataChange({ type: 'category', silent: true }), 100)
+  }
+
+  const updateAccountOptimistic = (accountId: string, updates: Partial<Account>) => {
+    setAccounts((prev) => prev.map(acc =>
+      acc.id === accountId ? { ...acc, ...updates } : acc
+    ))
+    // 静默同步数据以确保一致性
+    setTimeout(() => handleDataChange({ type: 'account', silent: true }), 100)
+  }
+
+  const addCategoryOptimistic = (newCategory: Category) => {
+    setCategories((prev) => [...prev, newCategory])
+    // 静默同步数据以确保一致性
+    setTimeout(() => handleDataChange({ type: 'category', silent: true }), 100)
+  }
+
+  const addAccountOptimistic = (newAccount: Account) => {
+    setAccounts((prev) => [...prev, newAccount])
+    // 静默同步数据以确保一致性
+    setTimeout(() => handleDataChange({ type: 'account', silent: true }), 100)
+  }
+
+  const removeCategoryOptimistic = (categoryId: string) => {
+    setCategories((prev) => prev.filter(cat => cat.id !== categoryId))
+    // 静默同步数据以确保一致性
+    setTimeout(() => handleDataChange({ type: 'category', silent: true }), 100)
+  }
+
+  const removeAccountOptimistic = (accountId: string) => {
+    setAccounts((prev) => prev.filter(acc => acc.id !== accountId))
+    // 静默同步数据以确保一致性
+    setTimeout(() => handleDataChange({ type: 'account', silent: true }), 100)
   }
 
   const handleSaveTopCategory = async (data: { name: string; type: string }) => {
@@ -86,7 +183,7 @@ export default function NavigationSidebar({
 
       if (response.ok) {
         setShowAddTopCategoryModal(false)
-        handleDataChange()
+        handleDataChange({ type: 'category', silent: true })
       } else {
         const error = await response.json()
         throw new Error(error.message || '创建分类失败')
@@ -128,24 +225,34 @@ export default function NavigationSidebar({
               账户分类
             </h3>
 
-            {isLoading ? (
-              <div className="space-y-2">
-                {/* 加载骨架屏 */}
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-8 bg-gray-200 rounded"></div>
+            <div className="relative">
+              {isLoading && categories.length === 0 && (
+                <div className="space-y-2 w-full">
+                  {/* 加载骨架屏 - 只在初始加载时显示 */}
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-8 bg-gray-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {isLoading && categories.length > 0 && (
+                <div className="absolute top-0 right-0 z-10">
+                  {/* 小型加载指示器 - 在有数据时显示 */}
+                  <div className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs">
+                    更新中...
                   </div>
-                ))}
-              </div>
-            ) : (
+                </div>
+              )}
               <CategoryAccountTree
+                key="category-account-tree" // 确保组件不会被重新挂载
                 categories={categories}
                 accounts={accounts}
                 searchQuery={searchQuery}
                 onDataChange={handleDataChange}
                 onNavigate={onNavigate}
               />
-            )}
+            </div>
           </div>
         </div>
       </div>

@@ -10,6 +10,7 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { useToast } from '@/contexts/ToastContext'
 
+
 interface User {
   id: string
   email: string
@@ -87,8 +88,8 @@ export default function StockAccountDetailView({
   }
 
   const handleBalanceUpdateSuccess = () => {
-    // 刷新页面以更新数据
-    window.location.reload()
+    // 重新获取数据，但不重载页面
+    router.refresh()
   }
 
   const handleDeleteAccount = async () => {
@@ -151,8 +152,8 @@ export default function StockAccountDetailView({
 
       if (result.success) {
         showSuccess('删除成功', '余额记录已删除')
-        // 刷新页面以更新数据
-        window.location.reload()
+        // 重新获取数据，但不重载页面
+        router.refresh()
       } else {
         showError('删除失败', result.error || '未知错误')
       }
@@ -184,10 +185,10 @@ export default function StockAccountDetailView({
 
       if (successCount === transactionIds.length) {
         showSuccess('批量删除成功', `成功删除 ${successCount} 条记录`)
-        window.location.reload()
+        router.refresh()
       } else {
         showError('部分删除失败', `删除了 ${successCount}/${transactionIds.length} 条记录，部分删除失败`)
-        window.location.reload()
+        router.refresh()
       }
     } catch (error) {
       console.error('Batch delete error:', error)

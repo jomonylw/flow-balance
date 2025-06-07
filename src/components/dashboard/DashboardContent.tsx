@@ -96,9 +96,25 @@ export default function DashboardContent({
     setIsBalanceUpdateModalOpen(true)
   }
 
-  const handleTransactionSuccess = () => {
-    // 刷新页面以更新数据
-    window.location.reload()
+  const handleTransactionSuccess = async () => {
+    // 重新获取数据，但不重载页面
+    try {
+      // 重新获取概览数据
+      const summaryResponse = await fetch('/api/dashboard/summary')
+      if (summaryResponse.ok) {
+        const summaryData = await summaryResponse.json()
+        setSummaryData(summaryData.data)
+      }
+
+      // 重新获取图表数据
+      const chartResponse = await fetch('/api/dashboard/charts?months=12')
+      if (chartResponse.ok) {
+        const chartData = await chartResponse.json()
+        setChartData(chartData.data)
+      }
+    } catch (error) {
+      console.error('Error refreshing dashboard data:', error)
+    }
   }
 
   // 获取财务概览数据

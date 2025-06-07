@@ -24,7 +24,10 @@ interface CategoryTreeItemProps {
   isExpanded: boolean
   hasChildren: boolean
   onToggle: () => void
-  onDataChange: () => void
+  onDataChange: (options?: {
+    type?: 'category' | 'account' | 'full'
+    silent?: boolean
+  }) => void
 }
 
 export default function CategoryTreeItem({
@@ -142,7 +145,7 @@ export default function CategoryTreeItem({
       if (response.ok) {
         setShowRenameDialog(false)
         showSuccess('重命名成功', `分类已重命名`)
-        onDataChange()
+        onDataChange({ type: 'category', silent: true })
       } else {
         const error = await response.json()
         showError('重命名失败', error.message || '未知错误')
@@ -162,7 +165,7 @@ export default function CategoryTreeItem({
       if (response.ok) {
         setShowDeleteConfirm(false)
         showSuccess('删除成功', `分类"${category.name}"已删除`)
-        onDataChange()
+        onDataChange({ type: 'category', silent: true })
       } else {
         const error = await response.json()
         showError('删除失败', error.message || '未知错误')
@@ -189,7 +192,7 @@ export default function CategoryTreeItem({
       if (response.ok) {
         setShowCategorySelector(false)
         showSuccess('移动成功', `分类已移动`)
-        onDataChange()
+        onDataChange({ type: 'category', silent: true })
       } else {
         const error = await response.json()
         showError('移动失败', error.message || '未知错误')
@@ -216,7 +219,7 @@ export default function CategoryTreeItem({
       if (response.ok) {
         setShowAddSubcategoryDialog(false)
         showSuccess('添加成功', '子分类已添加')
-        onDataChange()
+        onDataChange({ type: 'category', silent: true })
       } else {
         const error = await response.json()
         showError('添加失败', error.message || '添加子分类失败')
@@ -243,7 +246,7 @@ export default function CategoryTreeItem({
       if (response.ok) {
         setShowAddAccountDialog(false)
         showSuccess('添加成功', '账户已添加')
-        onDataChange()
+        onDataChange({ type: 'account', silent: true })
       } else {
         const error = await response.json()
         showError('添加失败', error.message || '添加账户失败')
@@ -271,7 +274,7 @@ export default function CategoryTreeItem({
       if (response.ok) {
         setShowSettingsModal(false)
         showSuccess('保存成功', '分类设置已保存')
-        onDataChange()
+        onDataChange({ type: 'category', silent: true })
       } else {
         const error = await response.json()
         showError('保存失败', error.message || '保存设置失败')

@@ -230,7 +230,13 @@ export default function NetWorthChart({ data, currency, loading = false, error }
             <h3 className="text-lg font-medium text-gray-900 mb-2">图表加载失败</h3>
             <p className="text-sm text-gray-500 mb-4">{error || chartError}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                setChartError(null)
+                // 触发重新获取数据
+                if (typeof window !== 'undefined') {
+                  window.location.reload()
+                }
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
               重新加载
