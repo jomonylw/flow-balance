@@ -48,7 +48,7 @@ export default function TopUserStatusBar({
   }
 
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
+    <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
       <div className="flex items-center justify-between">
         {/* 左侧：移动端菜单按钮 + Logo */}
         <div className="flex items-center">
@@ -56,7 +56,7 @@ export default function TopUserStatusBar({
           {showMenuButton && (
             <button
               onClick={onMenuClick}
-              className="mr-3 p-2.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden transition-all duration-200"
+              className="mr-3 p-2.5 rounded-xl text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50 dark:hover:from-gray-800 dark:hover:to-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden transition-all duration-200"
               aria-label="打开菜单"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,12 +72,12 @@ export default function TopUserStatusBar({
               </svg>
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
                 Flow Balance
               </h1>
-              <p className="text-xs text-gray-500 -mt-0.5">个人财务管理</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 -mt-0.5">个人财务管理</p>
             </div>
-            <h1 className="text-lg font-bold text-gray-900 sm:hidden">Flow Balance</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100 sm:hidden">Flow Balance</h1>
           </div>
         </div>
 
@@ -95,8 +95,8 @@ export default function TopUserStatusBar({
             </div>
           )}
 
-          {/* 快捷操作按钮（桌面端） */}
-          <div className="hidden lg:flex items-center space-x-2">
+          {/* 快捷操作按钮（中等屏幕以上） */}
+          <div className="hidden md:flex items-center space-x-2">
             <LanguageToggle />
             <ThemeToggle />
           </div>
@@ -105,21 +105,21 @@ export default function TopUserStatusBar({
           <div className="relative">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="flex items-center space-x-3 text-sm text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl px-3 py-2 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50 transition-all duration-200"
+              className="flex items-center space-x-3 text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 rounded-xl px-3 py-2 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50 dark:hover:from-gray-800 dark:hover:to-gray-700 transition-all duration-200"
             >
               {/* 用户头像 */}
-              <div className="h-9 w-9 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full flex items-center justify-center shadow-inner">
-                <svg className="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="h-9 w-9 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 rounded-full flex items-center justify-center shadow-inner">
+                <svg className="h-5 w-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
 
               {/* 用户信息 */}
               <div className="hidden sm:block text-left">
-                <div className="font-medium text-gray-900 truncate max-w-32">
+                <div className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-32">
                   {user.email}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   在线
                 </div>
               </div>

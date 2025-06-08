@@ -199,13 +199,13 @@ export default function NavigationSidebar({
   return (
     <div className={`
       ${isMobile ? 'w-full' : 'w-80'}
-      bg-gray-50 border-r border-gray-200 flex flex-col h-full
+      bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full
     `}>
       {/* 移动端顶部间距 */}
       {isMobile && <div className="h-16" />}
 
       {/* 搜索框 */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <SidebarSearchBox
           value={searchQuery}
           onChange={setSearchQuery}
@@ -223,7 +223,7 @@ export default function NavigationSidebar({
 
           {/* 分类和账户树 */}
           <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-3">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
               {t('sidebar.categories')}
             </h3>
 
@@ -260,7 +260,7 @@ export default function NavigationSidebar({
       </div>
 
       {/* 底部添加按钮 */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={handleAddTopCategory}
           className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"

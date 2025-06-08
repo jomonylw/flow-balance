@@ -3,6 +3,9 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useBreakpoint } from '@/hooks/useResponsive'
+import ThemeToggle from './ThemeToggle'
+import LanguageToggle from './LanguageToggle'
 
 interface UserMenuDropdownProps {
   isOpen: boolean
@@ -13,6 +16,7 @@ interface UserMenuDropdownProps {
 export default function UserMenuDropdown({ isOpen, onClose, onLogout }: UserMenuDropdownProps) {
   const { t } = useLanguage()
   const menuRef = useRef<HTMLDivElement>(null)
+  const isMdAndAbove = useBreakpoint('md', 'up')
 
   // 点击外部关闭菜单
   useEffect(() => {
@@ -96,6 +100,43 @@ export default function UserMenuDropdown({ isOpen, onClose, onLogout }: UserMenu
 
         {/* 辅助功能区 */}
         <div className="px-2 space-y-1">
+          {/* 移动端主题和语言切换 */}
+          {!isMdAndAbove && (
+            <>
+              {/* 主题切换 */}
+              <div className="group flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg">
+                <div className="flex items-center justify-center w-8 h-8 mr-3 bg-purple-100 rounded-lg">
+                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span>{t('settings.theme')}</span>
+                    <ThemeToggle className="scale-90" />
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">{t('settings.theme.description')}</div>
+                </div>
+              </div>
+
+              {/* 语言切换 */}
+              <div className="group flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg">
+                <div className="flex items-center justify-center w-8 h-8 mr-3 bg-green-100 rounded-lg">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span>{t('settings.language')}</span>
+                    <LanguageToggle className="scale-90" />
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">{t('settings.language.description')}</div>
+                </div>
+              </div>
+            </>
+          )}
+
           {/* 帮助 */}
           <button
             onClick={(e) => {

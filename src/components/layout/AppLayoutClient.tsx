@@ -62,7 +62,7 @@ export default function AppLayoutClient({ children, user }: AppLayoutClientProps
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* 顶部用户状态栏 */}
       <TopUserStatusBar
         user={user}
@@ -92,7 +92,7 @@ export default function AppLayoutClient({ children, user }: AppLayoutClientProps
         )}
 
         {/* 右侧主内容 */}
-        <main className="flex-1 overflow-y-auto bg-white">
+        <main className="flex-1 overflow-y-auto bg-white dark:bg-gray-800">
           {children}
         </main>
       </div>

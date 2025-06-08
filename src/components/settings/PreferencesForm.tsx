@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { UserSettings, Currency } from '@prisma/client'
 import SelectField from '@/components/ui/SelectField'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface PreferencesFormProps {
   userSettings: (UserSettings & { baseCurrency: Currency }) | null
@@ -12,6 +13,7 @@ interface PreferencesFormProps {
 
 export default function PreferencesForm({ userSettings, currencies }: PreferencesFormProps) {
   const { t } = useLanguage()
+  const { setTheme } = useTheme()
   const [formData, setFormData] = useState({
     baseCurrencyCode: userSettings?.baseCurrencyCode || '',
     dateFormat: userSettings?.dateFormat || 'YYYY-MM-DD',
@@ -106,14 +108,7 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
 
         // 应用主题设置
         if (formData.theme) {
-          const root = document.documentElement
-          if (formData.theme === 'system') {
-            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-            root.classList.toggle('dark', systemPrefersDark)
-          } else {
-            root.classList.toggle('dark', formData.theme === 'dark')
-          }
-          localStorage.setItem('theme', formData.theme)
+          setTheme(formData.theme as 'light' | 'dark' | 'system')
         }
 
         // 应用语言设置
@@ -136,7 +131,7 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
     <div className="space-y-6">
       {/* 消息提示 */}
       {message && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+        <div className="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
           <div className="flex items-center">
             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -147,7 +142,7 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
           <div className="flex items-center">
             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -158,13 +153,13 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
       )}
 
       {/* 外观设置 */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
         <div className="mb-4">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
             <span className="mr-2">🎨</span>
             {t('preferences.appearance.settings')}
           </h3>
-          <p className="text-sm text-gray-600 mt-1">{t('preferences.appearance.description')}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('preferences.appearance.description')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

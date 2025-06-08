@@ -3,6 +3,28 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
 
+export async function GET() {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return unauthorizedResponse()
+    }
+
+    // 获取用户设置
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId: user.id },
+      include: { baseCurrency: true }
+    })
+
+    return successResponse({
+      userSettings
+    })
+  } catch (error) {
+    console.error('Get user settings error:', error)
+    return errorResponse('获取设置失败', 500)
+  }
+}
+
 export async function PUT(request: NextRequest) {
   try {
     const user = await getCurrentUser()
