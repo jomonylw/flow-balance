@@ -1,0 +1,8 @@
+{
+  "success.created": "创建成功",
+  "success.updated": "更新成功",
+  "success.deleted": "删除成功",
+  "success.saved": "保存成功",
+  "success.cleared": "清空成功",
+  "success.batch.deleted": "批量删除成功"
+}

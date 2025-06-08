@@ -1,0 +1,12 @@
+{
+  "nav.dashboard": "Dashboard",
+  "nav.accounts": "Accounts",
+  "nav.categories": "Categories",
+  "nav.transactions": "Transactions",
+  "nav.reports": "Reports",
+  "nav.settings": "Settings",
+  "nav.logout": "Logout",
+  "nav.profile": "Profile",
+  "nav.help": "Help",
+  "nav.about": "About"
+}

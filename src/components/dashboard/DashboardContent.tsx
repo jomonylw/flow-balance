@@ -8,6 +8,7 @@ import CashFlowChart from './CashFlowChart'
 import SmartAccountSummary from './SmartAccountSummary'
 import ExchangeRateAlert from './ExchangeRateAlert'
 import PageContainer from '../ui/PageContainer'
+import TranslationLoader from '../ui/TranslationLoader'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { validateAccountData, validateAccountDataWithI18n, validateChartData } from '@/lib/data-validation'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -242,10 +243,26 @@ export default function DashboardContent({
   })
 
   return (
-    <PageContainer
-      title={t('dashboard.title')}
-      subtitle={t('dashboard.welcome', { email: user.email })}
+    <TranslationLoader
+      fallback={
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-lg shadow p-6">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      }
     >
+      <PageContainer
+        title={t('dashboard.title')}
+        subtitle={t('dashboard.welcome', { email: user.email })}
+      >
 
       {/* 汇率设置提醒 */}
       <ExchangeRateAlert className="mb-4 sm:mb-6" />
@@ -787,5 +804,6 @@ export default function DashboardContent({
         baseCurrency={baseCurrency}
       />
     </PageContainer>
+    </TranslationLoader>
   )
 }

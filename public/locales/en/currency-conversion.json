@@ -1,0 +1,11 @@
+{
+  "currency.conversion.status": "Currency Conversion Status",
+  "currency.base.currency": "Base Currency",
+  "currency.conversion.partial.error": "Some data uses original amounts due to missing exchange rates, may be inaccurate",
+  "currency.conversion.successful": "Successful Conversions",
+  "currency.conversion.failed": "Failed Conversions",
+  "currency.conversion.missing.rate": "Missing Rate",
+  "currency.conversion.more.successful": "{{count}} more successful conversions...",
+  "currency.conversion.more.failed": "{{count}} more failed conversions...",
+  "currency.conversion.setup.missing": "Setup Missing Exchange Rates →"
+}

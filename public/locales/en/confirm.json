@@ -1,0 +1,10 @@
+{
+  "confirm.delete.account": "Are you sure you want to delete this account?",
+  "confirm.delete.category": "Are you sure you want to delete this category?",
+  "confirm.delete.transaction": "Are you sure you want to delete this transaction?",
+  "confirm.delete.selected": "Are you sure you want to delete {{count}} selected items?",
+  "confirm.clear.data": "This will permanently delete all related data.",
+  "confirm.cannot.undo": "This action cannot be undone.",
+  "confirm.delete.account.message": "Are you sure you want to delete account \"{{name}}\"? This action cannot be undone.",
+  "confirm.clear.balance.records": "Are you sure you want to clear all balance records? This action cannot be undone."
+}

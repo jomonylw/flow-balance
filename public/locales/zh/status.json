@@ -1,0 +1,6 @@
+{
+  "status.active": "活跃",
+  "status.inactive": "非活跃",
+  "status.pending": "待处理",
+  "status.completed": "已完成"
+}

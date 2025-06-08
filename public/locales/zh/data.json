@@ -1,0 +1,8 @@
+{
+  "data.no.results": "未找到结果",
+  "data.empty.state": "暂无数据",
+  "data.loading.error": "数据加载错误",
+  "data.retry": "重试",
+  "data.refresh": "刷新数据",
+  "data.last.updated": "最后更新：{{time}}"
+}

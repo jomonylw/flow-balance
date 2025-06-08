@@ -9,7 +9,7 @@ interface SidebarSearchBoxProps {
 }
 
 export default function SidebarSearchBox({ value, onChange }: SidebarSearchBoxProps) {
-  const { t } = useLanguage()
+  const { t, isLoading } = useLanguage()
   const [isFocused, setIsFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -51,7 +51,7 @@ export default function SidebarSearchBox({ value, onChange }: SidebarSearchBoxPr
       <input
         ref={inputRef}
         type="text"
-        placeholder={t('sidebar.search.placeholder')}
+        placeholder={isLoading ? '搜索...' : t('sidebar.search.placeholder')}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setIsFocused(true)}

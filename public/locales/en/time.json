@@ -1,0 +1,12 @@
+{
+  "time.today": "Today",
+  "time.yesterday": "Yesterday",
+  "time.this.week": "This Week",
+  "time.this.month": "This Month",
+  "time.this.year": "This Year",
+  "time.last.month": "Last Month",
+  "time.last.year": "Last Year",
+  "time.custom.range": "Custom Range",
+  "time.last.3.months": "Last 3 Months",
+  "time.last.6.months": "Last 6 Months"
+}

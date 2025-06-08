@@ -1,0 +1,9 @@
+{
+  "exchange.rate.alert.title": "Exchange Rates Need Setup",
+  "exchange.rate.alert.description": "You have {{count}} currency pairs that need exchange rate setup to ensure data accuracy:",
+  "exchange.rate.alert.more.pairs": "{{count}} more currency pairs...",
+  "exchange.rate.alert.setup.now": "Setup Exchange Rates Now",
+  "exchange.rate.alert.ignore": "Ignore for Now",
+  "exchange.rate.alert.close": "Close",
+  "exchange.rate.fetch.failed": "Failed to fetch missing exchange rates"
+}

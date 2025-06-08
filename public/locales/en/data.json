@@ -1,0 +1,8 @@
+{
+  "data.no.results": "No results found",
+  "data.empty.state": "No data to display",
+  "data.loading.error": "Error loading data",
+  "data.retry": "Retry",
+  "data.refresh": "Refresh Data",
+  "data.last.updated": "Last updated: {{time}}"
+}

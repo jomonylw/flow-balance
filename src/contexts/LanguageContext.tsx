@@ -8,6 +8,7 @@ interface LanguageContextType {
   language: Language
   setLanguage: (lang: Language) => void
   t: (key: string, params?: Record<string, string | number>) => string
+  isLoading: boolean
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
@@ -16,55 +17,51 @@ interface LanguageProviderProps {
   children: ReactNode
 }
 
+const namespaces = [
+  'account', 'account-settings', 'auth', 'balance-update', 'category', 'chart', 'common',
+  'confirm', 'currency-conversion', 'dashboard', 'data', 'error', 'exchange-rate',
+  'feature', 'form', 'menu', 'nav', 'password', 'preferences', 'reports', 'settings',
+  'sidebar', 'status', 'success', 'time', 'transaction', 'type', 'validation'
+];
+
 export function LanguageProvider({ children }: LanguageProviderProps) {
-  // 服务端渲染时使用默认语言，避免水合不匹配
   const [language, setLanguageState] = useState<Language>('zh')
   const [mounted, setMounted] = useState(false)
+  const [translations, setTranslations] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState(true)
 
-  // 初始化语言设置
   useEffect(() => {
     setMounted(true)
 
-    // 获取初始语言设置
     const getInitialLanguage = (): Language => {
-      // 优先使用脚本设置的初始语言
       const initialLanguage = window.__INITIAL_LANGUAGE__
       if (initialLanguage === 'en' || initialLanguage === 'zh') {
         return initialLanguage
       }
 
-      // 备用方案：从localStorage获取
       const savedLanguage = localStorage.getItem('language') as Language
       if (savedLanguage === 'en' || savedLanguage === 'zh') {
         return savedLanguage
       }
 
-      // 默认中文
       return 'zh'
     }
 
     const initialLanguage = getInitialLanguage()
     setLanguageState(initialLanguage)
-
-    // 设置HTML lang属性
     document.documentElement.lang = initialLanguage === 'zh' ? 'zh-CN' : 'en'
 
-    // 优先级：用户设置 > localStorage > 默认中文
     const initializeLanguage = async () => {
       try {
-        // 尝试从用户设置获取
         const response = await fetch('/api/user/settings')
         if (response.ok) {
           const data = await response.json()
           if (data.userSettings?.language) {
-            // 只有当API设置与当前不同时才更新
             if (data.userSettings.language !== initialLanguage) {
               setLanguageState(data.userSettings.language)
               localStorage.setItem('language', data.userSettings.language)
-              // 更新HTML lang属性
               document.documentElement.lang = data.userSettings.language === 'zh' ? 'zh-CN' : 'en'
             }
-            return
           }
         }
       } catch (error) {
@@ -75,15 +72,45 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     initializeLanguage()
   }, [])
 
-  // 设置语言
+  useEffect(() => {
+    if (!mounted) return;
+
+    const loadTranslations = async () => {
+      setIsLoading(true);
+      try {
+        const promises = namespaces.map(ns =>
+          fetch(`/locales/${language}/${ns}.json`).then(res => {
+            if (!res.ok) {
+              console.error(`Failed to load ${ns}.json for ${language}`);
+              return {}; // Return empty object on failure to avoid breaking Promise.all
+            }
+            return res.json()
+          })
+        );
+        const results = await Promise.all(promises);
+        const mergedTranslations = results.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+        setTranslations(mergedTranslations);
+      } catch (error) {
+        console.error('Failed to load translations:', error);
+        setTranslations({});
+      } finally {
+        setIsLoading(false);
+        // 移除初始化标志
+        if (typeof window !== 'undefined') {
+          window.__LANGUAGE_INITIALIZING__ = false;
+        }
+      }
+    };
+
+    loadTranslations();
+  }, [language, mounted]);
+
   const setLanguage = async (lang: Language) => {
     setLanguageState(lang)
     localStorage.setItem('language', lang)
     
-    // 更新 HTML lang 属性
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
 
-    // 尝试更新用户设置（如果用户已登录）
     try {
       await fetch('/api/user/settings', {
         method: 'PUT',
@@ -97,12 +124,20 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     }
   }
 
-  // 翻译函数
   const t = (key: string, params?: Record<string, string | number>): string => {
-    const translations = getTranslations(language)
-    let text = translations[key] || key
+    // 如果正在加载翻译，返回空字符串避免显示键值
+    if (isLoading || !mounted) {
+      return '';
+    }
 
-    // 参数替换
+    let text = translations[key]
+
+    // 如果找不到翻译，记录警告并返回键值（开发时有用）
+    if (!text) {
+      console.warn(`Translation missing for key: ${key}`);
+      return key;
+    }
+
     if (params) {
       Object.entries(params).forEach(([paramKey, value]) => {
         text = text.replace(`{{${paramKey}}}`, String(value))
@@ -112,17 +147,16 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     return text
   }
 
-  // 防止服务端渲染不匹配
   if (!mounted) {
     return (
-      <LanguageContext.Provider value={{ language: 'zh', setLanguage: () => {}, t: (key: string) => key }}>
+      <LanguageContext.Provider value={{ language: 'zh', setLanguage: () => {}, t: () => '', isLoading: true }}>
         {children}
       </LanguageContext.Provider>
     )
   }
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, isLoading }}>
       {children}
     </LanguageContext.Provider>
   )
@@ -134,1312 +168,4 @@ export function useLanguage() {
     throw new Error('useLanguage must be used within a LanguageProvider')
   }
   return context
-}
-
-// 翻译数据
-function getTranslations(language: Language): Record<string, string> {
-  if (language === 'en') {
-    return {
-      // 通用
-      'common.save': 'Save',
-      'common.cancel': 'Cancel',
-      'common.delete': 'Delete',
-      'common.edit': 'Edit',
-      'common.add': 'Add',
-      'common.confirm': 'Confirm',
-      'common.loading': 'Loading...',
-      'common.search': 'Search',
-      'common.filter': 'Filter',
-      'common.export': 'Export',
-      'common.import': 'Import',
-      'common.refresh': 'Refresh',
-      'common.close': 'Close',
-      'common.back': 'Back',
-      'common.next': 'Next',
-      'common.previous': 'Previous',
-      'common.submit': 'Submit',
-      'common.reset': 'Reset',
-      'common.clear': 'Clear',
-      'common.select': 'Select',
-      'common.all': 'All',
-      'common.none': 'None',
-      'common.yes': 'Yes',
-      'common.no': 'No',
-      'common.ok': 'OK',
-      'common.error': 'Error',
-      'common.success': 'Success',
-      'common.warning': 'Warning',
-      'common.info': 'Info',
-      'common.switch.to': 'Switch to',
-      'common.new': 'New',
-      'common.delete.failed': 'Delete failed',
-      'common.actions': 'Actions',
-      'common.confirm.clear': 'Confirm Clear',
-      'common.confirm.delete': 'Confirm Delete',
-
-      // 导航
-      'nav.dashboard': 'Dashboard',
-      'nav.accounts': 'Accounts',
-      'nav.categories': 'Categories',
-      'nav.transactions': 'Transactions',
-      'nav.reports': 'Reports',
-      'nav.settings': 'Settings',
-      'nav.logout': 'Logout',
-      'nav.profile': 'Profile',
-      'nav.help': 'Help',
-      'nav.about': 'About',
-
-      // 侧边栏
-      'sidebar.search.placeholder': 'Search accounts and categories...',
-      'sidebar.categories': 'Account Categories',
-      'sidebar.add.top.category': 'Add Top Category',
-      'sidebar.updating': 'Updating...',
-
-      // Dashboard
-      'dashboard.title': 'Dashboard',
-      'dashboard.welcome': 'Welcome back, {{email}}! Here is your financial overview.',
-      'dashboard.financial.overview': 'Financial Overview',
-      'dashboard.api.data.note': 'Using API data to ensure calculation accuracy',
-      'dashboard.account.count': 'Account Count',
-      'dashboard.net.worth': 'Net Worth',
-      'dashboard.total.assets': 'Total Assets',
-      'dashboard.total.liabilities': 'Total Liabilities',
-      'dashboard.monthly.income': 'Monthly Income',
-      'dashboard.monthly.expense': 'Monthly Expense',
-      'dashboard.net.cash.flow': 'Net Cash Flow',
-      'dashboard.quick.actions': 'Quick Actions',
-      'dashboard.record.income': 'Record Income',
-      'dashboard.record.expense': 'Record Expense',
-      'dashboard.update.balance': 'Update Balance',
-
-      // Dashboard 财务概览卡片
-      'dashboard.net.worth.card': 'Net Worth',
-      'dashboard.total.assets.card': 'Total Assets',
-      'dashboard.total.liabilities.card': 'Total Liabilities',
-      'dashboard.account.balances.card': 'Account Balances',
-      'dashboard.recent.activity.card': 'Recent 7 Days Activity',
-      'dashboard.view.all': 'View All',
-      'dashboard.no.account.data': 'No account data',
-      'dashboard.view.other.accounts': 'View other {{count}} accounts',
-      'dashboard.transactions.count': '{{count}} transactions',
-      'dashboard.income': 'Income',
-      'dashboard.expense': 'Expense',
-
-      // 账户
-      'account.balance': 'Balance',
-      'account.currency': 'Currency',
-      'account.description': 'Description',
-      'account.category': 'Category',
-      'account.type': 'Type',
-      'account.create': 'Create Account',
-      'account.edit': 'Edit Account',
-      'account.delete': 'Delete Account',
-      'account.name': 'Account Name',
-
-      // 分类
-      'category.name': 'Category Name',
-      'category.type': 'Category Type',
-      'category.parent': 'Parent Category',
-      'category.create': 'Create Category',
-      'category.edit': 'Edit Category',
-      'category.delete': 'Delete Category',
-
-      // 交易
-      'transaction.amount': 'Amount',
-      'transaction.date': 'Date',
-      'transaction.description': 'Description',
-      'transaction.category': 'Category',
-      'transaction.account': 'Account',
-      'transaction.type': 'Type',
-      'transaction.create': 'Create Transaction',
-      'transaction.edit': 'Edit Transaction',
-      'transaction.delete': 'Delete Transaction',
-
-      // 设置
-      'settings.title': 'Settings',
-      'settings.preferences': 'Preferences',
-      'settings.currency': 'Currency Settings',
-      'settings.theme': 'Theme',
-      'settings.theme.description': 'Switch between light, dark, and system themes',
-      'settings.language': 'Language',
-      'settings.language.description': 'Switch between Chinese and English',
-      'settings.date.format': 'Date Format',
-      'settings.base.currency': 'Base Currency',
-      'settings.preferences.updated': 'Preferences updated successfully',
-      'settings.update.failed': 'Update failed',
-
-      // 表单
-      'form.required': 'This field is required',
-      'form.invalid.email': 'Invalid email address',
-      'form.password.min.length': 'Password must be at least 6 characters',
-      'form.save.success': 'Saved successfully',
-      'form.save.error': 'Save failed',
-
-      // 认证
-      'auth.login': 'Login',
-      'auth.signup': 'Sign Up',
-      'auth.email': 'Email',
-      'auth.password': 'Password',
-      'auth.confirm.password': 'Confirm Password',
-      'auth.forgot.password': 'Forgot Password',
-      'auth.remember.me': 'Remember Me',
-      'auth.login.failed': 'Login failed',
-      'auth.email.placeholder': 'Enter your email',
-      'auth.password.placeholder': 'Enter your password',
-      'auth.no.account': 'Don\'t have an account',
-      'auth.signup.now': 'Sign up now',
-
-      // 错误消息
-      'error.network': 'Network error, please try again',
-      'error.unauthorized': 'Unauthorized access',
-      'error.not.found': 'Resource not found',
-      'error.server': 'Server error',
-      'error.validation': 'Validation error',
-      'error.unknown': 'Unknown error',
-      'error.clear.failed': 'Clear failed',
-      'error.partial.delete': 'Partial deletion failed',
-      'error.batch.delete.failed': 'Batch deletion failed',
-
-      // 成功消息
-      'success.created': 'Created successfully',
-      'success.updated': 'Updated successfully',
-      'success.deleted': 'Deleted successfully',
-      'success.saved': 'Saved successfully',
-      'success.cleared': 'Cleared successfully',
-      'success.batch.deleted': 'Batch deletion successful',
-
-    // 更新余额面板
-    'balance.update.modal.title': 'Update Balance',
-    'balance.update.modal.edit.title': 'Edit Balance Record',
-    'balance.update.modal.account.info': 'Account Information',
-    'balance.update.modal.asset.account': 'Asset Account',
-    'balance.update.modal.liability.account': 'Liability Account',
-    'balance.update.modal.stock.data': 'Stock Data',
-    'balance.update.modal.current.balance': 'Current Balance',
-    'balance.update.modal.update.method': 'Update Method',
-    'balance.update.modal.currency': 'Currency',
-    'balance.update.modal.new.balance': 'New Balance',
-    'balance.update.modal.adjustment.amount': 'Adjustment Amount',
-    'balance.update.modal.update.date': 'Update Date',
-    'balance.update.modal.notes': 'Notes',
-    'balance.update.modal.notes.placeholder': 'Optional: Explain the reason for balance change, such as bank reconciliation, investment returns, etc.',
-    'balance.update.modal.preview': 'Update Preview',
-    'balance.update.modal.current.balance.label': 'Current Balance:',
-    'balance.update.modal.new.balance.label': 'New Balance:',
-    'balance.update.modal.adjusted.balance.label': 'Adjusted Balance:',
-    'balance.update.modal.change.amount': 'Change Amount:',
-    'balance.update.modal.save.changes': 'Save Changes',
-    'balance.update.modal.update.balance': 'Update Balance',
-    'balance.update.modal.cancel': 'Cancel',
-    'balance.update.modal.set.new.balance': 'Set as New Balance',
-    'balance.update.modal.adjust.amount': 'Adjust Amount',
-    'balance.update.modal.new.balance.placeholder': 'Enter new account balance',
-    'balance.update.modal.adjustment.placeholder': 'Enter adjustment amount (positive to increase, negative to decrease)',
-    'balance.update.modal.update.failed': 'Update failed',
-    'balance.update.modal.balance.record.update': 'Balance record update',
-    'balance.update.modal.balance.update': 'Balance update',
-    'balance.update.modal.balance.adjustment': 'Balance adjustment',
-
-    // 新增交易面板
-    'transaction.modal.title': 'Add Transaction',
-    'transaction.modal.edit.title': 'Edit Transaction',
-    'transaction.modal.operation.tips': '💡 Operation Tips',
-    'transaction.modal.flow.account.tip': '• This form is used to record transaction details for flow accounts',
-    'transaction.modal.stock.account.tip': '• For managing stock accounts (assets/liabilities), please use the "Balance Update" function',
-    'transaction.modal.auto.category.tip': '• The system will automatically set the corresponding transaction type and category based on the selected account',
-    'transaction.modal.transaction.type': 'Transaction Type',
-    'transaction.modal.transaction.date': 'Transaction Date',
-    'transaction.modal.account': 'Account',
-    'transaction.modal.account.help': 'Only income or expense accounts can be selected for transaction recording',
-    'transaction.modal.category.auto.set': 'Category automatically set to:',
-    'transaction.modal.amount': 'Amount',
-    'transaction.modal.currency': 'Currency',
-    'transaction.modal.description': 'Description',
-    'transaction.modal.description.placeholder': 'Please enter transaction description',
-    'transaction.modal.notes': 'Notes',
-    'transaction.modal.notes.placeholder': 'Optional notes',
-    'transaction.modal.tags': 'Tags',
-    'transaction.modal.create.new.tag': '+ Create New Tag',
-    'transaction.modal.cancel.new.tag': 'Cancel',
-    'transaction.modal.tag.name.placeholder': 'Enter tag name',
-    'transaction.modal.creating': 'Creating...',
-    'transaction.modal.create': 'Create',
-    'transaction.modal.tag.auto.add.tip': 'Created tags will be automatically added to the current transaction',
-    'transaction.modal.no.tags': 'No tags yet',
-    'transaction.modal.create.first.tag': 'Create first tag',
-    'transaction.modal.cancel': 'Cancel',
-    'transaction.modal.update.transaction': 'Update Transaction',
-    'transaction.modal.create.transaction': 'Create Transaction',
-    'transaction.modal.balance.adjustment.error': 'Balance adjustment records cannot be edited through the transaction form, please use the balance update function',
-    'transaction.modal.select.account': 'Please select account',
-    'transaction.modal.select.category': 'Please select category',
-    'transaction.modal.select.currency': 'Please select currency',
-    'transaction.modal.select.type': 'Please select transaction type',
-    'transaction.modal.enter.amount': 'Please enter amount',
-    'transaction.modal.amount.positive': 'Amount must be a positive number',
-    'transaction.modal.enter.description': 'Please enter description',
-    'transaction.modal.select.date': 'Please select date',
-    'transaction.modal.operation.failed': 'Operation failed',
-
-      // 菜单描述
-      'menu.reports.description': 'View detailed financial data',
-      'menu.settings.description': 'Manage accounts and preferences',
-      'menu.help.description': 'Get help and support',
-      'menu.logout.description': 'Safely logout from current account',
-
-      // 账户详情
-      'account.details': 'Account Details',
-      'account.summary': 'Account Summary',
-      'account.transactions': 'Transactions',
-      'account.balance.history': 'Balance History',
-      'account.current.balance': 'Current Balance',
-      'account.total.income': 'Total Income',
-      'account.total.expense': 'Total Expense',
-      'account.transaction.count': 'Transaction Count',
-      'account.last.transaction': 'Last Transaction',
-      'account.no.transactions': 'No transactions yet',
-      'account.add.transaction': 'Add Transaction',
-      'account.update.balance': 'Update Balance',
-      'account.view.all': 'View All',
-      'account.use.clear.option': 'Please use "Clear balance history and delete" option.',
-      'account.balance.history.cleared': 'Balance history cleared',
-      'account.balance.history.clear.failed': 'Failed to clear balance history',
-      'account.balance.record.deleted': 'Balance record deleted',
-      'account.stock.operation.tips': 'Stock Account Operation Tips',
-      'account.stock.operation.description': '{{type}} accounts are mainly managed through "Update Balance", records reflect account status at specific points in time. It is recommended to regularly reconcile with bank statements or investment account balances.',
-      'account.balance.history.description': 'Record historical changes in account balance, including balance updates and related transactions',
-      'account.total.records': 'Total {{count}} records',
-      'account.clear.records': 'Clear Records',
-      'account.clear.balance.records': 'Clear Balance Records',
-      'account.flow.operation.tips': 'Flow Account Operation Tips',
-      'account.flow.operation.description': '{{type}} accounts record cash flow through "Add Transaction", each transaction reflects fund inflow or outflow for specific periods. It is recommended to record each income and expense detail in time.',
-      'account.total.transactions': 'Total {{count}} transactions',
-      'account.transaction.description': 'Record detailed {{type}} flow and cash movement',
-
-      // 分类管理
-      'category.details': 'Category Details',
-      'category.summary': 'Category Summary',
-      'category.accounts': 'Accounts',
-      'category.subcategories': 'Subcategories',
-      'category.total.balance': 'Total Balance',
-      'category.account.count': 'Account Count',
-      'category.no.accounts': 'No accounts in this category',
-      'category.add.account': 'Add Account',
-      'category.add.subcategory': 'Add Subcategory',
-      'category.stock.readonly.tip': 'Stock categories are in read-only mode, please update balances on specific account pages',
-      'category.net.balance': 'Net Balance',
-      'category.net.cash.flow': 'Net Cash Flow',
-      'category.increase': 'Increase',
-      'category.decrease': 'Decrease',
-      'category.income': 'Income',
-      'category.expense': 'Expense',
-      'category.subcategory': 'Subcategory',
-      'category.monthly.balance.summary': 'Monthly Account Balance Summary',
-      'category.monthly.cash.flow.summary': 'Monthly Cash Flow Summary',
-      'category.trend.analysis': 'Trend Analysis',
-      'account.transaction.count.value': '{{count}} transactions',
-
-      // 交易管理
-      'transaction.list': 'Transaction List',
-      'transaction.list.subtitle': 'View and manage all transaction records',
-      'transaction.details': 'Transaction Details',
-      'transaction.history': 'Transaction History',
-      'transaction.filter': 'Filter Transactions',
-      'transaction.search': 'Search Transactions',
-      'transaction.date.range': 'Date Range',
-      'transaction.amount.range': 'Amount Range',
-      'transaction.export': 'Export Transactions',
-      'transaction.import': 'Import Transactions',
-      'transaction.batch.edit': 'Batch Edit',
-      'transaction.batch.delete': 'Batch Delete',
-      'transaction.selected': 'Selected',
-      'transaction.total.amount': 'Total Amount',
-      'transaction.record.deleted': 'Transaction record deleted',
-
-      // 图表和统计
-      'chart.net.worth.trend': 'Net Worth Trend',
-      'chart.cash.flow': 'Cash Flow',
-      'chart.income.expense': 'Income vs Expense',
-      'chart.category.breakdown': 'Category Breakdown',
-      'chart.monthly.summary': 'Monthly Summary',
-      'chart.no.data': 'No data available',
-      'chart.loading': 'Loading chart data...',
-
-      // 表单标签
-      'form.account.name': 'Account Name',
-      'form.account.description': 'Account Description',
-      'form.account.currency': 'Account Currency',
-      'form.account.category': 'Account Category',
-      'form.transaction.amount': 'Transaction Amount',
-      'form.transaction.date': 'Transaction Date',
-      'form.transaction.description': 'Transaction Description',
-      'form.transaction.notes': 'Transaction Notes',
-      'form.balance.amount': 'Balance Amount',
-      'form.balance.date': 'Balance Date',
-
-      // 状态和类型
-      'status.active': 'Active',
-      'status.inactive': 'Inactive',
-      'status.pending': 'Pending',
-      'status.completed': 'Completed',
-      'type.asset': 'Asset',
-      'type.liability': 'Liability',
-      'type.income': 'Income',
-      'type.expense': 'Expense',
-      'type.stock': 'Stock Account',
-      'type.flow': 'Flow Account',
-      'type.asset.account': 'Asset Account',
-      'type.liability.account': 'Liability Account',
-      'type.stock.data': 'Stock Data',
-      'type.income.account': 'Income Account',
-      'type.expense.account': 'Expense Account',
-      'type.flow.data': 'Flow Data',
-
-      // 操作确认
-      'confirm.delete.account': 'Are you sure you want to delete this account?',
-      'confirm.delete.category': 'Are you sure you want to delete this category?',
-      'confirm.delete.transaction': 'Are you sure you want to delete this transaction?',
-      'confirm.delete.selected': 'Are you sure you want to delete {{count}} selected items?',
-      'confirm.clear.data': 'This will permanently delete all related data.',
-      'confirm.cannot.undo': 'This action cannot be undone.',
-      'confirm.delete.account.message': 'Are you sure you want to delete account "{{name}}"? This action cannot be undone.',
-      'confirm.clear.balance.records': 'Are you sure you want to clear all balance records? This action cannot be undone.',
-
-      // 时间和日期
-      'time.today': 'Today',
-      'time.yesterday': 'Yesterday',
-      'time.this.week': 'This Week',
-      'time.this.month': 'This Month',
-      'time.this.year': 'This Year',
-      'time.last.month': 'Last Month',
-      'time.last.year': 'Last Year',
-      'time.custom.range': 'Custom Range',
-      'time.last.3.months': 'Last 3 Months',
-      'time.last.6.months': 'Last 6 Months',
-
-      // 数据显示
-      'data.no.results': 'No results found',
-      'data.empty.state': 'No data to display',
-      'data.loading.error': 'Error loading data',
-      'data.retry': 'Retry',
-      'data.refresh': 'Refresh Data',
-      'data.last.updated': 'Last updated: {{time}}',
-
-      // 功能开发
-      'feature.in.development': 'Feature in development',
-      'batch.edit.development': 'Batch edit feature in development, selected {{count}} records',
-      'batch.delete.success': 'Successfully deleted {{count}} records',
-      'batch.delete.partial': 'Deleted {{success}}/{{total}} records, partial deletion failed',
-
-      // 账户设置
-      'account.settings': 'Account Settings',
-      'account.settings.basic.info': 'Basic Information',
-      'account.settings.display.settings': 'Display Settings',
-      'account.settings.account.name': 'Account Name',
-      'account.settings.account.description': 'Account Description',
-      'account.settings.account.color': 'Account Color',
-      'account.settings.name.placeholder': 'Enter account name',
-      'account.settings.description.placeholder': 'Enter account description (optional)',
-      'account.settings.color.help': 'Choose a color to distinguish this account in charts and statistics',
-      'account.settings.saving': 'Saving...',
-      'account.settings.save': 'Save Settings',
-
-      // 用户设置
-      'settings.profile': 'Profile Settings',
-      'settings.security': 'Security Settings',
-      'settings.preferences.tab': 'Preferences',
-      'settings.currencies': 'Currency Management',
-      'settings.exchange.rates': 'Exchange Rates',
-      'settings.tags': 'Tag Management',
-      'settings.data': 'Data Management',
-      'settings.profile.description': 'Manage your personal information',
-      'settings.security.description': 'Change password and security settings',
-      'settings.preferences.description': 'Set theme, language and other preferences',
-      'settings.currencies.description': 'Manage available currencies',
-      'settings.exchange.rates.description': 'Set exchange rates between currencies',
-      'settings.tags.description': 'Manage transaction tags',
-      'settings.data.description': 'Export and import data',
-      'settings.email.address': 'Email Address',
-      'settings.display.name': 'Display Name',
-      'settings.email.readonly': 'Email address cannot be modified',
-      'settings.name.placeholder': 'Enter your nickname',
-      'settings.name.help': 'This will be your display name in the application',
-      'settings.avatar.upload': 'Upload Avatar (Coming Soon)',
-      'settings.account.stats': 'Account Statistics',
-      'settings.registration.date': 'Registration Date',
-      'settings.account.status': 'Account Status',
-      'settings.status.normal': 'Normal',
-      'settings.profile.updated': 'Profile updated successfully',
-      'settings.network.error': 'Network error, please try again later',
-
-      // 偏好设置
-      'preferences.theme.setting': 'Theme Setting',
-      'preferences.language.setting': 'Language Setting',
-      'preferences.base.currency': 'Base Currency',
-      'preferences.date.format': 'Date Format',
-      'preferences.theme.help': 'Choose your preferred theme mode. This will be saved as default option.',
-      'preferences.language.help': 'Choose interface display language. This will be saved as default option.',
-      'preferences.currency.help': 'Primary currency for calculating net worth and generating financial reports.',
-      'preferences.settings.note': 'Settings Description',
-      'preferences.theme.description': 'Choose your preferred interface theme. "Follow System" will automatically switch based on your device settings.',
-      'preferences.language.description': 'Choose interface display language. Currently supports Chinese and English.',
-      'preferences.currency.description': 'Primary currency for calculating net worth and generating financial reports.',
-      'preferences.default.note': 'These settings will be saved as your default preferences, different from temporary settings at the top of the page.',
-      'preferences.updated': 'Preferences updated successfully',
-      'preferences.theme.light': 'Light Mode',
-      'preferences.theme.dark': 'Dark Mode',
-      'preferences.theme.system': 'Follow System',
-      'preferences.language.zh': 'Chinese',
-      'preferences.language.en': 'English',
-      'preferences.appearance.settings': 'Appearance Settings',
-      'preferences.appearance.description': 'Configure theme and language preferences',
-
-      // 设置状态
-      'settings.status.complete': 'Complete',
-      'settings.status.warning': 'Needs Attention',
-      'settings.status.incomplete': 'Incomplete',
-
-      // 个人资料设置
-      'settings.basic.info': 'Basic Information',
-      'settings.basic.info.description': 'Update your personal information',
-      'settings.save.changes': 'Save Changes',
-      'settings.avatar.settings': 'Avatar Settings',
-      'settings.avatar.description': 'Avatar upload feature will be available in future versions. Currently using default avatar.',
-
-      // Dashboard 验证和警告
-      'dashboard.data.quality.score': 'Data Quality Score',
-      'dashboard.validation.errors': 'Data Validation Errors',
-      'dashboard.validation.warnings': 'Data Validation Warnings',
-      'dashboard.accounts.checked': 'Accounts Checked',
-      'dashboard.transactions.checked': 'Transactions Checked',
-      'dashboard.categories.without.type': 'Without Type',
-      'dashboard.invalid.transactions': 'Invalid Transactions',
-      'dashboard.business.logic.violations': 'Logic Violations',
-      'dashboard.chart.data.validation.failed': 'Chart data validation failed: {{errors}}',
-      'dashboard.chart.data.fetch.failed': 'Failed to fetch chart data',
-      'dashboard.network.error.charts': 'Network error, unable to fetch chart data',
-      'dashboard.no.chart.data': 'No chart data available',
-      'dashboard.add.transactions.first': 'Please add some transaction records first',
-
-      // 汇率警告
-      'exchange.rate.alert.title': 'Exchange Rates Need Setup',
-      'exchange.rate.alert.description': 'You have {{count}} currency pairs that need exchange rate setup to ensure data accuracy:',
-      'exchange.rate.alert.more.pairs': '{{count}} more currency pairs...',
-      'exchange.rate.alert.setup.now': 'Setup Exchange Rates Now',
-      'exchange.rate.alert.ignore': 'Ignore for Now',
-      'exchange.rate.alert.close': 'Close',
-      'exchange.rate.fetch.failed': 'Failed to fetch missing exchange rates',
-
-      // 货币转换状态
-      'currency.conversion.status': 'Currency Conversion Status',
-      'currency.base.currency': 'Base Currency',
-      'currency.conversion.partial.error': 'Some data uses original amounts due to missing exchange rates, may be inaccurate',
-      'currency.conversion.successful': 'Successful Conversions',
-      'currency.conversion.failed': 'Failed Conversions',
-      'currency.conversion.missing.rate': 'Missing Rate',
-      'currency.conversion.more.successful': '{{count}} more successful conversions...',
-      'currency.conversion.more.failed': '{{count}} more failed conversions...',
-      'currency.conversion.setup.missing': 'Setup Missing Exchange Rates →',
-
-      // 数据验证警告和建议
-      'validation.account.type.mismatch': 'Account "{{accountName}}" ({{accountType}}) contains mismatched transaction type: {{transactionType}}',
-      'validation.stock.account.suggestion': 'Stock account "{{accountName}}" should use "Update Balance" function instead of adding transactions directly',
-      'validation.optimization.suggestions': 'Optimization Suggestions',
-
-      // Financial Overview 财务概览 (使用现有的键，避免重复)
-      'dashboard.monthly.net.income': 'Monthly Net Income',
-      'dashboard.assets.minus.liabilities': 'Assets - Liabilities',
-      'dashboard.accounts.count': '{{count}} accounts',
-      'dashboard.transaction.records': 'Transaction Records',
-      'dashboard.category.count': 'Category Count',
-      'dashboard.recent.30days': 'Recent 30 days',
-      'dashboard.income.label': 'Income:',
-      'dashboard.expense.label': 'Expense:',
-
-      // 财务趋势分析
-      'dashboard.financial.trend.analysis': 'Financial Trend Analysis',
-      'dashboard.net.worth.change.trend': 'Net Worth Change Trend',
-      'dashboard.monthly.cash.flow': 'Monthly Cash Flow',
-      'dashboard.add.accounts.transactions.first': 'Please add accounts and transaction records to view net worth trends',
-      'chart.net.worth.trend.description': 'Shows recent net worth change trends',
-
-      // 账户类型和功能
-      'account.type.asset': 'Asset Account',
-      'account.type.liability': 'Liability Account',
-      'account.type.income': 'Income Account',
-      'account.type.expense': 'Expense Account',
-      'account.type.unknown': 'Uncategorized Account',
-      'account.type.asset.description': 'Stock concept - Records current balance status of assets',
-      'account.type.liability.description': 'Stock concept - Records current balance status of liabilities',
-      'account.type.income.description': 'Flow concept - Records cumulative amount of income',
-      'account.type.expense.description': 'Flow concept - Records cumulative amount of expenses',
-      'account.type.unknown.description': 'Please set the correct account type for this account category',
-      'account.feature.balance.update': 'Balance Update',
-      'account.feature.asset.stats': 'Asset Statistics',
-      'account.feature.liability.stats': 'Liability Statistics',
-      'account.feature.net.worth': 'Net Worth Calculation',
-      'account.feature.transaction.record': 'Transaction Record',
-      'account.feature.income.stats': 'Income Statistics',
-      'account.feature.expense.stats': 'Expense Statistics',
-      'account.feature.cash.flow': 'Cash Flow Analysis',
-      'account.color.preview': 'Preview: {{color}}',
-
-      // 设置页面分组
-      'settings.personal.settings': 'Personal Settings',
-      'settings.personal.settings.description': 'Manage your profile and account security',
-      'settings.account.management': 'Account Management',
-      'settings.account.management.description': 'Personal information and security settings',
-      'settings.preferences.management': 'Preference Settings',
-      'settings.preferences.management.description': 'Personalize your experience',
-      'settings.financial.management': 'Financial Settings',
-      'settings.financial.management.description': 'Currency and exchange rate management',
-      'settings.advanced.features': 'Advanced Features',
-      'settings.advanced.features.description': 'Tag and data management',
-
-      // 偏好设置详细
-      'preferences.date.format.help': 'Choose your preferred date display format',
-      'preferences.currency.settings': 'Currency Settings',
-      'preferences.currency.settings.description': 'Configure your primary currency and display preferences',
-      'preferences.base.currency.help': 'Choose your primary currency for summaries and reports. Can only select from your available currencies.',
-      'preferences.currency.setup.needed': 'Need to Setup Available Currencies',
-      'preferences.currency.setup.description': 'You haven\'t set up available currencies yet. Please add currencies you need in "Currency Management" first.',
-      'preferences.about.base.currency': 'About Base Currency',
-      'preferences.base.currency.description': 'Base currency is your primary currency for calculating net worth and generating financial reports.',
-      'preferences.multi.currency.note': 'If you have accounts in multiple currencies, the system will automatically convert exchange rates for unified display.',
-      'preferences.base.currency.recommendation': 'It is recommended to choose the currency you use most frequently as the base currency.',
-
-      // 密码设置
-      'password.change': 'Change Password',
-      'password.change.description': 'Change your password regularly for account security',
-      'password.current': 'Current Password',
-      'password.new': 'New Password',
-      'password.confirm': 'Confirm New Password',
-      'password.current.placeholder': 'Enter current password',
-      'password.new.placeholder': 'Enter new password (at least 6 characters)',
-      'password.confirm.placeholder': 'Enter new password again',
-      'password.new.help': 'Password must be at least 6 characters long. Recommend using a combination of letters, numbers and special characters',
-      'password.changing': 'Changing...',
-      'password.change.success': 'Password changed successfully',
-      'password.change.failed': 'Password change failed',
-      'password.validation.current.required': 'Please enter current password',
-      'password.validation.new.required': 'Please enter new password',
-      'password.validation.new.length': 'New password must be at least 6 characters',
-      'password.validation.confirm.required': 'Please confirm new password',
-      'password.validation.confirm.mismatch': 'Passwords do not match',
-      'password.validation.same.as.current': 'New password cannot be the same as current password',
-      'password.security.tips': 'Security Tips',
-      'password.tip.length': 'Password must be at least 6 characters',
-      'password.tip.combination': 'Recommend using letters, numbers and special characters',
-      'password.tip.regular.change': 'Change password regularly for account security',
-      'password.tip.unique': 'Do not use the same password on multiple websites',
-      'password.other.security.options': 'Other Security Options',
-      'password.two.factor.auth': 'Two-Factor Authentication',
-      'password.two.factor.description': 'Enhance account security',
-      'password.login.history': 'Login History',
-      'password.login.history.description': 'View recent login records',
-      'password.coming.soon': 'Coming Soon',
-
-      // 设置页面标题
-      'settings.page.title': 'Account Settings',
-      'settings.page.description': 'Manage your profile, security settings and preferences',
-      'settings.quick.actions': 'Quick Actions',
-      'settings.system.preferences': 'System Preferences',
-      'settings.currency.management': 'Currency Management',
-
-      // 财务报表
-      'reports.title': 'Financial Reports',
-      'reports.subtitle': 'View your balance sheet and cash flow statement to understand your financial status and cash flow',
-      'reports.explanation.title': 'Financial Reports Explanation',
-      'reports.balance.sheet': 'Balance Sheet',
-      'reports.balance.sheet.description': 'Reflects financial status at a specific point in time (stock concept)',
-      'reports.assets': 'Assets',
-      'reports.assets.description': 'Cash, bank deposits, investments, real estate, etc. that you own',
-      'reports.liabilities': 'Liabilities',
-      'reports.liabilities.description': 'Credit cards, loans, payables, etc. that you owe',
-      'reports.net.worth': 'Net Worth',
-      'reports.net.worth.description': 'Assets minus liabilities, reflecting your true wealth',
-      'reports.cash.flow.statement': 'Cash Flow Statement',
-      'reports.cash.flow.statement.description': 'Reflects cash flow during a specific period (flow concept)',
-      'reports.operating.activities': 'Operating Activities',
-      'reports.operating.activities.description': 'Cash flow from daily income and expenses',
-      'reports.investing.activities': 'Investing Activities',
-      'reports.investing.activities.description': 'Cash flow related to investment and financial management',
-      'reports.financing.activities': 'Financing Activities',
-      'reports.financing.activities.description': 'Cash flow related to borrowing and repayment',
-      'reports.important.reminder': 'Important Reminder',
-      'reports.account.type.setup.message': 'To correctly generate financial reports, please ensure your account categories have the correct account types set:',
-      'reports.asset.type': 'Asset Type',
-      'reports.asset.type.examples': 'Cash, bank deposits, investment accounts, real estate, etc.',
-      'reports.liability.type': 'Liability Type',
-      'reports.liability.type.examples': 'Credit cards, loans, payables, etc.',
-      'reports.income.type': 'Income Type',
-      'reports.income.type.examples': 'Salary, investment income, other income, etc.',
-      'reports.expense.type': 'Expense Type',
-      'reports.expense.type.examples': 'Living expenses, entertainment, transportation, and other daily expenses',
-      'reports.category.type.reminder': 'If your account categories have not yet set types, the system will display validation reminders in the Dashboard. Please go to the category management page to set them.',
-      'reports.usage.instructions': 'Usage Instructions',
-      'reports.balance.sheet.tips': 'Balance Sheet Usage Tips',
-      'reports.balance.sheet.tip.1': 'Regularly check net worth changes to understand wealth growth',
-      'reports.balance.sheet.tip.2': 'Pay attention to asset-liability ratios to maintain healthy financial structure',
-      'reports.balance.sheet.tip.3': 'Liquid assets should be sufficient to cover short-term expenditure needs',
-      'reports.balance.sheet.tip.4': 'You can select different dates to view historical financial status',
-      'reports.cash.flow.tips': 'Cash Flow Statement Usage Tips',
-      'reports.cash.flow.tip.1': 'Operating cash flow should be positive to ensure daily income and expense balance',
-      'reports.cash.flow.tip.2': 'Investment cash flow reflects your investment activities',
-      'reports.cash.flow.tip.3': 'Financing cash flow shows borrowing and repayment situations',
-      'reports.cash.flow.tip.4': 'You can view cash flow trends by month, quarter, or year',
-    }
-  }
-
-  // 默认中文翻译
-  return {
-    // 通用
-    'common.save': '保存',
-    'common.cancel': '取消',
-    'common.delete': '删除',
-    'common.edit': '编辑',
-    'common.add': '添加',
-    'common.confirm': '确认',
-    'common.loading': '加载中...',
-    'common.search': '搜索',
-    'common.filter': '筛选',
-    'common.export': '导出',
-    'common.import': '导入',
-    'common.refresh': '刷新',
-    'common.close': '关闭',
-    'common.back': '返回',
-    'common.next': '下一步',
-    'common.previous': '上一步',
-    'common.submit': '提交',
-    'common.reset': '重置',
-    'common.clear': '清除',
-    'common.select': '选择',
-    'common.all': '全部',
-    'common.none': '无',
-    'common.yes': '是',
-    'common.no': '否',
-    'common.ok': '确定',
-    'common.error': '错误',
-    'common.success': '成功',
-    'common.warning': '警告',
-    'common.info': '信息',
-    'common.switch.to': '切换到',
-    'common.new': '新',
-    'common.delete.failed': '删除失败',
-    'common.actions': '操作',
-    'common.confirm.clear': '确认清空',
-    'common.confirm.delete': '确认删除',
-
-    // 导航
-    'nav.dashboard': '仪表板',
-    'nav.accounts': '账户',
-    'nav.categories': '分类',
-    'nav.transactions': '交易',
-    'nav.reports': '报表',
-    'nav.settings': '设置',
-    'nav.logout': '退出登录',
-    'nav.profile': '个人资料',
-    'nav.help': '帮助',
-    'nav.about': '关于',
-
-    // 侧边栏
-    'sidebar.search.placeholder': '搜索账户和分类...',
-    'sidebar.categories': '账户分类',
-    'sidebar.add.top.category': '添加顶级分类',
-    'sidebar.updating': '更新中...',
-
-    // Dashboard
-    'dashboard.title': '仪表板',
-    'dashboard.welcome': '欢迎回来，{{email}}！这里是您的财务概览。',
-    'dashboard.financial.overview': '财务概览',
-    'dashboard.api.data.note': '使用API数据，确保计算准确性',
-    'dashboard.account.count': '账户数量',
-    'dashboard.net.worth': '净资产',
-    'dashboard.total.assets': '总资产',
-    'dashboard.total.liabilities': '总负债',
-    'dashboard.monthly.income': '月收入',
-    'dashboard.monthly.expense': '月支出',
-    'dashboard.net.cash.flow': '净现金流',
-    'dashboard.quick.actions': '快速操作',
-    'dashboard.record.income': '记收入',
-    'dashboard.record.expense': '记支出',
-    'dashboard.update.balance': '更新余额',
-
-    // Dashboard 财务概览卡片
-    'dashboard.net.worth.card': '净资产',
-    'dashboard.total.assets.card': '总资产',
-    'dashboard.total.liabilities.card': '总负债',
-    'dashboard.account.balances.card': '账户余额',
-    'dashboard.recent.activity.card': '最近7天活动',
-    'dashboard.view.all': '查看全部',
-    'dashboard.no.account.data': '暂无账户数据',
-    'dashboard.view.other.accounts': '查看其他 {{count}} 个账户',
-    'dashboard.transactions.count': '{{count}} 笔交易',
-    'dashboard.income': '收入',
-    'dashboard.expense': '支出',
-
-    // 账户
-    'account.balance': '余额',
-    'account.currency': '货币',
-    'account.description': '描述',
-    'account.category': '分类',
-    'account.type': '类型',
-    'account.create': '创建账户',
-    'account.edit': '编辑账户',
-    'account.delete': '删除账户',
-    'account.name': '账户名称',
-
-    // 分类
-    'category.name': '分类名称',
-    'category.type': '分类类型',
-    'category.parent': '父分类',
-    'category.create': '创建分类',
-    'category.edit': '编辑分类',
-    'category.delete': '删除分类',
-
-    // 交易
-    'transaction.amount': '金额',
-    'transaction.date': '日期',
-    'transaction.description': '描述',
-    'transaction.category': '分类',
-    'transaction.account': '账户',
-    'transaction.type': '类型',
-    'transaction.create': '创建交易',
-    'transaction.edit': '编辑交易',
-    'transaction.delete': '删除交易',
-
-    // 设置
-    'settings.title': '设置',
-    'settings.preferences': '偏好设置',
-    'settings.currency': '货币设置',
-    'settings.theme': '主题',
-    'settings.theme.description': '在明亮、深色和系统主题之间切换',
-    'settings.language': '语言',
-    'settings.language.description': '在中文和英文之间切换',
-    'settings.date.format': '日期格式',
-    'settings.base.currency': '本位币',
-    'settings.preferences.updated': '偏好设置更新成功',
-    'settings.update.failed': '更新失败',
-
-    // 表单
-    'form.required': '此字段为必填项',
-    'form.invalid.email': '邮箱格式无效',
-    'form.password.min.length': '密码至少需要6个字符',
-    'form.save.success': '保存成功',
-    'form.save.error': '保存失败',
-
-    // 认证
-    'auth.login': '登录',
-    'auth.signup': '注册',
-    'auth.email': '邮箱',
-    'auth.password': '密码',
-    'auth.confirm.password': '确认密码',
-    'auth.forgot.password': '忘记密码',
-    'auth.remember.me': '记住我',
-    'auth.login.failed': '登录失败',
-    'auth.email.placeholder': '请输入您的邮箱',
-    'auth.password.placeholder': '请输入您的密码',
-    'auth.no.account': '还没有账户',
-    'auth.signup.now': '立即注册',
-
-    // 错误消息
-    'error.network': '网络错误，请稍后重试',
-    'error.unauthorized': '未授权访问',
-    'error.not.found': '资源未找到',
-    'error.server': '服务器错误',
-    'error.validation': '验证错误',
-    'error.unknown': '未知错误',
-    'error.clear.failed': '清空失败',
-    'error.partial.delete': '部分删除失败',
-    'error.batch.delete.failed': '批量删除失败',
-
-    // 成功消息
-    'success.created': '创建成功',
-    'success.updated': '更新成功',
-    'success.deleted': '删除成功',
-    'success.saved': '保存成功',
-    'success.cleared': '清空成功',
-    'success.batch.deleted': '批量删除成功',
-
-    // 更新余额面板
-    'balance.update.modal.title': '更新余额',
-    'balance.update.modal.edit.title': '编辑余额记录',
-    'balance.update.modal.account.info': '账户信息',
-    'balance.update.modal.asset.account': '资产账户',
-    'balance.update.modal.liability.account': '负债账户',
-    'balance.update.modal.stock.data': '存量数据',
-    'balance.update.modal.current.balance': '当前余额',
-    'balance.update.modal.update.method': '更新方式',
-    'balance.update.modal.currency': '币种',
-    'balance.update.modal.new.balance': '新余额',
-    'balance.update.modal.adjustment.amount': '调整金额',
-    'balance.update.modal.update.date': '更新日期',
-    'balance.update.modal.notes': '备注说明',
-    'balance.update.modal.notes.placeholder': '可选：说明余额变化的原因，如银行对账、投资收益等',
-    'balance.update.modal.preview': '更新预览',
-    'balance.update.modal.current.balance.label': '当前余额:',
-    'balance.update.modal.new.balance.label': '新余额:',
-    'balance.update.modal.adjusted.balance.label': '调整后余额:',
-    'balance.update.modal.change.amount': '变化金额:',
-    'balance.update.modal.save.changes': '保存修改',
-    'balance.update.modal.update.balance': '更新余额',
-    'balance.update.modal.cancel': '取消',
-    'balance.update.modal.set.new.balance': '设置为新余额',
-    'balance.update.modal.adjust.amount': '调整金额',
-    'balance.update.modal.new.balance.placeholder': '输入新的账户余额',
-    'balance.update.modal.adjustment.placeholder': '输入调整金额（正数增加，负数减少）',
-    'balance.update.modal.update.failed': '更新失败',
-    'balance.update.modal.balance.record.update': '余额记录更新',
-    'balance.update.modal.balance.update': '余额更新',
-    'balance.update.modal.balance.adjustment': '余额调整',
-
-    // 新增交易面板
-    'transaction.modal.title': '新增交易',
-    'transaction.modal.edit.title': '编辑交易',
-    'transaction.modal.operation.tips': '💡 操作提示',
-    'transaction.modal.flow.account.tip': '• 此表单用于记录流量类账户的交易明细',
-    'transaction.modal.stock.account.tip': '• 如需管理存量类账户（资产/负债），请使用"余额更新"功能',
-    'transaction.modal.auto.category.tip': '• 系统会根据选择的账户自动设置对应的交易类型和分类',
-    'transaction.modal.transaction.type': '交易类型',
-    'transaction.modal.transaction.date': '交易日期',
-    'transaction.modal.account': '账户',
-    'transaction.modal.account.help': '只能选择收入或支出类账户进行交易记录',
-    'transaction.modal.category.auto.set': '分类已自动设置为：',
-    'transaction.modal.amount': '金额',
-    'transaction.modal.currency': '币种',
-    'transaction.modal.description': '描述',
-    'transaction.modal.description.placeholder': '请输入交易描述',
-    'transaction.modal.notes': '备注',
-    'transaction.modal.notes.placeholder': '可选的备注信息',
-    'transaction.modal.tags': '标签',
-    'transaction.modal.create.new.tag': '+ 创建新标签',
-    'transaction.modal.cancel.new.tag': '取消',
-    'transaction.modal.tag.name.placeholder': '输入标签名称',
-    'transaction.modal.creating': '创建中...',
-    'transaction.modal.create': '创建',
-    'transaction.modal.tag.auto.add.tip': '创建后的标签会自动添加到当前交易中',
-    'transaction.modal.no.tags': '还没有标签',
-    'transaction.modal.create.first.tag': '创建第一个标签',
-    'transaction.modal.cancel': '取消',
-    'transaction.modal.update.transaction': '更新交易',
-    'transaction.modal.create.transaction': '创建交易',
-    'transaction.modal.balance.adjustment.error': '余额调整记录不能通过交易表单编辑，请使用余额更新功能',
-    'transaction.modal.select.account': '请选择账户',
-    'transaction.modal.select.category': '请选择分类',
-    'transaction.modal.select.currency': '请选择币种',
-    'transaction.modal.select.type': '请选择交易类型',
-    'transaction.modal.enter.amount': '请输入金额',
-    'transaction.modal.amount.positive': '金额必须是大于0的数字',
-    'transaction.modal.enter.description': '请输入描述',
-    'transaction.modal.select.date': '请选择日期',
-    'transaction.modal.operation.failed': '操作失败',
-
-    // 菜单描述
-    'menu.reports.description': '查看详细财务数据',
-    'menu.settings.description': '管理账户和偏好设置',
-    'menu.help.description': '获取使用帮助和支持',
-    'menu.logout.description': '安全退出当前账户',
-
-    // 账户详情
-    'account.details': '账户详情',
-    'account.summary': '账户摘要',
-    'account.transactions': '交易记录',
-    'account.balance.history': '余额历史',
-    'account.current.balance': '当前余额',
-    'account.total.income': '总收入',
-    'account.total.expense': '总支出',
-    'account.transaction.count': '交易笔数',
-    'account.last.transaction': '最近交易',
-    'account.no.transactions': '暂无交易记录',
-    'account.add.transaction': '添加交易',
-    'account.update.balance': '更新余额',
-    'account.view.all': '查看全部',
-    'account.use.clear.option': '请使用"清空余额历史并删除"选项。',
-    'account.balance.history.cleared': '余额历史已清空',
-    'account.balance.history.clear.failed': '清空余额历史失败',
-    'account.balance.record.deleted': '余额记录已删除',
-    'account.stock.operation.tips': '存量类账户操作提示',
-    'account.stock.operation.description': '{{type}}账户主要通过"更新余额"来管理，记录反映特定时点的账户状况。建议定期核对银行对账单或投资账户余额。',
-    'account.balance.history.description': '记录账户余额的历史变化，包括余额更新和相关交易',
-    'account.total.records': '共 {{count}} 笔记录',
-    'account.clear.records': '清空记录',
-    'account.clear.balance.records': '清空余额记录',
-    'account.flow.operation.tips': '流量类账户操作提示',
-    'account.flow.operation.description': '{{type}}账户通过"添加交易"来记录现金流动，每笔交易反映特定期间的资金流入或流出。建议及时记录每笔收支明细。',
-    'account.total.transactions': '共 {{count}} 笔交易',
-    'account.transaction.description': '记录{{type}}的详细流水和现金流动',
-
-    // 分类管理
-    'category.details': '分类详情',
-    'category.summary': '分类摘要',
-    'category.accounts': '账户',
-    'category.subcategories': '子分类',
-    'category.total.balance': '总余额',
-    'category.account.count': '账户数量',
-    'category.no.accounts': '此分类下暂无账户',
-    'category.add.account': '添加账户',
-    'category.add.subcategory': '添加子分类',
-    'category.stock.readonly.tip': '存量类分类为只读模式，请在具体账户页面进行余额更新操作',
-    'category.net.balance': '净余额',
-    'category.net.cash.flow': '净收支',
-    'category.increase': '增加',
-    'category.decrease': '减少',
-    'category.income': '收入',
-    'category.expense': '支出',
-    'category.subcategory': '子分类',
-    'category.monthly.balance.summary': '月度账户余额汇总',
-    'category.monthly.cash.flow.summary': '月度收支汇总',
-    'category.trend.analysis': '趋势分析',
-    'account.transaction.count.value': '{{count}} 笔交易',
-
-    // 交易管理
-    'transaction.list': '交易管理',
-    'transaction.list.subtitle': '查看和管理所有交易记录',
-    'transaction.details': '交易详情',
-    'transaction.history': '交易历史',
-    'transaction.filter': '筛选交易',
-    'transaction.search': '搜索交易',
-    'transaction.date.range': '日期范围',
-    'transaction.amount.range': '金额范围',
-    'transaction.export': '导出交易',
-    'transaction.import': '导入交易',
-    'transaction.batch.edit': '批量编辑',
-    'transaction.batch.delete': '批量删除',
-    'transaction.selected': '已选择',
-    'transaction.total.amount': '总金额',
-    'transaction.record.deleted': '交易记录已删除',
-
-    // 图表和统计
-    'chart.net.worth.trend': '净资产趋势',
-    'chart.cash.flow': '现金流',
-    'chart.income.expense': '收支对比',
-    'chart.category.breakdown': '分类明细',
-    'chart.monthly.summary': '月度汇总',
-    'chart.no.data': '暂无数据',
-    'chart.loading': '正在加载图表数据...',
-
-    // 表单标签
-    'form.account.name': '账户名称',
-    'form.account.description': '账户描述',
-    'form.account.currency': '账户货币',
-    'form.account.category': '账户分类',
-    'form.transaction.amount': '交易金额',
-    'form.transaction.date': '交易日期',
-    'form.transaction.description': '交易描述',
-    'form.transaction.notes': '交易备注',
-    'form.balance.amount': '余额金额',
-    'form.balance.date': '余额日期',
-
-    // 状态和类型
-    'status.active': '活跃',
-    'status.inactive': '非活跃',
-    'status.pending': '待处理',
-    'status.completed': '已完成',
-    'type.asset': '资产',
-    'type.liability': '负债',
-    'type.income': '收入',
-    'type.expense': '支出',
-    'type.stock': '存量账户',
-    'type.flow': '流量账户',
-    'type.asset.account': '资产账户',
-    'type.liability.account': '负债账户',
-    'type.stock.data': '存量数据',
-    'type.income.account': '收入账户',
-    'type.expense.account': '支出账户',
-    'type.flow.data': '流量数据',
-
-    // 操作确认
-    'confirm.delete.account': '确定要删除此账户吗？',
-    'confirm.delete.category': '确定要删除此分类吗？',
-    'confirm.delete.transaction': '确定要删除此交易吗？',
-    'confirm.delete.selected': '确定要删除已选择的 {{count}} 项吗？',
-    'confirm.clear.data': '这将永久删除所有相关数据。',
-    'confirm.cannot.undo': '此操作无法撤销。',
-    'confirm.delete.account.message': '确定要删除账户"{{name}}"吗？此操作不可撤销。',
-    'confirm.clear.balance.records': '确定要清空所有余额记录吗？此操作不可撤销。',
-
-    // 时间和日期
-    'time.today': '今天',
-    'time.yesterday': '昨天',
-    'time.this.week': '本周',
-    'time.this.month': '本月',
-    'time.this.year': '今年',
-    'time.last.month': '上月',
-    'time.last.year': '去年',
-    'time.custom.range': '自定义范围',
-    'time.last.3.months': '近3个月',
-    'time.last.6.months': '近6个月',
-
-    // 数据显示
-    'data.no.results': '未找到结果',
-    'data.empty.state': '暂无数据',
-    'data.loading.error': '数据加载错误',
-    'data.retry': '重试',
-    'data.refresh': '刷新数据',
-    'data.last.updated': '最后更新：{{time}}',
-
-    // 功能开发
-    'feature.in.development': '功能开发中',
-    'batch.edit.development': '批量编辑功能开发中，选中了 {{count}} 条记录',
-    'batch.delete.success': '成功删除 {{count}} 条记录',
-    'batch.delete.partial': '删除了 {{success}}/{{total}} 条记录，部分删除失败',
-
-    // 账户设置
-    'account.settings': '账户设置',
-    'account.settings.basic.info': '基本信息',
-    'account.settings.display.settings': '显示设置',
-    'account.settings.account.name': '账户名称',
-    'account.settings.account.description': '账户描述',
-    'account.settings.account.color': '账户颜色',
-    'account.settings.name.placeholder': '请输入账户名称',
-    'account.settings.description.placeholder': '请输入账户描述（可选）',
-    'account.settings.color.help': '选择一个颜色来在图表和统计中区分此账户',
-    'account.settings.saving': '保存中...',
-    'account.settings.save': '保存设置',
-
-    // 用户设置
-    'settings.profile': '个人资料',
-    'settings.security': '安全设置',
-    'settings.preferences.tab': '偏好设置',
-    'settings.currencies': '货币管理',
-    'settings.exchange.rates': '汇率设置',
-    'settings.tags': '标签管理',
-    'settings.data': '数据管理',
-    'settings.profile.description': '管理您的个人信息',
-    'settings.security.description': '修改密码和安全设置',
-    'settings.preferences.description': '设置主题、语言和其他偏好',
-    'settings.currencies.description': '管理可用货币',
-    'settings.exchange.rates.description': '设置货币间汇率',
-    'settings.tags.description': '管理交易标签',
-    'settings.data.description': '导出和导入数据',
-    'settings.email.address': '邮箱地址',
-    'settings.display.name': '显示昵称',
-    'settings.email.readonly': '邮箱地址不可修改',
-    'settings.name.placeholder': '请输入您的昵称',
-    'settings.name.help': '这将作为您在应用中的显示名称',
-    'settings.avatar.upload': '上传头像（即将推出）',
-    'settings.account.stats': '账户统计',
-    'settings.registration.date': '注册时间',
-    'settings.account.status': '账户状态',
-    'settings.status.normal': '正常',
-    'settings.profile.updated': '个人资料更新成功',
-    'settings.network.error': '网络错误，请稍后重试',
-
-    // 偏好设置
-    'preferences.theme.setting': '主题设置',
-    'preferences.language.setting': '语言设置',
-    'preferences.base.currency': '本位币',
-    'preferences.date.format': '日期格式',
-    'preferences.theme.help': '选择您偏好的主题模式。设置后将作为默认选项。',
-    'preferences.language.help': '选择界面显示语言。设置后将作为默认选项。',
-    'preferences.currency.help': '用于计算净资产和生成财务报告的主要货币。',
-    'preferences.settings.note': '设置说明',
-    'preferences.theme.description': '选择您偏好的界面主题。"跟随系统"会根据您的设备设置自动切换。',
-    'preferences.language.description': '选择界面显示语言。目前支持中文和英文。',
-    'preferences.currency.description': '用于计算净资产和生成财务报告的主要货币。',
-    'preferences.default.note': '这些设置将作为您的默认偏好保存，与页面顶部的临时设置不同。',
-    'preferences.updated': '偏好设置更新成功',
-    'preferences.theme.light': '明亮模式',
-    'preferences.theme.dark': '深色模式',
-    'preferences.theme.system': '跟随系统',
-    'preferences.language.zh': '中文',
-    'preferences.language.en': 'English',
-    'preferences.appearance.settings': '外观设置',
-    'preferences.appearance.description': '配置主题和语言偏好',
-
-    // 设置状态
-    'settings.status.complete': '已完成',
-    'settings.status.warning': '需要注意',
-    'settings.status.incomplete': '未完成',
-
-    // 个人资料设置
-    'settings.basic.info': '基本信息',
-    'settings.basic.info.description': '更新您的个人信息',
-    'settings.save.changes': '保存更改',
-    'settings.avatar.settings': '头像设置',
-    'settings.avatar.description': '头像上传功能将在后续版本中提供。目前使用默认头像。',
-
-    // Dashboard 验证和警告
-    'dashboard.data.quality.score': '数据质量评分',
-    'dashboard.validation.errors': '数据验证错误',
-    'dashboard.validation.warnings': '数据验证警告',
-    'dashboard.accounts.checked': '账户检查',
-    'dashboard.transactions.checked': '交易检查',
-    'dashboard.categories.without.type': '未设类型',
-    'dashboard.invalid.transactions': '无效交易',
-    'dashboard.business.logic.violations': '逻辑违规',
-    'dashboard.chart.data.validation.failed': '图表数据验证失败: {{errors}}',
-    'dashboard.chart.data.fetch.failed': '获取图表数据失败',
-    'dashboard.network.error.charts': '网络错误，无法获取图表数据',
-    'dashboard.no.chart.data': '暂无图表数据',
-    'dashboard.add.transactions.first': '请先添加一些交易记录',
-
-    // 汇率警告
-    'exchange.rate.alert.title': '需要设置汇率',
-    'exchange.rate.alert.description': '您有 {{count}} 个货币对需要设置汇率，以确保统计数据的准确性：',
-    'exchange.rate.alert.more.pairs': '还有 {{count}} 个货币对...',
-    'exchange.rate.alert.setup.now': '立即设置汇率',
-    'exchange.rate.alert.ignore': '暂时忽略',
-    'exchange.rate.alert.close': '关闭',
-    'exchange.rate.fetch.failed': '获取缺失汇率失败',
-
-    // 货币转换状态
-    'currency.conversion.status': '货币转换状态',
-    'currency.base.currency': '本位币',
-    'currency.conversion.partial.error': '部分数据因汇率缺失而使用原始金额，可能不准确',
-    'currency.conversion.successful': '成功转换',
-    'currency.conversion.failed': '转换失败',
-    'currency.conversion.missing.rate': '缺失汇率',
-    'currency.conversion.more.successful': '还有 {{count}} 个成功转换...',
-    'currency.conversion.more.failed': '还有 {{count}} 个失败转换...',
-    'currency.conversion.setup.missing': '设置缺失的汇率 →',
-
-    // 数据验证警告和建议
-    'validation.account.type.mismatch': '账户 "{{accountName}}" ({{accountType}}) 中存在不匹配的交易类型: {{transactionType}}',
-    'validation.stock.account.suggestion': '存量类账户 "{{accountName}}" 建议使用"余额更新"功能而不是直接添加交易',
-    'validation.optimization.suggestions': '优化建议',
-
-    // Financial Overview 财务概览 (使用现有的键，避免重复)
-    'dashboard.monthly.net.income': '本月净收入',
-    'dashboard.assets.minus.liabilities': '资产 - 负债',
-    'dashboard.accounts.count': '{{count}} 个账户',
-    'dashboard.transaction.records': '交易记录',
-    'dashboard.category.count': '分类数量',
-    'dashboard.recent.30days': '最近30天',
-    'dashboard.income.label': '收入:',
-    'dashboard.expense.label': '支出:',
-
-    // 财务趋势分析
-    'dashboard.financial.trend.analysis': '财务趋势分析',
-    'dashboard.net.worth.change.trend': '净资产变化趋势',
-    'dashboard.monthly.cash.flow': '每月现金流',
-    'dashboard.add.accounts.transactions.first': '请添加账户和交易记录以查看净资产趋势',
-    'chart.net.worth.trend.description': '显示最近的净资产变化趋势',
-
-    // 账户类型和功能
-    'account.type.asset': '资产类账户',
-    'account.type.liability': '负债类账户',
-    'account.type.income': '收入类账户',
-    'account.type.expense': '支出类账户',
-    'account.type.unknown': '未分类账户',
-    'account.type.asset.description': '存量概念 - 记录资产的当前余额状态',
-    'account.type.liability.description': '存量概念 - 记录负债的当前余额状态',
-    'account.type.income.description': '流量概念 - 记录收入的累计金额',
-    'account.type.expense.description': '流量概念 - 记录支出的累计金额',
-    'account.type.unknown.description': '请为此账户的分类设置正确的账户类型',
-    'account.feature.balance.update': '余额更新',
-    'account.feature.asset.stats': '资产统计',
-    'account.feature.liability.stats': '负债统计',
-    'account.feature.net.worth': '净资产计算',
-    'account.feature.transaction.record': '收入记录',
-    'account.feature.income.stats': '现金流统计',
-    'account.feature.expense.stats': '支出记录',
-    'account.feature.cash.flow': '趋势分析',
-    'account.color.preview': '预览：{{color}}',
-
-    // 设置页面分组
-    'settings.personal.settings': '个人设置',
-    'settings.personal.settings.description': '管理您的个人资料和账户安全',
-    'settings.account.management': '账户管理',
-    'settings.account.management.description': '个人信息和安全设置',
-    'settings.preferences.management': '偏好设置',
-    'settings.preferences.management.description': '个性化您的使用体验',
-    'settings.financial.management': '财务设置',
-    'settings.financial.management.description': '货币和汇率管理',
-    'settings.advanced.features': '高级功能',
-    'settings.advanced.features.description': '标签和数据管理',
-
-    // 偏好设置详细
-    'preferences.date.format.help': '选择您偏好的日期显示格式',
-    'preferences.currency.settings': '货币设置',
-    'preferences.currency.settings.description': '配置您的主要货币和显示偏好',
-    'preferences.base.currency.help': '选择您的主要货币，用于汇总和报告。只能从您的可用货币中选择。',
-    'preferences.currency.setup.needed': '需要设置可用货币',
-    'preferences.currency.setup.description': '您还没有设置可用货币。请先在"货币管理"页面添加您需要使用的货币。',
-    'preferences.about.base.currency': '关于本位币',
-    'preferences.base.currency.description': '本位币是您的主要货币，用于计算净资产和生成财务报告。',
-    'preferences.multi.currency.note': '如果您有多种货币的账户，系统会自动进行汇率转换来统一显示。',
-    'preferences.base.currency.recommendation': '建议选择您最常使用的货币作为本位币。',
-
-    // 密码设置
-    'password.change': '修改密码',
-    'password.change.description': '为了账户安全，请定期更换密码',
-    'password.current': '当前密码',
-    'password.new': '新密码',
-    'password.confirm': '确认新密码',
-    'password.current.placeholder': '请输入当前密码',
-    'password.new.placeholder': '请输入新密码（至少6位）',
-    'password.confirm.placeholder': '请再次输入新密码',
-    'password.new.help': '密码长度至少为6位，建议使用字母、数字和特殊字符的组合',
-    'password.changing': '修改中...',
-    'password.change.success': '密码修改成功',
-    'password.change.failed': '密码修改失败',
-    'password.validation.current.required': '请输入当前密码',
-    'password.validation.new.required': '请输入新密码',
-    'password.validation.new.length': '新密码长度至少为6位',
-    'password.validation.confirm.required': '请确认新密码',
-    'password.validation.confirm.mismatch': '两次输入的密码不一致',
-    'password.validation.same.as.current': '新密码不能与当前密码相同',
-    'password.security.tips': '安全提示',
-    'password.tip.length': '密码长度至少为6位',
-    'password.tip.combination': '建议使用字母、数字和特殊字符的组合',
-    'password.tip.regular.change': '定期更换密码以确保账户安全',
-    'password.tip.unique': '不要在多个网站使用相同密码',
-    'password.other.security.options': '其他安全选项',
-    'password.two.factor.auth': '两步验证',
-    'password.two.factor.description': '增强账户安全性',
-    'password.login.history': '登录历史',
-    'password.login.history.description': '查看最近的登录记录',
-    'password.coming.soon': '即将推出',
-
-    // 设置页面标题
-    'settings.page.title': '账户设置',
-    'settings.page.description': '管理您的个人资料、安全设置和偏好',
-    'settings.quick.actions': '快捷操作',
-    'settings.system.preferences': '系统偏好',
-    'settings.currency.management': '货币管理',
-
-    // 财务报表
-    'reports.title': '财务报表',
-    'reports.subtitle': '查看您的资产负债表和现金流量表，了解财务状况和现金流动情况',
-    'reports.explanation.title': '财务报表说明',
-    'reports.balance.sheet': '资产负债表',
-    'reports.balance.sheet.description': '反映特定时间点的财务状况（存量概念）',
-    'reports.assets': '资产',
-    'reports.assets.description': '您拥有的现金、银行存款、投资、房产等',
-    'reports.liabilities': '负债',
-    'reports.liabilities.description': '您欠的信用卡、贷款、应付款等',
-    'reports.net.worth': '净资产',
-    'reports.net.worth.description': '资产减去负债，反映您的真实财富',
-    'reports.cash.flow.statement': '现金流量表',
-    'reports.cash.flow.statement.description': '反映特定时期内的现金流动情况（流量概念）',
-    'reports.operating.activities': '经营活动',
-    'reports.operating.activities.description': '日常收入支出产生的现金流',
-    'reports.investing.activities': '投资活动',
-    'reports.investing.activities.description': '投资理财相关的现金流',
-    'reports.financing.activities': '筹资活动',
-    'reports.financing.activities.description': '借贷还款相关的现金流',
-    'reports.important.reminder': '重要提醒',
-    'reports.account.type.setup.message': '为了正确生成财务报表，请确保您的账户分类设置了正确的账户类型：',
-    'reports.asset.type': '资产类',
-    'reports.asset.type.examples': '现金、银行存款、投资账户、房产等',
-    'reports.liability.type': '负债类',
-    'reports.liability.type.examples': '信用卡、贷款、应付款等',
-    'reports.income.type': '收入类',
-    'reports.income.type.examples': '工资、投资收益、其他收入等',
-    'reports.expense.type': '支出类',
-    'reports.expense.type.examples': '生活费、娱乐、交通等日常支出',
-    'reports.category.type.reminder': '如果您的账户分类尚未设置类型，系统会在Dashboard中显示验证提醒。请前往分类管理页面进行设置。',
-    'reports.usage.instructions': '使用说明',
-    'reports.balance.sheet.tips': '资产负债表使用技巧',
-    'reports.balance.sheet.tip.1': '定期查看净资产变化，了解财富增长情况',
-    'reports.balance.sheet.tip.2': '关注资产负债比例，保持健康的财务结构',
-    'reports.balance.sheet.tip.3': '流动资产应足够覆盖短期支出需求',
-    'reports.balance.sheet.tip.4': '可以选择不同日期查看历史财务状况',
-    'reports.cash.flow.tips': '现金流量表使用技巧',
-    'reports.cash.flow.tip.1': '经营现金流应为正数，确保日常收支平衡',
-    'reports.cash.flow.tip.2': '投资现金流反映您的投资活动情况',
-    'reports.cash.flow.tip.3': '筹资现金流显示借贷和还款情况',
-    'reports.cash.flow.tip.4': '可以按月、季度或年度查看现金流趋势',
-  }
 }

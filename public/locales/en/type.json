@@ -1,0 +1,14 @@
+{
+  "type.asset": "Asset",
+  "type.liability": "Liability",
+  "type.income": "Income",
+  "type.expense": "Expense",
+  "type.stock": "Stock Account",
+  "type.flow": "Flow Account",
+  "type.asset.account": "Asset Account",
+  "type.liability.account": "Liability Account",
+  "type.stock.data": "Stock Data",
+  "type.income.account": "Income Account",
+  "type.expense.account": "Expense Account",
+  "type.flow.data": "Flow Data"
+}

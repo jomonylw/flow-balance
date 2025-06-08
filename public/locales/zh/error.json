@@ -1,0 +1,11 @@
+{
+  "error.network": "网络错误，请稍后重试",
+  "error.unauthorized": "未授权访问",
+  "error.not.found": "资源未找到",
+  "error.server": "服务器错误",
+  "error.validation": "验证错误",
+  "error.unknown": "未知错误",
+  "error.clear.failed": "清空失败",
+  "error.partial.delete": "部分删除失败",
+  "error.batch.delete.failed": "批量删除失败"
+}

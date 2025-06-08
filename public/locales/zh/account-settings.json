@@ -1,0 +1,13 @@
+{
+  "account.settings": "账户设置",
+  "account.settings.basic.info": "基本信息",
+  "account.settings.display.settings": "显示设置",
+  "account.settings.account.name": "账户名称",
+  "account.settings.account.description": "账户描述",
+  "account.settings.account.color": "账户颜色",
+  "account.settings.name.placeholder": "请输入账户名称",
+  "account.settings.description.placeholder": "请输入账户描述（可选）",
+  "account.settings.color.help": "选择一个颜色来在图表和统计中区分此账户",
+  "account.settings.saving": "保存中...",
+  "account.settings.save": "保存设置"
+}

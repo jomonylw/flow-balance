@@ -1,0 +1,10 @@
+{
+  "chart.net.worth.trend": "净资产趋势",
+  "chart.cash.flow": "现金流",
+  "chart.income.expense": "收支对比",
+  "chart.category.breakdown": "分类明细",
+  "chart.monthly.summary": "月度汇总",
+  "chart.no.data": "暂无数据",
+  "chart.loading": "正在加载图表数据...",
+  "chart.net.worth.trend.description": "显示最近的净资产变化趋势"
+}

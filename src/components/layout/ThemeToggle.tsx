@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useTheme, type Theme } from '@/contexts/ThemeContext'
 import { useState, useRef, useEffect } from 'react'
 
@@ -72,7 +73,7 @@ export default function ThemeToggle({ className = '' }: ThemeToggleProps) {
     }
   }
 
-  const themes: { value: Theme; label: string; icon: JSX.Element }[] = [
+  const themes: { value: Theme; label: string; icon: React.ReactElement }[] = [
     {
       value: 'light',
       label: '明亮模式',

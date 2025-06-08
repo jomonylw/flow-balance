@@ -1,0 +1,10 @@
+{
+  "confirm.delete.account": "确定要删除此账户吗？",
+  "confirm.delete.category": "确定要删除此分类吗？",
+  "confirm.delete.transaction": "确定要删除此交易吗？",
+  "confirm.delete.selected": "确定要删除已选择的 {{count}} 项吗？",
+  "confirm.clear.data": "这将永久删除所有相关数据。",
+  "confirm.cannot.undo": "此操作无法撤销。",
+  "confirm.delete.account.message": "确定要删除账户“{{name}}”吗？此操作不可撤销。",
+  "confirm.clear.balance.records": "确定要清空所有余额记录吗？此操作不可撤销。"
+}

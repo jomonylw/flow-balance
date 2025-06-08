@@ -1,0 +1,6 @@
+{
+  "feature.in.development": "功能开发中",
+  "batch.edit.development": "批量编辑功能开发中，选中了 {{count}} 条记录",
+  "batch.delete.success": "成功删除 {{count}} 条记录",
+  "batch.delete.partial": "删除了 {{success}}/{{total}} 条记录，部分删除失败"
+}

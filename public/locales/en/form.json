@@ -1,0 +1,17 @@
+{
+  "form.required": "This field is required",
+  "form.invalid.email": "Invalid email address",
+  "form.password.min.length": "Password must be at least 6 characters",
+  "form.save.success": "Saved successfully",
+  "form.save.error": "Save failed",
+  "form.account.name": "Account Name",
+  "form.account.description": "Account Description",
+  "form.account.currency": "Account Currency",
+  "form.account.category": "Account Category",
+  "form.transaction.amount": "Transaction Amount",
+  "form.transaction.date": "Transaction Date",
+  "form.transaction.description": "Transaction Description",
+  "form.transaction.notes": "Transaction Notes",
+  "form.balance.amount": "Balance Amount",
+  "form.balance.date": "Balance Date"
+}

@@ -1,0 +1,12 @@
+{
+  "nav.dashboard": "仪表板",
+  "nav.accounts": "账户",
+  "nav.categories": "分类",
+  "nav.transactions": "交易",
+  "nav.reports": "报表",
+  "nav.settings": "设置",
+  "nav.logout": "退出登录",
+  "nav.profile": "个人资料",
+  "nav.help": "帮助",
+  "nav.about": "关于"
+}

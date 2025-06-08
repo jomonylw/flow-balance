@@ -6,6 +6,7 @@ import SidebarDashboardLink from './SidebarDashboardLink'
 import SidebarReportsLink from './SidebarReportsLink'
 import CategoryAccountTree from './CategoryAccountTree'
 import TopCategoryModal from '@/components/ui/TopCategoryModal'
+import TranslationLoader from '@/components/ui/TranslationLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 interface User {
@@ -197,10 +198,27 @@ export default function NavigationSidebar({
   }
 
   return (
-    <div className={`
-      ${isMobile ? 'w-full' : 'w-80'}
-      bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full
-    `}>
+    <TranslationLoader
+      fallback={
+        <div className={`
+          ${isMobile ? 'w-full' : 'w-80'}
+          bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full
+        `}>
+          <div className="animate-pulse p-4 space-y-4">
+            <div className="h-10 bg-gray-200 rounded"></div>
+            <div className="space-y-2">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-8 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <div className={`
+        ${isMobile ? 'w-full' : 'w-80'}
+        bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full
+      `}>
       {/* 移动端顶部间距 */}
       {isMobile && <div className="h-16" />}
 
@@ -278,6 +296,7 @@ export default function NavigationSidebar({
         onClose={() => setShowAddTopCategoryModal(false)}
         onSave={handleSaveTopCategory}
       />
-    </div>
+      </div>
+    </TranslationLoader>
   )
 }

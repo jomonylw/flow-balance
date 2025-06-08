@@ -1,0 +1,10 @@
+{
+  "chart.net.worth.trend": "Net Worth Trend",
+  "chart.cash.flow": "Cash Flow",
+  "chart.income.expense": "Income vs Expense",
+  "chart.category.breakdown": "Category Breakdown",
+  "chart.monthly.summary": "Monthly Summary",
+  "chart.no.data": "No data available",
+  "chart.loading": "Loading chart data...",
+  "chart.net.worth.trend.description": "Shows recent net worth change trends"
+}

@@ -1,0 +1,11 @@
+{
+  "currency.conversion.status": "货币转换状态",
+  "currency.base.currency": "本位币",
+  "currency.conversion.partial.error": "部分数据因汇率缺失而使用原始金额，可能不准确",
+  "currency.conversion.successful": "成功转换",
+  "currency.conversion.failed": "转换失败",
+  "currency.conversion.missing.rate": "缺失汇率",
+  "currency.conversion.more.successful": "还有 {{count}} 个成功转换...",
+  "currency.conversion.more.failed": "还有 {{count}} 个失败转换...",
+  "currency.conversion.setup.missing": "设置缺失的汇率 →"
+}

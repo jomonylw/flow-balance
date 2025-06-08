@@ -1,0 +1,11 @@
+{
+  "error.network": "Network error, please try again",
+  "error.unauthorized": "Unauthorized access",
+  "error.not.found": "Resource not found",
+  "error.server": "Server error",
+  "error.validation": "Validation error",
+  "error.unknown": "Unknown error",
+  "error.clear.failed": "Clear failed",
+  "error.partial.delete": "Partial deletion failed",
+  "error.batch.delete.failed": "Batch deletion failed"
+}

@@ -1,0 +1,14 @@
+{
+  "type.asset": "资产",
+  "type.liability": "负债",
+  "type.income": "收入",
+  "type.expense": "支出",
+  "type.stock": "存量账户",
+  "type.flow": "流量账户",
+  "type.asset.account": "资产账户",
+  "type.liability.account": "负债账户",
+  "type.stock.data": "存量数据",
+  "type.income.account": "收入账户",
+  "type.expense.account": "支出账户",
+  "type.flow.data": "流量数据"
+}

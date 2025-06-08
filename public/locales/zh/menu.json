@@ -1,0 +1,6 @@
+{
+  "menu.reports.description": "查看详细财务数据",
+  "menu.settings.description": "管理账户和偏好设置",
+  "menu.help.description": "获取使用帮助和支持",
+  "menu.logout.description": "安全退出当前账户"
+}

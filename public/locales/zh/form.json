@@ -1,0 +1,17 @@
+{
+  "form.required": "此字段为必填项",
+  "form.invalid.email": "邮箱格式无效",
+  "form.password.min.length": "密码至少需要6个字符",
+  "form.save.success": "保存成功",
+  "form.save.error": "保存失败",
+  "form.account.name": "账户名称",
+  "form.account.description": "账户描述",
+  "form.account.currency": "账户货币",
+  "form.account.category": "账户分类",
+  "form.transaction.amount": "交易金额",
+  "form.transaction.date": "交易日期",
+  "form.transaction.description": "交易描述",
+  "form.transaction.notes": "交易备注",
+  "form.balance.amount": "余额金额",
+  "form.balance.date": "余额日期"
+}

@@ -1,0 +1,8 @@
+{
+  "success.created": "Created successfully",
+  "success.updated": "Updated successfully",
+  "success.deleted": "Deleted successfully",
+  "success.saved": "Saved successfully",
+  "success.cleared": "Cleared successfully",
+  "success.batch.deleted": "Batch deletion successful"
+}

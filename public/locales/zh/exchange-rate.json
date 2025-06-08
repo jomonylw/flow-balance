@@ -1,0 +1,9 @@
+{
+  "exchange.rate.alert.title": "需要设置汇率",
+  "exchange.rate.alert.description": "您有 {{count}} 个货币对需要设置汇率，以确保统计数据的准确性：",
+  "exchange.rate.alert.more.pairs": "还有 {{count}} 个货币对...",
+  "exchange.rate.alert.setup.now": "立即设置汇率",
+  "exchange.rate.alert.ignore": "暂时忽略",
+  "exchange.rate.alert.close": "关闭",
+  "exchange.rate.fetch.failed": "获取缺失汇率失败"
+}
