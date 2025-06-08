@@ -16,6 +16,7 @@ interface Currency {
 interface Account {
   id: string
   name: string
+  currencyCode: string // 账户的货币代码
   category: {
     id: string
     name: string
@@ -48,8 +49,7 @@ export default function QuickBalanceUpdateModal({
     newBalance: '',
     currencyCode: baseCurrency.code,
     updateDate: new Date().toISOString().split('T')[0],
-    notes: '',
-    updateType: 'absolute' as 'absolute' | 'adjustment'
+    notes: ''
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -73,31 +73,25 @@ export default function QuickBalanceUpdateModal({
         newBalance: '',
         currencyCode: baseCurrency.code,
         updateDate: new Date().toISOString().split('T')[0],
-        notes: '',
-        updateType: 'absolute'
+        notes: ''
       })
       setErrors({})
     }
   }, [isOpen, baseCurrency.code])
 
-  // 当选择账户时，更新币种为该账户的主要币种
+  // 当选择账户时，更新币种为该账户的货币，新余额默认为 0
   useEffect(() => {
-    if (selectedAccount && selectedAccount.balances) {
-      const accountCurrencies = Object.keys(selectedAccount.balances)
-      if (accountCurrencies.length > 0) {
-        // 优先使用基础货币，如果账户没有基础货币余额，则使用第一个可用货币
-        const preferredCurrency = accountCurrencies.includes(baseCurrency.code) 
-          ? baseCurrency.code 
-          : accountCurrencies[0]
-        
-        setFormData(prev => ({
-          ...prev,
-          currencyCode: preferredCurrency,
-          newBalance: selectedAccount.balances[preferredCurrency]?.toString() || '0'
-        }))
-      }
+    if (selectedAccount) {
+      // 使用账户设定的货币
+      const accountCurrency = selectedAccount.currencyCode
+
+      setFormData(prev => ({
+        ...prev,
+        currencyCode: accountCurrency,
+        newBalance: '0' // 新余额默认为 0
+      }))
     }
-  }, [formData.accountId, selectedAccount, baseCurrency.code])
+  }, [formData.accountId, selectedAccount])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -148,9 +142,7 @@ export default function QuickBalanceUpdateModal({
 
     try {
       const newBalance = parseFloat(formData.newBalance)
-      const balanceChange = formData.updateType === 'absolute'
-        ? newBalance - currentBalance
-        : newBalance
+      const balanceChange = newBalance - currentBalance
 
       const response = await fetch('/api/balance-update', {
         method: 'POST',
@@ -161,10 +153,9 @@ export default function QuickBalanceUpdateModal({
           accountId: formData.accountId,
           currencyCode: formData.currencyCode,
           balanceChange,
-          newBalance: formData.updateType === 'absolute' ? newBalance : currentBalance + newBalance,
+          newBalance: newBalance,
           updateDate: formData.updateDate,
-          notes: formData.notes || `余额${formData.updateType === 'absolute' ? '更新' : '调整'}`,
-          updateType: formData.updateType
+          notes: formData.notes || '余额更新'
         })
       })
 
@@ -200,16 +191,7 @@ export default function QuickBalanceUpdateModal({
     label: `${currency.code} - ${currency.name}`
   }))
 
-  const updateTypeOptions = [
-    { value: 'absolute', label: '设置为新余额' },
-    { value: 'adjustment', label: '调整金额' }
-  ]
 
-  // 计算预览结果
-  const inputAmount = parseFloat(formData.newBalance) || 0
-  const previewBalance = formData.updateType === 'absolute' 
-    ? inputAmount 
-    : currentBalance + inputAmount
 
   return (
     <Modal
@@ -262,18 +244,8 @@ export default function QuickBalanceUpdateModal({
           </div>
         )}
 
-        {/* 更新方式和币种 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SelectField
-            name="updateType"
-            label="更新方式"
-            value={formData.updateType}
-            onChange={handleChange}
-            options={updateTypeOptions}
-            error={errors.updateType}
-            required
-          />
-
+        {/* 币种选择 */}
+        <div>
           <SelectField
             name="currencyCode"
             label="币种"
@@ -282,21 +254,27 @@ export default function QuickBalanceUpdateModal({
             options={currencyOptions}
             error={errors.currencyCode}
             required
+            disabled={!!selectedAccount} // 选择账户后币种不可更改
           />
+          {selectedAccount && (
+            <p className="mt-1 text-sm text-gray-500">
+              此账户只能使用 {currencies.find(c => c.code === selectedAccount.currencyCode)?.name} ({selectedAccount.currencyCode})
+            </p>
+          )}
         </div>
 
-        {/* 金额和日期 */}
+        {/* 新余额和日期 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
             name="newBalance"
-            label={formData.updateType === 'absolute' ? '新余额' : '调整金额'}
+            label="新余额"
             type="number"
             step="0.01"
             value={formData.newBalance}
             onChange={handleChange}
             error={errors.newBalance}
             required
-            placeholder={formData.updateType === 'absolute' ? '输入新的余额' : '输入调整金额（正数增加，负数减少）'}
+            placeholder="输入新的余额"
           />
 
           <InputField
@@ -310,29 +288,7 @@ export default function QuickBalanceUpdateModal({
           />
         </div>
 
-        {/* 预览结果 */}
-        {formData.newBalance && selectedAccount && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-2">预览结果</h4>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p>当前余额: {currencySymbol}{currentBalance.toFixed(2)}</p>
-              <p>
-                {formData.updateType === 'absolute' ? '新余额' : '调整后余额'}: 
-                <span className="font-medium text-gray-900 ml-1">
-                  {currencySymbol}{previewBalance.toFixed(2)}
-                </span>
-              </p>
-              <p>
-                变化金额: 
-                <span className={`font-medium ml-1 ${
-                  (previewBalance - currentBalance) >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {(previewBalance - currentBalance) >= 0 ? '+' : ''}{(previewBalance - currentBalance).toFixed(2)}
-                </span>
-              </p>
-            </div>
-          </div>
-        )}
+
 
         {/* 备注 */}
         <InputField

@@ -51,7 +51,7 @@ export default function AccountTreeItem({
   onNavigate
 }: AccountTreeItemProps) {
   const { showSuccess, showError } = useToast()
-  const { getAccountBalance, baseCurrency, refreshBalances } = useBalance()
+  const { getAccountBalance, getAccountBalanceInCurrency, baseCurrency, refreshBalances } = useBalance()
   const pathname = usePathname()
   const router = useRouter()
   const [showContextMenu, setShowContextMenu] = useState(false)
@@ -76,6 +76,10 @@ export default function AccountTreeItem({
   // 从BalanceContext获取账户余额（本位币）
   const balance = getAccountBalance(account.id)
   const currencySymbol = baseCurrency?.symbol || '¥'
+
+  // 获取账户原始货币的余额（用于余额更新模态框）
+  const accountCurrency = account.currencyCode || baseCurrency?.code || 'CNY'
+  const accountBalance = getAccountBalanceInCurrency(account.id, accountCurrency)
 
   // 根据账户类型确定金额颜色
   const getAmountColor = () => {
@@ -429,8 +433,8 @@ export default function AccountTreeItem({
         onSuccess={handleBalanceUpdateSuccess}
         account={account}
         currencies={currencies}
-        currentBalance={balance || 0}
-        currencyCode={currencies.length > 0 ? currencies[0].code : 'USD'}
+        currentBalance={accountBalance || 0}
+        currencyCode={accountCurrency}
       />
 
       {/* 交易表单模态框 */}

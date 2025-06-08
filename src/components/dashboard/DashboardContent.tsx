@@ -21,6 +21,7 @@ interface User {
 interface Account {
   id: string
   name: string
+  currencyCode: string // 账户的货币代码
   category: {
     id?: string
     name: string
@@ -233,6 +234,7 @@ export default function DashboardContent({
     return {
       id: account.id,
       name: account.name,
+      currencyCode: account.currencyCode, // 保留账户的货币代码
       category: {
         id: account.category.id || account.id, // 使用账户 ID 作为分类 ID 的占位符
         name: account.category.name,

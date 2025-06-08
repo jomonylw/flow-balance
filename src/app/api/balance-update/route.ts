@@ -17,8 +17,7 @@ export async function POST(request: NextRequest) {
       balanceChange,
       newBalance,
       updateDate,
-      notes,
-      updateType
+      notes
     } = body
 
     // 验证必填字段
@@ -78,8 +77,8 @@ export async function POST(request: NextRequest) {
         currencyCode,
         type: 'BALANCE_ADJUSTMENT',
         amount: Math.abs(changeAmount), // 存储绝对值，方向通过账户类型和业务逻辑确定
-        description: `余额${updateType === 'absolute' ? '更新' : '调整'} - ${account.name}`,
-        notes: notes || `余额${updateType === 'absolute' ? '更新' : '调整'}：${currency.symbol}${newBalance?.toFixed(2) || 'N/A'}。变化金额：${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)}`,
+        description: `余额更新 - ${account.name}`,
+        notes: notes || `余额更新：${currency.symbol}${newBalance?.toFixed(2) || 'N/A'}。变化金额：${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)}`,
         date: new Date(updateDate)
       },
       include: {

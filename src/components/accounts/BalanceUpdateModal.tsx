@@ -53,8 +53,7 @@ export default function BalanceUpdateModal({
     newBalance: '',
     currencyCode: currencyCode,
     updateDate: new Date().toISOString().split('T')[0],
-    notes: '',
-    updateType: 'absolute' as 'absolute' | 'adjustment' // 绝对值更新 或 调整金额
+    notes: ''
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -70,8 +69,7 @@ export default function BalanceUpdateModal({
           newBalance: editingTransaction.amount.toString(),
           currencyCode: editingTransaction.currencyCode,
           updateDate: transactionDate,
-          notes: editingTransaction.notes || '',
-          updateType: 'absolute' // 编辑时默认为绝对值模式
+          notes: editingTransaction.notes || ''
         })
       } else {
         // 新建模式 - 优先使用账户的货币限制
@@ -80,8 +78,7 @@ export default function BalanceUpdateModal({
           newBalance: currentBalance.toString(),
           currencyCode: defaultCurrency,
           updateDate: new Date().toISOString().split('T')[0],
-          notes: '',
-          updateType: 'absolute'
+          notes: ''
         })
       }
       setErrors({})
@@ -163,9 +160,7 @@ export default function BalanceUpdateModal({
       } else {
         // 新建模式：创建新的余额调整交易
         const newBalance = parseFloat(formData.newBalance)
-        const balanceChange = formData.updateType === 'absolute'
-          ? newBalance - currentBalance
-          : newBalance
+        const balanceChange = newBalance - currentBalance
 
         const response = await fetch('/api/balance-update', {
           method: 'POST',
@@ -176,10 +171,9 @@ export default function BalanceUpdateModal({
             accountId: account.id,
             currencyCode: formData.currencyCode,
             balanceChange,
-            newBalance: formData.updateType === 'absolute' ? newBalance : currentBalance + newBalance,
+            newBalance: newBalance,
             updateDate: formData.updateDate,
-            notes: formData.notes || `${formData.updateType === 'absolute' ? t('balance.update.modal.balance.update') : t('balance.update.modal.balance.adjustment')}`,
-            updateType: formData.updateType
+            notes: formData.notes || t('balance.update.modal.balance.update')
           })
         })
 
@@ -222,27 +216,12 @@ export default function BalanceUpdateModal({
     label: `${currency.code} - ${currency.name}`
   }))
 
-  const updateTypeOptions = [
-    { value: 'absolute', label: t('balance.update.modal.set.new.balance') },
-    { value: 'adjustment', label: t('balance.update.modal.adjust.amount') }
-  ]
-
   const selectedCurrency = (currencies || []).find(c => c.code === formData.currencyCode)
   const currencySymbol = selectedCurrency?.symbol || '$'
 
-  const calculateNewBalance = () => {
-    const inputAmount = parseFloat(formData.newBalance) || 0
-    if (formData.updateType === 'absolute') {
-      return inputAmount
-    } else {
-      return currentBalance + inputAmount
-    }
-  }
-
-  const calculateChange = () => {
-    const newBalance = calculateNewBalance()
-    return newBalance - currentBalance
-  }
+  // 当前余额显示的货币符号（基于传入的 currencyCode 参数）
+  const currentBalanceCurrency = (currencies || []).find(c => c.code === currencyCode)
+  const currentBalanceCurrencySymbol = currentBalanceCurrency?.symbol || '$'
 
   return (
     <Modal
@@ -273,24 +252,14 @@ export default function BalanceUpdateModal({
                 {accountType === 'ASSET' ? t('balance.update.modal.asset.account') : t('balance.update.modal.liability.account')} • {t('balance.update.modal.stock.data')}
               </p>
               <p className="text-sm text-gray-600">
-                {t('balance.update.modal.current.balance')}: {currencySymbol}{currentBalance.toFixed(2)}
+                {t('balance.update.modal.current.balance')}: {currentBalanceCurrencySymbol}{currentBalance.toFixed(2)} ({currencyCode})
               </p>
             </div>
           </div>
         </div>
 
-        {/* 更新类型和金额 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SelectField
-            name="updateType"
-            label={t('balance.update.modal.update.method')}
-            value={formData.updateType}
-            onChange={handleChange}
-            options={updateTypeOptions}
-            error={errors.updateType}
-            required
-          />
-
+        {/* 币种选择 */}
+        <div>
           <SelectField
             name="currencyCode"
             label={t('balance.update.modal.currency')}
@@ -304,15 +273,16 @@ export default function BalanceUpdateModal({
           />
         </div>
 
+        {/* 新余额和更新日期 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
             type="number"
             name="newBalance"
-            label={formData.updateType === 'absolute' ? t('balance.update.modal.new.balance') : t('balance.update.modal.adjustment.amount')}
+            label={t('balance.update.modal.new.balance')}
             value={formData.newBalance}
             onChange={handleChange}
             error={errors.newBalance}
-            placeholder={formData.updateType === 'absolute' ? t('balance.update.modal.new.balance.placeholder') : t('balance.update.modal.adjustment.placeholder')}
+            placeholder={t('balance.update.modal.new.balance.placeholder')}
             step="0.01"
             required
           />
@@ -328,34 +298,7 @@ export default function BalanceUpdateModal({
           />
         </div>
 
-        {/* 预览计算结果 */}
-        {formData.newBalance && !isNaN(parseFloat(formData.newBalance)) && (
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">{t('balance.update.modal.preview')}</h4>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">{t('balance.update.modal.current.balance.label')}</span>
-                <span>{currencySymbol}{currentBalance.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">
-                  {formData.updateType === 'absolute' ? t('balance.update.modal.new.balance.label') : t('balance.update.modal.adjusted.balance.label')}
-                </span>
-                <span className="font-medium">
-                  {currencySymbol}{calculateNewBalance().toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between border-t pt-1">
-                <span className="text-gray-600">{t('balance.update.modal.change.amount')}</span>
-                <span className={`font-medium ${
-                  calculateChange() >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {calculateChange() >= 0 ? '+' : ''}{currencySymbol}{calculateChange().toFixed(2)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* 备注 */}
         <div>

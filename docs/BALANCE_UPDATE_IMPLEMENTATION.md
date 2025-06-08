@@ -25,21 +25,14 @@
 
 **核心功能**：
 - 智能识别存量类账户
-- 支持绝对值更新和调整金额两种方式
-- 实时预览计算结果
+- 直接设置新余额（简化操作）
 - 多币种支持
 
 **关键特性**：
 ```typescript
-// 更新方式选择
-updateType: 'absolute' | 'adjustment'
-// absolute: 设置为新余额
-// adjustment: 在当前余额基础上调整
-
-// 计算逻辑
-const newBalance = updateType === 'absolute' 
-  ? inputAmount 
-  : currentBalance + inputAmount
+// 简化的余额更新逻辑
+const newBalance = parseFloat(formData.newBalance)
+const balanceChange = newBalance - currentBalance
 ```
 
 ### 2. 余额更新API
