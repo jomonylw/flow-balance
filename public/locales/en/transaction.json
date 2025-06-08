@@ -37,6 +37,8 @@
   "transaction.modal.cancel": "Cancel",
   "transaction.modal.update.transaction": "Update Transaction",
   "transaction.modal.create.transaction": "Create Transaction",
+  "transaction.modal.create.success": "Transaction created successfully",
+  "transaction.modal.update.success": "Transaction updated successfully",
   "transaction.modal.balance.adjustment.error": "Balance adjustment records cannot be edited through the transaction form, please use the balance update function",
   "transaction.modal.select.account": "Please select account",
   "transaction.modal.select.category": "Please select category",

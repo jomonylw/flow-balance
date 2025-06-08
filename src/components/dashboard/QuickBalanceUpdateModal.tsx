@@ -175,11 +175,15 @@ export default function QuickBalanceUpdateModal({
         onSuccess()
         onClose()
       } else {
-        setErrors({ general: result.error || '更新失败' })
+        const errorMessage = result.error || '更新失败'
+        setErrors({ general: errorMessage })
+        showError('余额更新失败', errorMessage)
       }
     } catch (error) {
       console.error('Balance update error:', error)
-      setErrors({ general: '网络错误，请稍后重试' })
+      const errorMessage = '网络错误，请稍后重试'
+      setErrors({ general: errorMessage })
+      showError('余额更新失败', errorMessage)
     } finally {
       setIsLoading(false)
     }

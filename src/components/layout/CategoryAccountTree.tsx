@@ -17,6 +17,13 @@ interface Account {
   name: string
   categoryId: string
   description?: string
+  color?: string
+  currencyCode: string
+  currency?: {
+    code: string
+    name: string
+    symbol: string
+  }
   category: {
     id: string
     name: string

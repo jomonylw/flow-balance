@@ -6,6 +6,7 @@ import InputField from '@/components/ui/InputField'
 import SelectField from '@/components/ui/SelectField'
 import AuthButton from '@/components/ui/AuthButton'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useToast } from '@/contexts/ToastContext'
 
 interface Currency {
   code: string
@@ -16,6 +17,8 @@ interface Currency {
 interface Account {
   id: string
   name: string
+  currencyCode?: string
+  currency?: Currency
   category: {
     id: string
     name: string
@@ -45,6 +48,7 @@ export default function BalanceUpdateModal({
   editingTransaction
 }: BalanceUpdateModalProps) {
   const { t } = useLanguage()
+  const { showSuccess, showError } = useToast()
   const [formData, setFormData] = useState({
     newBalance: '',
     currencyCode: currencyCode,
@@ -70,10 +74,11 @@ export default function BalanceUpdateModal({
           updateType: 'absolute' // 编辑时默认为绝对值模式
         })
       } else {
-        // 新建模式
+        // 新建模式 - 优先使用账户的货币限制
+        const defaultCurrency = account.currencyCode || currencyCode
         setFormData({
           newBalance: currentBalance.toString(),
-          currencyCode: currencyCode,
+          currencyCode: defaultCurrency,
           updateDate: new Date().toISOString().split('T')[0],
           notes: '',
           updateType: 'absolute'
@@ -81,7 +86,7 @@ export default function BalanceUpdateModal({
       }
       setErrors({})
     }
-  }, [isOpen, currentBalance, currencyCode, editingTransaction])
+  }, [isOpen, currentBalance, currencyCode, editingTransaction, account.currencyCode])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -132,21 +137,28 @@ export default function BalanceUpdateModal({
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            amount: parseFloat(formData.newBalance),
+            accountId: account.id,
+            categoryId: account.category.id,
             currencyCode: formData.currencyCode,
-            date: formData.updateDate,
+            type: editingTransaction.type,
+            amount: parseFloat(formData.newBalance),
+            description: `${t('balance.update.modal.balance.update')} - ${account.name}`,
             notes: formData.notes || t('balance.update.modal.balance.record.update'),
-            description: `${t('balance.update.modal.balance.update')} - ${account.name}`
+            date: formData.updateDate,
+            tagIds: [] // 余额更新记录通常不需要标签
           })
         })
 
         const result = await response.json()
 
         if (result.success) {
+          showSuccess(t('balance.update.modal.update.success'), `${account.name} ${t('balance.update.modal.balance.updated')}`)
           onSuccess()
           onClose()
         } else {
-          setErrors({ general: result.error || t('balance.update.modal.update.failed') })
+          const errorMessage = result.error || t('balance.update.modal.update.failed')
+          setErrors({ general: errorMessage })
+          showError(t('balance.update.modal.update.failed'), errorMessage)
         }
       } else {
         // 新建模式：创建新的余额调整交易
@@ -174,15 +186,20 @@ export default function BalanceUpdateModal({
         const result = await response.json()
 
         if (result.success) {
+          showSuccess(t('balance.update.modal.update.success'), `${account.name} ${t('balance.update.modal.balance.updated')}`)
           onSuccess()
           onClose()
         } else {
-          setErrors({ general: result.error || t('balance.update.modal.update.failed') })
+          const errorMessage = result.error || t('balance.update.modal.update.failed')
+          setErrors({ general: errorMessage })
+          showError(t('balance.update.modal.update.failed'), errorMessage)
         }
       }
     } catch (error) {
       console.error('Balance update error:', error)
-      setErrors({ general: t('error.network') })
+      const errorMessage = t('error.network')
+      setErrors({ general: errorMessage })
+      showError(t('balance.update.modal.update.failed'), errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -195,7 +212,12 @@ export default function BalanceUpdateModal({
     return null // 只有存量类账户才显示余额更新
   }
 
-  const currencyOptions = (currencies || []).map(currency => ({
+  // 如果账户有货币限制，只显示该货币
+  const availableCurrencies = account.currencyCode
+    ? currencies.filter(c => c.code === account.currencyCode)
+    : currencies
+
+  const currencyOptions = (availableCurrencies || []).map(currency => ({
     value: currency.code,
     label: `${currency.code} - ${currency.name}`
   }))
@@ -276,6 +298,8 @@ export default function BalanceUpdateModal({
             onChange={handleChange}
             options={currencyOptions}
             error={errors.currencyCode}
+            disabled={!!account.currencyCode}
+            help={account.currencyCode ? `此账户限制使用 ${account.currency?.name} (${account.currencyCode})` : undefined}
             required
           />
         </div>

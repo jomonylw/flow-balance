@@ -37,6 +37,8 @@
   "transaction.modal.cancel": "取消",
   "transaction.modal.update.transaction": "更新交易",
   "transaction.modal.create.transaction": "创建交易",
+  "transaction.modal.create.success": "交易创建成功",
+  "transaction.modal.update.success": "交易更新成功",
   "transaction.modal.balance.adjustment.error": "余额调整记录不能通过交易表单编辑，请使用余额更新功能",
   "transaction.modal.select.account": "请选择账户",
   "transaction.modal.select.category": "请选择分类",

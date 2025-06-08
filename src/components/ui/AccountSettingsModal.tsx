@@ -7,11 +7,19 @@ import TextAreaField from './TextAreaField'
 import AuthButton from './AuthButton'
 import { useLanguage } from '@/contexts/LanguageContext'
 
+interface Currency {
+  code: string
+  name: string
+  symbol: string
+}
+
 interface Account {
   id: string
   name: string
   description?: string
   color?: string
+  currencyCode: string
+  currency?: Currency
   category: {
     id: string
     name: string
@@ -24,6 +32,8 @@ interface AccountSettingsModalProps {
   onClose: () => void
   onSave: (updates: Partial<Account>) => Promise<void>
   account: Account
+  currencies?: Currency[]
+  hasTransactions?: boolean
 }
 
 // 预定义的颜色选项
@@ -46,12 +56,15 @@ export default function AccountSettingsModal({
   isOpen,
   onClose,
   onSave,
-  account
+  account,
+  currencies = [],
+  hasTransactions = false
 }: AccountSettingsModalProps) {
   const { t } = useLanguage()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [selectedColor, setSelectedColor] = useState('')
+  const [selectedCurrency, setSelectedCurrency] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -59,6 +72,7 @@ export default function AccountSettingsModal({
       setName(account.name)
       setDescription(account.description || '')
       setSelectedColor(account.color || COLOR_OPTIONS[0].value)
+      setSelectedCurrency(account.currencyCode)
     }
   }, [isOpen, account])
 
@@ -68,7 +82,8 @@ export default function AccountSettingsModal({
       const updates: Partial<Account> = {
         name: name.trim(),
         description: description.trim() || undefined,
-        color: selectedColor
+        color: selectedColor,
+        currencyCode: selectedCurrency || undefined
       }
 
       await onSave(updates)
@@ -222,6 +237,66 @@ export default function AccountSettingsModal({
           </div>
         </div>
 
+        {/* 货币设置 */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900">{t('account.settings.currency.settings')}</h3>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('account.settings.currency')}
+            </label>
+            <p className="text-sm text-gray-500 mb-3">
+              {t('account.settings.currency.help')}
+            </p>
+
+            {hasTransactions && account.currencyCode && (
+              <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-800">
+                      {t('account.settings.currency.warning')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <select
+              value={selectedCurrency}
+              onChange={(e) => setSelectedCurrency(e.target.value)}
+              disabled={hasTransactions && !!account.currencyCode}
+              className={`
+                mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
+                focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900
+                ${hasTransactions && account.currencyCode ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
+              `}
+              required
+            >
+              {!selectedCurrency && (
+                <option value="" disabled>请选择货币</option>
+              )}
+              {currencies.map((currency) => (
+                <option key={currency.code} value={currency.code}>
+                  {currency.symbol} {currency.code} - {currency.name}
+                </option>
+              ))}
+            </select>
+
+            {selectedCurrency && (
+              <div className="mt-2 text-sm text-gray-600">
+                <span className="font-medium">{t('account.settings.currency.selected')}:</span>
+                {' '}
+                {currencies.find(c => c.code === selectedCurrency)?.symbol} {selectedCurrency}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* 操作按钮 */}
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
           <button
@@ -235,7 +310,7 @@ export default function AccountSettingsModal({
             label={isLoading ? t('account.settings.saving') : t('account.settings.save')}
             onClick={handleSave}
             isLoading={isLoading}
-            disabled={!name.trim()}
+            disabled={!name.trim() || !selectedCurrency}
             variant="primary"
           />
         </div>

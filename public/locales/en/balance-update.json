@@ -26,6 +26,8 @@
   "balance.update.modal.new.balance.placeholder": "Enter new account balance",
   "balance.update.modal.adjustment.placeholder": "Enter adjustment amount (positive to increase, negative to decrease)",
   "balance.update.modal.update.failed": "Update failed",
+  "balance.update.modal.update.success": "Update successful",
+  "balance.update.modal.balance.updated": "balance updated",
   "balance.update.modal.balance.record.update": "Balance record update",
   "balance.update.modal.balance.update": "Balance update",
   "balance.update.modal.balance.adjustment": "Balance adjustment"

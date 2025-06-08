@@ -19,6 +19,13 @@ export async function PUT(
       where: {
         id: accountId,
         userId: user.id
+      },
+      include: {
+        currency: true,
+        transactions: {
+          select: { id: true },
+          take: 1 // 只需要知道是否有交易记录
+        }
       }
     })
 
@@ -27,7 +34,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, categoryId, description, color } = body
+    const { name, categoryId, description, color, currencyCode } = body
 
     if (!name) {
       return errorResponse('账户名称不能为空', 400)
@@ -62,6 +69,43 @@ export async function PUT(
       }
     }
 
+    // 处理货币更换逻辑
+    if (currencyCode !== undefined && currencyCode !== existingAccount.currencyCode) {
+      // 检查账户是否有交易记录
+      const hasTransactions = existingAccount.transactions.length > 0
+
+      if (hasTransactions) {
+        return errorResponse('账户已有交易记录，无法更换货币', 400)
+      }
+
+      // 货币是必填的，不能设置为空
+      if (!currencyCode) {
+        return errorResponse('账户货币不能为空', 400)
+      }
+
+      // 验证货币是否存在且用户有权使用
+      const currency = await prisma.currency.findUnique({
+        where: { code: currencyCode }
+      })
+
+      if (!currency) {
+        return errorResponse('指定的货币不存在', 400)
+      }
+
+      // 验证用户是否有权使用此货币
+      const userCurrency = await prisma.userCurrency.findFirst({
+        where: {
+          userId: user.id,
+          currencyCode: currencyCode,
+          isActive: true
+        }
+      })
+
+      if (!userCurrency) {
+        return errorResponse('您没有权限使用此货币，请先在货币管理中添加', 400)
+      }
+    }
+
     // 检查同一用户下是否已存在同名账户（排除当前账户）
     const duplicateAccount = await prisma.account.findFirst({
       where: {
@@ -80,11 +124,13 @@ export async function PUT(
       data: {
         name,
         categoryId: categoryId || existingAccount.categoryId,
+        currencyCode: currencyCode !== undefined ? currencyCode : existingAccount.currencyCode,
         description: description || null,
         color: color || null
       },
       include: {
-        category: true
+        category: true,
+        currency: true
       }
     })
 

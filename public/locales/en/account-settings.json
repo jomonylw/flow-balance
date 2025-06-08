@@ -2,12 +2,17 @@
   "account.settings": "Account Settings",
   "account.settings.basic.info": "Basic Information",
   "account.settings.display.settings": "Display Settings",
+  "account.settings.currency.settings": "Currency Settings",
   "account.settings.account.name": "Account Name",
   "account.settings.account.description": "Account Description",
   "account.settings.account.color": "Account Color",
+  "account.settings.currency": "Account Currency",
   "account.settings.name.placeholder": "Enter account name",
   "account.settings.description.placeholder": "Enter account description (optional)",
   "account.settings.color.help": "Choose a color to distinguish this account in charts and statistics",
+  "account.settings.currency.help": "Each account must specify a currency. Once set, all transactions for this account will be restricted to this currency",
+  "account.settings.currency.warning": "Account has transaction records, cannot change currency",
+  "account.settings.currency.selected": "Selected currency",
   "account.settings.saving": "Saving...",
   "account.settings.save": "Save Settings"
 }

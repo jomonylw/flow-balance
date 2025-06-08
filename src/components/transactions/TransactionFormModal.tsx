@@ -12,6 +12,8 @@ import { useLanguage } from '@/contexts/LanguageContext'
 interface Account {
   id: string
   name: string
+  currencyCode?: string
+  currency?: Currency
   category: {
     id: string
     name: string
@@ -82,7 +84,7 @@ export default function TransactionFormModal({
   const [formData, setFormData] = useState({
     accountId: '',
     categoryId: '',
-    currencyCode: 'USD',
+    currencyCode: currencies && currencies.length > 0 ? currencies[0].code : 'USD',
     type: 'EXPENSE' as 'INCOME' | 'EXPENSE',
     amount: '',
     description: '',
@@ -100,6 +102,8 @@ export default function TransactionFormModal({
 
   // 初始化表单数据
   useEffect(() => {
+    if (!isOpen) return // 只在模态框打开时初始化
+
     if (transaction) {
       // 编辑模式 - 检查是否为余额调整交易
       if (transaction.type === 'BALANCE_ADJUSTMENT') {
@@ -120,11 +124,22 @@ export default function TransactionFormModal({
         tagIds: transaction.tags.map(t => t.tag.id)
       })
     } else {
-      // 新增模式
+      // 新增模式 - 使用第一个可用货币作为默认值
+      const defaultCurrency = currencies && currencies.length > 0 ? currencies[0].code : 'USD'
+
+      // 如果有默认账户，自动设置对应的分类
+      let autoSelectedCategoryId = defaultCategoryId || ''
+      if (defaultAccountId && !autoSelectedCategoryId) {
+        const defaultAccount = accounts.find(acc => acc.id === defaultAccountId)
+        if (defaultAccount) {
+          autoSelectedCategoryId = defaultAccount.category.id
+        }
+      }
+
       setFormData({
         accountId: defaultAccountId || '',
-        categoryId: defaultCategoryId || '',
-        currencyCode: 'USD',
+        categoryId: autoSelectedCategoryId,
+        currencyCode: defaultCurrency,
         type: defaultType || 'EXPENSE',
         amount: '',
         description: '',
@@ -134,7 +149,7 @@ export default function TransactionFormModal({
       })
     }
     setErrors({})
-  }, [transaction, defaultAccountId, defaultCategoryId, defaultType, isOpen])
+  }, [transaction, defaultAccountId, defaultCategoryId, defaultType, currencies, accounts, isOpen])
 
   // 更新可用标签列表
   useEffect(() => {
@@ -158,12 +173,18 @@ export default function TransactionFormModal({
           defaultType = 'EXPENSE'
         }
 
-        setFormData(prev => ({
-          ...prev,
+        const updates: any = {
           [name]: value,
           categoryId: selectedAccount.category.id, // 自动设置分类
           type: defaultType // 智能设置交易类型
-        }))
+        }
+
+        // 如果账户有货币限制，自动设置货币
+        if (selectedAccount.currencyCode) {
+          updates.currencyCode = selectedAccount.currencyCode
+        }
+
+        setFormData(prev => ({ ...prev, ...updates }))
       } else {
         setFormData(prev => ({ ...prev, [name]: value }))
       }
@@ -297,19 +318,34 @@ export default function TransactionFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
+    console.log('Form submission started with data:', formData)
+
     if (!validateForm()) {
+      console.log('Form validation failed')
       return
     }
 
     setIsLoading(true)
 
     try {
-      const url = transaction 
+      const url = transaction
         ? `/api/transactions/${transaction.id}`
         : '/api/transactions'
-      
+
       const method = transaction ? 'PUT' : 'POST'
+
+      // 验证表单数据完整性
+      const requiredFields = ['accountId', 'categoryId', 'currencyCode', 'type', 'amount', 'description', 'date']
+      const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData])
+
+      if (missingFields.length > 0) {
+        console.error('Missing required fields:', missingFields)
+        setErrors({ general: `缺少必填字段: ${missingFields.join(', ')}` })
+        return
+      }
+
+      console.log('Submitting transaction:', { url, method, formData })
 
       const response = await fetch(url, {
         method,
@@ -319,17 +355,61 @@ export default function TransactionFormModal({
         body: JSON.stringify(formData)
       })
 
+      console.log('Response status:', response.status, response.statusText)
+
+      // 检查响应是否为JSON
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text()
+        console.error('Non-JSON response:', textResponse)
+        setErrors({ general: `服务器响应格式错误 (${response.status}): ${textResponse}` })
+        return
+      }
+
       const result = await response.json()
+      console.log('Parsed response:', result)
 
       if (result.success) {
+        console.log('Transaction created/updated successfully')
+        const successMessage = transaction ? t('transaction.modal.update.success') : t('transaction.modal.create.success')
+        showSuccess(successMessage, `${t('transaction.modal.amount')}: ${formData.amount} ${formData.currencyCode}`)
         onSuccess()
         onClose()
       } else {
-        setErrors({ general: result.error || t('transaction.modal.operation.failed') })
+        // 处理API错误响应 - 增强错误信息提取
+        let errorMessage = transaction ? '更新交易失败' : '创建交易失败'
+
+        if (result.error) {
+          errorMessage = result.error
+        } else if (result.message) {
+          errorMessage = result.message
+        } else if (response.status >= 400) {
+          errorMessage = `请求失败 (${response.status})`
+        }
+
+        // 添加更详细的调试信息
+        console.error('Transaction API error details:', {
+          status: response.status,
+          statusText: response.statusText,
+          result: result,
+          formData: formData,
+          url: url,
+          method: method
+        })
+
+        setErrors({ general: errorMessage })
+        showError(transaction ? '更新交易失败' : '创建交易失败', errorMessage)
       }
     } catch (error) {
       console.error('Transaction form error:', error)
-      setErrors({ general: t('error.network') })
+      let errorMessage: string
+      if (error instanceof SyntaxError) {
+        errorMessage = '服务器响应解析失败'
+      } else {
+        errorMessage = t('error.network')
+      }
+      setErrors({ general: errorMessage })
+      showError(transaction ? '更新交易失败' : '创建交易失败', errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -360,7 +440,13 @@ export default function TransactionFormModal({
     label: category.name
   }))
 
-  const currencyOptions = (currencies || []).map(currency => ({
+  // 获取选中账户的货币限制
+  const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
+  const availableCurrencies = selectedAccount?.currencyCode
+    ? currencies.filter(c => c.code === selectedAccount.currencyCode)
+    : currencies
+
+  const currencyOptions = (availableCurrencies || []).map(currency => ({
     value: currency.code,
     label: `${currency.name} (${currency.symbol})`
   }))
@@ -491,6 +577,8 @@ export default function TransactionFormModal({
             onChange={handleChange}
             options={currencyOptions}
             error={errors.currencyCode}
+            disabled={!!selectedAccount?.currencyCode}
+            help={selectedAccount?.currencyCode ? `此账户限制使用 ${selectedAccount.currency?.name} (${selectedAccount.currencyCode})` : undefined}
             required
           />
         </div>

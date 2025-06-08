@@ -2,12 +2,17 @@
   "account.settings": "账户设置",
   "account.settings.basic.info": "基本信息",
   "account.settings.display.settings": "显示设置",
+  "account.settings.currency.settings": "货币设置",
   "account.settings.account.name": "账户名称",
   "account.settings.account.description": "账户描述",
   "account.settings.account.color": "账户颜色",
+  "account.settings.currency": "账户货币",
   "account.settings.name.placeholder": "请输入账户名称",
   "account.settings.description.placeholder": "请输入账户描述（可选）",
   "account.settings.color.help": "选择一个颜色来在图表和统计中区分此账户",
+  "account.settings.currency.help": "每个账户必须指定货币。设置后，该账户的所有交易都将限制在此货币内",
+  "account.settings.currency.warning": "账户已有交易记录，无法更换货币",
+  "account.settings.currency.selected": "已选择货币",
   "account.settings.saving": "保存中...",
   "account.settings.save": "保存设置"
 }

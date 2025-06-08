@@ -8,7 +8,7 @@ interface TranslationTextProps {
   params?: Record<string, string | number>
   fallback?: ReactNode
   className?: string
-  as?: keyof JSX.IntrinsicElements
+  as?: keyof React.JSX.IntrinsicElements
 }
 
 /**

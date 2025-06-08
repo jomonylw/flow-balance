@@ -8,6 +8,7 @@ import CategoryAccountTree from './CategoryAccountTree'
 import TopCategoryModal from '@/components/ui/TopCategoryModal'
 import TranslationLoader from '@/components/ui/TranslationLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { BalanceProvider } from '@/contexts/BalanceContext'
 
 interface User {
   id: string
@@ -27,8 +28,14 @@ interface Account {
   id: string
   name: string
   categoryId: string
-  currency: string
   description?: string
+  color?: string
+  currencyCode: string
+  currency?: {
+    code: string
+    name: string
+    symbol: string
+  }
   category: {
     id: string
     name: string
@@ -264,14 +271,16 @@ export default function NavigationSidebar({
                   </div>
                 </div>
               )}
-              <CategoryAccountTree
-                key="category-account-tree" // 确保组件不会被重新挂载
-                categories={categories}
-                accounts={accounts}
-                searchQuery={searchQuery}
-                onDataChange={handleDataChange}
-                onNavigate={onNavigate}
-              />
+              <BalanceProvider categories={categories} accounts={accounts}>
+                <CategoryAccountTree
+                  key="category-account-tree" // 确保组件不会被重新挂载
+                  categories={categories}
+                  accounts={accounts}
+                  searchQuery={searchQuery}
+                  onDataChange={handleDataChange}
+                  onNavigate={onNavigate}
+                />
+              </BalanceProvider>
             </div>
           </div>
         </div>

@@ -119,7 +119,10 @@ export async function POST(request: NextRequest) {
     const [account, category] = await Promise.all([
       prisma.account.findFirst({
         where: { id: accountId, userId: user.id },
-        include: { category: true }
+        include: {
+          category: true,
+          currency: true
+        }
       }),
       prisma.category.findFirst({
         where: { id: categoryId, userId: user.id }
@@ -158,6 +161,11 @@ export async function POST(request: NextRequest) {
       if (type === 'BALANCE_ADJUSTMENT') {
         return errorResponse('BALANCE_ADJUSTMENT类型只能通过余额更新功能使用', 400)
       }
+    }
+
+    // 验证账户货币限制
+    if (account.currencyCode && account.currencyCode !== currencyCode) {
+      return errorResponse(`此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`, 400)
     }
 
     // 验证币种

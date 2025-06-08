@@ -217,6 +217,7 @@ async function main() {
     create: {
       userId: user1.id,
       categoryId: bankCategory.id,
+      currencyCode: 'USD',
       name: '招商银行储蓄卡',
       description: '日常消费账户'
     }
@@ -233,6 +234,7 @@ async function main() {
     create: {
       userId: user1.id,
       categoryId: bankCategory.id,
+      currencyCode: 'USD',
       name: '建设银行定期存款',
       description: '定期存款账户'
     }
@@ -249,6 +251,7 @@ async function main() {
     create: {
       userId: user1.id,
       categoryId: cashCategory.id,
+      currencyCode: 'USD',
       name: '现金钱包',
       description: '随身现金'
     }
@@ -265,8 +268,78 @@ async function main() {
     create: {
       userId: user1.id,
       categoryId: investmentCategory.id,
+      currencyCode: 'USD',
       name: '股票投资账户',
       description: '股票投资'
+    }
+  })
+
+  // 创建流量类账户（收入/支出账户）
+  const salaryAccount = await prisma.account.upsert({
+    where: {
+      userId_name: {
+        userId: user1.id,
+        name: '工资收入'
+      }
+    },
+    update: {},
+    create: {
+      userId: user1.id,
+      categoryId: incomeCategory.id,
+      currencyCode: 'USD',
+      name: '工资收入',
+      description: '主要工资收入来源'
+    }
+  })
+
+  const foodExpenseAccount = await prisma.account.upsert({
+    where: {
+      userId_name: {
+        userId: user1.id,
+        name: '餐饮支出'
+      }
+    },
+    update: {},
+    create: {
+      userId: user1.id,
+      categoryId: foodCategory.id,
+      currencyCode: 'USD',
+      name: '餐饮支出',
+      description: '日常餐饮消费'
+    }
+  })
+
+  const transportExpenseAccount = await prisma.account.upsert({
+    where: {
+      userId_name: {
+        userId: user1.id,
+        name: '交通支出'
+      }
+    },
+    update: {},
+    create: {
+      userId: user1.id,
+      categoryId: transportCategory.id,
+      currencyCode: 'USD',
+      name: '交通支出',
+      description: '交通出行费用'
+    }
+  })
+
+  const shoppingExpenseAccount = await prisma.account.upsert({
+    where: {
+      userId_name: {
+        userId: user1.id,
+        name: '购物支出'
+      }
+    },
+    update: {},
+    create: {
+      userId: user1.id,
+      categoryId: shoppingCategory.id,
+      currencyCode: 'USD',
+      name: '购物支出',
+      description: '日常购物消费'
     }
   })
 
@@ -303,7 +376,7 @@ async function main() {
   const salaryTransaction = await prisma.transaction.create({
     data: {
       userId: user1.id,
-      accountId: checkingAccount.id,
+      accountId: salaryAccount.id,
       categoryId: incomeCategory.id,
       currencyCode: 'USD',
       type: TransactionType.INCOME,
@@ -321,7 +394,7 @@ async function main() {
   await prisma.transaction.create({
     data: {
       userId: user1.id,
-      accountId: checkingAccount.id,
+      accountId: foodExpenseAccount.id,
       categoryId: foodCategory.id,
       currencyCode: 'USD',
       type: TransactionType.EXPENSE,
@@ -339,7 +412,7 @@ async function main() {
   await prisma.transaction.create({
     data: {
       userId: user1.id,
-      accountId: checkingAccount.id,
+      accountId: transportExpenseAccount.id,
       categoryId: transportCategory.id,
       currencyCode: 'USD',
       type: TransactionType.EXPENSE,
@@ -370,7 +443,7 @@ async function main() {
   await prisma.transaction.create({
     data: {
       userId: user1.id,
-      accountId: checkingAccount.id,
+      accountId: shoppingExpenseAccount.id,
       categoryId: shoppingCategory.id,
       currencyCode: 'USD',
       type: TransactionType.EXPENSE,
@@ -389,7 +462,7 @@ async function main() {
   await prisma.transaction.create({
     data: {
       userId: user1.id,
-      accountId: cashAccount.id,
+      accountId: salaryAccount.id,
       categoryId: incomeCategory.id,
       currencyCode: 'EUR',
       type: TransactionType.INCOME,
@@ -402,7 +475,7 @@ async function main() {
   await prisma.transaction.create({
     data: {
       userId: user1.id,
-      accountId: cashAccount.id,
+      accountId: foodExpenseAccount.id,
       categoryId: foodCategory.id,
       currencyCode: 'CNY',
       type: TransactionType.EXPENSE,
@@ -493,12 +566,13 @@ async function main() {
   console.log(`💱 创建了 ${currencies.length} 种币种`)
   console.log(`💰 为用户设置了可用货币`)
   console.log(`📁 创建了分类结构`)
-  console.log(`🏦 创建了 4 个账户`)
+  console.log(`🏦 创建了 8 个账户（4个存量类 + 4个流量类）`)
   console.log(`🏷️ 创建了 3 个标签`)
   console.log(`💰 创建了 8 条交易记录（包含多货币）`)
   console.log(`💱 创建了 ${exchangeRates.length} 个汇率记录`)
   console.log(`🔄 多货币交易：USD, EUR, CNY, JPY`)
   console.log(`📊 汇率设置：EUR→USD, CNY→USD, JPY→USD`)
+  console.log(`📊 流量类账户：工资收入、餐饮支出、交通支出、购物支出`)
 }
 
 main()

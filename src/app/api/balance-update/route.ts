@@ -33,12 +33,18 @@ export async function POST(request: NextRequest) {
         userId: user.id
       },
       include: {
-        category: true
+        category: true,
+        currency: true
       }
     })
 
     if (!account) {
       return errorResponse('账户不存在', 400)
+    }
+
+    // 验证账户货币限制
+    if (account.currencyCode && account.currencyCode !== currencyCode) {
+      return errorResponse(`此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`, 400)
     }
 
     // 验证是否为存量类账户

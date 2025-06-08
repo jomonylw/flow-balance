@@ -62,6 +62,7 @@ model Currency {
   // 关联关系
   userSettings      UserSettings[]
   userCurrencies    UserCurrency[]
+  accounts          Account[]      // 使用此货币的账户
   transactions      Transaction[]
   fromExchangeRates ExchangeRate[] @relation("FromCurrency")
   toExchangeRates   ExchangeRate[] @relation("ToCurrency")
@@ -145,18 +146,20 @@ enum AccountType {
 
 // 账户表 - 用户的各种账户
 model Account {
-  id          String   @id @default(cuid())
-  userId      String
-  categoryId  String
-  name        String
-  description String?
-  color       String?  // 账户颜色，用于图表展示等
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String
+  categoryId   String
+  currencyCode String   // 账户货币，每个账户必须指定货币，该账户的所有交易都必须使用此货币
+  name         String
+  description  String?
+  color        String?  // 账户颜色，用于图表展示等
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // 关联关系
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   category     Category      @relation(fields: [categoryId], references: [id])
+  currency     Currency      @relation(fields: [currencyCode], references: [code])
   transactions Transaction[]
 
   @@unique([userId, name]) // 同一用户下账户名不能重复

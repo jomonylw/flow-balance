@@ -26,6 +26,8 @@
   "balance.update.modal.new.balance.placeholder": "输入新的账户余额",
   "balance.update.modal.adjustment.placeholder": "输入调整金额（正数增加，负数减少）",
   "balance.update.modal.update.failed": "更新失败",
+  "balance.update.modal.update.success": "更新成功",
+  "balance.update.modal.balance.updated": "余额已更新",
   "balance.update.modal.balance.record.update": "余额记录更新",
   "balance.update.modal.balance.update": "余额更新",
   "balance.update.modal.balance.adjustment": "余额调整"
