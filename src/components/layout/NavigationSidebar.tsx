@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react'
 import SidebarSearchBox from './SidebarSearchBox'
 import SidebarDashboardLink from './SidebarDashboardLink'
 import SidebarReportsLink from './SidebarReportsLink'
-import CategoryAccountTree from './CategoryAccountTree'
+import OptimizedCategoryAccountTree from './OptimizedCategoryAccountTree'
 import TopCategoryModal from '@/components/ui/TopCategoryModal'
 import TranslationLoader from '@/components/ui/TranslationLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { BalanceProvider } from '@/contexts/BalanceContext'
+
 
 interface User {
   id: string
@@ -57,124 +57,24 @@ export default function NavigationSidebar({
 }: NavigationSidebarProps) {
   const { t } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
-  const [categories, setCategories] = useState<Category[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [showAddTopCategoryModal, setShowAddTopCategoryModal] = useState(false)
-
-  // 获取用户的分类和账户数据
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true)
-        
-        // 并行获取分类和账户数据
-        const [categoriesRes, accountsRes] = await Promise.all([
-          fetch('/api/categories'),
-          fetch('/api/accounts')
-        ])
-
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json()
-          setCategories(categoriesData.data || [])
-        }
-
-        if (accountsRes.ok) {
-          const accountsData = await accountsRes.json()
-          setAccounts(accountsData.data || [])
-        }
-      } catch (error) {
-        console.error('Error fetching sidebar data:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
 
   const handleAddTopCategory = () => {
     setShowAddTopCategoryModal(true)
   }
 
-  // 智能数据更新：支持局部更新和完整刷新
-  const handleDataChange = async (options?: {
+  // 简化的数据更新处理 - 现在由OptimizedCategoryAccountTree内部处理
+  const handleDataChange = (options?: {
     type?: 'category' | 'account' | 'full'
-    silent?: boolean // 静默更新，不显示加载状态
+    silent?: boolean
   }) => {
-    const { type = 'full', silent = false } = options || {}
-
-    try {
-      if (!silent) {
-        setIsLoading(true)
-      }
-
-      if (type === 'category' || type === 'full') {
-        const categoriesRes = await fetch('/api/categories')
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json()
-          setCategories(categoriesData.data || [])
-        }
-      }
-
-      if (type === 'account' || type === 'full') {
-        const accountsRes = await fetch('/api/accounts')
-        if (accountsRes.ok) {
-          const accountsData = await accountsRes.json()
-          setAccounts(accountsData.data || [])
-        }
-      }
-    } catch (error) {
-      console.error('Error refreshing sidebar data:', error)
-    } finally {
-      if (!silent) {
-        setIsLoading(false)
-      }
-    }
+    // 发送自定义事件通知OptimizedCategoryAccountTree刷新数据
+    const event = new CustomEvent('dataChange', { detail: options })
+    window.dispatchEvent(event)
   }
 
 
 
-  // 乐观更新：立即更新UI，然后同步数据
-  const updateCategoryOptimistic = (categoryId: string, updates: Partial<Category>) => {
-    setCategories((prev) => prev.map(cat =>
-      cat.id === categoryId ? { ...cat, ...updates } : cat
-    ))
-    // 静默同步数据以确保一致性
-    setTimeout(() => handleDataChange({ type: 'category', silent: true }), 100)
-  }
-
-  const updateAccountOptimistic = (accountId: string, updates: Partial<Account>) => {
-    setAccounts((prev) => prev.map(acc =>
-      acc.id === accountId ? { ...acc, ...updates } : acc
-    ))
-    // 静默同步数据以确保一致性
-    setTimeout(() => handleDataChange({ type: 'account', silent: true }), 100)
-  }
-
-  const addCategoryOptimistic = (newCategory: Category) => {
-    setCategories((prev) => [...prev, newCategory])
-    // 静默同步数据以确保一致性
-    setTimeout(() => handleDataChange({ type: 'category', silent: true }), 100)
-  }
-
-  const addAccountOptimistic = (newAccount: Account) => {
-    setAccounts((prev) => [...prev, newAccount])
-    // 静默同步数据以确保一致性
-    setTimeout(() => handleDataChange({ type: 'account', silent: true }), 100)
-  }
-
-  const removeCategoryOptimistic = (categoryId: string) => {
-    setCategories((prev) => prev.filter(cat => cat.id !== categoryId))
-    // 静默同步数据以确保一致性
-    setTimeout(() => handleDataChange({ type: 'category', silent: true }), 100)
-  }
-
-  const removeAccountOptimistic = (accountId: string) => {
-    setAccounts((prev) => prev.filter(acc => acc.id !== accountId))
-    // 静默同步数据以确保一致性
-    setTimeout(() => handleDataChange({ type: 'account', silent: true }), 100)
-  }
 
   const handleSaveTopCategory = async (data: { name: string; type: string }) => {
     try {
@@ -193,7 +93,7 @@ export default function NavigationSidebar({
 
       if (response.ok) {
         setShowAddTopCategoryModal(false)
-        handleDataChange({ type: 'category', silent: true })
+        handleDataChange({ type: 'category' })
       } else {
         const error = await response.json()
         throw new Error(error.message || '创建分类失败')
@@ -252,36 +152,11 @@ export default function NavigationSidebar({
               {t('sidebar.categories')}
             </h3>
 
-            <div className="relative">
-              {isLoading && categories.length === 0 && (
-                <div className="space-y-2 w-full">
-                  {/* 加载骨架屏 - 只在初始加载时显示 */}
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="h-8 bg-gray-200 rounded"></div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {isLoading && categories.length > 0 && (
-                <div className="absolute top-0 right-0 z-10">
-                  {/* 小型加载指示器 - 在有数据时显示 */}
-                  <div className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs">
-                    {t('sidebar.updating')}
-                  </div>
-                </div>
-              )}
-              <BalanceProvider categories={categories} accounts={accounts}>
-                <CategoryAccountTree
-                  key="category-account-tree" // 确保组件不会被重新挂载
-                  categories={categories}
-                  accounts={accounts}
-                  searchQuery={searchQuery}
-                  onDataChange={handleDataChange}
-                  onNavigate={onNavigate}
-                />
-              </BalanceProvider>
-            </div>
+            <OptimizedCategoryAccountTree
+              searchQuery={searchQuery}
+              onDataChange={handleDataChange}
+              onNavigate={onNavigate}
+            />
           </div>
         </div>
       </div>

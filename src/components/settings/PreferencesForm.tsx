@@ -5,6 +5,7 @@ import { UserSettings, Currency } from '@prisma/client'
 import SelectField from '@/components/ui/SelectField'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useUserData } from '@/contexts/UserDataContext'
 
 interface PreferencesFormProps {
   userSettings: (UserSettings & { baseCurrency: Currency }) | null
@@ -14,20 +15,18 @@ interface PreferencesFormProps {
 export default function PreferencesForm({ userSettings, currencies }: PreferencesFormProps) {
   const { t } = useLanguage()
   const { setTheme } = useTheme()
+  const { currencies: userCurrencies, updateUserSettings } = useUserData()
   const [formData, setFormData] = useState({
     baseCurrencyCode: userSettings?.baseCurrencyCode || '',
     dateFormat: userSettings?.dateFormat || 'YYYY-MM-DD',
     theme: (userSettings as any)?.theme || 'system',
     language: (userSettings as any)?.language || 'zh'
   })
-  const [userCurrencies, setUserCurrencies] = useState<Currency[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetchUserCurrencies()
-
     // 初始化主题和语言设置（优先使用数据库设置，其次是localStorage）
     const savedTheme = localStorage.getItem('theme')
     const savedLanguage = localStorage.getItem('language')
@@ -38,18 +37,6 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
       language: (userSettings as any)?.language || savedLanguage || 'zh'
     }))
   }, [userSettings])
-
-  const fetchUserCurrencies = async () => {
-    try {
-      const response = await fetch('/api/user/currencies')
-      if (response.ok) {
-        const data = await response.json()
-        setUserCurrencies(data.data.currencies)
-      }
-    } catch (error) {
-      console.error('获取用户货币失败:', error)
-    }
-  }
 
   const dateFormatOptions = [
     { value: 'YYYY-MM-DD', label: '2024-01-01 (YYYY-MM-DD)' },
@@ -105,6 +92,11 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
 
       if (response.ok) {
         setMessage(t('settings.preferences.updated'))
+
+        // 更新UserDataContext中的用户设置
+        if (data.data?.userSettings) {
+          updateUserSettings(data.data.userSettings)
+        }
 
         // 应用主题设置
         if (formData.theme) {

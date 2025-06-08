@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Currency } from '@prisma/client'
+import { useUserData } from '@/contexts/UserDataContext'
 import ExchangeRateForm from './ExchangeRateForm'
 import ExchangeRateList from './ExchangeRateList'
 
@@ -29,41 +30,36 @@ interface ExchangeRateManagementProps {
 }
 
 export default function ExchangeRateManagement({ currencies }: ExchangeRateManagementProps) {
+  const { currencies: userCurrencies, getBaseCurrency } = useUserData()
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateData[]>([])
   const [missingRates, setMissingRates] = useState<MissingRateInfo[]>([])
-  const [baseCurrency, setBaseCurrency] = useState<Currency | null>(null)
-  const [userCurrencies, setUserCurrencies] = useState<Currency[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingRate, setEditingRate] = useState<ExchangeRateData | null>(null)
+
+  // 从 UserDataContext 获取基础货币
+  const baseCurrency = getBaseCurrency()
 
   const fetchData = async () => {
     setLoading(true)
     setError('')
 
     try {
-      // 获取缺失的汇率信息、现有汇率和用户货币
-      const [missingResponse, ratesResponse, userCurrenciesResponse] = await Promise.all([
+      // 获取缺失的汇率信息和现有汇率，用户货币从 UserDataContext 获取
+      const [missingResponse, ratesResponse] = await Promise.all([
         fetch('/api/exchange-rates/missing'),
-        fetch('/api/exchange-rates'),
-        fetch('/api/user/currencies')
+        fetch('/api/exchange-rates')
       ])
 
       if (missingResponse.ok) {
         const missingData = await missingResponse.json()
         setMissingRates(missingData.data.missingRates || [])
-        setBaseCurrency(missingData.data.baseCurrency)
       }
 
       if (ratesResponse.ok) {
         const ratesData = await ratesResponse.json()
         setExchangeRates(ratesData.data || [])
-      }
-
-      if (userCurrenciesResponse.ok) {
-        const userCurrenciesData = await userCurrenciesResponse.json()
-        setUserCurrencies(userCurrenciesData.data.currencies || [])
       }
     } catch (error) {
       console.error('获取汇率数据失败:', error)

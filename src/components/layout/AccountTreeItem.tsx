@@ -1,18 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { useBalance } from '@/contexts/BalanceContext'
 import AccountContextMenu from './AccountContextMenu'
 import InputDialog from '@/components/ui/InputDialog'
-import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import DeleteConfirmModal from '@/components/ui/DeleteConfirmModal'
 import CategorySelector from '@/components/ui/CategorySelector'
 import AccountSettingsModal from '@/components/ui/AccountSettingsModal'
 import BalanceUpdateModal from '@/components/accounts/BalanceUpdateModal'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
 import { useToast } from '@/contexts/ToastContext'
+import { useUserData } from '@/contexts/UserDataContext'
+
 import CurrencyTag from '@/components/ui/CurrencyTag'
 
 interface Account {
@@ -32,6 +31,16 @@ interface Account {
     name: string
     type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   }
+  // 余额数据（从OptimizedCategoryAccountTree传入）
+  balances?: Record<string, {
+    amount: number
+    currency: {
+      code: string
+      symbol: string
+      name: string
+    }
+  }>
+  balanceInBaseCurrency?: number
 }
 
 interface AccountTreeItemProps {
@@ -42,21 +51,41 @@ interface AccountTreeItemProps {
     silent?: boolean
   }) => void
   onNavigate?: () => void
+  baseCurrency?: {
+    code: string
+    symbol: string
+    name: string
+  }
 }
 
 export default function AccountTreeItem({
   account,
   level,
   onDataChange,
-  onNavigate
+  onNavigate,
+  baseCurrency: propBaseCurrency
 }: AccountTreeItemProps) {
   const { showSuccess, showError } = useToast()
-  const { getAccountBalance, getAccountBalanceInCurrency, baseCurrency, refreshBalances } = useBalance()
   const pathname = usePathname()
   const router = useRouter()
-  const [showContextMenu, setShowContextMenu] = useState(false)
+
+  // 使用UserDataContext获取数据
+  const {
+    accounts,
+    categories,
+    currencies,
+    tags,
+    getBaseCurrency,
+    removeAccount
+  } = useUserData()
+
+  // 移除自动交易检查，改为在后端验证
+
+  // 使用传入的基础货币或从Context获取
+  const baseCurrency = propBaseCurrency || getBaseCurrency() || { symbol: '¥', code: 'CNY' }
 
   // 模态框状态
+  const [showContextMenu, setShowContextMenu] = useState(false)
   const [showRenameDialog, setShowRenameDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(false)
@@ -64,22 +93,15 @@ export default function AccountTreeItem({
   const [showBalanceUpdateModal, setShowBalanceUpdateModal] = useState(false)
   const [showTransactionModal, setShowTransactionModal] = useState(false)
 
-  // 数据状态
-  const [accounts, setAccounts] = useState<any[]>([])
-  const [categories, setCategories] = useState<any[]>([])
-  const [currencies, setCurrencies] = useState<any[]>([])
-  const [tags, setTags] = useState<any[]>([])
-  const [hasTransactions, setHasTransactions] = useState(false)
-
   const isActive = pathname === `/accounts/${account.id}`
 
-  // 从BalanceContext获取账户余额（本位币）
-  const balance = getAccountBalance(account.id)
+  // 使用传入的余额数据
+  const balance = account.balanceInBaseCurrency || 0
   const currencySymbol = baseCurrency?.symbol || '¥'
 
   // 获取账户原始货币的余额（用于余额更新模态框）
   const accountCurrency = account.currencyCode || baseCurrency?.code || 'CNY'
-  const accountBalance = getAccountBalanceInCurrency(account.id, accountCurrency)
+  const accountBalance = account.balances?.[accountCurrency]?.amount || 0
 
   // 根据账户类型确定金额颜色
   const getAmountColor = () => {
@@ -91,52 +113,7 @@ export default function AccountTreeItem({
     }
   }
 
-  // 获取交易表单所需的数据
-  useEffect(() => {
-    const fetchFormData = async () => {
-      try {
-        const [accountsRes, categoriesRes, currenciesRes, tagsRes, transactionsRes] = await Promise.all([
-          fetch('/api/accounts'),
-          fetch('/api/categories'),
-          fetch('/api/user/currencies'), // 使用用户可用货币
-          fetch('/api/tags'),
-          fetch(`/api/accounts/${account.id}/transactions?limit=1`) // 检查是否有交易记录
-        ])
-
-        if (accountsRes.ok) {
-          const accountsData = await accountsRes.json()
-          setAccounts(accountsData.data || [])
-        }
-
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json()
-          setCategories(categoriesData.data || [])
-        }
-
-        if (currenciesRes.ok) {
-          const currenciesData = await currenciesRes.json()
-          setCurrencies(currenciesData.data?.currencies || [])
-        }
-
-        if (tagsRes.ok) {
-          const tagsData = await tagsRes.json()
-          setTags(tagsData.data || [])
-        }
-
-        if (transactionsRes.ok) {
-          const transactionsData = await transactionsRes.json()
-          setHasTransactions((transactionsData.data?.transactions?.length || 0) > 0)
-        }
-      } catch (error) {
-        console.error('Error fetching form data:', error)
-        // 设置默认值以防止错误
-        setCurrencies([])
-        setHasTransactions(false)
-      }
-    }
-
-    fetchFormData()
-  }, [account.id])
+  // 数据现在从UserDataContext获取，无需额外的API调用
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -190,6 +167,7 @@ export default function AccountTreeItem({
 
       if (response.ok) {
         setShowRenameDialog(false)
+        // 通知父组件刷新数据，Context会自动更新
         onDataChange({ type: 'account', silent: true })
       } else {
         const error = await response.json()
@@ -208,6 +186,8 @@ export default function AccountTreeItem({
       })
 
       if (response.ok) {
+        // 从Context中移除账户
+        removeAccount(account.id)
         setShowDeleteConfirm(false)
         showSuccess('删除成功', `账户"${account.name}"已删除`)
         onDataChange({ type: 'account', silent: true })
@@ -271,16 +251,14 @@ export default function AccountTreeItem({
   }
 
   const handleBalanceUpdateSuccess = () => {
-    // 刷新余额数据
-    refreshBalances()
-    onDataChange({ type: 'account', silent: true })
+    // 通知父组件刷新数据
+    onDataChange({ type: 'account' })
     setShowBalanceUpdateModal(false)
   }
 
   const handleTransactionSuccess = () => {
-    // 刷新余额数据
-    refreshBalances()
-    onDataChange({ type: 'account', silent: true })
+    // 通知父组件刷新数据
+    onDataChange({ type: 'account' })
     setShowTransactionModal(false)
   }
 
@@ -423,7 +401,6 @@ export default function AccountTreeItem({
         onSave={handleSaveSettings}
         account={account}
         currencies={currencies}
-        hasTransactions={hasTransactions}
       />
 
       {/* 余额更新模态框 */}

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useBalance } from '@/contexts/BalanceContext'
+
 import CategoryContextMenu from './CategoryContextMenu'
 import InputDialog from '@/components/ui/InputDialog'
 import AddAccountModal from '@/components/ui/AddAccountModal'
@@ -11,6 +11,21 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import CategorySelector from '@/components/ui/CategorySelector'
 import CategorySettingsModal from '@/components/ui/CategorySettingsModal'
 import { useToast } from '@/contexts/ToastContext'
+import { useUserData } from '@/contexts/UserDataContext'
+
+interface Account {
+  id: string
+  name: string
+  balances?: Record<string, {
+    amount: number
+    currency: {
+      code: string
+      symbol: string
+      name: string
+    }
+  }>
+  balanceInBaseCurrency?: number
+}
 
 interface Category {
   id: string
@@ -18,6 +33,8 @@ interface Category {
   parentId: string | null
   type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   order: number
+  children?: Category[]
+  accounts?: Account[]
 }
 
 interface CategoryTreeItemProps {
@@ -30,6 +47,11 @@ interface CategoryTreeItemProps {
     type?: 'category' | 'account' | 'full'
     silent?: boolean
   }) => void
+  baseCurrency?: {
+    code: string
+    symbol: string
+    name: string
+  }
 }
 
 export default function CategoryTreeItem({
@@ -38,15 +60,21 @@ export default function CategoryTreeItem({
   isExpanded,
   hasChildren,
   onToggle,
-  onDataChange
+  onDataChange,
+  baseCurrency: propBaseCurrency
 }: CategoryTreeItemProps) {
   const { showSuccess, showError } = useToast()
-  const { getCategorySummary } = useBalance()
   const pathname = usePathname()
   const router = useRouter()
-  const [showContextMenu, setShowContextMenu] = useState(false)
+
+  // 使用UserDataContext获取数据
+  const { currencies, getBaseCurrency } = useUserData()
+
+  // 使用传入的基础货币或从Context获取
+  const baseCurrency = propBaseCurrency || getBaseCurrency() || { symbol: '¥', code: 'CNY' }
 
   // 模态框状态
+  const [showContextMenu, setShowContextMenu] = useState(false)
   const [showRenameDialog, setShowRenameDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(false)
@@ -54,33 +82,33 @@ export default function CategoryTreeItem({
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
 
-  // 数据状态
-  const [currencies, setCurrencies] = useState<any[]>([])
-
   const isActive = pathname === `/categories/${category.id}`
 
-  // 从BalanceContext获取分类汇总（实时计算，本位币）
-  const categorySummary = getCategorySummary(category.id)
-  const balance = categorySummary?.totalBalance ?? 0
-  const currencySymbol = categorySummary?.currencySymbol || '¥'
+  // 计算分类汇总余额（递归计算子分类和账户）
+  const calculateCategoryBalance = (cat: Category): number => {
+    let totalBalance = 0
 
-  // 获取货币数据
-  useEffect(() => {
-    const fetchCurrencies = async () => {
-      try {
-        const response = await fetch('/api/user/currencies')
-        if (response.ok) {
-          const data = await response.json()
-          setCurrencies(data.data?.currencies || [])
-        }
-      } catch (error) {
-        console.error('Error fetching currencies:', error)
-        setCurrencies([])
-      }
+    // 累加直属账户余额
+    if (cat.accounts) {
+      cat.accounts.forEach(account => {
+        totalBalance += account.balanceInBaseCurrency || 0
+      })
     }
 
-    fetchCurrencies()
-  }, [])
+    // 递归累加子分类余额
+    if (cat.children) {
+      cat.children.forEach(child => {
+        totalBalance += calculateCategoryBalance(child)
+      })
+    }
+
+    return totalBalance
+  }
+
+  const balance = calculateCategoryBalance(category)
+  const currencySymbol = baseCurrency?.symbol || '¥'
+
+  // 数据现在从UserDataContext获取，无需额外的API调用
 
   // 根据分类类型确定金额颜色
   const getAmountColor = () => {

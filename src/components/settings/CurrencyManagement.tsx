@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Currency } from '@prisma/client'
+import { useUserData } from '@/contexts/UserDataContext'
 
 interface CurrencyWithStatus extends Currency {
   isSelected: boolean
@@ -17,8 +18,8 @@ interface CurrencyManagementProps {
 }
 
 export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyManagementProps) {
+  const { currencies: userCurrencies, refreshCurrencies } = useUserData()
   const [allCurrencies, setAllCurrencies] = useState<CurrencyWithStatus[]>([])
-  const [userCurrencies, setUserCurrencies] = useState<UserCurrency[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -30,29 +31,23 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
   })
 
   useEffect(() => {
-    fetchData()
+    fetchAllCurrencies()
   }, [])
 
-  const fetchData = async () => {
+  const fetchAllCurrencies = async () => {
     try {
       setIsLoading(true)
       setError('')
 
-      // 获取所有货币和用户货币
-      const [allCurrenciesRes, userCurrenciesRes] = await Promise.all([
-        fetch('/api/currencies'),
-        fetch('/api/user/currencies')
-      ])
+      // 只获取所有货币，用户货币从 UserDataContext 获取
+      const allCurrenciesRes = await fetch('/api/currencies')
 
-      if (!allCurrenciesRes.ok || !userCurrenciesRes.ok) {
+      if (!allCurrenciesRes.ok) {
         throw new Error('获取数据失败')
       }
 
       const allCurrenciesData = await allCurrenciesRes.json()
-      const userCurrenciesData = await userCurrenciesRes.json()
-
       setAllCurrencies(allCurrenciesData.data.currencies)
-      setUserCurrencies(userCurrenciesData.data.currencies)
     } catch (error) {
       console.error('获取货币数据失败:', error)
       setError('获取货币数据失败')
@@ -78,7 +73,8 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
 
       if (response.ok) {
         setSuccessMessage(data.message)
-        await fetchData()
+        await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
+        await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
         setError(data.error || '添加货币失败')
@@ -102,7 +98,8 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
 
       if (response.ok) {
         setSuccessMessage(data.message)
-        await fetchData()
+        await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
+        await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
         setError(data.error || '删除货币失败')
@@ -130,7 +127,8 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
 
       if (response.ok) {
         setSuccessMessage(data.message)
-        await fetchData()
+        await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
+        await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
         setError(data.error || '更新货币设置失败')
@@ -165,7 +163,8 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
         setSuccessMessage(data.message)
         setShowCustomForm(false)
         setCustomCurrencyForm({ code: '', name: '', symbol: '' })
-        await fetchData()
+        await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
+        await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
         setError(data.error || '创建自定义货币失败')
@@ -189,7 +188,8 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
 
       if (response.ok) {
         setSuccessMessage(data.message)
-        await fetchData()
+        await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
+        await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
         setError(data.error || '删除自定义货币失败')

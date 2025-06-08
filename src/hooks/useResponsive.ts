@@ -16,6 +16,7 @@ import {
  * 监听屏幕尺寸变化并返回当前设备信息
  */
 export const useResponsive = (): ResponsiveListener => {
+  const [mounted, setMounted] = useState(false)
   const [responsive, setResponsive] = useState<ResponsiveListener>({
     mobile: false,
     tablet: false,
@@ -25,6 +26,8 @@ export const useResponsive = (): ResponsiveListener => {
   })
 
   useEffect(() => {
+    setMounted(true)
+
     // 更新响应式状态
     const updateResponsive = () => {
       setResponsive({
@@ -44,7 +47,7 @@ export const useResponsive = (): ResponsiveListener => {
 
     // 监听窗口大小变化
     window.addEventListener('resize', debouncedResize)
-    
+
     // 监听设备方向变化（移动设备）
     window.addEventListener('orientationchange', debouncedResize)
 
@@ -53,6 +56,17 @@ export const useResponsive = (): ResponsiveListener => {
       window.removeEventListener('orientationchange', debouncedResize)
     }
   }, [])
+
+  // 在 SSR 期间返回默认值，避免水合不匹配
+  if (!mounted) {
+    return {
+      mobile: false,
+      tablet: false,
+      desktop: true,
+      touchDevice: false,
+      screenSize: 'desktop'
+    }
+  }
 
   return responsive
 }

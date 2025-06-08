@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Modal from './Modal'
+import { useUserData } from '@/contexts/UserDataContext'
 
-interface Category {
+// 本地Category接口，用于组件内部
+interface LocalCategory {
   id: string
   name: string
   parentId: string | null
   type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-  children?: Category[]
+  children?: LocalCategory[]
 }
 
 interface CategorySelectorProps {
@@ -30,55 +32,14 @@ export default function CategorySelector({
   onSelect,
   onCancel
 }: CategorySelectorProps) {
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<LocalCategory[]>([])
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchCategories()
-      setSelectedCategoryId(currentCategoryId || '')
-    }
-  }, [isOpen, currentCategoryId])
+  // 使用UserDataContext获取分类数据，避免重复API调用
+  const { categories: allCategories, isLoading } = useUserData()
 
-  const fetchCategories = async () => {
-    try {
-      setIsLoading(true)
-      const response = await fetch('/api/categories')
-      if (response.ok) {
-        const result = await response.json()
-        let categoriesData = result.data || []
-
-        // 如果有排除的分类，过滤掉它和它的所有子分类
-        if (excludeCategoryId) {
-          categoriesData = filterExcludedCategories(categoriesData, excludeCategoryId)
-        }
-
-        // 如果指定了账户类型过滤，只显示同类型的分类
-        if (filterByAccountType) {
-          categoriesData = filterByAccountTypeFunc(categoriesData, filterByAccountType)
-        }
-
-        setCategories(buildCategoryTree(categoriesData))
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const filterExcludedCategories = (categories: Category[], excludeId: string): Category[] => {
-    return categories.filter(category => {
-      if (category.id === excludeId) {
-        return false
-      }
-      // 检查是否是被排除分类的子分类
-      return !isDescendantOf(category, excludeId, categories)
-    })
-  }
-
-  const isDescendantOf = (category: Category, ancestorId: string, allCategories: Category[]): boolean => {
+  // 工具函数定义
+  const isDescendantOf = (category: LocalCategory, ancestorId: string, allCategories: LocalCategory[]): boolean => {
     if (!category.parentId) return false
     if (category.parentId === ancestorId) return true
 
@@ -88,20 +49,7 @@ export default function CategorySelector({
     return isDescendantOf(parent, ancestorId, allCategories)
   }
 
-  const filterByAccountTypeFunc = (categories: Category[], accountType: string): Category[] => {
-    return categories.filter(category => {
-      // 如果分类有明确的类型，检查是否匹配
-      if (category.type) {
-        return category.type === accountType
-      }
-
-      // 如果分类没有类型，检查其父分类的类型
-      const rootCategory = findRootCategory(category, categories)
-      return rootCategory?.type === accountType
-    })
-  }
-
-  const findRootCategory = (category: Category, allCategories: Category[]): Category | null => {
+  const findRootCategory = (category: LocalCategory, allCategories: LocalCategory[]): LocalCategory | null => {
     if (!category.parentId) {
       return category
     }
@@ -114,9 +62,32 @@ export default function CategorySelector({
     return findRootCategory(parent, allCategories)
   }
 
-  const buildCategoryTree = (categories: Category[]): Category[] => {
-    const categoryMap = new Map<string, Category>()
-    const rootCategories: Category[] = []
+  const filterExcludedCategories = (categories: LocalCategory[], excludeId: string): LocalCategory[] => {
+    return categories.filter(category => {
+      if (category.id === excludeId) {
+        return false
+      }
+      // 检查是否是被排除分类的子分类
+      return !isDescendantOf(category, excludeId, categories)
+    })
+  }
+
+  const filterByAccountTypeFunc = (categories: LocalCategory[], accountType: string): LocalCategory[] => {
+    return categories.filter(category => {
+      // 如果分类有明确的类型，检查是否匹配
+      if (category.type) {
+        return category.type === accountType
+      }
+
+      // 如果分类没有类型，检查其父分类的类型
+      const rootCategory = findRootCategory(category, categories)
+      return rootCategory?.type === accountType
+    })
+  }
+
+  const buildCategoryTree = (categories: LocalCategory[]): LocalCategory[] => {
+    const categoryMap = new Map<string, LocalCategory>()
+    const rootCategories: LocalCategory[] = []
 
     // 创建分类映射
     categories.forEach(category => {
@@ -139,7 +110,38 @@ export default function CategorySelector({
     return rootCategories
   }
 
-  const renderCategoryTree = (categories: Category[], level = 0): React.ReactNode => {
+  const processCategories = useCallback(() => {
+    // 转换Context中的Category类型到本地Category类型
+    let categoriesData: LocalCategory[] = allCategories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      parentId: cat.parentId || null,
+      type: cat.type,
+      children: []
+    }))
+
+    // 如果有排除的分类，过滤掉它和它的所有子分类
+    if (excludeCategoryId) {
+      categoriesData = filterExcludedCategories(categoriesData, excludeCategoryId)
+    }
+
+    // 如果指定了账户类型过滤，只显示同类型的分类
+    if (filterByAccountType) {
+      categoriesData = filterByAccountTypeFunc(categoriesData, filterByAccountType)
+    }
+
+    setCategories(buildCategoryTree(categoriesData))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allCategories, excludeCategoryId, filterByAccountType])
+
+  useEffect(() => {
+    if (isOpen) {
+      processCategories()
+      setSelectedCategoryId(currentCategoryId || '')
+    }
+  }, [isOpen, currentCategoryId, processCategories])
+
+  const renderCategoryTree = (categories: LocalCategory[], level = 0): React.ReactNode => {
     return categories.map(category => (
       <div key={category.id}>
         <label

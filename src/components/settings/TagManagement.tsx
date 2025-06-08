@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useToast } from '@/contexts/ToastContext'
+import { useUserData } from '@/contexts/UserDataContext'
 import Modal from '@/components/ui/Modal'
 import InputField from '@/components/ui/InputField'
 import AuthButton from '@/components/ui/AuthButton'
@@ -23,8 +24,7 @@ interface TagFormData {
 
 export default function TagManagement() {
   const { showSuccess, showError } = useToast()
-  const [tags, setTags] = useState<Tag[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { tags, isLoading, refreshTags, updateTag, addTag, removeTag } = useUserData()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
   const [formData, setFormData] = useState<TagFormData>({ name: '', color: '' })
@@ -46,28 +46,7 @@ export default function TagManagement() {
     '#6B7280'  // 灰色
   ]
 
-  useEffect(() => {
-    loadTags()
-  }, [])
-
-  const loadTags = async () => {
-    try {
-      setIsLoading(true)
-      const response = await fetch('/api/tags')
-      const result = await response.json()
-
-      if (result.success) {
-        setTags(result.data)
-      } else {
-        showError('加载失败', result.error || '获取标签列表失败')
-      }
-    } catch (error) {
-      console.error('Error loading tags:', error)
-      showError('加载失败', '网络错误，请稍后重试')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // 移除 loadTags 函数，直接使用 UserDataContext 中的数据
 
   const handleAddTag = () => {
     setEditingTag(null)
@@ -119,7 +98,13 @@ export default function TagManagement() {
           editingTag ? '标签已更新' : '标签已创建'
         )
         setIsModalOpen(false)
-        loadTags()
+
+        // 更新 UserDataContext 中的数据
+        if (editingTag) {
+          updateTag(result.data)
+        } else {
+          addTag(result.data)
+        }
       } else {
         showError(
           editingTag ? '更新失败' : '创建失败',
@@ -146,7 +131,8 @@ export default function TagManagement() {
 
       if (result.success) {
         showSuccess('删除成功', '标签已删除')
-        loadTags()
+        // 更新 UserDataContext 中的数据
+        removeTag(deletingTag.id)
       } else {
         showError('删除失败', result.error || '删除标签失败')
       }

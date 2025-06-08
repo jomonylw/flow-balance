@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Currency } from '@prisma/client'
+import { useUserData } from '@/contexts/UserDataContext'
 import InputField from '@/components/ui/InputField'
 import SelectField from '@/components/ui/SelectField'
 
@@ -38,25 +39,9 @@ export default function ExchangeRateForm({
     effectiveDate: new Date().toISOString().split('T')[0],
     notes: ''
   })
-  const [userCurrencies, setUserCurrencies] = useState<Currency[]>([])
+  const { currencies: userCurrencies } = useUserData()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    fetchUserCurrencies()
-  }, [])
-
-  const fetchUserCurrencies = async () => {
-    try {
-      const response = await fetch('/api/user/currencies')
-      if (response.ok) {
-        const data = await response.json()
-        setUserCurrencies(data.data.currencies)
-      }
-    } catch (error) {
-      console.error('获取用户货币失败:', error)
-    }
-  }
 
   useEffect(() => {
     if (editingRate) {

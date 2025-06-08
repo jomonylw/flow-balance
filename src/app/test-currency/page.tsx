@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useUserData } from '@/contexts/UserDataContext'
 
 interface Currency {
   code: string
@@ -21,38 +22,11 @@ interface Account {
 }
 
 export default function TestCurrencyPage() {
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [currencies, setCurrencies] = useState<Currency[]>([])
+  const { accounts, currencies, refreshAccounts } = useUserData()
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
   const [newCurrency, setNewCurrency] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
-    try {
-      const [accountsRes, currenciesRes] = await Promise.all([
-        fetch('/api/accounts'),
-        fetch('/api/user/currencies')
-      ])
-
-      if (accountsRes.ok) {
-        const accountsData = await accountsRes.json()
-        setAccounts(accountsData.data || [])
-      }
-
-      if (currenciesRes.ok) {
-        const currenciesData = await currenciesRes.json()
-        setCurrencies(currenciesData.data?.currencies || [])
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error)
-      setMessage('获取数据失败')
-    }
-  }
 
   const handleUpdateCurrency = async () => {
     if (!selectedAccount || !newCurrency) {
@@ -80,7 +54,7 @@ export default function TestCurrencyPage() {
 
       if (response.ok) {
         setMessage('✅ 货币设置成功')
-        fetchData() // 重新获取数据
+        await refreshAccounts() // 刷新 UserDataContext 中的账户数据
         setSelectedAccount(null)
         setNewCurrency('')
       } else {
@@ -173,7 +147,7 @@ export default function TestCurrencyPage() {
 
       if (response.ok) {
         setMessage(`✅ 正确货币余额更新成功: ${result.message}`)
-        fetchData() // 刷新数据
+        await refreshAccounts() // 刷新 UserDataContext 中的账户数据
       } else {
         setMessage(`❌ 正确货币余额更新失败: ${result.error}`)
       }

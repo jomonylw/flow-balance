@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Modal from './Modal'
+import { useUserData } from '@/contexts/UserDataContext'
 
 interface Category {
   id: string
@@ -35,29 +36,17 @@ export default function CategorySettingsModal({
   const [description, setDescription] = useState('')
   const [order, setOrder] = useState(category.order || 0)
   const [isLoading, setIsLoading] = useState(false)
-  const [parentCategory, setParentCategory] = useState<Category | null>(null)
+
+  // 使用UserDataContext获取分类数据，避免API调用
+  const { categories } = useUserData()
 
   // 是否为顶级分类
   const isTopLevel = !category.parentId
 
-  // 获取父分类信息
-  useEffect(() => {
-    if (category.parentId) {
-      fetchParentCategory()
-    }
-  }, [category.parentId])
-
-  const fetchParentCategory = async () => {
-    try {
-      const response = await fetch(`/api/categories/${category.parentId}`)
-      if (response.ok) {
-        const result = await response.json()
-        setParentCategory(result.data)
-      }
-    } catch (error) {
-      console.error('Error fetching parent category:', error)
-    }
-  }
+  // 从Context中获取父分类信息
+  const parentCategory = category.parentId
+    ? categories.find(cat => cat.id === category.parentId) || null
+    : null
 
   const handleSave = async () => {
     setIsLoading(true)

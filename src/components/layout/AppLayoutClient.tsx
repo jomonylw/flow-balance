@@ -5,6 +5,7 @@ import { useIsMobile } from '@/hooks/useResponsive'
 import TopUserStatusBar from './TopUserStatusBar'
 import NavigationSidebar from './NavigationSidebar'
 import MobileSidebarOverlay from './MobileSidebarOverlay'
+import { UserDataProvider } from '@/contexts/UserDataContext'
 
 
 interface User {
@@ -62,40 +63,42 @@ export default function AppLayoutClient({ children, user }: AppLayoutClientProps
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* 顶部用户状态栏 */}
-      <TopUserStatusBar
-        user={user}
-        onMenuClick={toggleMobileSidebar}
-        showMenuButton={isMobile}
-      />
+    <UserDataProvider>
+      <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+        {/* 顶部用户状态栏 */}
+        <TopUserStatusBar
+          user={user}
+          onMenuClick={toggleMobileSidebar}
+          showMenuButton={isMobile}
+        />
 
-      {/* 主内容区域 */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* 桌面端左侧导航栏 */}
-        <div className={`${isMobile ? 'hidden' : 'block'}`}>
-          <NavigationSidebar user={user} />
+        {/* 主内容区域 */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* 桌面端左侧导航栏 */}
+          <div className={`${isMobile ? 'hidden' : 'block'}`}>
+            <NavigationSidebar user={user} />
+          </div>
+
+          {/* 移动端侧边栏遮罩 */}
+          {isMobile && (
+            <MobileSidebarOverlay
+              isOpen={isMobileSidebarOpen}
+              onClose={closeMobileSidebar}
+            >
+              <NavigationSidebar
+                user={user}
+                isMobile={true}
+                onNavigate={closeMobileSidebar}
+              />
+            </MobileSidebarOverlay>
+          )}
+
+          {/* 右侧主内容 */}
+          <main className="flex-1 overflow-y-auto bg-white dark:bg-gray-800">
+            {children}
+          </main>
         </div>
-
-        {/* 移动端侧边栏遮罩 */}
-        {isMobile && (
-          <MobileSidebarOverlay
-            isOpen={isMobileSidebarOpen}
-            onClose={closeMobileSidebar}
-          >
-            <NavigationSidebar
-              user={user}
-              isMobile={true}
-              onNavigate={closeMobileSidebar}
-            />
-          </MobileSidebarOverlay>
-        )}
-
-        {/* 右侧主内容 */}
-        <main className="flex-1 overflow-y-auto bg-white dark:bg-gray-800">
-          {children}
-        </main>
       </div>
-    </div>
+    </UserDataProvider>
   )
 }
