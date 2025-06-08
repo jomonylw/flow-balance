@@ -33,5 +33,6 @@
   "common.delete.failed": "删除失败",
   "common.actions": "操作",
   "common.confirm.clear": "确认清空",
-  "common.confirm.delete": "确认删除"
+  "common.confirm.delete": "确认删除",
+  "common.total": "共"
 }

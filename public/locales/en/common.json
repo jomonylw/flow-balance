@@ -33,5 +33,6 @@
   "common.delete.failed": "Delete failed",
   "common.actions": "Actions",
   "common.confirm.clear": "Confirm Clear",
-  "common.confirm.delete": "Confirm Delete"
+  "common.confirm.delete": "Confirm Delete",
+  "common.total": "Total"
 }

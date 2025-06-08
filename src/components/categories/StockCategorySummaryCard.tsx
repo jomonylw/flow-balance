@@ -1,5 +1,7 @@
 'use client'
 
+import { useLanguage } from '@/contexts/LanguageContext'
+
 /**
  * 从交易备注中提取余额变化金额
  * @param notes 交易备注
@@ -36,17 +38,26 @@ interface Transaction {
   notes?: string
 }
 
+interface Currency {
+  code: string
+  symbol: string
+  name: string
+}
+
 interface StockCategorySummaryCardProps {
   category: Category
   currencySymbol: string
   summaryData?: any
+  baseCurrency?: Currency
 }
 
 export default function StockCategorySummaryCard({
   category,
   currencySymbol,
-  summaryData
+  summaryData,
+  baseCurrency
 }: StockCategorySummaryCardProps) {
+  const { t } = useLanguage()
   const accountType = category.type
 
   // 存量类分类统计（资产/负债）
@@ -56,17 +67,41 @@ export default function StockCategorySummaryCard({
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const thisYear = new Date(now.getFullYear(), 0, 1)
 
-    // 使用汇总数据中的账户余额信息
+    // 优先使用分类总余额数据，计算折算到本位币的总净值
     let currentNetValue = 0
     let transactionCount = 0
 
-    if (summaryData?.accounts) {
-      // 从汇总数据中计算当前净值
+    // 优先使用分类总余额数据
+    if (summaryData?.categoryBalances) {
+      Object.entries(summaryData.categoryBalances).forEach(([currencyCode, balance]: [string, any]) => {
+        // 简化处理：如果是本位币直接累加，否则需要汇率转换（这里暂时按1:1处理）
+        if (currencyCode === baseCurrency?.code) {
+          currentNetValue += balance
+        } else {
+          // TODO: 实际应该根据汇率转换
+          currentNetValue += balance
+        }
+      })
+
+      // 计算总交易数量
+      if (summaryData.allAccounts) {
+        summaryData.allAccounts.forEach((account: any) => {
+          transactionCount += account.transactionCount || 0
+        })
+      }
+    } else if (summaryData?.accounts) {
+      // 回退到账户余额汇总
       summaryData.accounts.forEach((account: any) => {
         if (account.balances) {
-          Object.values(account.balances).forEach((balance: any) => {
-            currentNetValue += typeof balance === 'number' ? balance : 0
-          })
+          // 如果有本位币余额，优先使用；否则累加所有币种余额（需要后续转换）
+          if (baseCurrency && account.balances[baseCurrency.code] !== undefined) {
+            currentNetValue += account.balances[baseCurrency.code] || 0
+          } else {
+            // 如果没有本位币余额，累加所有币种（这里需要汇率转换，暂时直接累加）
+            Object.values(account.balances).forEach((balance: any) => {
+              currentNetValue += typeof balance === 'number' ? balance : 0
+            })
+          }
         }
         transactionCount += account.transactionCount || 0
       })
@@ -121,88 +156,132 @@ export default function StockCategorySummaryCard({
   const stockStats = calculateStockStats()
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
       {/* 分类类型标识 */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{category.name}</h3>
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          accountType === 'ASSET' 
-            ? 'bg-blue-100 text-blue-800' 
-            : 'bg-orange-100 text-orange-800'
+          accountType === 'ASSET'
+            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+            : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
         }`}>
-          {accountType === 'ASSET' ? '资产分类' : '负债分类'} • 存量
+          {accountType === 'ASSET' ? t('category.type.asset') : t('category.type.liability')} • {t('category.type.stock')}
         </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* 当前净值 */}
         <div className="text-center">
-          <div className="text-sm font-medium text-gray-500 mb-1">
-            当前净值
+          <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+            {t('category.current.net.value')}
           </div>
           <div className={`text-2xl font-bold ${
-            stockStats.currentNetValue >= 0 ? 'text-gray-900' : 'text-red-600'
+            stockStats.currentNetValue >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-600 dark:text-red-400'
           }`}>
-            {currencySymbol}{Math.abs(stockStats.currentNetValue).toFixed(2)}
+            {(baseCurrency?.symbol || currencySymbol)}{Math.abs(stockStats.currentNetValue).toFixed(2)}
           </div>
-          <div className="text-xs text-gray-500 mt-1">
-            {stockStats.transactionCount} 笔记录
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {stockStats.transactionCount} {t('category.transaction.count')}
           </div>
         </div>
 
         {/* 月度变化 */}
         <div className="text-center">
-          <div className="text-sm font-medium text-gray-500 mb-1">
-            月度变化
+          <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+            {t('category.monthly.change')}
           </div>
           <div className={`text-xl font-semibold ${
-            stockStats.monthlyChange >= 0 ? 'text-green-600' : 'text-red-600'
+            stockStats.monthlyChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
           }`}>
             {stockStats.monthlyChange >= 0 ? '+' : ''}{stockStats.monthlyChange.toFixed(1)}%
           </div>
-          <div className="text-xs text-gray-500 mt-1">
-            上月: {currencySymbol}{Math.abs(stockStats.lastMonthNetValue).toFixed(2)}
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {t('category.last.month')}: {(baseCurrency?.symbol || currencySymbol)}{Math.abs(stockStats.lastMonthNetValue).toFixed(2)}
           </div>
         </div>
 
         {/* 年度变化 */}
         <div className="text-center">
-          <div className="text-sm font-medium text-gray-500 mb-1">
-            年度变化
+          <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+            {t('category.yearly.change')}
           </div>
           <div className={`text-xl font-semibold ${
-            stockStats.yearToDateChange >= 0 ? 'text-green-600' : 'text-red-600'
+            stockStats.yearToDateChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
           }`}>
             {stockStats.yearToDateChange >= 0 ? '+' : ''}{stockStats.yearToDateChange.toFixed(1)}%
           </div>
-          <div className="text-xs text-gray-500 mt-1">
-            年初: {currencySymbol}{Math.abs(stockStats.yearStartNetValue).toFixed(2)}
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {t('category.year.start')}: {(baseCurrency?.symbol || currencySymbol)}{Math.abs(stockStats.yearStartNetValue).toFixed(2)}
           </div>
         </div>
       </div>
 
       {/* 存量特有信息 */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="text-xs text-gray-500 text-center">
-          💡 存量数据反映特定时点的资产/负债状况，关注净值变化趋势
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+          💡 {t('category.stock.readonly.tip')}
         </div>
       </div>
 
       {/* 汇总数据展示 */}
-      {summaryData && summaryData.transactionSummary && (
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">币种分布</h4>
+      {summaryData && (summaryData.categoryBalances || summaryData.transactionSummary) && (
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('category.currency.distribution')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(summaryData.transactionSummary).map(([currency, data]: [string, any]) => (
-              <div key={currency} className="text-center p-3 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-500 mb-1">{currency} 净值</div>
-                <div className={`text-lg font-semibold ${
-                  data.net >= 0 ? 'text-gray-900' : 'text-red-600'
-                }`}>
-                  {currencySymbol}{Math.abs(data.net).toFixed(2)}
-                </div>
-              </div>
-            ))}
+            {/* 优先显示分类总余额数据 */}
+            {summaryData.categoryBalances ? (
+              Object.entries(summaryData.categoryBalances).map(([currencyCode, balance]: [string, any]) => {
+                // 查找对应的货币信息以获取正确的符号
+                const currencyInfo = summaryData.currencies?.find((c: any) => c.code === currencyCode)
+                const symbol = currencyInfo?.symbol || currencyCode
+
+                // 获取对应的交易统计数据（用于显示增减信息）
+                const transactionData = summaryData.transactionSummary?.[currencyCode]
+
+                return (
+                  <div key={currencyCode} className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                      {currencyCode} {t('category.net.balance')}
+                    </div>
+                    <div className={`text-lg font-semibold ${
+                      balance >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {symbol}{Math.abs(balance).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {transactionData ? (
+                        `${t('category.increase')}: ${symbol}${transactionData.income?.toFixed(2) || '0.00'} | ${t('category.decrease')}: ${symbol}${transactionData.expense?.toFixed(2) || '0.00'}`
+                      ) : (
+                        `${t('category.current.balance')}: ${symbol}${Math.abs(balance).toFixed(2)}`
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            ) : (
+              // 回退到交易汇总数据
+              Object.entries(summaryData.transactionSummary).map(([currencyCode, data]: [string, any]) => {
+                // 查找对应的货币信息以获取正确的符号
+                const currencyInfo = summaryData.currencies?.find((c: any) => c.code === currencyCode)
+                const symbol = currencyInfo?.symbol || currencyCode
+
+                return (
+                  <div key={currencyCode} className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                      {currencyCode} {t('category.net.balance')}
+                    </div>
+                    <div className={`text-lg font-semibold ${
+                      data.net >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {symbol}{Math.abs(data.net).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {t('category.increase')}: {symbol}{data.income?.toFixed(2) || '0.00'} | {t('category.decrease')}: {symbol}{data.expense?.toFixed(2) || '0.00'}
+                    </div>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
       )}

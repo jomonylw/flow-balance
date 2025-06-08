@@ -201,8 +201,25 @@ export default function StockAccountDetailView({
   // 使用专业的余额计算服务
   const accountBalances = calculateAccountBalance(account)
   const baseCurrencyCode = user.settings?.baseCurrency?.code || 'USD'
-  const balance = accountBalances[baseCurrencyCode]?.amount || 0
-  const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
+
+  // 获取账户的实际余额（优先使用基础货币，如果没有则使用账户的主要货币）
+  let balance = 0
+  let currencySymbol = user.settings?.baseCurrency?.symbol || '$'
+  let actualCurrencyCode = baseCurrencyCode
+
+  if (accountBalances[baseCurrencyCode]) {
+    // 如果有基础货币的余额，使用基础货币
+    balance = accountBalances[baseCurrencyCode].amount
+  } else {
+    // 如果没有基础货币的余额，使用账户中第一个有余额的货币
+    const availableCurrencies = Object.keys(accountBalances)
+    if (availableCurrencies.length > 0) {
+      actualCurrencyCode = availableCurrencies[0]
+      const accountBalance = accountBalances[actualCurrencyCode]
+      balance = accountBalance.amount
+      currencySymbol = accountBalance.currency.symbol
+    }
+  }
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
@@ -369,7 +386,7 @@ export default function StockAccountDetailView({
         account={account}
         currencies={currencies}
         currentBalance={balance}
-        currencyCode={user.settings?.baseCurrency?.code || 'USD'}
+        currencyCode={actualCurrencyCode}
         editingTransaction={editingTransaction}
       />
 

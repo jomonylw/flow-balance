@@ -53,11 +53,32 @@ export async function GET(
       return notFoundResponse('分类不存在')
     }
 
-    // 获取该分类下的所有账户
-    const accounts = await prisma.account.findMany({
+    // 递归获取所有子分类ID
+    const getAllCategoryIds = async (categoryId: string): Promise<string[]> => {
+      const category = await prisma.category.findUnique({
+        where: { id: categoryId },
+        include: { children: true }
+      })
+
+      if (!category) return [categoryId]
+
+      let ids = [categoryId]
+      for (const child of category.children) {
+        const childIds = await getAllCategoryIds(child.id)
+        ids = ids.concat(childIds)
+      }
+      return ids
+    }
+
+    const allCategoryIds = await getAllCategoryIds(categoryId)
+
+    // 获取该分类及其所有子分类下的账户
+    const allAccounts = await prisma.account.findMany({
       where: {
         userId: user.id,
-        categoryId: categoryId
+        categoryId: {
+          in: allCategoryIds
+        }
       },
       include: {
         category: true,
@@ -69,8 +90,8 @@ export async function GET(
       }
     })
 
-    // 计算账户余额（使用专业的余额计算服务）
-    const accountSummaries = accounts.map(account => {
+    // 计算所有账户余额
+    const allAccountSummaries = allAccounts.map(account => {
       // 序列化账户数据，将 Decimal 转换为 number
       const serializedAccount = {
         ...account,
@@ -94,30 +115,42 @@ export async function GET(
         id: account.id,
         name: account.name,
         description: account.description,
+        categoryId: account.categoryId,
         balances,
         transactionCount: account.transactions.length
       }
     })
 
-    // 获取该分类及其子分类的所有交易
-    const getAllCategoryIds = async (categoryId: string): Promise<string[]> => {
-      const category = await prisma.category.findUnique({
-        where: { id: categoryId },
-        include: { children: true }
-      })
-      
-      if (!category) return [categoryId]
-      
-      let ids = [categoryId]
-      for (const child of category.children) {
-        const childIds = await getAllCategoryIds(child.id)
-        ids = ids.concat(childIds)
-      }
-      return ids
-    }
+    // 分离直属账户和子分类账户
+    const directAccounts = allAccountSummaries.filter(account => account.categoryId === categoryId)
 
-    const allCategoryIds = await getAllCategoryIds(categoryId)
-    
+    // 为每个子分类计算汇总余额
+    const childrenWithBalances = await Promise.all(
+      category.children.map(async (child) => {
+        const childAccountIds = await getAllCategoryIds(child.id)
+        const childAccounts = allAccountSummaries.filter(account =>
+          childAccountIds.includes(account.categoryId)
+        )
+
+        // 计算子分类的汇总余额
+        const childBalances: Record<string, number> = {}
+        childAccounts.forEach(account => {
+          Object.entries(account.balances).forEach(([currencyCode, balance]) => {
+            if (!childBalances[currencyCode]) {
+              childBalances[currencyCode] = 0
+            }
+            childBalances[currencyCode] += balance
+          })
+        })
+
+        return {
+          ...child,
+          balances: childBalances,
+          accountCount: childAccounts.length
+        }
+      })
+    )
+
     // 获取相关交易统计
     const transactions = await prisma.transaction.findMany({
       where: {
@@ -133,7 +166,20 @@ export async function GET(
       orderBy: { date: 'desc' }
     })
 
-    // 按币种统计交易金额（对于存量类分类，这里统计的是余额变化）
+    // 基于实际账户余额计算分类汇总（而非基于交易统计）
+    const categoryBalanceSummary: Record<string, number> = {}
+
+    // 汇总所有账户的余额
+    allAccountSummaries.forEach(account => {
+      Object.entries(account.balances).forEach(([currencyCode, balance]) => {
+        if (!categoryBalanceSummary[currencyCode]) {
+          categoryBalanceSummary[currencyCode] = 0
+        }
+        categoryBalanceSummary[currencyCode] += balance
+      })
+    })
+
+    // 为了保持API兼容性，仍然提供交易统计数据（但主要用于显示交易活动）
     const transactionSummary: Record<string, {
       income: number;
       expense: number;
@@ -188,35 +234,40 @@ export async function GET(
       }
     })
 
-    // 转换 Set 为数组以便序列化，并计算净值
-    const summaryForResponse = Object.entries(transactionSummary).reduce((acc, [currency, data]) => {
-      let net = 0
-      if (categoryType === 'ASSET') {
-        // 资产：收入增加资产，支出减少资产，余额调整直接应用
-        net = data.income - data.expense + (data.balanceAdjustment || 0)
-      } else if (categoryType === 'LIABILITY') {
-        // 负债：借入（收入）增加负债，偿还（支出）减少负债，余额调整直接应用
-        net = data.income - data.expense + (data.balanceAdjustment || 0)
-      } else {
-        // 流量类：收入减支出，不应该有余额调整
-        net = data.income - data.expense
-        if (data.balanceAdjustment && data.balanceAdjustment !== 0) {
-          console.warn(`流量类分类 ${category.name} 不应该有余额调整交易`)
-        }
+    // 转换交易统计数据，但主要显示基于余额的净值
+    const summaryForResponse = Object.keys(categoryBalanceSummary).reduce((acc, currencyCode) => {
+      const transactionData = transactionSummary[currencyCode] || {
+        income: 0,
+        expense: 0,
+        balanceAdjustment: 0,
+        count: 0
       }
 
-      acc[currency] = {
-        income: data.income,
-        expense: data.expense,
-        balanceAdjustment: data.balanceAdjustment || 0,
-        count: data.count,
-        net: net
+      // 使用实际余额作为净值
+      const actualBalance = categoryBalanceSummary[currencyCode]
+
+      acc[currencyCode] = {
+        income: transactionData.income,
+        expense: transactionData.expense,
+        balanceAdjustment: transactionData.balanceAdjustment,
+        count: transactionData.count,
+        net: actualBalance // 使用实际余额而非交易计算的净值
       }
       return acc
     }, {} as Record<string, { income: number; expense: number; balanceAdjustment: number; count: number; net: number }>)
 
     // 获取最近的交易
     const recentTransactions = transactions.slice(0, 10)
+
+    // 获取用户的货币设置
+    const currencies = await prisma.currency.findMany({
+      where: {
+        OR: [
+          { isCustom: false }, // 全局货币
+          { isCustom: true, createdBy: user.id } // 用户的自定义货币
+        ]
+      }
+    })
 
     return successResponse({
       category: {
@@ -225,12 +276,20 @@ export async function GET(
         parent: category.parent,
         childrenCount: category.children.length
       },
-      children: category.children,
-      accounts: accountSummaries,
+      children: childrenWithBalances, // 包含余额信息的子分类
+      accounts: directAccounts, // 只返回直属账户
+      allAccounts: allAccountSummaries, // 所有账户（包括子分类下的）
+      categoryBalances: categoryBalanceSummary, // 分类总余额
       transactionSummary: summaryForResponse,
       recentTransactions,
+      currencies: currencies.map(currency => ({
+        code: currency.code,
+        symbol: currency.symbol,
+        name: currency.name
+      })),
       stats: {
-        totalAccounts: accounts.length,
+        totalAccounts: allAccountSummaries.length, // 包括子分类下的所有账户
+        directAccounts: directAccounts.length, // 直属账户数量
         totalTransactions: transactions.length,
         totalChildren: category.children.length
       }
