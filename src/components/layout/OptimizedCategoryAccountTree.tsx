@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import CategoryTreeItem from './CategoryTreeItem'
 import AccountTreeItem from './AccountTreeItem'
 import { useUserData } from '@/contexts/UserDataContext'
@@ -9,7 +9,7 @@ interface Category {
   id: string
   name: string
   type: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-  parentId?: string | null
+  parentId: string | null
   order: number
   children?: Category[]
   accounts?: Account[]
@@ -18,8 +18,8 @@ interface Category {
 interface Account {
   id: string
   name: string
-  description?: string | null
-  color?: string | null
+  description?: string
+  color?: string
   currencyCode: string
   categoryId: string
   category: {
@@ -39,39 +39,6 @@ interface Account {
   balanceInBaseCurrency?: number
 }
 
-interface TreeStructure {
-  treeStructure: Category[]
-  stats: {
-    totalCategories: number
-    totalAccounts: number
-    rootCategories: number
-  }
-  timestamp: string
-}
-
-interface AccountBalances {
-  accountBalances: Record<string, {
-    id: string
-    name: string
-    categoryId: string
-    accountType: string
-    balances: Record<string, {
-      amount: number
-      currency: {
-        code: string
-        symbol: string
-        name: string
-      }
-    }>
-    balanceInBaseCurrency: number
-  }>
-  baseCurrency: {
-    code: string
-    symbol: string
-    name: string
-  }
-  timestamp: string
-}
 
 interface OptimizedCategoryAccountTreeProps {
   searchQuery: string
@@ -91,15 +58,16 @@ export default function OptimizedCategoryAccountTree({
   const {
     categories,
     accounts,
-    userSettings,
     isLoading: userDataLoading,
     error: userDataError,
-    getBaseCurrency
+    getBaseCurrency,
+    accountBalances,
+    isLoadingBalances,
+    balancesError,
+    fetchBalances
   } = useUserData()
 
-  const [accountBalances, setAccountBalances] = useState<AccountBalances | null>(null)
-  const [isLoadingBalances, setIsLoadingBalances] = useState(true)
-  const [balancesError, setBalancesError] = useState<string | null>(null)
+  const initialFetchDone = useRef(false)
 
   // 直接从 localStorage 初始化状态
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
@@ -128,53 +96,28 @@ export default function OptimizedCategoryAccountTree({
     }
   }, [expandedCategories])
 
-  // 只获取账户余额数据（其他数据从UserDataContext获取）
-  const fetchBalances = async () => {
-    try {
-      setIsLoadingBalances(true)
-      setBalancesError(null)
-
-      const balancesResponse = await fetch('/api/accounts/balances')
-
-      if (!balancesResponse.ok) {
-        throw new Error('获取账户余额失败')
-      }
-
-      const balancesResult = await balancesResponse.json()
-
-      if (!balancesResult.success) {
-        throw new Error(balancesResult.message || '获取账户余额失败')
-      }
-
-      setAccountBalances(balancesResult.data)
-    } catch (err) {
-      console.error('Error fetching balance data:', err)
-      setBalancesError(err instanceof Error ? err.message : '获取余额数据失败')
-    } finally {
-      setIsLoadingBalances(false)
-    }
-  }
 
   // 初始化时获取余额数据
   useEffect(() => {
-    if (!userDataLoading && categories.length > 0 && accounts.length > 0) {
+    if (!userDataLoading && categories.length > 0 && accounts.length > 0 && !initialFetchDone.current) {
       fetchBalances()
+      initialFetchDone.current = true
     }
-  }, [userDataLoading, categories.length, accounts.length])
+  }, [userDataLoading, categories, accounts, fetchBalances])
 
   // 监听数据变化事件
   useEffect(() => {
     const handleDataChange = (event: CustomEvent) => {
-      const { type, silent } = event.detail || {}
+      const { silent } = event.detail || {}
       if (!silent) {
         // 只刷新余额数据，其他数据由UserDataContext管理
         fetchBalances()
       }
     }
 
-    window.addEventListener('dataChange' as any, handleDataChange)
+    window.addEventListener('dataChange', handleDataChange as EventListener)
     return () => {
-      window.removeEventListener('dataChange' as any, handleDataChange)
+      window.removeEventListener('dataChange', handleDataChange as EventListener)
     }
   }, [])
 
@@ -213,8 +156,8 @@ export default function OptimizedCategoryAccountTree({
       if (category) {
         category.accounts.push({
           ...account,
-          balances: accountBalances.accountBalances[account.id]?.balances || {},
-          balanceInBaseCurrency: accountBalances.accountBalances[account.id]?.balanceInBaseCurrency || 0
+          balances: accountBalances[account.id]?.balances || {},
+          balanceInBaseCurrency: accountBalances[account.id]?.balanceInBaseCurrency || 0
         })
       }
     })
@@ -268,8 +211,8 @@ export default function OptimizedCategoryAccountTree({
 
   const renderCategory = (category: Category, level: number = 0) => {
     const isExpanded = expandedCategories.has(category.id)
-    const hasChildren = (category.children && category.children.length > 0) || 
-                       (category.accounts && category.accounts.length > 0)
+    const hasChildren = (category.children && category.children.length > 0) ||
+                       (category.accounts && category.accounts.length > 0) || false
 
     return (
       <div key={category.id}>
@@ -280,7 +223,7 @@ export default function OptimizedCategoryAccountTree({
           hasChildren={hasChildren}
           onToggle={() => toggleCategory(category.id)}
           onDataChange={onDataChange}
-          baseCurrency={getBaseCurrency()}
+          baseCurrency={getBaseCurrency() || undefined}
         />
         
         {isExpanded && (
@@ -296,7 +239,7 @@ export default function OptimizedCategoryAccountTree({
                 level={level + 1}
                 onDataChange={onDataChange}
                 onNavigate={onNavigate}
-                baseCurrency={getBaseCurrency()}
+                baseCurrency={getBaseCurrency() || undefined}
               />
             ))}
           </div>
@@ -319,7 +262,10 @@ export default function OptimizedCategoryAccountTree({
       <div className="text-center py-8">
         <div className="text-red-600 mb-2">❌ {userDataError || balancesError}</div>
         <button
-          onClick={fetchBalances}
+          onClick={() => {
+            // 这里可以同时刷新基础数据和余额
+            fetchBalances()
+          }}
           className="text-blue-600 hover:text-blue-800 text-sm"
         >
           重试

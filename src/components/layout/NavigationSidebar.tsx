@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import SidebarSearchBox from './SidebarSearchBox'
 import SidebarDashboardLink from './SidebarDashboardLink'
 import SidebarReportsLink from './SidebarReportsLink'
@@ -64,14 +64,14 @@ export default function NavigationSidebar({
   }
 
   // 简化的数据更新处理 - 现在由OptimizedCategoryAccountTree内部处理
-  const handleDataChange = (options?: {
+  const handleDataChange = useCallback((options?: {
     type?: 'category' | 'account' | 'full'
     silent?: boolean
   }) => {
     // 发送自定义事件通知OptimizedCategoryAccountTree刷新数据
     const event = new CustomEvent('dataChange', { detail: options })
     window.dispatchEvent(event)
-  }
+  }, [])
 
 
 

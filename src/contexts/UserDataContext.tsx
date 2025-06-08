@@ -1,13 +1,14 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 
 // 类型定义
 interface Currency {
-  id: string
   code: string
   name: string
   symbol: string
+  isCustom?: boolean
+  createdBy?: string | null
 }
 
 interface Tag {
@@ -15,6 +16,9 @@ interface Tag {
   name: string
   color?: string
   userId: string
+  _count?: {
+    transactions: number
+  }
 }
 
 interface Account {
@@ -51,6 +55,24 @@ interface UserSettings {
   baseCurrency: Currency
 }
 
+interface AccountBalances {
+  [accountId: string]: {
+    id: string;
+    name: string;
+    categoryId: string;
+    accountType: string;
+    balances: Record<string, {
+      amount: number;
+      currency: {
+        code: string;
+        symbol: string;
+        name: string;
+      };
+    }>;
+    balanceInBaseCurrency: number;
+  };
+}
+
 interface UserData {
   // 用户可用货币
   currencies: Currency[]
@@ -62,10 +84,14 @@ interface UserData {
   categories: Category[]
   // 用户设置
   userSettings: UserSettings | null
+  // 账户余额
+  accountBalances: AccountBalances | null
   // 加载状态
   isLoading: boolean
+  isLoadingBalances: boolean
   // 错误状态
   error: string | null
+  balancesError: string | null
   // 最后更新时间
   lastUpdated: Date | null
 }
@@ -79,6 +105,7 @@ interface UserDataContextType extends UserData {
   refreshAccounts: () => Promise<void>
   refreshCategories: () => Promise<void>
   refreshUserSettings: () => Promise<void>
+  fetchBalances: () => Promise<void>
   // 更新数据（用于同步修改）
   updateTag: (tag: Tag) => void
   addTag: (tag: Tag) => void
@@ -114,8 +141,11 @@ const defaultUserData: UserData = {
   accounts: [],
   categories: [],
   userSettings: null,
+  accountBalances: null,
   isLoading: true,
+  isLoadingBalances: true,
   error: null,
+  balancesError: null,
   lastUpdated: null
 }
 
@@ -162,6 +192,14 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
     const result = await response.json()
     return result.data?.userSettings || null
   }
+  
+  const fetchBalancesData = async (): Promise<{ accountBalances: AccountBalances, baseCurrency: Currency }> => {
+    const response = await fetch('/api/accounts/balances')
+    if (!response.ok) throw new Error('获取账户余额失败')
+    const result = await response.json()
+    if (!result.success) throw new Error(result.message || '获取账户余额失败')
+    return result.data
+  }
 
   // 刷新所有数据
   const refreshAll = useCallback(async () => {
@@ -176,7 +214,8 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
         fetchUserSettings()
       ])
 
-      setUserData({
+      setUserData(prev => ({
+        ...prev,
         currencies,
         tags,
         accounts,
@@ -185,7 +224,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
         isLoading: false,
         error: null,
         lastUpdated: new Date()
-      })
+      }))
     } catch (error) {
       console.error('Error refreshing user data:', error)
       setUserData(prev => ({
@@ -241,6 +280,30 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
       console.error('Error refreshing user settings:', error)
     }
   }, [])
+
+  const fetchBalances = useCallback(async () => {
+    // 如果已经有余额数据，则不重新获取，避免不必要的加载状态
+    if (userData.accountBalances) {
+      return
+    }
+    try {
+      setUserData(prev => ({ ...prev, isLoadingBalances: true, balancesError: null }))
+      const { accountBalances } = await fetchBalancesData()
+      setUserData(prev => ({
+        ...prev,
+        accountBalances,
+        isLoadingBalances: false,
+        lastUpdated: new Date()
+      }))
+    } catch (error) {
+      console.error('Error fetching balances:', error)
+      setUserData(prev => ({
+        ...prev,
+        isLoadingBalances: false,
+        balancesError: error instanceof Error ? error.message : '获取余额数据失败'
+      }))
+    }
+  }, [userData.accountBalances])
 
   // 初始化数据
   useEffect(() => {
@@ -347,7 +410,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
     }))
   }, [])
 
-  const contextValue: UserDataContextType = {
+  const contextValue = useMemo(() => ({
     ...userData,
     refreshAll,
     refreshCurrencies,
@@ -355,6 +418,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
     refreshAccounts,
     refreshCategories,
     refreshUserSettings,
+    fetchBalances,
     updateTag,
     addTag,
     removeTag,
@@ -368,7 +432,29 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
     getBaseCurrency,
     accountTransactionCache,
     setAccountHasTransactions
-  }
+  }), [
+    userData,
+    refreshAll,
+    refreshCurrencies,
+    refreshTags,
+    refreshAccounts,
+    refreshCategories,
+    refreshUserSettings,
+    fetchBalances,
+    updateTag,
+    addTag,
+    removeTag,
+    updateAccount,
+    addAccount,
+    removeAccount,
+    updateCategory,
+    addCategory,
+    removeCategory,
+    updateUserSettings,
+    getBaseCurrency,
+    accountTransactionCache,
+    setAccountHasTransactions
+  ])
 
   return (
     <UserDataContext.Provider value={contextValue}>

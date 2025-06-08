@@ -1,10 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Currency } from '@prisma/client'
 import { useUserData } from '@/contexts/UserDataContext'
 import InputField from '@/components/ui/InputField'
 import SelectField from '@/components/ui/SelectField'
+
+// 使用本地 Currency 接口而不是 Prisma 的
+interface Currency {
+  code: string
+  name: string
+  symbol: string
+  isCustom?: boolean
+  createdBy?: string | null
+}
 
 interface ExchangeRateData {
   id: string

@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useIsMobile } from '@/hooks/useResponsive'
 import TopUserStatusBar from './TopUserStatusBar'
 import NavigationSidebar from './NavigationSidebar'
 import MobileSidebarOverlay from './MobileSidebarOverlay'
-import { UserDataProvider } from '@/contexts/UserDataContext'
 
 
 interface User {
@@ -36,13 +35,13 @@ export default function AppLayoutClient({ children, user }: AppLayoutClientProps
   }) => void) | null>(null)
 
   // 移动端侧边栏控制
-  const toggleMobileSidebar = () => {
-    setIsMobileSidebarOpen(!isMobileSidebarOpen)
-  }
+  const toggleMobileSidebar = useCallback(() => {
+    setIsMobileSidebarOpen(prev => !prev)
+  }, [])
 
-  const closeMobileSidebar = () => {
+  const closeMobileSidebar = useCallback(() => {
     setIsMobileSidebarOpen(false)
-  }
+  }, [])
 
   // 数据刷新处理函数
   const handleSidebarRefresh = (options?: {
@@ -63,7 +62,6 @@ export default function AppLayoutClient({ children, user }: AppLayoutClientProps
   }
 
   return (
-    <UserDataProvider>
       <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
         {/* 顶部用户状态栏 */}
         <TopUserStatusBar
@@ -99,6 +97,5 @@ export default function AppLayoutClient({ children, user }: AppLayoutClientProps
           </main>
         </div>
       </div>
-    </UserDataProvider>
   )
 }

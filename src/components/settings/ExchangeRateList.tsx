@@ -1,8 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Currency } from '@prisma/client'
 import { useToast } from '@/contexts/ToastContext'
+
+// 使用本地 Currency 接口而不是 Prisma 的
+interface Currency {
+  code: string
+  name: string
+  symbol: string
+  isCustom?: boolean
+  createdBy?: string | null
+}
 
 interface ExchangeRateData {
   id: string

@@ -198,7 +198,7 @@ export default function TestCurrencyPage() {
                   </p>
                   {account.currencyCode ? (
                     <p className="text-sm font-medium text-green-600">
-                      货币: {account.currency?.symbol} {account.currencyCode}
+                      货币: {account.currencyCode}
                     </p>
                   ) : (
                     <p className="text-sm text-gray-400">未设置货币</p>

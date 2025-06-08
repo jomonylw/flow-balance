@@ -1,6 +1,35 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
+import { AccountType } from '@prisma/client'
+
+// 类型定义
+interface CategoryWithChildren {
+  id: string
+  userId: string
+  name: string
+  parentId: string | null
+  type: AccountType
+  order: number
+  createdAt: Date
+  updatedAt: Date
+  children: CategoryWithChildren[]
+  accounts: AccountInfo[]
+}
+
+interface AccountInfo {
+  id: string
+  name: string
+  description: string | null
+  color: string | null
+  currencyCode: string
+  categoryId: string
+  category: {
+    id: string
+    name: string
+    type: AccountType
+  }
+}
 
 /**
  * 获取完整的分类+账户树状结构
@@ -47,8 +76,8 @@ export async function GET() {
     ])
 
     // 构建树状结构
-    const categoryMap = new Map()
-    const rootCategories = []
+    const categoryMap = new Map<string, CategoryWithChildren>()
+    const rootCategories: CategoryWithChildren[] = []
 
     // 初始化分类映射
     categories.forEach(category => {
@@ -62,7 +91,8 @@ export async function GET() {
     // 构建分类层级关系
     categories.forEach(category => {
       const categoryNode = categoryMap.get(category.id)
-      
+      if (!categoryNode) return
+
       if (category.parentId) {
         const parent = categoryMap.get(category.parentId)
         if (parent) {
@@ -90,16 +120,16 @@ export async function GET() {
     })
 
     // 递归排序分类和账户
-    const sortTreeNode = (node: any) => {
+    const sortTreeNode = (node: CategoryWithChildren) => {
       // 排序子分类
       if (node.children && node.children.length > 0) {
-        node.children.sort((a: any, b: any) => a.order - b.order)
+        node.children.sort((a, b) => a.order - b.order)
         node.children.forEach(sortTreeNode)
       }
-      
+
       // 排序账户
       if (node.accounts && node.accounts.length > 0) {
-        node.accounts.sort((a: any, b: any) => a.name.localeCompare(b.name))
+        node.accounts.sort((a, b) => a.name.localeCompare(b.name))
       }
     }
 
