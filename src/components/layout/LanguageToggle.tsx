@@ -1,6 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useState, useEffect } from 'react'
 
 interface LanguageToggleProps {
   className?: string
@@ -8,6 +9,12 @@ interface LanguageToggleProps {
 
 export default function LanguageToggle({ className = '' }: LanguageToggleProps) {
   const { language, setLanguage, t } = useLanguage()
+  const [mounted, setMounted] = useState(false)
+
+  // 防止水合不匹配
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const toggleLanguage = () => {
     const newLanguage = language === 'zh' ? 'en' : 'zh'
@@ -34,11 +41,34 @@ export default function LanguageToggle({ className = '' }: LanguageToggleProps) 
     }
   }
 
+  // 在客户端水合完成前显示默认状态
+  if (!mounted) {
+    return (
+      <button
+        className={`
+          p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50
+          transition-all duration-200 group relative
+          ${className}
+        `}
+        disabled
+      >
+        <div className="flex items-center space-x-1">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          <span className="text-xs font-medium hidden sm:block">
+            ZH
+          </span>
+        </div>
+      </button>
+    )
+  }
+
   return (
     <button
       onClick={toggleLanguage}
       className={`
-        p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 
+        p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50
         transition-all duration-200 group relative
         ${className}
       `}
@@ -50,7 +80,7 @@ export default function LanguageToggle({ className = '' }: LanguageToggleProps) 
           {language.toUpperCase()}
         </span>
       </div>
-      
+
       {/* 悬停提示 */}
       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
         {getLanguageLabel(language === 'zh' ? 'en' : 'zh')}

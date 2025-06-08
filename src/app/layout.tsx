@@ -5,6 +5,7 @@ import { ToastProvider } from "@/contexts/ToastContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import ThemeScript from "@/components/ThemeScript";
+import LanguageScript from "@/components/LanguageScript";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,9 +28,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html suppressHydrationWarning>
       <head>
         <ThemeScript />
+        <LanguageScript />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

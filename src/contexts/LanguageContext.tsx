@@ -17,10 +17,38 @@ interface LanguageProviderProps {
 }
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
+  // 服务端渲染时使用默认语言，避免水合不匹配
   const [language, setLanguageState] = useState<Language>('zh')
+  const [mounted, setMounted] = useState(false)
 
   // 初始化语言设置
   useEffect(() => {
+    setMounted(true)
+
+    // 获取初始语言设置
+    const getInitialLanguage = (): Language => {
+      // 优先使用脚本设置的初始语言
+      const initialLanguage = window.__INITIAL_LANGUAGE__
+      if (initialLanguage === 'en' || initialLanguage === 'zh') {
+        return initialLanguage
+      }
+
+      // 备用方案：从localStorage获取
+      const savedLanguage = localStorage.getItem('language') as Language
+      if (savedLanguage === 'en' || savedLanguage === 'zh') {
+        return savedLanguage
+      }
+
+      // 默认中文
+      return 'zh'
+    }
+
+    const initialLanguage = getInitialLanguage()
+    setLanguageState(initialLanguage)
+
+    // 设置HTML lang属性
+    document.documentElement.lang = initialLanguage === 'zh' ? 'zh-CN' : 'en'
+
     // 优先级：用户设置 > localStorage > 默认中文
     const initializeLanguage = async () => {
       try {
@@ -29,18 +57,18 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
         if (response.ok) {
           const data = await response.json()
           if (data.userSettings?.language) {
-            setLanguageState(data.userSettings.language)
+            // 只有当API设置与当前不同时才更新
+            if (data.userSettings.language !== initialLanguage) {
+              setLanguageState(data.userSettings.language)
+              localStorage.setItem('language', data.userSettings.language)
+              // 更新HTML lang属性
+              document.documentElement.lang = data.userSettings.language === 'zh' ? 'zh-CN' : 'en'
+            }
             return
           }
         }
       } catch (error) {
         console.log('Failed to fetch user language setting:', error)
-      }
-
-      // 从 localStorage 获取
-      const savedLanguage = localStorage.getItem('language') as Language
-      if (savedLanguage && (savedLanguage === 'zh' || savedLanguage === 'en')) {
-        setLanguageState(savedLanguage)
       }
     }
 
@@ -82,6 +110,15 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     }
 
     return text
+  }
+
+  // 防止服务端渲染不匹配
+  if (!mounted) {
+    return (
+      <LanguageContext.Provider value={{ language: 'zh', setLanguage: () => {}, t: (key: string) => key }}>
+        {children}
+      </LanguageContext.Provider>
+    )
   }
 
   return (
