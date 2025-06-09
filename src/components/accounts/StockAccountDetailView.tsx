@@ -372,6 +372,8 @@ export default function StockAccountDetailView({
           showAccount={false}
           readOnly={false} // 允许操作
           allowDeleteBalanceAdjustment={true} // 允许删除余额调整记录
+          enablePagination={true} // 启用分页
+          itemsPerPage={10} // 每页10条
         />
       </div>
 

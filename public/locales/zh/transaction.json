@@ -63,5 +63,21 @@
   "transaction.batch.delete": "批量删除",
   "transaction.selected": "已选择",
   "transaction.total.amount": "总金额",
-  "transaction.record.deleted": "交易记录已删除"
+  "transaction.record.deleted": "交易记录已删除",
+  "transaction.list.empty.title": "暂无交易记录",
+  "transaction.list.empty.description": "开始记录您的第一笔交易吧！",
+  "transaction.list.selected": "已选择 {{count}} 项",
+  "transaction.list.batch.edit": "批量编辑",
+  "transaction.list.batch.delete": "批量删除",
+  "transaction.list.header.records": "记录详情",
+  "transaction.list.header.transactions": "交易详情",
+  "transaction.list.pagination.info": "第 {{current}} 页，共 {{total}} 页",
+  "transaction.delete.balance": "删除余额记录",
+  "transaction.delete.transaction": "删除交易",
+  "transaction.delete.balance.title": "删除余额记录",
+  "transaction.delete.balance.message": "确定要删除这条余额记录吗？此操作不可撤销。",
+  "transaction.delete.transaction.title": "删除交易",
+  "transaction.delete.transaction.message": "确定要删除这条交易吗？此操作不可撤销。",
+  "transaction.delete.batch.title": "批量删除确认",
+  "transaction.delete.batch.message": "确定要删除选中的 {{count}} 条记录吗？此操作不可撤销。"
 }

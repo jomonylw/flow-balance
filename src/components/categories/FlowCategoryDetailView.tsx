@@ -477,6 +477,8 @@ export default function FlowCategoryDetailView({
           currencySymbol={currencySymbol}
           showAccount={true}
           readOnly={false}
+          enablePagination={true} // 启用分页
+          itemsPerPage={10} // 每页10条
         />
       </div>
 

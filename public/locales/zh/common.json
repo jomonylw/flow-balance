@@ -34,5 +34,11 @@
   "common.actions": "操作",
   "common.confirm.clear": "确认清空",
   "common.confirm.delete": "确认删除",
-  "common.total": "共"
+  "common.total": "共",
+  "common.pagination.previous": "上一页",
+  "common.pagination.next": "下一页",
+  "common.pagination.showing": "显示第 {{start}} 到 {{end}} 条，共 {{total}} 条记录",
+  "common.date.today": "今天",
+  "common.date.yesterday": "昨天",
+  "common.date.days.ago": "{{days}}天前"
 }

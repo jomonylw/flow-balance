@@ -327,6 +327,8 @@ export default function FlowAccountDetailView({
           onBatchDelete={handleBatchDelete} // 批量删除
           currencySymbol={currencySymbol}
           showAccount={false}
+          enablePagination={true} // 启用分页
+          itemsPerPage={10} // 每页10条
         />
       </div>
 

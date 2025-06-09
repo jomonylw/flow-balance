@@ -34,5 +34,11 @@
   "common.actions": "Actions",
   "common.confirm.clear": "Confirm Clear",
   "common.confirm.delete": "Confirm Delete",
-  "common.total": "Total"
+  "common.total": "Total",
+  "common.pagination.previous": "Previous",
+  "common.pagination.next": "Next",
+  "common.pagination.showing": "Showing {{start}} to {{end}} of {{total}} records",
+  "common.date.today": "Today",
+  "common.date.yesterday": "Yesterday",
+  "common.date.days.ago": "{{days}} days ago"
 }

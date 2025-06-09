@@ -63,5 +63,21 @@
   "transaction.batch.delete": "Batch Delete",
   "transaction.selected": "Selected",
   "transaction.total.amount": "Total Amount",
-  "transaction.record.deleted": "Transaction record deleted"
+  "transaction.record.deleted": "Transaction record deleted",
+  "transaction.list.empty.title": "No transaction records",
+  "transaction.list.empty.description": "Start recording your first transaction!",
+  "transaction.list.selected": "Selected {{count}} items",
+  "transaction.list.batch.edit": "Batch Edit",
+  "transaction.list.batch.delete": "Batch Delete",
+  "transaction.list.header.records": "Record Details",
+  "transaction.list.header.transactions": "Transaction Details",
+  "transaction.list.pagination.info": "Page {{current}} of {{total}}",
+  "transaction.delete.balance": "Delete Balance Record",
+  "transaction.delete.transaction": "Delete Transaction",
+  "transaction.delete.balance.title": "Delete Balance Record",
+  "transaction.delete.balance.message": "Are you sure you want to delete this balance record? This action cannot be undone.",
+  "transaction.delete.transaction.title": "Delete Transaction",
+  "transaction.delete.transaction.message": "Are you sure you want to delete this transaction? This action cannot be undone.",
+  "transaction.delete.batch.title": "Batch Delete Confirmation",
+  "transaction.delete.batch.message": "Are you sure you want to delete the selected {{count}} records? This action cannot be undone."
 }

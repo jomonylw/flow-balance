@@ -5,6 +5,9 @@ import Link from 'next/link'
 import TransactionList from '@/components/transactions/TransactionList'
 import StockCategorySummaryCard from './StockCategorySummaryCard'
 import MonthlySummaryChart from '@/components/charts/MonthlySummaryChart'
+
+import ConfirmationModal from '@/components/ui/ConfirmationModal'
+import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 interface User {
@@ -93,9 +96,13 @@ export default function StockCategoryDetailView({
   user
 }: StockCategoryDetailViewProps) {
   const { t } = useLanguage()
+  const { showSuccess, showError } = useToast()
   const [summaryData, setSummaryData] = useState<any>(null)
   const [monthlyData, setMonthlyData] = useState<any>(null)
   const [isLoadingSummary, setIsLoadingSummary] = useState(true)
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
 
   // 获取分类汇总数据
   useEffect(() => {
@@ -131,6 +138,55 @@ export default function StockCategoryDetailView({
 
     fetchSummaryData()
   }, [category.id, currencies])
+
+  // 处理编辑余额记录
+  const handleEditTransaction = (transaction: any) => {
+    // 检查是否为余额调整记录
+    if (transaction.type === 'BALANCE_ADJUSTMENT') {
+      // 跳转到对应的账户页面进行编辑
+      if (transaction.account?.id) {
+        window.location.href = `/accounts/${transaction.account.id}`
+      } else {
+        showError('错误', '无法找到对应的账户信息')
+      }
+    } else {
+      showError('错误', '存量分类只能编辑余额调整记录')
+    }
+  }
+
+  // 处理删除交易
+  const handleDeleteTransaction = (transactionId: string) => {
+    setDeletingTransactionId(transactionId)
+    setShowDeleteConfirm(true)
+  }
+
+  // 确认删除交易
+  const handleConfirmDelete = async () => {
+    if (!deletingTransactionId) return
+
+    try {
+      const response = await fetch(`/api/transactions/${deletingTransactionId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        showSuccess('成功', '记录已删除')
+        // 重新获取数据
+        window.location.reload()
+      } else {
+        const error = await response.json()
+        showError('删除失败', error.message || '删除记录时发生错误')
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error)
+      showError('删除失败', '网络错误，请稍后重试')
+    } finally {
+      setShowDeleteConfirm(false)
+      setDeletingTransactionId(null)
+    }
+  }
+
+
 
   const baseCurrency = user.settings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
   const currencySymbol = baseCurrency.symbol
@@ -357,13 +413,33 @@ export default function StockCategoryDetailView({
 
         <TransactionList
           transactions={category.transactions}
-          onEdit={() => {}} // 存量类分类不支持编辑交易
-          onDelete={undefined} // 存量类分类不支持删除交易
+          onEdit={handleEditTransaction} // 支持编辑余额调整记录
+          onDelete={handleDeleteTransaction} // 支持删除记录
           currencySymbol={currencySymbol}
           showAccount={true}
-          readOnly={true} // 只读模式
+          readOnly={false} // 非只读模式
+          allowDeleteBalanceAdjustment={true} // 允许删除余额调整记录
+          enablePagination={true} // 启用分页
+          itemsPerPage={10} // 每页10条
         />
       </div>
+
+
+
+      {/* 删除确认模态框 */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        title={t('transaction.delete')}
+        message="确定要删除这条记录吗？此操作不可撤销。"
+        confirmLabel={t('common.confirm.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setShowDeleteConfirm(false)
+          setDeletingTransactionId(null)
+        }}
+        variant="danger"
+      />
     </div>
   )
 }
