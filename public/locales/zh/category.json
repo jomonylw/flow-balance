@@ -42,6 +42,6 @@
   "category.transaction.count": "笔记录",
   "category.currency.distribution": "币种分布",
   "category.stock.update.tip": "存量类分类建议在账户页面进行余额更新",
-  "category.balance.change.records": "余额变化记录",
+  "category.balance.change.records": "余额历史",
   "category.balance.change.description": "记录该分类下所有账户的余额变化历史"
 }

@@ -52,6 +52,9 @@ interface TransactionListProps {
   allowDeleteBalanceAdjustment?: boolean // 是否允许删除余额调整记录
   enablePagination?: boolean // 是否启用分页
   itemsPerPage?: number // 每页显示条数
+  headerTitle?: string // 自定义表头标题
+  headerDescription?: string // 自定义表头描述
+  listType?: 'stock' | 'flow' | 'default' // 列表类型，用于确定默认表头文本
 }
 
 export default function TransactionList({
@@ -65,7 +68,10 @@ export default function TransactionList({
   readOnly = false,
   allowDeleteBalanceAdjustment = false,
   enablePagination = false,
-  itemsPerPage = 10
+  itemsPerPage = 10,
+  headerTitle,
+  headerDescription,
+  listType = 'default'
 }: TransactionListProps) {
   const { t } = useLanguage()
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set())

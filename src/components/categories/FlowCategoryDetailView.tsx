@@ -468,6 +468,9 @@ export default function FlowCategoryDetailView({
               {t('account.total.transactions', { count: category.transactions.length })}
             </span>
           </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            {t('account.transactions.change.description')}
+          </p>
         </div>
 
         <TransactionList

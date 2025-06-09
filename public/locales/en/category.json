@@ -42,6 +42,6 @@
   "category.transaction.count": "records",
   "category.currency.distribution": "Currency Distribution",
   "category.stock.update.tip": "Stock categories recommend updating balances on account pages",
-  "category.balance.change.records": "Balance Change Records",
+  "category.balance.change.records": "Balance History",
   "category.balance.change.description": "Records balance change history for all accounts in this category"
 }
