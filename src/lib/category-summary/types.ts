@@ -33,6 +33,15 @@ export interface AccountSummary {
   categoryId: string
   balances: Record<string, number>
   transactionCount: number
+  // 新增：多时间点余额数据
+  historicalBalances?: {
+    currentMonth: Record<string, number>  // 当月原币余额
+    lastMonth: Record<string, number>     // 上月原币余额
+    yearStart: Record<string, number>     // 年初原币余额
+    currentMonthInBaseCurrency: Record<string, number>  // 当月本币余额
+    lastMonthInBaseCurrency: Record<string, number>     // 上月本币余额
+    yearStartInBaseCurrency: Record<string, number>     // 年初本币余额
+  }
 }
 
 export interface ChildCategorySummary {
@@ -42,6 +51,15 @@ export interface ChildCategorySummary {
   balances: Record<string, number>
   accountCount: number
   order: number
+  // 新增：多时间点余额数据
+  historicalBalances?: {
+    currentMonth: Record<string, number>  // 当月原币余额
+    lastMonth: Record<string, number>     // 上月原币余额
+    yearStart: Record<string, number>     // 年初原币余额
+    currentMonthInBaseCurrency: Record<string, number>  // 当月本币余额
+    lastMonthInBaseCurrency: Record<string, number>     // 上月本币余额
+    yearStartInBaseCurrency: Record<string, number>     // 年初本币余额
+  }
 }
 
 export interface RecentTransaction {

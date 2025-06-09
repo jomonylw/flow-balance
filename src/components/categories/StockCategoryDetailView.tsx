@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import TransactionList from '@/components/transactions/TransactionList'
 import StockCategorySummaryCard from './StockCategorySummaryCard'
@@ -32,12 +32,28 @@ interface SummaryData {
     name: string
     balances: { [currencyCode: string]: number }
     accountCount: number
+    historicalBalances?: {
+      currentMonth: Record<string, number>
+      lastMonth: Record<string, number>
+      yearStart: Record<string, number>
+      currentMonthInBaseCurrency: Record<string, number>
+      lastMonthInBaseCurrency: Record<string, number>
+      yearStartInBaseCurrency: Record<string, number>
+    }
   }[]
   accounts: {
     id: string
     name: string
     balances: { [currencyCode: string]: number }
     transactionCount: number
+    historicalBalances?: {
+      currentMonth: Record<string, number>
+      lastMonth: Record<string, number>
+      yearStart: Record<string, number>
+      currentMonthInBaseCurrency: Record<string, number>
+      lastMonthInBaseCurrency: Record<string, number>
+      yearStartInBaseCurrency: Record<string, number>
+    }
   }[]
 }
 
@@ -105,7 +121,7 @@ export default function StockCategoryDetailView({
   }, [category.id, currencies])
 
   // 获取交易记录
-  const loadTransactions = async (page = 1) => {
+  const loadTransactions = useCallback(async (page = 1) => {
     setIsLoadingTransactions(true)
     try {
       const params = new URLSearchParams({
@@ -132,11 +148,11 @@ export default function StockCategoryDetailView({
     } finally {
       setIsLoadingTransactions(false)
     }
-  }
+  }, [category.id, pagination.itemsPerPage, showError])
 
   useEffect(() => {
     loadTransactions(pagination.currentPage)
-  }, [pagination.currentPage, category.id])
+  }, [pagination.currentPage, category.id, loadTransactions])
 
   const handlePageChange = (page: number) => {
     setPagination(prev => ({ ...prev, currentPage: page }))
@@ -303,18 +319,31 @@ export default function StockCategoryDetailView({
                             Object.entries(childBalances).map(([currencyCode, balance]) => {
                               // 查找对应的货币信息
                               const currencyInfo = currencies.find(c => c.code === currencyCode)
-                              const symbol = currencyInfo?.symbol || currencyCode
+                              const originalSymbol = currencyInfo?.symbol || currencyCode
+
+                              // 获取本位币转换后的金额
+                              let convertedAmount = balance
+                              if (child.historicalBalances?.currentMonthInBaseCurrency?.[currencyCode]) {
+                                convertedAmount = child.historicalBalances.currentMonthInBaseCurrency[currencyCode]
+                              }
 
                               return (
-                                <div key={currencyCode} className="flex items-center space-x-2">
+                                <div key={currencyCode} className="flex items-center space-x-2 mb-1">
                                   <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200">
                                     {currencyCode}
                                   </span>
-                                  <span className={`${
-                                    balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                                  }`}>
-                                    {symbol}{Math.abs(balance).toFixed(2)}
-                                  </span>
+                                  <div className="flex flex-col items-end">
+                                    <span className={`${
+                                      balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                                    }`}>
+                                      {originalSymbol}{Math.abs(balance).toFixed(2)}
+                                    </span>
+                                    {currencyCode !== baseCurrency.code && (
+                                      <span className="text-xs text-gray-400">
+                                        ≈ {baseCurrency.symbol}{Math.abs(convertedAmount).toFixed(2)}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               )
                             })
@@ -351,24 +380,29 @@ export default function StockCategoryDetailView({
                             const currencyInfo = currencies.find(c => c.code === currencyCode)
                             const originalSymbol = currencyInfo?.symbol || currencyCode
 
-                            // 计算折算后金额（这里简化处理，实际应该使用汇率）
-                            const convertedAmount = currencyCode === baseCurrency.code ? balance : balance
+                            // 获取本位币转换后的金额
+                            let convertedAmount = balance
+                            if (account.historicalBalances?.currentMonthInBaseCurrency?.[currencyCode]) {
+                              convertedAmount = account.historicalBalances.currentMonthInBaseCurrency[currencyCode]
+                            }
 
                             return (
-                              <div key={currencyCode} className="flex items-center space-x-2">
+                              <div key={currencyCode} className="flex items-center space-x-2 mb-1">
                                 <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200">
                                   {currencyCode}
                                 </span>
-                                <span className={`${
-                                  balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                                }`}>
-                                  {originalSymbol}{Math.abs(balance).toFixed(2)}
-                                </span>
-                                {currencyCode !== baseCurrency.code && (
-                                  <span className="text-gray-400 text-xs">
-                                    ≈ {baseCurrency.symbol}{Math.abs(convertedAmount).toFixed(2)}
+                                <div className="flex flex-col items-end">
+                                  <span className={`${
+                                    balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                                  }`}>
+                                    {originalSymbol}{Math.abs(balance).toFixed(2)}
                                   </span>
-                                )}
+                                  {currencyCode !== baseCurrency.code && (
+                                    <span className="text-xs text-gray-400">
+                                      ≈ {baseCurrency.symbol}{Math.abs(convertedAmount).toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             )
                           })}

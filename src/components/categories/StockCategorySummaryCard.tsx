@@ -2,22 +2,7 @@
 
 import { useLanguage } from '@/contexts/LanguageContext'
 
-/**
- * 从交易备注中提取余额变化金额
- * @param notes 交易备注
- * @returns 变化金额，如果无法提取则返回null
- */
-function extractBalanceChangeFromNotes(notes: string): number | null {
-  if (!notes) return null
 
-  // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
-  const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
-  if (match && match[1]) {
-    return parseFloat(match[1])
-  }
-
-  return null
-}
 
 interface Category {
   id: string
@@ -62,81 +47,81 @@ export default function StockCategorySummaryCard({
 
   // 存量类分类统计（资产/负债）
   const calculateStockStats = () => {
-    const now = new Date()
-    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const thisYear = new Date(now.getFullYear(), 0, 1)
-
-    // 优先使用分类总余额数据，计算折算到本位币的总净值
+    // 使用实际的历史余额数据计算净值
     let currentNetValue = 0
+    let lastMonthNetValue = 0
+    let yearStartNetValue = 0
     let transactionCount = 0
 
-    // 优先使用分类总余额数据
-    if (summaryData?.categoryBalances) {
-      Object.entries(summaryData.categoryBalances).forEach(([currencyCode, balance]: [string, any]) => {
-        // 简化处理：如果是本位币直接累加，否则需要汇率转换（这里暂时按1:1处理）
-        if (currencyCode === baseCurrency?.code) {
-          currentNetValue += balance
-        } else {
-          // TODO: 实际应该根据汇率转换
-          currentNetValue += balance
-        }
-      })
+    // 使用子分类和直属账户的历史余额数据
+    if (summaryData?.children || summaryData?.accounts) {
+      const allItems = [
+        ...(summaryData.children || []),
+        ...(summaryData.accounts || [])
+      ]
 
-      // 计算总交易数量
-      if (summaryData.allAccounts) {
-        summaryData.allAccounts.forEach((account: any) => {
-          transactionCount += account.transactionCount || 0
-        })
-      }
-    } else if (summaryData?.accounts) {
-      // 回退到账户余额汇总
-      summaryData.accounts.forEach((account: any) => {
-        if (account.balances) {
-          // 如果有本位币余额，优先使用；否则累加所有币种余额（需要后续转换）
-          if (baseCurrency && account.balances[baseCurrency.code] !== undefined) {
-            currentNetValue += account.balances[baseCurrency.code] || 0
-          } else {
-            // 如果没有本位币余额，累加所有币种（这里需要汇率转换，暂时直接累加）
-            Object.values(account.balances).forEach((balance: any) => {
-              currentNetValue += typeof balance === 'number' ? balance : 0
-            })
-          }
+      allItems.forEach((item: any) => {
+        // 累加交易数量
+        if (item.transactionCount) {
+          transactionCount += item.transactionCount
         }
-        transactionCount += account.transactionCount || 0
+
+        // 使用历史余额数据（已转换为本位币）
+        if (item.historicalBalances) {
+          // 当月本位币余额
+          Object.values(item.historicalBalances.currentMonthInBaseCurrency || {}).forEach((amount: any) => {
+            currentNetValue += amount
+          })
+
+          // 上月本位币余额
+          Object.values(item.historicalBalances.lastMonthInBaseCurrency || {}).forEach((amount: any) => {
+            lastMonthNetValue += amount
+          })
+
+          // 年初本位币余额
+          Object.values(item.historicalBalances.yearStartInBaseCurrency || {}).forEach((amount: any) => {
+            yearStartNetValue += amount
+          })
+        } else if (item.balances) {
+          // 回退到当前余额（假设为本位币或需要转换）
+          Object.entries(item.balances).forEach(([currencyCode, balance]: [string, any]) => {
+            if (currencyCode === baseCurrency?.code) {
+              currentNetValue += balance
+              // 如果没有历史数据，使用估算值
+              lastMonthNetValue += balance * 0.95
+              yearStartNetValue += balance * 0.85
+            } else {
+              // TODO: 需要汇率转换，这里暂时按1:1处理
+              currentNetValue += balance
+              lastMonthNetValue += balance * 0.95
+              yearStartNetValue += balance * 0.85
+            }
+          })
+        }
       })
     } else {
-      // 如果没有汇总数据，使用交易记录计算（备用方法）
-      const transactions = category.transactions.sort((a, b) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-      )
+      // 回退到使用分类的交易数据
+      const transactions = category.transactions || []
 
-      transactions.forEach(transaction => {
-        const amount = transaction.amount
-
-        // 根据分类类型和交易类型计算净值变化
-        let netValueChange = 0
+      transactions.forEach((transaction: any) => {
         if (transaction.type === 'BALANCE_ADJUSTMENT') {
-          // 余额调整：从备注中提取实际变化金额
-          const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
-          netValueChange = changeAmount || amount
-        } else if (accountType === 'ASSET') {
-          netValueChange = transaction.type === 'INCOME' ? amount : -amount
-        } else if (accountType === 'LIABILITY') {
-          netValueChange = transaction.type === 'INCOME' ? amount : -amount
+          const amount = parseFloat(transaction.amount.toString())
+          if (transaction.currency?.code === baseCurrency?.code) {
+            currentNetValue += amount
+          } else {
+            // TODO: 需要汇率转换
+            currentNetValue += amount
+          }
+          transactionCount++
         }
-
-        currentNetValue += netValueChange
       })
 
-      transactionCount = transactions.length
+      // 使用估算值
+      lastMonthNetValue = currentNetValue * 0.95
+      yearStartNetValue = currentNetValue * 0.85
     }
 
-    // 计算历史时点的净值（简化计算，基于当前值的估算）
-    // 注意：这里是简化的计算方法，实际应该基于时点余额
-    const lastMonthNetValue = currentNetValue * 0.95 // 假设上月为当前的95%
-    const yearStartNetValue = currentNetValue * 0.85 // 假设年初为当前的85%
-
+    // 计算变化百分比
     const monthlyChange = lastMonthNetValue !== 0 ?
       ((currentNetValue - lastMonthNetValue) / Math.abs(lastMonthNetValue)) * 100 : 0
 
@@ -223,20 +208,68 @@ export default function StockCategorySummaryCard({
         </div>
       </div>
 
-      {/* 汇总数据展示 */}
-      {summaryData && (summaryData.categoryBalances || summaryData.transactionSummary) && (
+      {/* 币种分布 */}
+      {summaryData && (summaryData.children || summaryData.accounts) && (
         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('category.currency.distribution')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* 优先显示分类总余额数据 */}
-            {summaryData.categoryBalances ? (
-              Object.entries(summaryData.categoryBalances).map(([currencyCode, balance]: [string, any]) => {
-                // 查找对应的货币信息以获取正确的符号
-                const currencyInfo = summaryData.currencies?.find((c: any) => c.code === currencyCode)
-                const symbol = currencyInfo?.symbol || currencyCode
+            {(() => {
+              // 汇总所有币种的当月和上月余额
+              const currencyTotals: Record<string, { current: number; lastMonth: number; symbol: string }> = {}
 
-                // 获取对应的交易统计数据（用于显示增减信息）
-                const transactionData = summaryData.transactionSummary?.[currencyCode]
+              const allItems = [
+                ...(summaryData.children || []),
+                ...(summaryData.accounts || [])
+              ]
+
+              allItems.forEach((item: any) => {
+                if (item.historicalBalances) {
+                  // 当月余额（原币）
+                  Object.entries(item.historicalBalances.currentMonth || {}).forEach(([currencyCode, amount]: [string, any]) => {
+                    if (!currencyTotals[currencyCode]) {
+                      // 查找货币符号
+                      const currencyInfo = summaryData.currencies?.find((c: any) => c.code === currencyCode)
+                      currencyTotals[currencyCode] = {
+                        current: 0,
+                        lastMonth: 0,
+                        symbol: currencyInfo?.symbol || currencyCode
+                      }
+                    }
+                    currencyTotals[currencyCode].current += amount
+                  })
+
+                  // 上月余额（原币）
+                  Object.entries(item.historicalBalances.lastMonth || {}).forEach(([currencyCode, amount]: [string, any]) => {
+                    if (!currencyTotals[currencyCode]) {
+                      const currencyInfo = summaryData.currencies?.find((c: any) => c.code === currencyCode)
+                      currencyTotals[currencyCode] = {
+                        current: 0,
+                        lastMonth: 0,
+                        symbol: currencyInfo?.symbol || currencyCode
+                      }
+                    }
+                    currencyTotals[currencyCode].lastMonth += amount
+                  })
+                } else if (item.balances) {
+                  // 回退到当前余额
+                  Object.entries(item.balances).forEach(([currencyCode, balance]: [string, any]) => {
+                    if (!currencyTotals[currencyCode]) {
+                      const currencyInfo = summaryData.currencies?.find((c: any) => c.code === currencyCode)
+                      currencyTotals[currencyCode] = {
+                        current: 0,
+                        lastMonth: 0,
+                        symbol: currencyInfo?.symbol || currencyCode
+                      }
+                    }
+                    currencyTotals[currencyCode].current += balance
+                    currencyTotals[currencyCode].lastMonth += balance * 0.95 // 估算值
+                  })
+                }
+              })
+
+              return Object.entries(currencyTotals).map(([currencyCode, data]) => {
+                const changePercent = data.lastMonth !== 0 ?
+                  ((data.current - data.lastMonth) / Math.abs(data.lastMonth)) * 100 : 0
 
                 return (
                   <div key={currencyCode} className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -244,44 +277,22 @@ export default function StockCategorySummaryCard({
                       {currencyCode} {t('category.net.balance')}
                     </div>
                     <div className={`text-lg font-semibold ${
-                      balance >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-600 dark:text-red-400'
+                      data.current >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-600 dark:text-red-400'
                     }`}>
-                      {symbol}{Math.abs(balance).toFixed(2)}
+                      {data.symbol}{Math.abs(data.current).toFixed(2)}
                     </div>
                     <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {transactionData ? (
-                        `${t('category.increase')}: ${symbol}${transactionData.income?.toFixed(2) || '0.00'} | ${t('category.decrease')}: ${symbol}${transactionData.expense?.toFixed(2) || '0.00'}`
-                      ) : (
-                        `${t('category.current.balance')}: ${symbol}${Math.abs(balance).toFixed(2)}`
-                      )}
+                      {t('category.last.month')}: {data.symbol}{Math.abs(data.lastMonth).toFixed(2)}
+                      <span className={`ml-2 ${
+                        changePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(1)}%
+                      </span>
                     </div>
                   </div>
                 )
               })
-            ) : (
-              // 回退到交易汇总数据
-              Object.entries(summaryData.transactionSummary).map(([currencyCode, data]: [string, any]) => {
-                // 查找对应的货币信息以获取正确的符号
-                const currencyInfo = summaryData.currencies?.find((c: any) => c.code === currencyCode)
-                const symbol = currencyInfo?.symbol || currencyCode
-
-                return (
-                  <div key={currencyCode} className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                      {currencyCode} {t('category.net.balance')}
-                    </div>
-                    <div className={`text-lg font-semibold ${
-                      data.net >= 0 ? 'text-gray-900 dark:text-gray-100' : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {symbol}{Math.abs(data.net).toFixed(2)}
-                    </div>
-                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {t('category.increase')}: {symbol}{data.income?.toFixed(2) || '0.00'} | {t('category.decrease')}: {symbol}{data.expense?.toFixed(2) || '0.00'}
-                    </div>
-                  </div>
-                )
-              })
-            )}
+            })()}
           </div>
         </div>
       )}
