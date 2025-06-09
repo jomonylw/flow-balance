@@ -3,9 +3,78 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import AppLayout from '@/components/layout/AppLayout'
 import CategoryDetailView from '@/components/categories/CategoryDetailView'
+import { Transaction, Category } from '@/components/categories/types'
+import { Decimal } from '@prisma/client/runtime/library'
 
 interface CategoryPageProps {
   params: Promise<{ id: string }>
+}
+
+type PrismaTransaction = {
+  id: string;
+  type: "INCOME" | "EXPENSE" | "BALANCE_ADJUSTMENT";
+  amount: Decimal;
+  description: string;
+  notes: string | null;
+  date: Date;
+  currency: {
+      code: string;
+      name: string;
+      symbol: string;
+  };
+  category: {
+      id: string;
+      name: string;
+  };
+  tags: {
+      tag: {
+          id: string;
+          name: string;
+          color: string | null;
+      };
+  }[];
+  account: {
+      id: string;
+      name: string;
+      category: {
+          name: string;
+      } | null;
+  } | null;
+}
+
+
+// Helper function to serialize transactions
+const serializeTransactions = (transactions: PrismaTransaction[]): Transaction[] => {
+  return transactions.map(transaction => ({
+    ...transaction,
+    amount: parseFloat(transaction.amount.toString()),
+    date: transaction.date.toISOString(),
+    notes: transaction.notes || undefined,
+    account: transaction.account ? {
+      id: transaction.account.id,
+      name: transaction.account.name,
+      category: transaction.account.category ? {
+        name: transaction.account.category.name
+      } : { name: 'Unknown' }
+    } : {
+      id: 'unknown',
+      name: 'Unknown Account',
+      category: { name: 'Unknown' }
+    },
+    category: transaction.category ? {
+      id: transaction.category.id,
+      name: transaction.category.name
+    } : {
+      id: 'unknown',
+      name: 'Unknown Category'
+    },
+    tags: transaction.tags ? transaction.tags.map((tt) => ({
+      tag: {
+        ...tt.tag,
+        color: tt.tag.color || undefined
+      }
+    })) : []
+  }))
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
@@ -16,7 +85,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   }
 
   // 获取分类信息（包含子分类和账户）
-  const category = await prisma.category.findFirst({
+  const categoryData = await prisma.category.findFirst({
     where: {
       id: id,
       userId: user.id
@@ -68,7 +137,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     }
   })
 
-  if (!category) {
+  if (!categoryData) {
     notFound()
   }
 
@@ -146,16 +215,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   ])
 
   // 序列化 Decimal 对象
-  const serializedCategory = {
-    ...category,
-    parent: category.parent ? {
-      id: category.parent.id,
-      name: category.parent.name,
-      type: category.parent.type,
-      parentId: category.parent.parentId,
+  const serializedCategory: Category = {
+    ...categoryData,
+    parent: categoryData.parent ? {
+      ...categoryData.parent,
       transactions: []
     } : undefined,
-    children: category.children.map(child => ({
+    children: categoryData.children.map(child => ({
       ...child,
       transactions: [], // Add empty transactions array for children
       accounts: child.accounts.map(account => ({
@@ -167,28 +233,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           type: account.category.type
         } : {
           id: 'unknown',
-          name: 'Unknown'
+          name: 'Unknown',
+          type: 'ASSET'
         },
-        transactions: account.transactions.map(transaction => ({
-          ...transaction,
-          amount: parseFloat(transaction.amount.toString()),
-          date: transaction.date.toISOString(),
-          notes: transaction.notes || undefined,
-          account: {
-            id: account.id,
-            name: account.name,
-            category: { name: account.category?.name || 'Unknown' }
-          },
-          tags: transaction.tags?.map(tt => ({
-            tag: {
-              ...tt.tag,
-              color: tt.tag.color || undefined
-            }
-          })) || []
-        }))
+        transactions: serializeTransactions(account.transactions as unknown as PrismaTransaction[])
       }))
     })),
-    accounts: category.accounts.map(account => ({
+    accounts: categoryData.accounts.map(account => ({
       ...account,
       description: account.description || undefined,
       category: account.category ? {
@@ -197,56 +248,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         type: account.category.type
       } : {
         id: 'unknown',
-        name: 'Unknown'
+        name: 'Unknown',
+        type: 'ASSET'
       },
-      transactions: account.transactions.map(transaction => ({
-        ...transaction,
-        amount: parseFloat(transaction.amount.toString()),
-        date: transaction.date.toISOString(),
-        notes: transaction.notes || undefined,
-        account: {
-          id: account.id,
-          name: account.name,
-          category: { name: account.category?.name || 'Unknown' }
-        },
-        tags: transaction.tags.map(tt => ({
-          tag: {
-            ...tt.tag,
-            color: tt.tag.color || undefined
-          }
-        }))
-      }))
+      transactions: serializeTransactions(account.transactions as unknown as PrismaTransaction[])
     })),
-    transactions: allTransactions.map(transaction => ({
-      ...transaction,
-      amount: parseFloat(transaction.amount.toString()),
-      date: transaction.date.toISOString(),
-      notes: transaction.notes || undefined,
-      account: transaction.account ? {
-        id: transaction.account.id,
-        name: transaction.account.name,
-        category: transaction.account.category ? {
-          name: transaction.account.category.name
-        } : { name: 'Unknown' }
-      } : {
-        id: 'unknown',
-        name: 'Unknown Account',
-        category: { name: 'Unknown' }
-      },
-      category: transaction.category ? {
-        id: transaction.category.id,
-        name: transaction.category.name
-      } : {
-        id: 'unknown',
-        name: 'Unknown Category'
-      },
-      tags: transaction.tags ? transaction.tags.map(tt => ({
-        tag: {
-          ...tt.tag,
-          color: tt.tag.color || undefined
-        }
-      })) : []
-    }))
+    transactions: serializeTransactions(allTransactions as unknown as PrismaTransaction[])
   }
 
   return (

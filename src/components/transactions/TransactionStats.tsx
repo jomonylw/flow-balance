@@ -31,22 +31,23 @@ export default function TransactionStats({
 
     transactions.forEach(transaction => {
       const transactionDate = new Date(transaction.date)
+      const amount = parseFloat(String(transaction.amount)) || 0
 
       if (transaction.type === 'INCOME') {
-        totalIncome += transaction.amount
+        totalIncome += amount
         incomeCount++
         if (transactionDate >= thisMonth) {
-          thisMonthIncome += transaction.amount
+          thisMonthIncome += amount
         } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
-          lastMonthIncome += transaction.amount
+          lastMonthIncome += amount
         }
       } else if (transaction.type === 'EXPENSE') {
-        totalExpense += transaction.amount
+        totalExpense += amount
         expenseCount++
         if (transactionDate >= thisMonth) {
-          thisMonthExpense += transaction.amount
+          thisMonthExpense += amount
         } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
-          lastMonthExpense += transaction.amount
+          lastMonthExpense += amount
         }
       } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
         // 余额调整不计入收支统计，只计数
@@ -71,7 +72,8 @@ export default function TransactionStats({
       monthlyChange,
       incomeCount,
       expenseCount,
-      totalCount: transactions.length
+      totalCount: transactions.length,
+      balanceAdjustmentCount
     }
   }
 

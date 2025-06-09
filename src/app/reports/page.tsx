@@ -1,12 +1,10 @@
-import { getCurrentUser } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import AppLayout from '@/components/layout/AppLayout'
 import ReportsPageClient from '@/components/reports/ReportsPageClient'
 
-export default async function ReportsPage() {
-  const user = await getCurrentUser()
-  if (!user) {
-    redirect('/auth/login')
-  }
-
-  return <ReportsPageClient />
+export default function ReportsPage() {
+  return (
+    <AppLayout>
+      <ReportsPageClient />
+    </AppLayout>
+  )
 }

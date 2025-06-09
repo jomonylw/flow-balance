@@ -9,54 +9,19 @@ import AuthButton from '@/components/ui/AuthButton'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 
-interface Account {
-  id: string
-  name: string
-  currencyCode?: string
-  currency?: Currency
-  category: {
-    id: string
-    name: string
-    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-  }
-}
-
-interface Category {
-  id: string
-  name: string
-  type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-}
-
-interface Currency {
-  code: string
-  name: string
-  symbol: string
-}
-
-interface Tag {
-  id: string
-  name: string
-  color?: string
-}
-
-interface Transaction {
-  id: string
-  accountId: string
-  categoryId: string
-  currencyCode: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
-  amount: number
-  description: string
-  notes?: string
-  date: string
-  tags: { tag: Tag }[]
-}
+import {
+  Account,
+  Category,
+  Currency,
+  Tag,
+  TransactionFormData
+} from '@/types/transaction'
 
 interface TransactionFormModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
-  transaction?: Transaction | null
+  transaction?: TransactionFormData | null
   accounts: Account[]
   categories: Category[]
   currencies: Currency[]
@@ -106,22 +71,16 @@ export default function TransactionFormModal({
 
     if (transaction) {
       // 编辑模式 - 检查是否为余额调整交易
-      if (transaction.type === 'BALANCE_ADJUSTMENT') {
-        // 余额调整交易不能通过普通交易表单编辑
-        setErrors({ general: t('transaction.modal.balance.adjustment.error') })
-        return
-      }
-
       setFormData({
         accountId: transaction.accountId,
         categoryId: transaction.categoryId,
         currencyCode: transaction.currencyCode,
-        type: transaction.type as 'INCOME' | 'EXPENSE', // 确保类型安全
+        type: transaction.type,
         amount: transaction.amount.toString(),
         description: transaction.description,
         notes: transaction.notes || '',
         date: new Date(transaction.date).toISOString().split('T')[0],
-        tagIds: transaction.tags.map(t => t.tag.id)
+        tagIds: transaction.tagIds || []
       })
     } else {
       // 新增模式 - 使用第一个可用货币作为默认值
@@ -173,7 +132,7 @@ export default function TransactionFormModal({
           defaultType = 'EXPENSE'
         }
 
-        const updates: any = {
+        const updates: Partial<typeof formData> = {
           [name]: value,
           categoryId: selectedAccount.category.id, // 自动设置分类
           type: defaultType // 智能设置交易类型
@@ -430,15 +389,15 @@ export default function TransactionFormModal({
   }))
 
   // 只显示流量类分类（收入/支出）
-  const flowCategories = categories.filter(category => {
-    const categoryType = category.type
-    return categoryType === 'INCOME' || categoryType === 'EXPENSE'
-  })
+  // const flowCategories = categories.filter(category => {
+  //   const categoryType = category.type
+  //   return categoryType === 'INCOME' || categoryType === 'EXPENSE'
+  // })
 
-  const categoryOptions = flowCategories.map(category => ({
-    value: category.id,
-    label: category.name
-  }))
+  // const categoryOptions = flowCategories.map(category => ({
+  //   value: category.id,
+  //   label: category.name
+  // }))
 
   // 获取选中账户的货币限制
   const selectedAccount = accounts.find(acc => acc.id === formData.accountId)

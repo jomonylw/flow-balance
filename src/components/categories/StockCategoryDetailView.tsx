@@ -9,107 +9,74 @@ import MonthlySummaryChart from '@/components/charts/MonthlySummaryChart'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import {
+  Category,
+  Currency,
+  Transaction,
+  User
+} from '@/types/transaction'
 
-interface User {
-  id: string
-  email: string
-  settings?: {
-    baseCurrency?: {
-      code: string
-      name: string
-      symbol: string
+// 定义图表组件期望的数据格式
+interface StockMonthlyDataForChart {
+  [monthKey: string]: {
+    [currencyCode: string]: {
+      accounts: Record<string, { balance: number; name: string }>
+      totalBalance: number
     }
   }
 }
 
-interface Account {
-  id: string
-  name: string
-  category: {
+interface SummaryData {
+  children: {
     id: string
     name: string
-    type: 'ASSET' | 'LIABILITY'
-  }
-}
-
-interface Category {
-  id: string
-  name: string
-  type: 'ASSET' | 'LIABILITY'
-  parentId?: string | null
-  description?: string
-  color?: string
-  icon?: string
-  parent?: Category
-  children?: Category[]
-  accounts?: Account[]
-  transactions: Transaction[]
-}
-
-interface Currency {
-  code: string
-  name: string
-  symbol: string
-}
-
-interface Tag {
-  id: string
-  name: string
-  color?: string
-}
-
-interface Transaction {
-  id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
-  amount: number
-  description: string
-  notes?: string
-  date: string
-  category: {
+    balances: { [currencyCode: string]: number }
+    accountCount: number
+  }[]
+  accounts: {
     id: string
     name: string
-    type?: 'INCOME' | 'EXPENSE' | 'ASSET' | 'LIABILITY'
-  }
-  currency: Currency
-  tags: { tag: Tag }[]
-  account?: {
-    id: string
-    name: string
-  }
+    balances: { [currencyCode: string]: number }
+    transactionCount: number
+  }[]
+}
+
+interface MonthlyData {
+  monthlyData: StockMonthlyDataForChart
+  baseCurrency: string
 }
 
 interface StockCategoryDetailViewProps {
   category: Category
-  accounts: Account[]
-  categories: Category[]
   currencies: Currency[]
-  tags: Tag[]
   user: User
 }
 
 export default function StockCategoryDetailView({
   category,
-  accounts,
-  categories,
   currencies,
-  tags,
   user
 }: StockCategoryDetailViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
-  const [summaryData, setSummaryData] = useState<any>(null)
-  const [monthlyData, setMonthlyData] = useState<any>(null)
-  const [isLoadingSummary, setIsLoadingSummary] = useState(true)
+  const [summaryData, setSummaryData] = useState<SummaryData | null>(null)
+  const [monthlyData, setMonthlyData] = useState<MonthlyData | null>(null)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10
+  })
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
 
   // 获取分类汇总数据
   useEffect(() => {
     const fetchSummaryData = async () => {
       try {
-        setIsLoadingSummary(true)
-
         // 并行获取汇总数据和月度数据
         const [summaryRes, monthlyRes] = await Promise.all([
           fetch(`/api/categories/${category.id}/summary`),
@@ -131,16 +98,52 @@ export default function StockCategoryDetailView({
         }
       } catch (error) {
         console.error('Error fetching summary data:', error)
-      } finally {
-        setIsLoadingSummary(false)
       }
     }
 
     fetchSummaryData()
   }, [category.id, currencies])
 
+  // 获取交易记录
+  const loadTransactions = async (page = 1) => {
+    setIsLoadingTransactions(true)
+    try {
+      const params = new URLSearchParams({
+        categoryId: category.id,
+        page: page.toString(),
+        limit: pagination.itemsPerPage.toString()
+      })
+      const response = await fetch(`/api/transactions?${params}`)
+      const result = await response.json()
+      if (result.success) {
+        setTransactions(result.data.transactions)
+        setPagination(prev => ({
+          ...prev,
+          currentPage: result.data.pagination.page,
+          totalPages: result.data.pagination.totalPages,
+          totalItems: result.data.pagination.total
+        }))
+      } else {
+        showError('加载交易记录失败', result.error)
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error)
+      showError('加载交易记录失败', '网络错误')
+    } finally {
+      setIsLoadingTransactions(false)
+    }
+  }
+
+  useEffect(() => {
+    loadTransactions(pagination.currentPage)
+  }, [pagination.currentPage, category.id])
+
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, currentPage: page }))
+  }
+
   // 处理编辑余额记录
-  const handleEditTransaction = (transaction: any) => {
+  const handleEditTransaction = (transaction: Transaction) => {
     // 检查是否为余额调整记录
     if (transaction.type === 'BALANCE_ADJUSTMENT') {
       // 跳转到对应的账户页面进行编辑
@@ -172,7 +175,7 @@ export default function StockCategoryDetailView({
       if (response.ok) {
         showSuccess('成功', '记录已删除')
         // 重新获取数据
-        window.location.reload()
+        loadTransactions(pagination.currentPage)
       } else {
         const error = await response.json()
         showError('删除失败', error.message || '删除记录时发生错误')
@@ -255,12 +258,18 @@ export default function StockCategoryDetailView({
 
       {/* 分类摘要卡片 */}
       <div className="mb-8">
-        <StockCategorySummaryCard
-          category={category}
-          currencySymbol={currencySymbol}
-          summaryData={summaryData}
-          baseCurrency={baseCurrency}
-        />
+        {(category.type === 'ASSET' || category.type === 'LIABILITY') && (
+          <StockCategorySummaryCard
+            category={{
+              ...category,
+              type: category.type,
+              transactions: category.transactions || []
+            }}
+            currencySymbol={currencySymbol}
+            summaryData={summaryData}
+            baseCurrency={baseCurrency}
+          />
+        )}
       </div>
 
       {/* 汇总数据展示 */}
@@ -276,7 +285,7 @@ export default function StockCategoryDetailView({
               <div className="mb-6">
                 <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.subcategories')}</h3>
                 <div className="space-y-2">
-                  {summaryData.children.map((child: any) => {
+                  {summaryData.children.map((child) => {
                     // 使用子分类的实际余额汇总
                     const childBalances = child.balances || {}
                     const hasBalances = Object.keys(childBalances).length > 0
@@ -291,7 +300,7 @@ export default function StockCategoryDetailView({
                         </Link>
                         <div className="text-sm text-gray-600 dark:text-gray-400 flex flex-col items-end">
                           {hasBalances ? (
-                            Object.entries(childBalances).map(([currencyCode, balance]: [string, any]) => {
+                            Object.entries(childBalances).map(([currencyCode, balance]) => {
                               // 查找对应的货币信息
                               const currencyInfo = currencies.find(c => c.code === currencyCode)
                               const symbol = currencyInfo?.symbol || currencyCode
@@ -327,10 +336,7 @@ export default function StockCategoryDetailView({
               <div>
                 <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.accounts')}</h3>
                 <div className="space-y-2">
-                  {summaryData.accounts.map((account: any) => {
-                    // 获取账户的货币信息
-                    const accountCurrencies = Object.keys(account.balances || {})
-
+                  {summaryData.accounts.map((account) => {
                     return (
                       <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <Link
@@ -340,7 +346,7 @@ export default function StockCategoryDetailView({
                           {account.name}
                         </Link>
                         <div className="text-sm text-gray-600 dark:text-gray-400 flex flex-col items-end">
-                          {account.balances && Object.entries(account.balances).map(([currencyCode, balance]: [string, any]) => {
+                          {account.balances && Object.entries(account.balances).map(([currencyCode, balance]) => {
                             // 查找对应的货币信息
                             const currencyInfo = currencies.find(c => c.code === currencyCode)
                             const originalSymbol = currencyInfo?.symbol || currencyCode
@@ -383,17 +389,22 @@ export default function StockCategoryDetailView({
       )}
 
       {/* 月度汇总图表 */}
-      {monthlyData && (
-        <div className="mb-8">
-          <MonthlySummaryChart
-            stockMonthlyData={monthlyData.monthlyData}
-            baseCurrency={monthlyData.baseCurrency}
-            title={`${category.name} - ${t('category.monthly.balance.summary')}`}
-            height={400}
-            chartType="stock"
-          />
-        </div>
-      )}
+      {monthlyData && (() => {
+        const baseCurrencyForChart = currencies.find(c => c.code === monthlyData.baseCurrency)
+        if (!baseCurrencyForChart) return null
+
+        return (
+          <div className="mb-8">
+            <MonthlySummaryChart
+              stockMonthlyData={monthlyData.monthlyData}
+              baseCurrency={baseCurrencyForChart}
+              title={`${category.name} - ${t('category.monthly.balance.summary')}`}
+              height={400}
+              chartType="stock"
+            />
+          </div>
+        )
+      })()}
 
       {/* 余额变化记录 */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
@@ -403,7 +414,7 @@ export default function StockCategoryDetailView({
               {t('category.balance.change.records')}
             </h2>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              {t('common.total')} {category.transactions.length} {t('category.transaction.count')}
+              {t('common.total')} {pagination.totalItems} {t('category.transaction.count')}
             </span>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -411,17 +422,26 @@ export default function StockCategoryDetailView({
           </p>
         </div>
 
-        <TransactionList
-          transactions={category.transactions}
-          onEdit={handleEditTransaction} // 支持编辑余额调整记录
-          onDelete={handleDeleteTransaction} // 支持删除记录
-          currencySymbol={currencySymbol}
-          showAccount={true}
-          readOnly={false} // 非只读模式
-          allowDeleteBalanceAdjustment={true} // 允许删除余额调整记录
-          enablePagination={true} // 启用分页
-          itemsPerPage={10} // 每页10条
-        />
+        {isLoadingTransactions ? (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-500">{t('common.loading')}</p>
+          </div>
+        ) : (
+          <TransactionList
+            transactions={transactions}
+            onEdit={handleEditTransaction}
+            onDelete={handleDeleteTransaction}
+            currencySymbol={currencySymbol}
+            showAccount={true}
+            readOnly={false}
+            allowDeleteBalanceAdjustment={true}
+            pagination={{
+              ...pagination,
+              onPageChange: handlePageChange
+            }}
+          />
+        )}
       </div>
 
 

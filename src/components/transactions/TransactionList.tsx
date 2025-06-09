@@ -3,42 +3,7 @@
 import { useState } from 'react'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useLanguage } from '@/contexts/LanguageContext'
-
-interface Category {
-  id: string
-  name: string
-  type?: 'INCOME' | 'EXPENSE' | 'ASSET' | 'LIABILITY'
-}
-
-interface Currency {
-  code: string
-  name: string
-  symbol: string
-}
-
-interface Tag {
-  id: string
-  name: string
-  color?: string
-}
-
-interface Account {
-  id: string
-  name: string
-}
-
-interface Transaction {
-  id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
-  amount: number
-  description: string
-  notes?: string
-  date: string
-  category: Category
-  currency: Currency
-  tags: { tag: Tag }[]
-  account?: Account
-}
+import { Transaction } from '@/types/transaction'
 
 interface TransactionListProps {
   transactions: Transaction[]
@@ -50,8 +15,14 @@ interface TransactionListProps {
   showAccount?: boolean
   readOnly?: boolean
   allowDeleteBalanceAdjustment?: boolean // 是否允许删除余额调整记录
-  enablePagination?: boolean // 是否启用分页
-  itemsPerPage?: number // 每页显示条数
+  // 新增分页属性
+  pagination?: {
+    currentPage: number
+    totalPages: number
+    totalItems: number
+    onPageChange: (page: number) => void
+    itemsPerPage: number
+  }
   headerTitle?: string // 自定义表头标题
   headerDescription?: string // 自定义表头描述
   listType?: 'stock' | 'flow' | 'default' // 列表类型，用于确定默认表头文本
@@ -61,17 +32,16 @@ export default function TransactionList({
   transactions,
   onEdit,
   onDelete,
-  onBatchEdit,
+  // onBatchEdit,
   onBatchDelete,
   currencySymbol,
   showAccount = true,
   readOnly = false,
   allowDeleteBalanceAdjustment = false,
-  enablePagination = false,
-  itemsPerPage = 10,
-  headerTitle,
-  headerDescription,
-  listType = 'default'
+  pagination,
+  // headerTitle,
+  // headerDescription,
+  // listType = 'default'
 }: TransactionListProps) {
   const { t } = useLanguage()
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set())
@@ -79,7 +49,6 @@ export default function TransactionList({
   const [showSingleDeleteConfirm, setShowSingleDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
   const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
 
   // 判断是否为余额调整记录
   const isBalanceAdjustment = (transaction: Transaction) => {
@@ -143,7 +112,7 @@ export default function TransactionList({
   }
 
   const getAmountDisplay = (transaction: Transaction) => {
-    const amount = transaction.amount.toFixed(2)
+    const amount = Number(transaction.amount).toFixed(2)
     const symbol = transaction.currency.symbol || currencySymbol
 
     switch (transaction.type) {
@@ -200,15 +169,11 @@ export default function TransactionList({
     }
   }
 
-  // 分页逻辑
-  const totalPages = enablePagination ? Math.ceil(transactions.length / itemsPerPage) : 1
-  const startIndex = enablePagination ? (currentPage - 1) * itemsPerPage : 0
-  const endIndex = enablePagination ? startIndex + itemsPerPage : transactions.length
-  const paginatedTransactions = enablePagination ? transactions.slice(startIndex, endIndex) : transactions
-
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    setSelectedTransactions(new Set()) // 切换页面时清空选择
+    if (pagination && page >= 1 && page <= pagination.totalPages) {
+      pagination.onPageChange(page)
+      setSelectedTransactions(new Set()) // 切换页面时清空选择
+    }
   }
 
   const handleSelectTransaction = (transactionId: string) => {
@@ -222,19 +187,18 @@ export default function TransactionList({
   }
 
   const handleSelectAll = () => {
-    const currentTransactions = enablePagination ? paginatedTransactions : transactions
-    if (selectedTransactions.size === currentTransactions.length) {
+    if (selectedTransactions.size === transactions.length) {
       setSelectedTransactions(new Set())
     } else {
-      setSelectedTransactions(new Set(currentTransactions.map(t => t.id)))
+      setSelectedTransactions(new Set(transactions.map(t => t.id)))
     }
   }
 
-  const handleBatchEditClick = () => {
-    if (onBatchEdit && selectedTransactions.size > 0) {
-      onBatchEdit(Array.from(selectedTransactions))
-    }
-  }
+  // const handleBatchEditClick = () => {
+  //   if (onBatchEdit && selectedTransactions.size > 0) {
+  //     onBatchEdit(Array.from(selectedTransactions))
+  //   }
+  // }
 
   const handleBatchDeleteClick = () => {
     if (onBatchDelete && selectedTransactions.size > 0) {
@@ -323,7 +287,7 @@ export default function TransactionList({
             {!readOnly && (
               <input
                 type="checkbox"
-                checked={selectedTransactions.size === (enablePagination ? paginatedTransactions : transactions).length}
+                checked={transactions.length > 0 && selectedTransactions.size === transactions.length}
                 onChange={handleSelectAll}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
               />
@@ -332,9 +296,9 @@ export default function TransactionList({
               {readOnly ? t('transaction.list.header.records') : t('transaction.list.header.transactions')}
             </span>
           </div>
-          {enablePagination && totalPages > 1 && (
+          {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-              <span>{t('transaction.list.pagination.info', { current: currentPage, total: totalPages })}</span>
+              <span>{t('transaction.list.pagination.info', { current: pagination.currentPage, total: pagination.totalPages })}</span>
             </div>
           )}
         </div>
@@ -342,7 +306,7 @@ export default function TransactionList({
 
       {/* 交易列表 */}
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        {(enablePagination ? paginatedTransactions : transactions).map(transaction => (
+        {transactions.map(transaction => (
           <div
             key={transaction.id}
             className={`p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
@@ -568,20 +532,20 @@ export default function TransactionList({
       </div>
 
       {/* 分页控件 */}
-      {enablePagination && totalPages > 1 && (
+      {pagination && pagination.totalPages > 1 && (
         <div className="bg-white dark:bg-gray-900 px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6">
           <div className="flex items-center justify-between">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={pagination.currentPage === 1}
                 className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('common.pagination.previous')}
               </button>
               <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={pagination.currentPage === pagination.totalPages}
                 className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('common.pagination.next')}
@@ -591,17 +555,17 @@ export default function TransactionList({
               <div>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
                   {t('common.pagination.showing', {
-                    start: startIndex + 1,
-                    end: Math.min(endIndex, transactions.length),
-                    total: transactions.length
+                    start: (pagination.currentPage - 1) * pagination.itemsPerPage + 1,
+                    end: Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems),
+                    total: pagination.totalItems
                   })}
                 </p>
               </div>
               <div>
                 <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                   <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
+                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                    disabled={pagination.currentPage === 1}
                     className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="sr-only">{t('common.pagination.previous')}</span>
@@ -609,12 +573,12 @@ export default function TransactionList({
                       <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        page === currentPage
+                        page === pagination.currentPage
                           ? 'z-10 bg-blue-50 dark:bg-blue-900/50 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-300'
                           : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
@@ -623,8 +587,8 @@ export default function TransactionList({
                     </button>
                   ))}
                   <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
+                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                    disabled={pagination.currentPage === pagination.totalPages}
                     className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="sr-only">{t('common.pagination.next')}</span>

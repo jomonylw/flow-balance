@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import SidebarSearchBox from './SidebarSearchBox'
 import SidebarDashboardLink from './SidebarDashboardLink'
+import SidebarTransactionsLink from './SidebarTransactionsLink'
 import SidebarReportsLink from './SidebarReportsLink'
 import OptimizedCategoryAccountTree from './OptimizedCategoryAccountTree'
 import TopCategoryModal from '@/components/ui/TopCategoryModal'
@@ -10,48 +11,12 @@ import TranslationLoader from '@/components/ui/TranslationLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 
-interface User {
-  id: string
-  email: string
-}
-
-interface Category {
-  id: string
-  name: string
-  type: string
-  parentId: string | null
-  order: number
-  [key: string]: any
-}
-
-interface Account {
-  id: string
-  name: string
-  categoryId: string
-  description?: string
-  color?: string
-  currencyCode: string
-  currency?: {
-    code: string
-    name: string
-    symbol: string
-  }
-  category: {
-    id: string
-    name: string
-    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-  }
-  [key: string]: any
-}
-
 interface NavigationSidebarProps {
-  user: User
   isMobile?: boolean
   onNavigate?: () => void
 }
 
 export default function NavigationSidebar({
-  user,
   isMobile = false,
   onNavigate
 }: NavigationSidebarProps) {
@@ -142,6 +107,9 @@ export default function NavigationSidebar({
         <div className="p-4 space-y-4">
           {/* Dashboard 链接 */}
           <SidebarDashboardLink onNavigate={onNavigate} />
+
+          {/* 交易链接 */}
+          <SidebarTransactionsLink onNavigate={onNavigate} />
 
           {/* 报表链接 */}
           <SidebarReportsLink onNavigate={onNavigate} />

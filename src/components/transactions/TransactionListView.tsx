@@ -8,58 +8,15 @@ import TransactionStats from './TransactionStats'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-
-interface User {
-  id: string
-  email: string
-  settings?: {
-    baseCurrency?: {
-      code: string
-      name: string
-      symbol: string
-    }
-  }
-}
-
-interface Account {
-  id: string
-  name: string
-  category: {
-    id?: string
-    name: string
-    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-  }
-}
-
-interface Category {
-  id: string
-  name: string
-}
-
-interface Currency {
-  code: string
-  name: string
-  symbol: string
-}
-
-interface Tag {
-  id: string
-  name: string
-  color?: string
-}
-
-interface Transaction {
-  id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
-  amount: number
-  description: string
-  notes?: string
-  date: string
-  account: Account
-  category: Category
-  currency: Currency
-  tags: { tag: Tag }[]
-}
+import {
+  Account,
+  Category,
+  Currency,
+  Tag,
+  Transaction,
+  TransactionFormData,
+  User
+} from '@/types/transaction'
 
 interface TransactionListViewProps {
   accounts: Account[]
@@ -90,12 +47,12 @@ export default function TransactionListView({
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState<any>(null)
+  const [editingTransaction, setEditingTransaction] = useState<TransactionFormData | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: 10,
     total: 0,
     totalPages: 0
   })
@@ -153,8 +110,25 @@ export default function TransactionListView({
     setIsTransactionModalOpen(true)
   }
 
-  const handleEditTransaction = (transaction: any) => {
-    setEditingTransaction(transaction)
+  const handleEditTransaction = (transaction: Transaction) => {
+    if (!transaction.account) {
+      console.error('Transaction is missing account data', transaction)
+      showError('错误', '交易数据不完整，缺少账户信息。')
+      return
+    }
+    const formTransaction: TransactionFormData = {
+      id: transaction.id,
+      accountId: transaction.account.id,
+      categoryId: transaction.category.id,
+      currencyCode: transaction.currency.code,
+      type: transaction.type === 'BALANCE_ADJUSTMENT' ? 'EXPENSE' : transaction.type,
+      amount: transaction.amount,
+      description: transaction.description,
+      notes: transaction.notes,
+      date: transaction.date,
+      tagIds: transaction.tags.map(t => t.tag.id)
+    }
+    setEditingTransaction(formTransaction)
     setIsTransactionModalOpen(true)
   }
 
@@ -252,27 +226,6 @@ export default function TransactionListView({
               <span className="text-sm text-gray-500">
                 {t('account.total.transactions', { count: pagination.total })}
               </span>
-              {pagination.totalPages > 1 && (
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={pagination.page === 1}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                  >
-                    {t('common.previous')}
-                  </button>
-                  <span className="text-sm text-gray-500">
-                    {pagination.page} / {pagination.totalPages}
-                  </span>
-                  <button
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={pagination.page === pagination.totalPages}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                  >
-                    {t('common.next')}
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -289,6 +242,13 @@ export default function TransactionListView({
             onDelete={handleDeleteTransaction}
             currencySymbol={currencySymbol}
             showAccount={true}
+            pagination={{
+              currentPage: pagination.page,
+              totalPages: pagination.totalPages,
+              totalItems: pagination.total,
+              onPageChange: handlePageChange,
+              itemsPerPage: pagination.limit
+            }}
           />
         )}
       </div>
@@ -299,14 +259,7 @@ export default function TransactionListView({
         onClose={() => setIsTransactionModalOpen(false)}
         onSuccess={handleTransactionSuccess}
         transaction={editingTransaction}
-        accounts={accounts.map(account => ({
-          ...account,
-          category: {
-            id: account.category?.id || account.id,
-            name: account.category?.name || '未分类',
-            type: account.category?.type
-          }
-        }))}
+        accounts={accounts}
         categories={categories}
         currencies={currencies}
         tags={tags}

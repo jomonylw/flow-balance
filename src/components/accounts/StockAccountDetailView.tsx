@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import BalanceUpdateModal from './BalanceUpdateModal'
@@ -10,80 +10,39 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-
-
-interface User {
-  id: string
-  email: string
-  settings?: {
-    baseCurrency?: {
-      code: string
-      name: string
-      symbol: string
-    }
-  }
-}
-
-interface Category {
-  id: string
-  name: string
-  type: 'ASSET' | 'LIABILITY'
-}
-
-interface Currency {
-  code: string
-  name: string
-  symbol: string
-}
-
-interface Tag {
-  id: string
-  name: string
-  color?: string
-}
-
-interface Transaction {
-  id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
-  amount: number
-  description: string
-  notes?: string
-  date: string
-  category: Category
-  currency: Currency
-  tags: { tag: Tag }[]
-}
-
-interface Account {
-  id: string
-  name: string
-  description?: string
-  category: Category
-  transactions: Transaction[]
-}
+import {
+  Account,
+  Currency,
+  Transaction,
+  User
+} from '@/types/transaction'
 
 interface StockAccountDetailViewProps {
   account: Account
-  categories: Category[]
   currencies: Currency[]
-  tags: Tag[]
   user: User
 }
 
 export default function StockAccountDetailView({
   account,
-  categories,
   currencies,
-  tags,
   user
 }: StockAccountDetailViewProps) {
   const { t } = useLanguage()
-  const { showSuccess, showError, showInfo } = useToast()
+  const { showSuccess, showError } = useToast()
   const router = useRouter()
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState<any>(null)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10
+  })
+  const [isLoading, setIsLoading] = useState(true)
 
   const handleUpdateBalance = () => {
     setIsBalanceUpdateModalOpen(true)
@@ -91,7 +50,7 @@ export default function StockAccountDetailView({
 
   const handleBalanceUpdateSuccess = () => {
     // 重新获取数据，但不重载页面
-    router.refresh()
+    loadTransactions(pagination.currentPage)
   }
 
   const handleDeleteAccount = async () => {
@@ -144,6 +103,43 @@ export default function StockAccountDetailView({
     }
   }
 
+  const loadTransactions = async (page = 1) => {
+    setIsLoading(true)
+    try {
+      const params = new URLSearchParams({
+        accountId: account.id,
+        page: page.toString(),
+        limit: pagination.itemsPerPage.toString()
+      })
+      const response = await fetch(`/api/transactions?${params}`)
+      const result = await response.json()
+      if (result.success) {
+        setTransactions(result.data.transactions)
+        setPagination(prev => ({
+          ...prev,
+          currentPage: result.data.pagination.page,
+          totalPages: result.data.pagination.totalPages,
+          totalItems: result.data.pagination.total
+        }))
+      } else {
+        showError('加载交易失败', result.error)
+      }
+    } catch (error) {
+      console.error('Failed to load transactions', error)
+      showError('加载交易失败', '网络错误')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadTransactions(pagination.currentPage)
+  }, [pagination.currentPage, account.id])
+
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, currentPage: page }))
+  }
+
   const handleDeleteBalanceRecord = async (transactionId: string) => {
     try {
       const response = await fetch(`/api/transactions/${transactionId}`, {
@@ -154,8 +150,7 @@ export default function StockAccountDetailView({
 
       if (result.success) {
         showSuccess(t('success.deleted'), t('account.balance.record.deleted'))
-        // 重新获取数据，但不重载页面
-        router.refresh()
+        loadTransactions(pagination.currentPage)
       } else {
         showError(t('common.delete.failed'), result.error || t('error.unknown'))
       }
@@ -165,15 +160,9 @@ export default function StockAccountDetailView({
     }
   }
 
-  const handleEditTransaction = (transaction: any) => {
+  const handleEditTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction)
     setIsBalanceUpdateModalOpen(true)
-  }
-
-  // 批量编辑功能（暂时隐藏）
-  const handleBatchEdit = (transactionIds: string[]) => {
-    showInfo(t('feature.in.development'), t('batch.edit.development', { count: transactionIds.length }))
-    // TODO: 实现批量编辑功能
   }
 
   const handleBatchDelete = async (transactionIds: string[]) => {
@@ -187,10 +176,10 @@ export default function StockAccountDetailView({
 
       if (successCount === transactionIds.length) {
         showSuccess(t('success.batch.deleted'), t('batch.delete.success', { count: successCount }))
-        router.refresh()
+        loadTransactions(pagination.currentPage)
       } else {
         showError(t('error.partial.delete'), t('batch.delete.partial', { success: successCount, total: transactionIds.length }))
-        router.refresh()
+        loadTransactions(pagination.currentPage)
       }
     } catch (error) {
       console.error('Batch delete error:', error)
@@ -199,7 +188,7 @@ export default function StockAccountDetailView({
   }
 
   // 使用专业的余额计算服务
-  const accountBalances = calculateAccountBalance(account)
+  const accountBalances = calculateAccountBalance({ ...account, transactions: account.transactions || [] })
   const baseCurrencyCode = user.settings?.baseCurrency?.code || 'USD'
 
   // 获取账户的实际余额（优先使用基础货币，如果没有则使用账户的主要货币）
@@ -325,11 +314,20 @@ export default function StockAccountDetailView({
 
       {/* 账户摘要卡片 */}
       <div className="mb-6 sm:mb-8">
-        <StockAccountSummaryCard
-          account={account}
-          balance={balance}
-          currencySymbol={currencySymbol}
-        />
+        {(account.category.type === 'ASSET' || account.category.type === 'LIABILITY') && (
+          <StockAccountSummaryCard
+            account={{
+              ...account,
+              category: {
+                ...account.category,
+                type: account.category.type
+              },
+              transactions: account.transactions || []
+            }}
+            balance={balance}
+            currencySymbol={currencySymbol}
+          />
+        )}
       </div>
 
       {/* 余额变化记录 */}
@@ -346,9 +344,9 @@ export default function StockAccountDetailView({
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
               <span className="text-xs sm:text-sm text-gray-500">
-                {t('account.total.records', { count: account.transactions.length })}
+                {t('account.total.records', { count: pagination.totalItems })}
               </span>
-              {account.transactions.length > 0 && (
+              {pagination.totalItems > 0 && (
                 <button
                   onClick={() => setShowClearConfirm(true)}
                   className="inline-flex items-center px-3 py-1 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
@@ -363,18 +361,27 @@ export default function StockAccountDetailView({
           </div>
         </div>
         
-        <TransactionList
-          transactions={account.transactions}
-          onEdit={handleEditTransaction} // 支持编辑余额记录
-          onDelete={handleDeleteBalanceRecord} // 允许删除余额调整记录
-          onBatchDelete={handleBatchDelete} // 批量删除
-          currencySymbol={currencySymbol}
-          showAccount={false}
-          readOnly={false} // 允许操作
-          allowDeleteBalanceAdjustment={true} // 允许删除余额调整记录
-          enablePagination={true} // 启用分页
-          itemsPerPage={10} // 每页10条
-        />
+        {isLoading ? (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-500">{t('common.loading')}</p>
+          </div>
+        ) : (
+          <TransactionList
+            transactions={transactions}
+            onEdit={handleEditTransaction}
+            onDelete={handleDeleteBalanceRecord}
+            onBatchDelete={handleBatchDelete}
+            currencySymbol={currencySymbol}
+            showAccount={false}
+            readOnly={false}
+            allowDeleteBalanceAdjustment={true}
+            pagination={{
+              ...pagination,
+              onPageChange: handlePageChange
+            }}
+          />
+        )}
       </div>
 
       {/* 余额更新模态框 */}

@@ -4,35 +4,55 @@ import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
 import { TransactionType } from '@prisma/client'
 
+// 辅助函数：递归获取所有后代分类的ID
+async function getDescendantCategoryIds(categoryId: string): Promise<string[]> {
+const children = await prisma.category.findMany({
+  where: { parentId: categoryId },
+  select: { id: true }
+})
+
+const descendantIds: string[] = []
+for (const child of children) {
+  descendantIds.push(child.id)
+  const grandChildrenIds = await getDescendantCategoryIds(child.id)
+  descendantIds.push(...grandChildrenIds)
+}
+return descendantIds
+}
+
 export async function GET(request: NextRequest) {
-  try {
-    const user = await getCurrentUser()
-    if (!user) {
-      return unauthorizedResponse()
-    }
+try {
+  const user = await getCurrentUser()
+  if (!user) {
+    return unauthorizedResponse()
+  }
 
-    const { searchParams } = new URL(request.url)
-    const accountId = searchParams.get('accountId')
-    const categoryId = searchParams.get('categoryId')
-    const type = searchParams.get('type') as TransactionType | null
-    const dateFrom = searchParams.get('dateFrom')
-    const dateTo = searchParams.get('dateTo')
-    const search = searchParams.get('search')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const skip = (page - 1) * limit
+  const { searchParams } = new URL(request.url)
+  const accountId = searchParams.get('accountId')
+  const categoryId = searchParams.get('categoryId')
+  const type = searchParams.get('type') as TransactionType | null
+  const dateFrom = searchParams.get('dateFrom')
+  const dateTo = searchParams.get('dateTo')
+  const search = searchParams.get('search')
+  const page = parseInt(searchParams.get('page') || '1')
+  const limit = parseInt(searchParams.get('limit') || '20')
+  const skip = (page - 1) * limit
 
-    // 构建查询条件
-    const where: Record<string, unknown> = {
-      userId: user.id
-    }
+  // 构建查询条件
+  const where: Record<string, unknown> = {
+    userId: user.id
+  }
 
-    if (accountId) where.accountId = accountId
-    if (categoryId) where.categoryId = categoryId
-    if (type) where.type = type
+  if (accountId) where.accountId = accountId
+  if (categoryId) {
+    const descendantIds = await getDescendantCategoryIds(categoryId)
+    const allCategoryIds = [categoryId, ...descendantIds]
+    where.categoryId = { in: allCategoryIds }
+  }
+  if (type) where.type = type
 
-    // 日期范围过滤
-    if (dateFrom || dateTo) {
+  // 日期范围过滤
+  if (dateFrom || dateTo) {
       where.date = {} as Record<string, Date>
       if (dateFrom) (where.date as Record<string, Date>).gte = new Date(dateFrom)
       if (dateTo) {

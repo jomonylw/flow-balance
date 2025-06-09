@@ -12,7 +12,59 @@ import MonthlySummaryChart from '@/components/charts/MonthlySummaryChart'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import type { FlowCategoryDetailViewProps } from './types'
+import {
+  Account,
+  Category,
+  Currency,
+  Tag,
+  Transaction,
+  TransactionFormData,
+  User
+} from '@/types/transaction'
+
+// 定义图表组件期望的数据格式
+interface MonthlyDataForChart {
+  [monthKey: string]: {
+    [currencyCode: string]: {
+      income: number
+      expense: number
+      balance: number
+      transactionCount: number
+      categories: Record<string, { income: number; expense: number; balance: number }>
+    }
+  }
+}
+
+interface SummaryData {
+  transactionSummary: {
+    [currency: string]: {
+      net: number
+      income: number
+      expense: number
+    }
+  }
+  children: { id: string; name: string }[]
+  accounts: {
+    id: string
+    name: string
+    balances?: { [currency: string]: number }
+    transactionCount: number
+  }[]
+}
+
+interface MonthlyData {
+  monthlyData: { month: string; income: number; expense: number; net: number }[]
+  baseCurrency: string
+}
+
+interface FlowCategoryDetailViewProps {
+  category: Category
+  accounts: Account[]
+  categories: Category[]
+  currencies: Currency[]
+  tags: Tag[]
+  user: User
+}
 
 export default function FlowCategoryDetailView({
   category,
@@ -25,20 +77,25 @@ export default function FlowCategoryDetailView({
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState<any>(null)
+  const [editingTransaction, setEditingTransaction] = useState<TransactionFormData | null>(null)
   const [timeRange, setTimeRange] = useState('thisMonth')
-  const [summaryData, setSummaryData] = useState<any>(null)
-  const [monthlyData, setMonthlyData] = useState<any>(null)
-  const [isLoadingSummary, setIsLoadingSummary] = useState(true)
+  const [summaryData, setSummaryData] = useState<SummaryData | null>(null)
+  const [monthlyData, setMonthlyData] = useState<MonthlyData | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10
+  })
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
 
   // 获取分类汇总数据
   useEffect(() => {
     const fetchSummaryData = async () => {
       try {
-        setIsLoadingSummary(true)
-
         // 并行获取汇总数据和月度数据
         const [summaryRes, monthlyRes] = await Promise.all([
           fetch(`/api/categories/${category.id}/summary`),
@@ -56,34 +113,73 @@ export default function FlowCategoryDetailView({
         }
       } catch (error) {
         console.error('Error fetching summary data:', error)
-      } finally {
-        setIsLoadingSummary(false)
       }
     }
 
     fetchSummaryData()
   }, [category.id])
 
+  // 获取交易记录
+  const loadTransactions = async (page = 1) => {
+    setIsLoadingTransactions(true)
+    try {
+      const params = new URLSearchParams({
+        categoryId: category.id,
+        page: page.toString(),
+        limit: pagination.itemsPerPage.toString()
+      })
+      const response = await fetch(`/api/transactions?${params}`)
+      const result = await response.json()
+      if (result.success) {
+        setTransactions(result.data.transactions)
+        setPagination(prev => ({
+          ...prev,
+          currentPage: result.data.pagination.page,
+          totalPages: result.data.pagination.totalPages,
+          totalItems: result.data.pagination.total
+        }))
+      } else {
+        showError('加载交易记录失败', result.error)
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error)
+      showError('加载交易记录失败', '网络错误')
+    } finally {
+      setIsLoadingTransactions(false)
+    }
+  }
+
+  useEffect(() => {
+    loadTransactions(pagination.currentPage)
+  }, [pagination.currentPage, category.id])
+
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, currentPage: page }))
+  }
+
   const handleAddTransaction = () => {
     setEditingTransaction(null)
     setIsTransactionModalOpen(true)
   }
 
-  const handleEditTransaction = (transaction: any) => {
-    // 转换为TransactionFormModal期望的格式
-    const formTransaction = {
+  const handleEditTransaction = (transaction: Transaction) => {
+    if (!transaction.account) {
+      showError('错误', '交易数据不完整，缺少账户信息。')
+      return
+    }
+    const formTransaction: TransactionFormData = {
       id: transaction.id,
       accountId: transaction.account.id,
-      categoryId: category.id, // 使用当前分类的ID
+      categoryId: transaction.category.id,
       currencyCode: transaction.currency.code,
-      type: transaction.type,
+      type: transaction.type === 'BALANCE_ADJUSTMENT' ? 'EXPENSE' : transaction.type,
       amount: transaction.amount,
       description: transaction.description,
       notes: transaction.notes,
       date: transaction.date,
-      tags: transaction.tags
+      tagIds: transaction.tags.map(t => t.tag.id)
     }
-    setEditingTransaction(formTransaction as any)
+    setEditingTransaction(formTransaction)
     setIsTransactionModalOpen(true)
   }
 
@@ -142,7 +238,7 @@ export default function FlowCategoryDetailView({
     }
 
     fetchSummaryData()
-    // 注意：交易列表会通过 fetchSummaryData 中的数据更新自动刷新
+    loadTransactions(pagination.currentPage)
   }
 
   // 计算分类统计
@@ -163,7 +259,7 @@ export default function FlowCategoryDetailView({
     let incomeCount = 0
     let expenseCount = 0
 
-    category.transactions.forEach(transaction => {
+    transactions.forEach(transaction => {
       const transactionDate = new Date(transaction.date)
       const amount = transaction.amount
 
@@ -225,8 +321,8 @@ export default function FlowCategoryDetailView({
       monthlyChange,
       incomeCount,
       expenseCount,
-      totalCount: category.transactions.length,
-      averageAmount: category.transactions.length > 0 ? totalAmount / category.transactions.length : 0
+      totalCount: transactions.length,
+      averageAmount: transactions.length > 0 ? totalAmount / transactions.length : 0
     }
   }
 
@@ -307,13 +403,13 @@ export default function FlowCategoryDetailView({
       <div className="mb-8">
         {category.type ? (
           <SmartCategorySummaryCard
-            category={category}
+            category={{ ...category, transactions: category.transactions || [] }}
             currencySymbol={currencySymbol}
             summaryData={summaryData}
           />
         ) : (
           <CategorySummaryCard
-            category={category}
+            category={{ ...category, transactions: category.transactions || [] }}
             stats={stats}
             currencySymbol={currencySymbol}
           />
@@ -330,7 +426,7 @@ export default function FlowCategoryDetailView({
 
             {/* 总余额/净收支 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {summaryData.transactionSummary && Object.entries(summaryData.transactionSummary).map(([currency, data]: [string, any]) => (
+              {summaryData.transactionSummary && Object.entries(summaryData.transactionSummary).map(([currency, data]) => (
                 <div key={currency} className="text-center p-4 bg-gray-50 rounded-lg">
                   <div className="text-sm text-gray-500 mb-1">
                     {currency} {t('category.net.cash.flow')}
@@ -352,7 +448,7 @@ export default function FlowCategoryDetailView({
               <div className="mb-6">
                 <h3 className="text-md font-medium text-gray-800 mb-3">{t('category.subcategories')}</h3>
                 <div className="space-y-2">
-                  {summaryData.children.map((child: any) => (
+                  {summaryData.children.map((child) => (
                     <div key={child.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <Link
                         href={`/categories/${child.id}`}
@@ -376,7 +472,7 @@ export default function FlowCategoryDetailView({
               <div>
                 <h3 className="text-md font-medium text-gray-800 mb-3">{t('category.accounts')}</h3>
                 <div className="space-y-2">
-                  {summaryData.accounts.map((account: any) => (
+                  {summaryData.accounts.map((account) => (
                     <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <Link
                         href={`/accounts/${account.id}`}
@@ -385,7 +481,7 @@ export default function FlowCategoryDetailView({
                         {account.name}
                       </Link>
                       <div className="text-sm text-gray-600">
-                        {account.balances && Object.entries(account.balances).map(([currency, balance]: [string, any]) => (
+                        {account.balances && Object.entries(account.balances).map(([currency, balance]) => (
                           <span key={currency} className={`ml-2 ${
                             balance >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
@@ -408,17 +504,41 @@ export default function FlowCategoryDetailView({
       )}
 
       {/* 月度汇总图表 */}
-      {monthlyData && (
-        <div className="mb-8">
-          <MonthlySummaryChart
-            monthlyData={monthlyData.monthlyData}
-            baseCurrency={monthlyData.baseCurrency}
-            title={`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
-            height={400}
-            chartType="flow"
-          />
-        </div>
-      )}
+      {monthlyData && (() => {
+        const baseCurrencyForChart = currencies.find(c => c.code === monthlyData.baseCurrency)
+        if (!baseCurrencyForChart) return null
+
+        const transformDataForChart = (data: { month: string; income: number; expense: number; net: number }[], currencyCode: string): MonthlyDataForChart => {
+          const transformed: MonthlyDataForChart = {}
+          data.forEach(item => {
+            const monthKey = item.month
+            transformed[monthKey] = {
+              [currencyCode]: {
+                income: item.income,
+                expense: item.expense,
+                balance: item.net,
+                transactionCount: 0, // API doesn't provide this, default to 0
+                categories: {} // API doesn't provide this, default to empty object
+              }
+            }
+          })
+          return transformed
+        }
+
+        const chartData = transformDataForChart(monthlyData.monthlyData, monthlyData.baseCurrency)
+
+        return (
+          <div className="mb-8">
+            <MonthlySummaryChart
+              monthlyData={chartData}
+              baseCurrency={baseCurrencyForChart}
+              title={`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
+              height={400}
+              chartType="flow"
+            />
+          </div>
+        )
+      })()}
 
       {/* 图表和时间范围选择 */}
       <div className="bg-white shadow rounded-lg mb-8">
@@ -443,13 +563,13 @@ export default function FlowCategoryDetailView({
         <div className="p-6">
           {category.type ? (
             <SmartCategoryChart
-              category={category}
+              category={{ ...category, transactions: category.transactions || [] }}
               timeRange={timeRange}
               currencySymbol={currencySymbol}
             />
           ) : (
             <CategoryChart
-              transactions={category.transactions}
+              transactions={transactions}
               timeRange={timeRange}
               currencySymbol={currencySymbol}
             />
@@ -465,7 +585,7 @@ export default function FlowCategoryDetailView({
               {t('account.transactions')}
             </h2>
             <span className="text-sm text-gray-500">
-              {t('account.total.transactions', { count: category.transactions.length })}
+              {t('account.total.transactions', { count: pagination.totalItems })}
             </span>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -473,16 +593,25 @@ export default function FlowCategoryDetailView({
           </p>
         </div>
 
-        <TransactionList
-          transactions={category.transactions}
-          onEdit={handleEditTransaction}
-          onDelete={handleDeleteTransaction}
-          currencySymbol={currencySymbol}
-          showAccount={true}
-          readOnly={false}
-          enablePagination={true} // 启用分页
-          itemsPerPage={10} // 每页10条
-        />
+        {isLoadingTransactions ? (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-500">{t('common.loading')}</p>
+          </div>
+        ) : (
+          <TransactionList
+            transactions={transactions}
+            onEdit={handleEditTransaction}
+            onDelete={handleDeleteTransaction}
+            currencySymbol={currencySymbol}
+            showAccount={true}
+            readOnly={false}
+            pagination={{
+              ...pagination,
+              onPageChange: handlePageChange
+            }}
+          />
+        )}
       </div>
 
       {/* 交易表单模态框 */}

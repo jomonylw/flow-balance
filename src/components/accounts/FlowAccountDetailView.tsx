@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
@@ -12,59 +12,15 @@ import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 
-interface User {
-  id: string
-  email: string
-  settings?: {
-    baseCurrency?: {
-      code: string
-      name: string
-      symbol: string
-    }
-  }
-}
-
-interface Category {
-  id: string
-  name: string
-  type?: 'INCOME' | 'EXPENSE' | 'ASSET' | 'LIABILITY'
-}
-
-interface Currency {
-  code: string
-  name: string
-  symbol: string
-}
-
-interface Tag {
-  id: string
-  name: string
-  color?: string
-}
-
-interface Transaction {
-  id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
-  amount: number
-  description: string
-  notes?: string
-  date: string
-  category: Category
-  currency: Currency
-  tags: { tag: Tag }[]
-  account?: {
-    id: string
-    name: string
-  }
-}
-
-interface Account {
-  id: string
-  name: string
-  description?: string
-  category: Category
-  transactions: Transaction[]
-}
+import {
+  Account,
+  Category,
+  Currency,
+  Tag,
+  Transaction,
+  TransactionFormData,
+  User
+} from '@/types/transaction'
 
 interface FlowAccountDetailViewProps {
   account: Account
@@ -85,8 +41,16 @@ export default function FlowAccountDetailView({
   const { showSuccess, showError, showInfo } = useToast()
   const router = useRouter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState<any>(null)
+  const [editingTransaction, setEditingTransaction] = useState<TransactionFormData | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10
+  })
+  const [isLoading, setIsLoading] = useState(true)
 
   const handleAddTransaction = () => {
     setEditingTransaction(null)
@@ -100,15 +64,52 @@ export default function FlowAccountDetailView({
       accountId: account.id,
       categoryId: transaction.category.id,
       currencyCode: transaction.currency.code,
-      type: transaction.type,
+      type: transaction.type === 'BALANCE_ADJUSTMENT' ? 'EXPENSE' : transaction.type,
       amount: transaction.amount,
       description: transaction.description,
       notes: transaction.notes,
       date: transaction.date,
-      tags: transaction.tags
+      tagIds: transaction.tags.map(t => t.tag.id)
     }
-    setEditingTransaction(formTransaction as any)
+    setEditingTransaction(formTransaction)
     setIsTransactionModalOpen(true)
+  }
+
+  const loadTransactions = async (page = 1) => {
+    setIsLoading(true)
+    try {
+      const params = new URLSearchParams({
+        accountId: account.id,
+        page: page.toString(),
+        limit: pagination.itemsPerPage.toString()
+      })
+      const response = await fetch(`/api/transactions?${params}`)
+      const result = await response.json()
+      if (result.success) {
+        setTransactions(result.data.transactions)
+        setPagination(prev => ({
+          ...prev,
+          currentPage: result.data.pagination.page,
+          totalPages: result.data.pagination.totalPages,
+          totalItems: result.data.pagination.total
+        }))
+      } else {
+        showError('加载交易失败', result.error)
+      }
+    } catch (error) {
+      console.error('Failed to load transactions', error)
+      showError('加载交易失败', '网络错误')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadTransactions(pagination.currentPage)
+  }, [pagination.currentPage, account.id])
+
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, currentPage: page }))
   }
 
   const handleDeleteTransaction = async (transactionId: string) => {
@@ -121,8 +122,7 @@ export default function FlowAccountDetailView({
 
       if (result.success) {
         showSuccess('删除成功', '交易记录已删除')
-        // 重新获取数据，但不重载页面
-        router.refresh()
+        loadTransactions(pagination.currentPage) // 重新加载当前页
       } else {
         showError('删除失败', result.error || '未知错误')
       }
@@ -134,7 +134,7 @@ export default function FlowAccountDetailView({
 
   const handleTransactionSuccess = () => {
     // 重新获取数据，但不重载页面
-    router.refresh()
+    loadTransactions(pagination.currentPage)
   }
 
   const handleDeleteAccount = async () => {
@@ -158,10 +158,10 @@ export default function FlowAccountDetailView({
   }
 
   // 批量编辑功能（暂时隐藏）
-  const handleBatchEdit = (transactionIds: string[]) => {
-    showInfo(t('feature.in.development'), t('batch.edit.development', { count: transactionIds.length }))
-    // TODO: 实现批量编辑功能
-  }
+  // const handleBatchEdit = (transactionIds: string[]) => {
+  //   showInfo(t('feature.in.development'), t('batch.edit.development', { count: transactionIds.length }))
+  //   // TODO: 实现批量编辑功能
+  // }
 
   const handleBatchDelete = async (transactionIds: string[]) => {
     try {
@@ -174,10 +174,10 @@ export default function FlowAccountDetailView({
 
       if (successCount === transactionIds.length) {
         showSuccess(t('success.batch.deleted'), t('batch.delete.success', { count: successCount }))
-        router.refresh()
+        loadTransactions(pagination.currentPage)
       } else {
         showError(t('error.partial.delete'), t('batch.delete.partial', { success: successCount, total: transactionIds.length }))
-        router.refresh()
+        loadTransactions(pagination.currentPage)
       }
     } catch (error) {
       console.error('Batch delete error:', error)
@@ -186,7 +186,7 @@ export default function FlowAccountDetailView({
   }
 
   // 使用专业的余额计算服务（流量类账户）
-  const accountBalances = calculateAccountBalance(account)
+  const accountBalances = calculateAccountBalance({ ...account, transactions: account.transactions || [] })
   const baseCurrencyCode = user.settings?.baseCurrency?.code || 'USD'
   const flowTotal = accountBalances[baseCurrencyCode]?.amount || 0
   const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
@@ -296,7 +296,7 @@ export default function FlowAccountDetailView({
       {/* 账户摘要卡片 */}
       <div className="mb-8">
         <FlowAccountSummaryCard
-          account={account}
+          account={{ ...account, transactions: account.transactions || [] }}
           balance={flowTotal}
           currencySymbol={currencySymbol}
         />
@@ -310,7 +310,7 @@ export default function FlowAccountDetailView({
               {t('account.transactions')}
             </h2>
             <span className="text-sm text-gray-500">
-              {t('account.total.transactions', { count: account.transactions.length })}
+              {t('account.total.transactions', { count: pagination.totalItems })}
             </span>
           </div>
           <p className="text-sm text-gray-600 mt-1">
@@ -320,16 +320,25 @@ export default function FlowAccountDetailView({
           </p>
         </div>
         
-        <TransactionList
-          transactions={account.transactions}
-          onEdit={handleEditTransaction}
-          onDelete={handleDeleteTransaction}
-          onBatchDelete={handleBatchDelete} // 批量删除
-          currencySymbol={currencySymbol}
-          showAccount={false}
-          enablePagination={true} // 启用分页
-          itemsPerPage={10} // 每页10条
-        />
+        {isLoading ? (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-500">{t('common.loading')}</p>
+          </div>
+        ) : (
+          <TransactionList
+            transactions={transactions}
+            onEdit={handleEditTransaction}
+            onDelete={handleDeleteTransaction}
+            onBatchDelete={handleBatchDelete}
+            currencySymbol={currencySymbol}
+            showAccount={false}
+            pagination={{
+              ...pagination,
+              onPageChange: handlePageChange
+            }}
+          />
+        )}
       </div>
 
       {/* 交易表单模态框 */}
