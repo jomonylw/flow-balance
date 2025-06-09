@@ -36,7 +36,10 @@ export default async function TransactionsPage() {
   return (
     <AppLayout>
       <TransactionListView
-        accounts={accounts}
+        accounts={accounts.map(account => ({
+          ...account,
+          description: account.description || undefined
+        }))}
         categories={categories}
         currencies={currencies}
         tags={tags.map(tag => ({

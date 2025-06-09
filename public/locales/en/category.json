@@ -34,6 +34,7 @@
   "category.type.flow.data": "Flow Data",
   "category.type.not.set": "Category Type Not Set",
   "category.type.not.set.description": "Please set the correct account type for this category to get professional statistical analysis",
+  "category.current.balance": "Current Balance",
   "category.current.net.value": "Current Net Value",
   "category.monthly.change": "Monthly Change",
   "category.yearly.change": "Yearly Change",

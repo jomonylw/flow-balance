@@ -73,9 +73,7 @@ export default function AccountDetailRouter({
     return (
       <StockAccountDetailView
         account={account as any}
-        categories={categories as any}
         currencies={currencies}
-        tags={tags}
         user={user}
       />
     )

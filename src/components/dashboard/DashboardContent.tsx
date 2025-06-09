@@ -788,8 +788,23 @@ export default function DashboardContent({
             id: account.category.id || account.id, // 使用账户 ID 作为分类 ID 的占位符
             name: account.category.name,
             type: account.category.type
-          }
-        }))}
+          },
+          transactions: (account.transactions || []).map((t, index) => ({
+            id: `${account.id}-${index}`,
+            type: t.type,
+            amount: t.amount,
+            description: '交易记录',
+            notes: '',
+            date: new Date().toISOString(),
+            category: {
+              id: account.category.id || account.id,
+              name: account.category.name,
+              type: account.category.type
+            },
+            currency: t.currency,
+            tags: []
+          }))
+        })) as any}
         categories={categories}
         currencies={currencies}
         tags={tags}

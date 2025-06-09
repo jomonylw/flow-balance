@@ -25,10 +25,7 @@ export default function CategoryDetailView({
     return (
       <StockCategoryDetailView
         category={category as any}
-        accounts={accounts as any}
-        categories={categories as any}
         currencies={currencies}
-        tags={tags}
         user={user}
       />
     )
@@ -38,10 +35,10 @@ export default function CategoryDetailView({
     return (
       <FlowCategoryDetailView
         category={category as any}
-        accounts={accounts}
-        categories={categories}
+        accounts={accounts as any}
+        categories={categories as any}
         currencies={currencies}
-        tags={tags}
+        tags={tags as any}
         user={user}
       />
     )
