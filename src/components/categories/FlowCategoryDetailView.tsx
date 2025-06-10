@@ -9,6 +9,7 @@ import CategoryChart from './CategoryChart'
 import SmartCategorySummaryCard from './SmartCategorySummaryCard'
 import SmartCategoryChart from './SmartCategoryChart'
 import MonthlySummaryChart from '@/components/charts/MonthlySummaryChart'
+import CategorySummaryItem from './CategorySummaryItem'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -446,22 +447,18 @@ export default function FlowCategoryDetailView({
             {/* 子分类汇总 */}
             {summaryData.children && summaryData.children.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-md font-medium text-gray-800 mb-3">{t('category.subcategories')}</h3>
+                <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.subcategories')}</h3>
                 <div className="space-y-2">
                   {summaryData.children.map((child) => (
-                    <div key={child.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <Link
-                        href={`/categories/${child.id}`}
-                        className="font-medium text-blue-600 hover:text-blue-800"
-                      >
-                        {child.name}
-                      </Link>
-                      <div className="text-sm text-gray-600">
-                        <span className="text-gray-500">
-                          {t('category.subcategory')}
-                        </span>
-                      </div>
-                    </div>
+                    <CategorySummaryItem
+                      key={child.id}
+                      id={child.id}
+                      name={child.name}
+                      href={`/categories/${child.id}`}
+                      type="flow"
+                      isSubcategory={true}
+                      subcategoryLabel={t('category.subcategory')}
+                    />
                   ))}
                 </div>
               </div>
@@ -470,32 +467,27 @@ export default function FlowCategoryDetailView({
             {/* 直属账户汇总 */}
             {summaryData.accounts && summaryData.accounts.length > 0 && (
               <div>
-                <h3 className="text-md font-medium text-gray-800 mb-3">{t('category.accounts')}</h3>
+                <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.accounts')}</h3>
                 <div className="space-y-2">
-                  {summaryData.accounts.map((account) => (
-                    <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <Link
+                  {summaryData.accounts.map((account) => {
+                    // 获取第一个余额用于显示（流量类账户通常只有一个货币）
+                    const firstBalance = account.balances && Object.keys(account.balances).length > 0
+                      ? Object.values(account.balances)[0]
+                      : undefined
+
+                    return (
+                      <CategorySummaryItem
+                        key={account.id}
+                        id={account.id}
+                        name={account.name}
                         href={`/accounts/${account.id}`}
-                        className="font-medium text-blue-600 hover:text-blue-800"
-                      >
-                        {account.name}
-                      </Link>
-                      <div className="text-sm text-gray-600">
-                        {account.balances && Object.entries(account.balances).map(([currency, balance]) => (
-                          <span key={currency} className={`ml-2 ${
-                            balance >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {currencySymbol}{Math.abs(balance).toFixed(2)}
-                          </span>
-                        ))}
-                        {(!account.balances || Object.keys(account.balances).length === 0) && (
-                          <span className="text-gray-500">
-                            {t('account.transaction.count.value', { count: account.transactionCount })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                        type="flow"
+                        simpleBalance={firstBalance}
+                        currencySymbol={currencySymbol}
+                        transactionCount={account.transactionCount}
+                      />
+                    )
+                  })}
                 </div>
               </div>
             )}

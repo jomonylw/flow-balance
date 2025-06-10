@@ -5,6 +5,7 @@ import Link from 'next/link'
 import TransactionList from '@/components/transactions/TransactionList'
 import StockCategorySummaryCard from './StockCategorySummaryCard'
 import MonthlySummaryChart from '@/components/charts/MonthlySummaryChart'
+import CategorySummaryItem from './CategorySummaryItem'
 
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
@@ -306,54 +307,33 @@ export default function StockCategoryDetailView({
                     const childBalances = child.balances || {}
                     const hasBalances = Object.keys(childBalances).length > 0
 
+                    // 转换余额数据为组件需要的格式
+                    const balanceInfos = hasBalances
+                      ? Object.entries(childBalances).map(([currencyCode, balance]) => {
+                          let convertedAmount = balance
+                          if (child.historicalBalances?.currentMonthInBaseCurrency?.[currencyCode]) {
+                            convertedAmount = child.historicalBalances.currentMonthInBaseCurrency[currencyCode]
+                          }
+                          return {
+                            currencyCode,
+                            balance,
+                            convertedAmount
+                          }
+                        })
+                      : []
+
                     return (
-                      <div key={child.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <Link
-                          href={`/categories/${child.id}`}
-                          className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                        >
-                          {child.name}
-                        </Link>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 flex flex-col items-end">
-                          {hasBalances ? (
-                            Object.entries(childBalances).map(([currencyCode, balance]) => {
-                              // 查找对应的货币信息
-                              const currencyInfo = currencies.find(c => c.code === currencyCode)
-                              const originalSymbol = currencyInfo?.symbol || currencyCode
-
-                              // 获取本位币转换后的金额
-                              let convertedAmount = balance
-                              if (child.historicalBalances?.currentMonthInBaseCurrency?.[currencyCode]) {
-                                convertedAmount = child.historicalBalances.currentMonthInBaseCurrency[currencyCode]
-                              }
-
-                              return (
-                                <div key={currencyCode} className="flex items-center space-x-2 mb-1">
-                                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200">
-                                    {currencyCode}
-                                  </span>
-                                  <div className="flex flex-col items-end">
-                                    <span className={`${
-                                      balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                                    }`}>
-                                      {originalSymbol}{Math.abs(balance).toFixed(2)}
-                                    </span>
-                                    {currencyCode !== baseCurrency.code && (
-                                      <span className="text-xs text-gray-400">
-                                        ≈ {baseCurrency.symbol}{Math.abs(convertedAmount).toFixed(2)}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              )
-                            })
-                          ) : (
-                            <span className="text-gray-500 dark:text-gray-400">
-                              {child.accountCount || 0} {t('category.accounts')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      <CategorySummaryItem
+                        key={child.id}
+                        id={child.id}
+                        name={child.name}
+                        href={`/categories/${child.id}`}
+                        type="stock"
+                        balances={balanceInfos}
+                        baseCurrency={baseCurrency}
+                        currencies={currencies}
+                        accountCount={child.accountCount || 0}
+                      />
                     )
                   })}
                 </div>
@@ -366,53 +346,33 @@ export default function StockCategoryDetailView({
                 <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.accounts')}</h3>
                 <div className="space-y-2">
                   {summaryData.accounts.map((account) => {
+                    // 转换余额数据为组件需要的格式
+                    const balanceInfos = account.balances
+                      ? Object.entries(account.balances).map(([currencyCode, balance]) => {
+                          let convertedAmount = balance
+                          if (account.historicalBalances?.currentMonthInBaseCurrency?.[currencyCode]) {
+                            convertedAmount = account.historicalBalances.currentMonthInBaseCurrency[currencyCode]
+                          }
+                          return {
+                            currencyCode,
+                            balance,
+                            convertedAmount
+                          }
+                        })
+                      : []
+
                     return (
-                      <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <Link
-                          href={`/accounts/${account.id}`}
-                          className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                        >
-                          {account.name}
-                        </Link>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 flex flex-col items-end">
-                          {account.balances && Object.entries(account.balances).map(([currencyCode, balance]) => {
-                            // 查找对应的货币信息
-                            const currencyInfo = currencies.find(c => c.code === currencyCode)
-                            const originalSymbol = currencyInfo?.symbol || currencyCode
-
-                            // 获取本位币转换后的金额
-                            let convertedAmount = balance
-                            if (account.historicalBalances?.currentMonthInBaseCurrency?.[currencyCode]) {
-                              convertedAmount = account.historicalBalances.currentMonthInBaseCurrency[currencyCode]
-                            }
-
-                            return (
-                              <div key={currencyCode} className="flex items-center space-x-2 mb-1">
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200">
-                                  {currencyCode}
-                                </span>
-                                <div className="flex flex-col items-end">
-                                  <span className={`${
-                                    balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                                  }`}>
-                                    {originalSymbol}{Math.abs(balance).toFixed(2)}
-                                  </span>
-                                  {currencyCode !== baseCurrency.code && (
-                                    <span className="text-xs text-gray-400">
-                                      ≈ {baseCurrency.symbol}{Math.abs(convertedAmount).toFixed(2)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          })}
-                          {(!account.balances || Object.keys(account.balances).length === 0) && (
-                            <span className="text-gray-500 dark:text-gray-400">
-                              {account.transactionCount} {t('category.transaction.count')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      <CategorySummaryItem
+                        key={account.id}
+                        id={account.id}
+                        name={account.name}
+                        href={`/accounts/${account.id}`}
+                        type="stock"
+                        balances={balanceInfos}
+                        baseCurrency={baseCurrency}
+                        currencies={currencies}
+                        transactionCount={account.transactionCount}
+                      />
                     )
                   })}
                 </div>

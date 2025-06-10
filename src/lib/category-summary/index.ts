@@ -22,7 +22,7 @@ export async function getCategorySummary(
   categoryId: string,
   userId: string,
   categoryType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-): Promise<CategorySummaryResponse> {
+): Promise<{ children: any[]; accounts: any[] }> {
   if (categoryType === 'ASSET' || categoryType === 'LIABILITY') {
     return await getStockCategorySummary(categoryId, userId)
   } else {
