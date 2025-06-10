@@ -8,7 +8,7 @@ import CategorySummaryCard from './CategorySummaryCard'
 import CategoryChart from './CategoryChart'
 import SmartCategorySummaryCard from './SmartCategorySummaryCard'
 import SmartCategoryChart from './SmartCategoryChart'
-import MonthlySummaryChart from '@/components/charts/MonthlySummaryChart'
+import FlowMonthlySummaryChart from '@/components/charts/FlowMonthlySummaryChart'
 import CategorySummaryItem from './CategorySummaryItem'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
@@ -521,12 +521,11 @@ export default function FlowCategoryDetailView({
 
         return (
           <div className="mb-8">
-            <MonthlySummaryChart
+            <FlowMonthlySummaryChart
               monthlyData={chartData}
               baseCurrency={baseCurrencyForChart}
               title={`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
               height={400}
-              chartType="flow"
             />
           </div>
         )

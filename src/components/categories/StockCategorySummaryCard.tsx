@@ -29,18 +29,49 @@ interface Currency {
   name: string
 }
 
+interface MonthlyDataItem {
+  month: string
+  childCategories: {
+    id: string
+    name: string
+    type: string
+    order: number
+    accountCount: number
+    balances: {
+      original: Record<string, number>
+      converted: Record<string, number>
+    }
+  }[]
+  directAccounts: {
+    id: string
+    name: string
+    categoryId: string
+    balances: {
+      original: Record<string, number>
+      converted: Record<string, number>
+    }
+    transactionCount: number
+  }[]
+}
+
+interface SummaryData {
+  monthlyData: MonthlyDataItem[]
+}
+
 interface StockCategorySummaryCardProps {
   category: Category
   currencySymbol: string
-  summaryData?: any
+  summaryData?: SummaryData | null
   baseCurrency?: Currency
+  currencies?: Currency[]
 }
 
 export default function StockCategorySummaryCard({
   category,
   currencySymbol,
   summaryData,
-  baseCurrency
+  baseCurrency,
+  currencies = []
 }: StockCategorySummaryCardProps) {
   const { t } = useLanguage()
   const accountType = category.type
@@ -53,57 +84,78 @@ export default function StockCategorySummaryCard({
     let yearStartNetValue = 0
     let transactionCount = 0
 
-    // 使用子分类和直属账户的历史余额数据
-    if (summaryData?.children || summaryData?.accounts) {
-      const allItems = [
-        ...(summaryData.children || []),
-        ...(summaryData.accounts || [])
-      ]
-
-      allItems.forEach((item: any) => {
-        // 累加交易数量
-        if (item.transactionCount) {
-          transactionCount += item.transactionCount
-        }
-
-        // 使用历史余额数据（已转换为本位币）
-        if (item.historicalBalances) {
-          // 当月本位币余额
-          Object.values(item.historicalBalances.currentMonthInBaseCurrency || {}).forEach((amount: any) => {
-            currentNetValue += amount
+    if (summaryData?.monthlyData && summaryData.monthlyData.length > 0) {
+      // 当前月数据（数组第一个元素）
+      const currentMonth = summaryData.monthlyData[0]
+      if (currentMonth) {
+        // 计算子分类余额 - 汇总所有币种折算成本币的金额
+        currentMonth.childCategories.forEach(child => {
+          // 遍历所有币种的converted值并累加
+          Object.values(child.balances.converted).forEach(amount => {
+            currentNetValue += amount as number
           })
+        })
 
-          // 上月本位币余额
-          Object.values(item.historicalBalances.lastMonthInBaseCurrency || {}).forEach((amount: any) => {
-            lastMonthNetValue += amount
+        // 计算直属账户余额 - 汇总所有币种折算成本币的金额
+        currentMonth.directAccounts.forEach(account => {
+          // 遍历所有币种的converted值并累加
+          Object.values(account.balances.converted).forEach(amount => {
+            currentNetValue += amount as number
           })
+          transactionCount += account.transactionCount || 0
+        })
+      }
 
-          // 年初本位币余额
-          Object.values(item.historicalBalances.yearStartInBaseCurrency || {}).forEach((amount: any) => {
-            yearStartNetValue += amount
+      // 上月数据（如果存在）
+      const lastMonth = summaryData.monthlyData[1]
+      if (lastMonth) {
+        // 计算上月子分类余额 - 汇总所有币种折算成本币的金额
+        lastMonth.childCategories.forEach(child => {
+          Object.values(child.balances.converted).forEach(amount => {
+            lastMonthNetValue += amount as number
           })
-        } else if (item.balances) {
-          // 回退到当前余额（假设为本位币或需要转换）
-          Object.entries(item.balances).forEach(([currencyCode, balance]: [string, any]) => {
-            if (currencyCode === baseCurrency?.code) {
-              currentNetValue += balance
-              // 如果没有历史数据，使用估算值
-              lastMonthNetValue += balance * 0.95
-              yearStartNetValue += balance * 0.85
-            } else {
-              // TODO: 需要汇率转换，这里暂时按1:1处理
-              currentNetValue += balance
-              lastMonthNetValue += balance * 0.95
-              yearStartNetValue += balance * 0.85
-            }
+        })
+
+        // 计算上月直属账户余额 - 汇总所有币种折算成本币的金额
+        lastMonth.directAccounts.forEach(account => {
+          Object.values(account.balances.converted).forEach(amount => {
+            lastMonthNetValue += amount as number
           })
-        }
-      })
+        })
+      } else {
+        // 如果没有上月数据，使用估算值
+        lastMonthNetValue = currentNetValue * 0.95
+      }
+
+      // 年初数据（查找1月份数据或使用估算值）
+      const currentYear = new Date().getFullYear()
+      const yearStartMonth = summaryData.monthlyData.find(month =>
+        month.month.startsWith(`${currentYear}-01`)
+      )
+
+      if (yearStartMonth) {
+        // 计算年初子分类余额 - 汇总所有币种折算成本币的金额
+        yearStartMonth.childCategories.forEach(child => {
+          Object.values(child.balances.converted).forEach(amount => {
+            yearStartNetValue += amount as number
+          })
+        })
+
+        // 计算年初直属账户余额 - 汇总所有币种折算成本币的金额
+        yearStartMonth.directAccounts.forEach(account => {
+          Object.values(account.balances.converted).forEach(amount => {
+            yearStartNetValue += amount as number
+          })
+        })
+      } else {
+        // 如果没有年初数据，使用估算值
+        yearStartNetValue = currentNetValue * 0.85
+      }
     } else {
       // 回退到使用分类的交易数据
       const transactions = category.transactions || []
 
-      transactions.forEach((transaction: any) => {
+      transactions.forEach((transaction: Transaction) => {
         if (transaction.type === 'BALANCE_ADJUSTMENT') {
           const amount = parseFloat(transaction.amount.toString())
           if (transaction.currency?.code === baseCurrency?.code) {
@@ -209,7 +261,7 @@ export default function StockCategorySummaryCard({
       </div>
 
       {/* 币种分布 */}
-      {summaryData && (summaryData.children || summaryData.accounts) && (
+      {summaryData && summaryData.monthlyData && summaryData.monthlyData.length > 0 && (
         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('category.currency.distribution')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -217,55 +269,77 @@ export default function StockCategorySummaryCard({
               // 汇总所有币种的当月和上月余额
               const currencyTotals: Record<string, { current: number; lastMonth: number; symbol: string }> = {}
 
-              const allItems = [
-                ...(summaryData.children || []),
-                ...(summaryData.accounts || [])
-              ]
+              // 当前月数据
+              const currentMonth = summaryData.monthlyData[0]
+              const lastMonth = summaryData.monthlyData[1]
 
-              allItems.forEach((item: any) => {
-                if (item.historicalBalances) {
-                  // 当月余额（原币）
-                  Object.entries(item.historicalBalances.currentMonth || {}).forEach(([currencyCode, amount]: [string, any]) => {
+              if (currentMonth) {
+                // 处理子分类
+                currentMonth.childCategories.forEach(child => {
+                  Object.entries(child.balances.original).forEach(([currencyCode, amount]) => {
                     if (!currencyTotals[currencyCode]) {
-                      // 查找货币符号
-                      const currencyInfo = summaryData.currencies?.find((c: any) => c.code === currencyCode)
+                      const currencyInfo = currencies.find(c => c.code === currencyCode)
                       currencyTotals[currencyCode] = {
                         current: 0,
                         lastMonth: 0,
                         symbol: currencyInfo?.symbol || currencyCode
                       }
                     }
-                    currencyTotals[currencyCode].current += amount
+                    currencyTotals[currencyCode].current += amount as number
                   })
+                })
 
-                  // 上月余额（原币）
-                  Object.entries(item.historicalBalances.lastMonth || {}).forEach(([currencyCode, amount]: [string, any]) => {
+                // 处理直属账户
+                currentMonth.directAccounts.forEach(account => {
+                  Object.entries(account.balances.original).forEach(([currencyCode, amount]) => {
                     if (!currencyTotals[currencyCode]) {
-                      const currencyInfo = summaryData.currencies?.find((c: any) => c.code === currencyCode)
+                      const currencyInfo = currencies.find(c => c.code === currencyCode)
                       currencyTotals[currencyCode] = {
                         current: 0,
                         lastMonth: 0,
                         symbol: currencyInfo?.symbol || currencyCode
                       }
                     }
-                    currencyTotals[currencyCode].lastMonth += amount
+                    currencyTotals[currencyCode].current += amount as number
                   })
-                } else if (item.balances) {
-                  // 回退到当前余额
-                  Object.entries(item.balances).forEach(([currencyCode, balance]: [string, any]) => {
+                })
+              }
+
+              // 上月数据
+              if (lastMonth) {
+                lastMonth.childCategories.forEach(child => {
+                  Object.entries(child.balances.original).forEach(([currencyCode, amount]) => {
                     if (!currencyTotals[currencyCode]) {
-                      const currencyInfo = summaryData.currencies?.find((c: any) => c.code === currencyCode)
+                      const currencyInfo = currencies.find(c => c.code === currencyCode)
                       currencyTotals[currencyCode] = {
                         current: 0,
                         lastMonth: 0,
                         symbol: currencyInfo?.symbol || currencyCode
                       }
                     }
-                    currencyTotals[currencyCode].current += balance
-                    currencyTotals[currencyCode].lastMonth += balance * 0.95 // 估算值
+                    currencyTotals[currencyCode].lastMonth += amount as number
                   })
-                }
-              })
+                })
+
+                lastMonth.directAccounts.forEach(account => {
+                  Object.entries(account.balances.original).forEach(([currencyCode, amount]) => {
+                    if (!currencyTotals[currencyCode]) {
+                      const currencyInfo = currencies.find(c => c.code === currencyCode)
+                      currencyTotals[currencyCode] = {
+                        current: 0,
+                        lastMonth: 0,
+                        symbol: currencyInfo?.symbol || currencyCode
+                      }
+                    }
+                    currencyTotals[currencyCode].lastMonth += amount as number
+                  })
+                })
+              } else {
+                // 如果没有上月数据，使用估算值
+                Object.keys(currencyTotals).forEach(currencyCode => {
+                  currencyTotals[currencyCode].lastMonth = currencyTotals[currencyCode].current * 0.95
+                })
+              }
 
               return Object.entries(currencyTotals).map(([currencyCode, data]) => {
                 const changePercent = data.lastMonth !== 0 ?

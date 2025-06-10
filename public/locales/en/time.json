@@ -8,5 +8,7 @@
   "time.last.year": "Last Year",
   "time.custom.range": "Custom Range",
   "time.last.3.months": "Last 3 Months",
-  "time.last.6.months": "Last 6 Months"
+  "time.last.6.months": "Last 6 Months",
+  "time.last.12.months": "Last Year",
+  "time.all": "All"
 }

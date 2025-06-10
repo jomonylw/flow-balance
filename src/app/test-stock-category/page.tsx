@@ -2,36 +2,37 @@
 
 import { useState } from 'react'
 
-interface HistoricalBalances {
-  currentMonth: Record<string, number>
-  lastMonth: Record<string, number>
-  yearStart: Record<string, number>
-  currentMonthInBaseCurrency: Record<string, number>
-  lastMonthInBaseCurrency: Record<string, number>
-  yearStartInBaseCurrency: Record<string, number>
+// #region Updated Type Definitions
+interface Balance {
+  [currency: string]: number
 }
 
-interface AccountSummary {
+interface MonthlyBalance {
+  original: Balance
+  converted: Balance
+}
+
+interface MonthlyChildCategorySummary {
   id: string
   name: string
-  balances: Record<string, number>
-  historicalBalances?: HistoricalBalances
+  balances: MonthlyBalance
 }
 
-interface ChildCategorySummary {
+interface MonthlyAccountSummary {
   id: string
   name: string
-  balances: Record<string, number>
-  historicalBalances?: HistoricalBalances
+  balances: MonthlyBalance
 }
 
-interface StockCategorySummary {
-  children: ChildCategorySummary[]
-  accounts: AccountSummary[]
+interface MonthlyReport {
+  month: string
+  childCategories: MonthlyChildCategorySummary[]
+  directAccounts: MonthlyAccountSummary[]
 }
+// #endregion
 
 export default function TestStockCategoryPage() {
-  const [summaryData, setSummaryData] = useState<StockCategorySummary | null>(null)
+  const [summaryData, setSummaryData] = useState<MonthlyReport[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [categoryId, setCategoryId] = useState('')
@@ -53,6 +54,7 @@ export default function TestStockCategoryPage() {
         setSummaryData(result.data)
       } else {
         setError(result.error || '获取数据失败')
+        setSummaryData(null)
       }
     } catch (err) {
       setError('网络错误')
@@ -62,71 +64,54 @@ export default function TestStockCategoryPage() {
     }
   }
 
-  const renderHistoricalBalances = (historicalBalances?: HistoricalBalances) => {
-    if (!historicalBalances) return <span className="text-gray-500">无历史余额数据</span>
-
+  const renderBalances = (balances: MonthlyBalance) => {
     return (
-      <div className="space-y-2 text-xs">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-xs">
         <div>
-          <strong>当月原币余额:</strong>
-          {Object.entries(historicalBalances.currentMonth).map(([currency, amount]) => (
-            <span key={currency} className="ml-2">{currency}: {amount.toFixed(2)}</span>
-          ))}
+          <strong>原币:</strong>
+          {Object.entries(balances.original).length > 0 ? (
+            Object.entries(balances.original).map(([currency, amount]) => (
+              <span key={currency} className="ml-2">{currency}: {amount.toFixed(2)}</span>
+            ))
+          ) : (
+            <span className="text-gray-500 ml-2">无</span>
+          )}
         </div>
         <div>
-          <strong>上月原币余额:</strong>
-          {Object.entries(historicalBalances.lastMonth).map(([currency, amount]) => (
-            <span key={currency} className="ml-2">{currency}: {amount.toFixed(2)}</span>
-          ))}
-        </div>
-        <div>
-          <strong>年初原币余额:</strong>
-          {Object.entries(historicalBalances.yearStart).map(([currency, amount]) => (
-            <span key={currency} className="ml-2">{currency}: {amount.toFixed(2)}</span>
-          ))}
-        </div>
-        <div>
-          <strong>当月本币余额:</strong>
-          {Object.entries(historicalBalances.currentMonthInBaseCurrency).map(([currency, amount]) => (
-            <span key={currency} className="ml-2">{currency}: {amount.toFixed(2)}</span>
-          ))}
-        </div>
-        <div>
-          <strong>上月本币余额:</strong>
-          {Object.entries(historicalBalances.lastMonthInBaseCurrency).map(([currency, amount]) => (
-            <span key={currency} className="ml-2">{currency}: {amount.toFixed(2)}</span>
-          ))}
-        </div>
-        <div>
-          <strong>年初本币余额:</strong>
-          {Object.entries(historicalBalances.yearStartInBaseCurrency).map(([currency, amount]) => (
-            <span key={currency} className="ml-2">{currency}: {amount.toFixed(2)}</span>
-          ))}
+          <strong>本币:</strong>
+          {Object.entries(balances.converted).length > 0 ? (
+            Object.entries(balances.converted).map(([currency, amount]) => (
+              <span key={currency} className="ml-2">{currency}: {amount.toFixed(2)}</span>
+            ))
+          ) : (
+            <span className="text-gray-500 ml-2">无</span>
+          )}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">存量类分类汇总测试</h1>
+    <div className="p-6 max-w-6xl mx-auto bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">存量类分类月度汇总测试</h1>
       
-      <div className="mb-6">
-        <div className="flex gap-4 items-end">
-          <div>
-            <label className="block text-sm font-medium mb-2">分类ID:</label>
+      <div className="mb-6 bg-white p-4 rounded-lg shadow">
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex-grow">
+            <label htmlFor="categoryId" className="block text-sm font-medium mb-2 text-gray-700">分类ID:</label>
             <input
+              id="categoryId"
               type="text"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="border rounded px-3 py-2 w-64"
+              className="border rounded px-3 py-2 w-full"
               placeholder="输入存量类分类ID"
             />
           </div>
           <button
             onClick={fetchSummary}
             disabled={loading}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? '加载中...' : '获取汇总'}
           </button>
@@ -137,52 +122,46 @@ export default function TestStockCategoryPage() {
       </div>
 
       {summaryData && (
-        <div className="space-y-6">
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">汇总数据</h2>
-            <p><strong>子分类数量:</strong> {summaryData.children.length}</p>
-            <p><strong>直属账户数量:</strong> {summaryData.accounts.length}</p>
-          </div>
-
-          {summaryData.children.length > 0 && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">子分类 ({summaryData.children.length})</h2>
-              <div className="space-y-4">
-                {summaryData.children.map((child) => (
-                  <div key={child.id} className="border rounded p-4">
-                    <h3 className="font-medium mb-2">{child.name}</h3>
-                    <div className="mb-2">
-                      <strong>当前余额:</strong>
-                      {Object.entries(child.balances).map(([currency, amount]) => (
-                        <span key={currency} className="ml-2">{currency}: {amount.toFixed(2)}</span>
-                      ))}
-                    </div>
-                    {renderHistoricalBalances(child.historicalBalances)}
+        <div className="space-y-8">
+          {summaryData.map((report) => (
+            <div key={report.month} className="bg-white shadow-lg rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">
+                月份: {report.month}
+              </h2>
+              
+              {report.childCategories.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-600">子分类 ({report.childCategories.length})</h3>
+                  <div className="space-y-4">
+                    {report.childCategories.map((child) => (
+                      <div key={child.id} className="border rounded p-4 bg-gray-50">
+                        <h4 className="font-medium mb-2 text-gray-800">{child.name}</h4>
+                        {renderBalances(child.balances)}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </div>
+              )}
 
-          {summaryData.accounts.length > 0 && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">直属账户 ({summaryData.accounts.length})</h2>
-              <div className="space-y-4">
-                {summaryData.accounts.map((account) => (
-                  <div key={account.id} className="border rounded p-4">
-                    <h3 className="font-medium mb-2">{account.name}</h3>
-                    <div className="mb-2">
-                      <strong>当前余额:</strong>
-                      {Object.entries(account.balances).map(([currency, amount]) => (
-                        <span key={currency} className="ml-2">{currency}: {amount.toFixed(2)}</span>
-                      ))}
-                    </div>
-                    {renderHistoricalBalances(account.historicalBalances)}
+              {report.directAccounts.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 text-gray-600">直属账户 ({report.directAccounts.length})</h3>
+                  <div className="space-y-4">
+                    {report.directAccounts.map((account) => (
+                      <div key={account.id} className="border rounded p-4 bg-gray-50">
+                        <h4 className="font-medium mb-2 text-gray-800">{account.name}</h4>
+                        {renderBalances(account.balances)}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+
+              {report.childCategories.length === 0 && report.directAccounts.length === 0 && (
+                <p className="text-gray-500">该月份无子分类和直属账户数据。</p>
+              )}
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>

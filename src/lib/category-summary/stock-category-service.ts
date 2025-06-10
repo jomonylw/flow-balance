@@ -1,65 +1,99 @@
 /**
  * 存量类分类汇总服务
  * 专门处理资产(ASSET)和负债(LIABILITY)分类的汇总逻辑
- * 只处理 BALANCE_ADJUSTMENT 类型交易，提供多时间点余额数据
+ * 提供按月分组的、包含所有历史月份的余额数据
  */
 
 import { prisma } from '@/lib/prisma'
-import { calculateAccountBalance } from '@/lib/account-balance'
 import { convertMultipleCurrencies } from '@/lib/currency-conversion'
 import {
-  AccountSummary,
-  ChildCategorySummary,
-  CategoryWithChildren
+  CategoryWithChildren,
+  Balance,
+  BaseCurrency
 } from './types'
 import {
   getAllCategoryIds,
-  serializeAccountData,
-  calculateChildCategoryBalances,
   extractBalanceChangeFromNotes
 } from './utils'
+import { Decimal } from '@prisma/client/runtime/library'
+
+// #region 新增的类型定义
+/**
+ * 表示单个月份的余额信息
+ */
+interface MonthlyBalance {
+  original: Balance; // 原币余额
+  converted: Balance; // 折合本位币后的余额
+}
 
 /**
- * 计算账户在不同时间点的余额（只处理 BALANCE_ADJUSTMENT 类型）
- * @param account 账户数据
- * @param userId 用户ID
- * @param baseCurrency 本位币
- * @returns 多时间点余额数据
+ * 按月汇总的子分类信息
  */
-async function calculateHistoricalBalances(
-  account: any,
-  userId: string,
-  baseCurrency: { code: string; symbol: string; name: string }
-): Promise<{
-  currentMonth: Record<string, number>
-  lastMonth: Record<string, number>
-  yearStart: Record<string, number>
-  currentMonthInBaseCurrency: Record<string, number>
-  lastMonthInBaseCurrency: Record<string, number>
-  yearStartInBaseCurrency: Record<string, number>
-}> {
-  const now = new Date()
-  const currentYear = now.getFullYear()
-  const currentMonth = now.getMonth()
+export interface MonthlyChildCategorySummary {
+  id: string;
+  name: string;
+  type: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE';
+  balances: MonthlyBalance;
+  accountCount: number;
+  order: number;
+}
 
-  // 时间点定义
-  const thisMonthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999)
-  const lastMonthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999)
-  const yearStartEnd = new Date(currentYear, 0, 0, 23, 59, 59, 999) // 去年年末
+/**
+ * 按月汇总的账户信息
+ */
+export interface MonthlyAccountSummary {
+  id: string;
+  name: string;
+  description?: string;
+  categoryId: string;
+  balances: MonthlyBalance;
+  transactionCount: number;
+}
 
-  // 只处理 BALANCE_ADJUSTMENT 类型的交易
-  const balanceAdjustments = account.transactions.filter((t: any) =>
-    t.type === 'BALANCE_ADJUSTMENT'
-  )
+/**
+ * 单个月份的完整报告
+ */
+export interface MonthlyReport {
+  month: string; // 格式: YYYY-MM
+  childCategories: MonthlyChildCategorySummary[];
+  directAccounts: MonthlyAccountSummary[];
+}
+// #endregion
 
-  // 计算各时间点的余额
-  const currentMonthBalances: Record<string, number> = {}
-  const lastMonthBalances: Record<string, number> = {}
-  const yearStartBalances: Record<string, number> = {}
+type BalanceAdjustmentTransaction = {
+  date: string | Date;
+  notes: string | null;
+  amount: Decimal | number | string;
+  type: string;
+  currency: {
+    code: string;
+  };
+};
 
-  // 按货币分组处理
-  const currencyGroups: Record<string, any[]> = {}
-  balanceAdjustments.forEach((transaction: any) => {
+/**
+ * 计算账户从首次交易至今的逐月历史余额
+ * @param account 账户数据，包含交易
+ * @param allMonths 所有需要计算的月份 (YYYY-MM)
+ * @param baseCurrency 本位币
+ * @param userId 用户ID
+ * @returns 按月份 (YYYY-MM) 组织的余额数据
+ */
+async function calculateMonthlyHistoricalBalances(
+  account: { id: string; transactions: BalanceAdjustmentTransaction[] },
+  allMonths: string[],
+  baseCurrency: BaseCurrency,
+  userId: string
+): Promise<Record<string, MonthlyBalance>> {
+  const monthlyBalances: Record<string, Record<string, number>> = {}
+  const balanceAdjustments = account.transactions.filter(t => t.type === 'BALANCE_ADJUSTMENT')
+
+  if (balanceAdjustments.length === 0) {
+    return {}
+  }
+
+  // 按货币分组并排序交易
+  const currencyGroups: Record<string, BalanceAdjustmentTransaction[]> = {}
+  balanceAdjustments.forEach(transaction => {
     const currencyCode = transaction.currency.code
     if (!currencyGroups[currencyCode]) {
       currencyGroups[currencyCode] = []
@@ -67,117 +101,101 @@ async function calculateHistoricalBalances(
     currencyGroups[currencyCode].push(transaction)
   })
 
-  // 为每种货币计算余额
-  Object.entries(currencyGroups).forEach(([currencyCode, transactions]) => {
-    // 按时间排序
-    const sortedTransactions = transactions.sort((a, b) =>
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+  Object.values(currencyGroups).forEach(transactions => {
+    transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  })
+
+  // 为每个月计算余额
+  allMonths.forEach(month => {
+    const monthEnd = new Date(
+      parseInt(month.substring(0, 4)),
+      parseInt(month.substring(5, 7)),
+      0, 23, 59, 59, 999
     )
+    monthlyBalances[month] = {}
 
-    // 计算各时间点的累计余额
-    let yearStartBalance = 0
-    let lastMonthBalance = 0
-    let currentMonthBalance = 0
-
-    sortedTransactions.forEach(transaction => {
-      const transactionDate = new Date(transaction.date)
-      const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
-      const actualChange = changeAmount !== null ? changeAmount : parseFloat(transaction.amount.toString())
-
-      // 累计到各时间点
-      if (transactionDate <= yearStartEnd) {
-        yearStartBalance += actualChange
+    Object.entries(currencyGroups).forEach(([currencyCode, transactions]) => {
+      let balance = 0
+      for (const transaction of transactions) {
+        const transactionDate = new Date(transaction.date)
+        if (transactionDate <= monthEnd) {
+          const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
+          balance += changeAmount !== null ? changeAmount : parseFloat(transaction.amount.toString())
+        } else {
+          break // 交易已排序，后续无需再检查
+        }
       }
-      if (transactionDate <= lastMonthEnd) {
-        lastMonthBalance += actualChange
-      }
-      if (transactionDate <= thisMonthEnd) {
-        currentMonthBalance += actualChange
+      monthlyBalances[month][currencyCode] = balance
+    })
+  })
+
+  // 填充空缺月份的数据
+  let lastMonthBalance: Record<string, number> | null = null
+  for (const month of allMonths) {
+    if (Object.keys(monthlyBalances[month]).length === 0 && lastMonthBalance) {
+      monthlyBalances[month] = { ...lastMonthBalance }
+    }
+    // 如果当前月份有数据，则更新 lastMonthBalance
+    if (Object.values(monthlyBalances[month]).some(v => v !== 0)) {
+       lastMonthBalance = { ...monthlyBalances[month] }
+    }
+  }
+
+
+  // 准备货币转换
+  const conversionRequests: { amount: number; currency: string; month: string }[] = []
+  allMonths.forEach(month => {
+    Object.entries(monthlyBalances[month]).forEach(([currency, amount]) => {
+      if (amount !== 0) {
+        conversionRequests.push({ amount, currency, month })
       }
     })
-
-    yearStartBalances[currencyCode] = yearStartBalance
-    lastMonthBalances[currencyCode] = lastMonthBalance
-    currentMonthBalances[currencyCode] = currentMonthBalance
   })
 
-  // 货币转换
-  const allAmounts = [
-    ...Object.entries(currentMonthBalances).map(([currency, amount]) => ({ amount, currency })),
-    ...Object.entries(lastMonthBalances).map(([currency, amount]) => ({ amount, currency })),
-    ...Object.entries(yearStartBalances).map(([currency, amount]) => ({ amount, currency }))
-  ]
+  const conversionResults = conversionRequests.length > 0
+    ? await convertMultipleCurrencies(userId, conversionRequests, baseCurrency.code)
+    : []
 
-  let conversionResults: any[] = []
-  if (allAmounts.length > 0) {
-    conversionResults = await convertMultipleCurrencies(
-      userId,
-      allAmounts,
-      baseCurrency.code
-    )
-  }
-
-  // 构建转换后的余额
-  const currentMonthInBaseCurrency: Record<string, number> = {}
-  const lastMonthInBaseCurrency: Record<string, number> = {}
-  const yearStartInBaseCurrency: Record<string, number> = {}
-
-  let resultIndex = 0
-  Object.entries(currentMonthBalances).forEach(([currency]) => {
-    const result = conversionResults[resultIndex++]
-    currentMonthInBaseCurrency[currency] = result?.success ? result.convertedAmount : currentMonthBalances[currency]
+  // 整理最终结果
+  const finalBalances: Record<string, MonthlyBalance> = {}
+  let conversionIndex = 0
+  allMonths.forEach(month => {
+    const original: Balance = {}
+    const converted: Balance = {}
+    Object.entries(monthlyBalances[month]).forEach(([currency, amount]) => {
+      original[currency] = amount
+      if (amount !== 0) {
+        const result = conversionResults[conversionIndex++]
+        converted[currency] = result?.success ? result.convertedAmount : amount
+      } else {
+        converted[currency] = 0
+      }
+    })
+    finalBalances[month] = { original, converted }
   })
 
-  Object.entries(lastMonthBalances).forEach(([currency]) => {
-    const result = conversionResults[resultIndex++]
-    lastMonthInBaseCurrency[currency] = result?.success ? result.convertedAmount : lastMonthBalances[currency]
-  })
-
-  Object.entries(yearStartBalances).forEach(([currency]) => {
-    const result = conversionResults[resultIndex++]
-    yearStartInBaseCurrency[currency] = result?.success ? result.convertedAmount : yearStartBalances[currency]
-  })
-
-  return {
-    currentMonth: currentMonthBalances,
-    lastMonth: lastMonthBalances,
-    yearStart: yearStartBalances,
-    currentMonthInBaseCurrency,
-    lastMonthInBaseCurrency,
-    yearStartInBaseCurrency
-  }
+  return finalBalances
 }
 
 /**
- * 获取存量类分类汇总数据
+ * 获取存量类分类的月度历史汇总数据
  * @param categoryId 分类ID
  * @param userId 用户ID
- * @returns 存量类分类汇总数据
+ * @returns 按月倒序排列的报告数组
  */
 export async function getStockCategorySummary(
   categoryId: string,
   userId: string
-): Promise<{
-  children: ChildCategorySummary[]
-  accounts: AccountSummary[]
-}> {
-  // 验证分类是否属于当前用户且为存量类
+): Promise<MonthlyReport[]> {
+  // 1. 获取分类和本位币信息
   const category = await prisma.category.findFirst({
     where: {
       id: categoryId,
       userId: userId,
-      type: {
-        in: ['ASSET', 'LIABILITY']
-      }
+      type: { in: ['ASSET', 'LIABILITY'] }
     },
     include: {
-      parent: true,
-      children: {
-        orderBy: [
-          { order: 'asc' },
-          { name: 'asc' }
-        ]
-      }
+      children: { orderBy: [{ order: 'asc' }, { name: 'asc' }] }
     }
   }) as CategoryWithChildren | null
 
@@ -185,145 +203,126 @@ export async function getStockCategorySummary(
     throw new Error('存量类分类不存在或无权限访问')
   }
 
-  // 获取用户的本位币设置
   const userSettings = await prisma.userSettings.findUnique({
     where: { userId },
     include: { baseCurrency: true }
   })
+  const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
 
-  const baseCurrency = userSettings?.baseCurrency || {
-    code: 'CNY',
-    symbol: '¥',
-    name: '人民币'
-  }
-
-  // 获取所有相关分类ID
+  // 2. 获取所有相关账户及其交易
   const allCategoryIds = await getAllCategoryIds(prisma, categoryId)
-
-  // 获取该分类及其所有子分类下的账户
   const allAccounts = await prisma.account.findMany({
     where: {
       userId: userId,
-      categoryId: {
-        in: allCategoryIds
-      }
+      categoryId: { in: allCategoryIds }
     },
     include: {
-      category: true,
       transactions: {
-        include: {
-          currency: true
-        }
+        where: { type: 'BALANCE_ADJUSTMENT' },
+        include: { currency: true },
+        orderBy: { date: 'asc' }
       }
     }
   })
 
-  // 计算所有账户余额（包含历史余额数据）
-  const allAccountSummaries: AccountSummary[] = await Promise.all(
-    allAccounts.map(async account => {
-      const serializedAccount = serializeAccountData(account)
-      const accountBalances = calculateAccountBalance(serializedAccount)
+  // 3. 确定全局月份范围
+  let firstTransactionDate = new Date()
+  allAccounts.forEach(account => {
+    if (account.transactions.length > 0) {
+      const accountFirstDate = new Date(account.transactions[0].date)
+      if (accountFirstDate < firstTransactionDate) {
+        firstTransactionDate = accountFirstDate
+      }
+    }
+  })
 
-      // 转换为简单的余额记录格式
-      const balances: Record<string, number> = {}
-      Object.entries(accountBalances).forEach(([currencyCode, balanceData]) => {
-        balances[currencyCode] = balanceData.amount
-      })
+  const allMonths: string[] = []
+  const now = new Date()
+  const startDate = new Date(firstTransactionDate.getFullYear(), firstTransactionDate.getMonth(), 1)
+  while (startDate <= now) {
+    allMonths.push(`${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`)
+    startDate.setMonth(startDate.getMonth() + 1)
+  }
 
-      // 计算历史余额数据
-      const historicalBalances = await calculateHistoricalBalances(
+  if (allMonths.length === 0) {
+    const month = now.getMonth() + 1
+    allMonths.push(`${now.getFullYear()}-${month < 10 ? '0' + month : month}`)
+  }
+
+  // 4. 为每个账户计算月度历史余额
+  const accountMonthlyBalances: Record<string, Record<string, MonthlyBalance>> = {}
+  await Promise.all(allAccounts.map(async account => {
+    if (account.transactions.length > 0) {
+      accountMonthlyBalances[account.id] = await calculateMonthlyHistoricalBalances(
         account,
-        userId,
-        baseCurrency
+        allMonths,
+        baseCurrency,
+        userId
       )
+    }
+  }))
 
-      return {
-        id: account.id,
-        name: account.name,
-        description: account.description || undefined,
-        categoryId: account.categoryId,
-        balances,
-        transactionCount: account.transactions.filter((t: any) => t.type === 'BALANCE_ADJUSTMENT').length,
-        historicalBalances
-      }
-    })
-  )
+  // 5. 按月聚合报告
+  const monthlyReports: Record<string, MonthlyReport> = {}
 
-  // 分离直属账户和子分类账户
-  const directAccounts = allAccountSummaries.filter(
-    account => account.categoryId === categoryId
-  )
+  for (const month of allMonths) {
+    const report: MonthlyReport = {
+      month,
+      childCategories: [],
+      directAccounts: []
+    }
 
-  // 为每个子分类计算汇总余额（包含历史余额数据）
-  const childrenWithBalances: ChildCategorySummary[] = await Promise.all(
-    category.children.map(async (child) => {
-      const childAccountIds = await getAllCategoryIds(prisma, child.id)
-      const childBalances = calculateChildCategoryBalances(
-        allAccountSummaries,
-        childAccountIds
-      )
+    // 聚合子分类数据
+    const validChildren = category.children.filter(
+        (child): child is typeof child & { type: 'ASSET' | 'LIABILITY' } =>
+            child.type === 'ASSET' || child.type === 'LIABILITY'
+    );
+    await Promise.all(validChildren.map(async child => {
+      const childCategoryIds = await getAllCategoryIds(prisma, child.id)
+      const childAccounts = allAccounts.filter(acc => childCategoryIds.includes(acc.categoryId))
 
-      const childAccounts = allAccountSummaries.filter(account =>
-        childAccountIds.includes(account.categoryId)
-      )
-
-      // 计算子分类的历史余额汇总
-      const childHistoricalBalances = {
-        currentMonth: {} as Record<string, number>,
-        lastMonth: {} as Record<string, number>,
-        yearStart: {} as Record<string, number>,
-        currentMonthInBaseCurrency: {} as Record<string, number>,
-        lastMonthInBaseCurrency: {} as Record<string, number>,
-        yearStartInBaseCurrency: {} as Record<string, number>
-      }
-
-      // 汇总子账户的历史余额
-      childAccounts.forEach(account => {
-        if (account.historicalBalances) {
-          // 汇总当月余额
-          Object.entries(account.historicalBalances.currentMonth).forEach(([currency, amount]) => {
-            childHistoricalBalances.currentMonth[currency] = (childHistoricalBalances.currentMonth[currency] || 0) + amount
-          })
-
-          // 汇总上月余额
-          Object.entries(account.historicalBalances.lastMonth).forEach(([currency, amount]) => {
-            childHistoricalBalances.lastMonth[currency] = (childHistoricalBalances.lastMonth[currency] || 0) + amount
-          })
-
-          // 汇总年初余额
-          Object.entries(account.historicalBalances.yearStart).forEach(([currency, amount]) => {
-            childHistoricalBalances.yearStart[currency] = (childHistoricalBalances.yearStart[currency] || 0) + amount
-          })
-
-          // 汇总本币余额
-          Object.entries(account.historicalBalances.currentMonthInBaseCurrency).forEach(([currency, amount]) => {
-            childHistoricalBalances.currentMonthInBaseCurrency[currency] = (childHistoricalBalances.currentMonthInBaseCurrency[currency] || 0) + amount
-          })
-
-          Object.entries(account.historicalBalances.lastMonthInBaseCurrency).forEach(([currency, amount]) => {
-            childHistoricalBalances.lastMonthInBaseCurrency[currency] = (childHistoricalBalances.lastMonthInBaseCurrency[currency] || 0) + amount
-          })
-
-          Object.entries(account.historicalBalances.yearStartInBaseCurrency).forEach(([currency, amount]) => {
-            childHistoricalBalances.yearStartInBaseCurrency[currency] = (childHistoricalBalances.yearStartInBaseCurrency[currency] || 0) + amount
-          })
-        }
-      })
-
-      return {
+      const summary: MonthlyChildCategorySummary = {
         id: child.id,
         name: child.name,
         type: child.type,
-        balances: childBalances,
-        accountCount: childAccounts.length,
         order: child.order,
-        historicalBalances: childHistoricalBalances
+        accountCount: childAccounts.length,
+        balances: { original: {}, converted: {} }
+      }
+
+      childAccounts.forEach(acc => {
+        const balances = accountMonthlyBalances[acc.id]?.[month]
+        if (balances) {
+          Object.entries(balances.original).forEach(([currency, amount]) => {
+            summary.balances.original[currency] = (summary.balances.original[currency] || 0) + amount
+          })
+          Object.entries(balances.converted).forEach(([currency, amount]) => {
+            summary.balances.converted[currency] = (summary.balances.converted[currency] || 0) + amount
+          })
+        }
+      })
+      report.childCategories.push(summary)
+    }))
+
+    // 聚合直属账户数据
+    const directAccounts = allAccounts.filter(acc => acc.categoryId === categoryId)
+    directAccounts.forEach(acc => {
+      const balances = accountMonthlyBalances[acc.id]?.[month]
+      if (balances) {
+        report.directAccounts.push({
+          id: acc.id,
+          name: acc.name,
+          description: acc.description || undefined,
+          categoryId: acc.categoryId,
+          balances: balances,
+          transactionCount: acc.transactions.length
+        })
       }
     })
-  )
 
-  return {
-    children: childrenWithBalances,
-    accounts: directAccounts
+    monthlyReports[month] = report
   }
+
+  // 6. 格式化并返回结果
+  return Object.values(monthlyReports).sort((a, b) => b.month.localeCompare(a.month))
 }

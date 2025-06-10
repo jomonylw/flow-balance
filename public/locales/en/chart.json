@@ -4,7 +4,11 @@
   "chart.income.expense": "Income vs Expense",
   "chart.category.breakdown": "Category Breakdown",
   "chart.monthly.summary": "Monthly Summary",
+  "chart.stock.monthly.summary": "Monthly Account Balance Summary",
   "chart.no.data": "No data available",
   "chart.loading": "Loading chart data...",
-  "chart.net.worth.trend.description": "Shows recent net worth change trends"
+  "chart.net.worth.trend.description": "Shows recent net worth change trends",
+  "chart.balance.trend": "Balance Change Trend",
+  "chart.account.balance": "Account Balance",
+  "chart.total.balance": "Total Balance"
 }

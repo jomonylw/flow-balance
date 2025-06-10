@@ -40,6 +40,11 @@ interface MonthlySummaryChartProps {
   chartType?: 'flow' | 'stock' // 新增：区分流量和存量图表
 }
 
+/**
+ * @deprecated This component will be replaced by separate FlowMonthlySummaryChart and StockMonthlySummaryChart components.
+ * Please use the specific chart components instead.
+ */
+
 export default function MonthlySummaryChart({
   monthlyData,
   stockMonthlyData,

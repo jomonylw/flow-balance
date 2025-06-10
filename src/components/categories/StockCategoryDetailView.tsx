@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import TransactionList from '@/components/transactions/TransactionList'
 import StockCategorySummaryCard from './StockCategorySummaryCard'
-import MonthlySummaryChart from '@/components/charts/MonthlySummaryChart'
+import StockMonthlySummaryChart from '@/components/charts/StockMonthlySummaryChart'
 import CategorySummaryItem from './CategorySummaryItem'
 
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
@@ -27,35 +27,34 @@ interface StockMonthlyDataForChart {
   }
 }
 
-interface SummaryData {
-  children: {
+// 新的 API 数据格式
+interface MonthlyDataItem {
+  month: string
+  childCategories: {
     id: string
     name: string
-    balances: { [currencyCode: string]: number }
+    type: string
+    order: number
     accountCount: number
-    historicalBalances?: {
-      currentMonth: Record<string, number>
-      lastMonth: Record<string, number>
-      yearStart: Record<string, number>
-      currentMonthInBaseCurrency: Record<string, number>
-      lastMonthInBaseCurrency: Record<string, number>
-      yearStartInBaseCurrency: Record<string, number>
+    balances: {
+      original: Record<string, number>
+      converted: Record<string, number>
     }
   }[]
-  accounts: {
+  directAccounts: {
     id: string
     name: string
-    balances: { [currencyCode: string]: number }
-    transactionCount: number
-    historicalBalances?: {
-      currentMonth: Record<string, number>
-      lastMonth: Record<string, number>
-      yearStart: Record<string, number>
-      currentMonthInBaseCurrency: Record<string, number>
-      lastMonthInBaseCurrency: Record<string, number>
-      yearStartInBaseCurrency: Record<string, number>
+    categoryId: string
+    balances: {
+      original: Record<string, number>
+      converted: Record<string, number>
     }
+    transactionCount: number
   }[]
+}
+
+interface SummaryData {
+  monthlyData: MonthlyDataItem[]
 }
 
 interface MonthlyData {
@@ -94,24 +93,20 @@ export default function StockCategoryDetailView({
   useEffect(() => {
     const fetchSummaryData = async () => {
       try {
-        // 并行获取汇总数据和月度数据
-        const [summaryRes, monthlyRes] = await Promise.all([
-          fetch(`/api/categories/${category.id}/summary`),
-          fetch(`/api/analytics/monthly-summary?categoryId=${category.id}&months=12`)
-        ])
+        const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
 
         if (summaryRes.ok) {
           const summaryResult = await summaryRes.json()
-          // 添加货币信息到汇总数据中
           setSummaryData({
-            ...summaryResult.data,
-            currencies: currencies
+            monthlyData: summaryResult.data
           })
-        }
 
-        if (monthlyRes.ok) {
-          const monthlyResult = await monthlyRes.json()
-          setMonthlyData(monthlyResult.data)
+          // 根据新的数据格式生成图表数据
+          const chartData = generateChartData(summaryResult.data, user.settings?.baseCurrency?.code || 'CNY')
+          setMonthlyData({
+            monthlyData: chartData,
+            baseCurrency: user.settings?.baseCurrency?.code || 'CNY'
+          })
         }
       } catch (error) {
         console.error('Error fetching summary data:', error)
@@ -119,7 +114,62 @@ export default function StockCategoryDetailView({
     }
 
     fetchSummaryData()
-  }, [category.id, currencies])
+  }, [category.id, user.settings?.baseCurrency?.code])
+
+  // 根据新的 API 数据格式生成图表所需的数据
+  const generateChartData = (monthlyData: MonthlyDataItem[], baseCurrencyCode: string): StockMonthlyDataForChart => {
+    const chartData: StockMonthlyDataForChart = {}
+
+    monthlyData.forEach(monthItem => {
+      const monthKey = monthItem.month
+      chartData[monthKey] = {
+        [baseCurrencyCode]: {
+          accounts: {},
+          totalBalance: 0
+        }
+      }
+
+      let totalBalance = 0
+
+      // 处理子分类账户 - 汇总所有币种折算成本币的金额
+      monthItem.childCategories.forEach(childCategory => {
+        // 计算该子分类的总余额（所有币种折算成本币）
+        let categoryTotalBalance = 0
+        Object.values(childCategory.balances.converted).forEach(balance => {
+          categoryTotalBalance += balance as number
+        })
+
+        if (categoryTotalBalance !== 0) {
+          chartData[monthKey][baseCurrencyCode].accounts[`category_${childCategory.id}`] = {
+            balance: categoryTotalBalance,
+            name: childCategory.name
+          }
+          totalBalance += categoryTotalBalance
+        }
+      })
+
+      // 处理直属账户 - 汇总所有币种折算成本币的金额
+      monthItem.directAccounts.forEach(account => {
+        // 计算该账户的总余额（所有币种折算成本币）
+        let accountTotalBalance = 0
+        Object.values(account.balances.converted).forEach(balance => {
+          accountTotalBalance += balance as number
+        })
+
+        if (accountTotalBalance !== 0) {
+          chartData[monthKey][baseCurrencyCode].accounts[account.id] = {
+            balance: accountTotalBalance,
+            name: account.name
+          }
+          totalBalance += accountTotalBalance
+        }
+      })
+
+      chartData[monthKey][baseCurrencyCode].totalBalance = totalBalance
+    })
+
+    return chartData
+  }
 
   // 获取交易记录
   const loadTransactions = useCallback(async (page = 1) => {
@@ -285,99 +335,96 @@ export default function StockCategoryDetailView({
             currencySymbol={currencySymbol}
             summaryData={summaryData}
             baseCurrency={baseCurrency}
+            currencies={currencies}
           />
         )}
       </div>
 
       {/* 汇总数据展示 */}
-      {summaryData && (
+      {summaryData && summaryData.monthlyData.length > 0 && (
         <div className="mb-8">
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('category.summary')}
             </h2>
 
-            {/* 子分类汇总 */}
-            {summaryData.children && summaryData.children.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.subcategories')}</h3>
-                <div className="space-y-2">
-                  {summaryData.children.map((child) => {
-                    // 使用子分类的实际余额汇总
-                    const childBalances = child.balances || {}
-                    const hasBalances = Object.keys(childBalances).length > 0
+            {(() => {
+              // 使用最新月份的数据（数组第一个元素）
+              const latestMonthData = summaryData.monthlyData[0]
+              if (!latestMonthData) return null
 
-                    // 转换余额数据为组件需要的格式
-                    const balanceInfos = hasBalances
-                      ? Object.entries(childBalances).map(([currencyCode, balance]) => {
-                          let convertedAmount = balance
-                          if (child.historicalBalances?.currentMonthInBaseCurrency?.[currencyCode]) {
-                            convertedAmount = child.historicalBalances.currentMonthInBaseCurrency[currencyCode]
-                          }
-                          return {
-                            currencyCode,
-                            balance,
-                            convertedAmount
-                          }
-                        })
-                      : []
+              return (
+                <>
+                  {/* 子分类汇总 */}
+                  {latestMonthData.childCategories && latestMonthData.childCategories.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.subcategories')}</h3>
+                      <div className="space-y-2">
+                        {latestMonthData.childCategories.map((child) => {
+                          // 转换余额数据为组件需要的格式
+                          const balanceInfos = Object.entries(child.balances.original).map(([currencyCode, balance]) => {
+                            const convertedAmount = child.balances.converted[currencyCode] || balance
+                            return {
+                              currencyCode,
+                              balance: balance as number,
+                              convertedAmount: convertedAmount as number
+                            }
+                          })
 
-                    return (
-                      <CategorySummaryItem
-                        key={child.id}
-                        id={child.id}
-                        name={child.name}
-                        href={`/categories/${child.id}`}
-                        type="stock"
-                        balances={balanceInfos}
-                        baseCurrency={baseCurrency}
-                        currencies={currencies}
-                        accountCount={child.accountCount || 0}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+                          return (
+                            <CategorySummaryItem
+                              key={child.id}
+                              id={child.id}
+                              name={child.name}
+                              href={`/categories/${child.id}`}
+                              type="stock"
+                              balances={balanceInfos}
+                              baseCurrency={baseCurrency}
+                              currencies={currencies}
+                              accountCount={child.accountCount || 0}
+                            />
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
 
-            {/* 直属账户汇总 */}
-            {summaryData.accounts && summaryData.accounts.length > 0 && (
-              <div>
-                <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.accounts')}</h3>
-                <div className="space-y-2">
-                  {summaryData.accounts.map((account) => {
-                    // 转换余额数据为组件需要的格式
-                    const balanceInfos = account.balances
-                      ? Object.entries(account.balances).map(([currencyCode, balance]) => {
-                          let convertedAmount = balance
-                          if (account.historicalBalances?.currentMonthInBaseCurrency?.[currencyCode]) {
-                            convertedAmount = account.historicalBalances.currentMonthInBaseCurrency[currencyCode]
-                          }
-                          return {
-                            currencyCode,
-                            balance,
-                            convertedAmount
-                          }
-                        })
-                      : []
+                  {/* 直属账户汇总 */}
+                  {latestMonthData.directAccounts && latestMonthData.directAccounts.length > 0 && (
+                    <div>
+                      <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.accounts')}</h3>
+                      <div className="space-y-2">
+                        {latestMonthData.directAccounts.map((account) => {
+                          // 转换余额数据为组件需要的格式
+                          const balanceInfos = Object.entries(account.balances.original).map(([currencyCode, balance]) => {
+                            const convertedAmount = account.balances.converted[currencyCode] || balance
+                            return {
+                              currencyCode,
+                              balance: balance as number,
+                              convertedAmount: convertedAmount as number
+                            }
+                          })
 
-                    return (
-                      <CategorySummaryItem
-                        key={account.id}
-                        id={account.id}
-                        name={account.name}
-                        href={`/accounts/${account.id}`}
-                        type="stock"
-                        balances={balanceInfos}
-                        baseCurrency={baseCurrency}
-                        currencies={currencies}
-                        transactionCount={account.transactionCount}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+                          return (
+                            <CategorySummaryItem
+                              key={account.id}
+                              id={account.id}
+                              name={account.name}
+                              href={`/accounts/${account.id}`}
+                              type="stock"
+                              balances={balanceInfos}
+                              baseCurrency={baseCurrency}
+                              currencies={currencies}
+                              transactionCount={account.transactionCount}
+                            />
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         </div>
       )}
@@ -389,12 +436,11 @@ export default function StockCategoryDetailView({
 
         return (
           <div className="mb-8">
-            <MonthlySummaryChart
+            <StockMonthlySummaryChart
               stockMonthlyData={monthlyData.monthlyData}
               baseCurrency={baseCurrencyForChart}
               title={`${category.name} - ${t('category.monthly.balance.summary')}`}
               height={400}
-              chartType="stock"
             />
           </div>
         )

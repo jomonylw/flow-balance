@@ -2,6 +2,14 @@
  * 分类汇总相关的类型定义
  */
 
+export type Balance = Record<string, number>
+
+export interface BaseCurrency {
+ code: string
+ symbol: string
+ name: string
+}
+
 export interface CategorySummaryBase {
   category: {
     id: string

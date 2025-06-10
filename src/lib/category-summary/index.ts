@@ -7,7 +7,7 @@ export * from './utils'
 export { getStockCategorySummary } from './stock-category-service'
 export { getFlowCategorySummary } from './flow-category-service'
 
-import { getStockCategorySummary } from './stock-category-service'
+import { getStockCategorySummary, MonthlyReport } from './stock-category-service'
 import { getFlowCategorySummary } from './flow-category-service'
 import { CategorySummaryResponse } from './types'
 
@@ -22,7 +22,7 @@ export async function getCategorySummary(
   categoryId: string,
   userId: string,
   categoryType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-): Promise<{ children: any[]; accounts: any[] }> {
+): Promise<MonthlyReport[] | { children: any[]; accounts: any[] }> {
   if (categoryType === 'ASSET' || categoryType === 'LIABILITY') {
     return await getStockCategorySummary(categoryId, userId)
   } else {
