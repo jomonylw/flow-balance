@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, forwardRef, useImperativeHandle } from 'react'
 import CategoryTreeItem from './CategoryTreeItem'
 import AccountTreeItem from './AccountTreeItem'
 import { useUserData } from '@/contexts/UserDataContext'
@@ -49,11 +49,17 @@ interface OptimizedCategoryAccountTreeProps {
   onNavigate?: () => void
 }
 
-export default function OptimizedCategoryAccountTree({
+export interface OptimizedCategoryAccountTreeRef {
+  expandAll: () => void
+  collapseAll: () => void
+  checkAllExpanded: () => boolean
+}
+
+const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef, OptimizedCategoryAccountTreeProps>(({
   searchQuery,
   onDataChange,
   onNavigate
-}: OptimizedCategoryAccountTreeProps) {
+}, ref) => {
   // 使用UserDataContext获取基础数据
   const {
     categories,
@@ -209,6 +215,45 @@ export default function OptimizedCategoryAccountTree({
     })
   }
 
+  // 获取所有分类ID的递归函数
+  const getAllCategoryIds = (categories: Category[]): string[] => {
+    const ids: string[] = []
+    categories.forEach(category => {
+      ids.push(category.id)
+      if (category.children && category.children.length > 0) {
+        ids.push(...getAllCategoryIds(category.children))
+      }
+    })
+    return ids
+  }
+
+  // 展开所有分类
+  const expandAll = () => {
+    if (filteredData) {
+      const allIds = getAllCategoryIds(filteredData)
+      setExpandedCategories(new Set(allIds))
+    }
+  }
+
+  // 收起所有分类
+  const collapseAll = () => {
+    setExpandedCategories(new Set())
+  }
+
+  // 检查是否所有分类都已展开
+  const checkAllExpanded = () => {
+    if (!filteredData) return false
+    const allIds = getAllCategoryIds(filteredData)
+    return allIds.every(id => expandedCategories.has(id))
+  }
+
+  // 暴露方法给父组件
+  useImperativeHandle(ref, () => ({
+    expandAll,
+    collapseAll,
+    checkAllExpanded
+  }), [filteredData, expandedCategories])
+
   const renderCategory = (category: Category, level: number = 0) => {
     const isExpanded = expandedCategories.has(category.id)
     const hasChildren = (category.children && category.children.length > 0) ||
@@ -287,4 +332,8 @@ export default function OptimizedCategoryAccountTree({
       {filteredData.map(category => renderCategory(category))}
     </div>
   )
-}
+})
+
+OptimizedCategoryAccountTree.displayName = 'OptimizedCategoryAccountTree'
+
+export default OptimizedCategoryAccountTree

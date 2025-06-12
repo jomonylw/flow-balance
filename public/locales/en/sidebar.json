@@ -2,5 +2,7 @@
   "sidebar.search.placeholder": "Search accounts and categories...",
   "sidebar.categories": "Account Categories",
   "sidebar.add.top.category": "Add Top Category",
-  "sidebar.updating": "Updating..."
+  "sidebar.updating": "Updating...",
+  "sidebar.expand.categories": "Expand Categories",
+  "sidebar.collapse.categories": "Collapse Categories"
 }
