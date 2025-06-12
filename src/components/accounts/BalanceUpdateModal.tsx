@@ -263,7 +263,7 @@ export default function BalanceUpdateModal({
                 {accountType === 'ASSET' ? t('balance.update.modal.asset.account') : t('balance.update.modal.liability.account')} • {t('balance.update.modal.stock.data')}
               </p>
               <p className="text-sm text-gray-600">
-                {t('balance.update.modal.current.balance')}: {currentBalanceCurrencySymbol}{currentBalance.toFixed(2)} ({currencyCode})
+                {t('balance.update.modal.current.balance')}: {currentBalanceCurrencySymbol}{currentBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({currencyCode})
               </p>
             </div>
           </div>

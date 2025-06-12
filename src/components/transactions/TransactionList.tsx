@@ -112,7 +112,7 @@ export default function TransactionList({
   }
 
   const getAmountDisplay = (transaction: Transaction) => {
-    const amount = Number(transaction.amount).toFixed(2)
+    const amount = Number(transaction.amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const symbol = transaction.currency.symbol || currencySymbol
 
     switch (transaction.type) {
@@ -126,7 +126,7 @@ export default function TransactionList({
         const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
         if (changeAmount !== null) {
           const sign = changeAmount >= 0 ? '+' : ''
-          return <span className="text-purple-600 font-medium">{sign}{symbol}{Math.abs(changeAmount).toFixed(2)}</span>
+          return <span className="text-purple-600 font-medium">{sign}{symbol}{Math.abs(changeAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         } else {
           return <span className="text-purple-600 font-medium">{symbol}{amount}</span>
         }

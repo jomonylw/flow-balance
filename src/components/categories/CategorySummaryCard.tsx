@@ -61,7 +61,7 @@ export default function CategorySummaryCard({
           <div className={`text-3xl font-bold ${
             stats.totalAmount >= 0 ? 'text-gray-900' : 'text-red-600'
           }`}>
-            {currencySymbol}{Math.abs(stats.totalAmount).toFixed(2)}
+            {currencySymbol}{Math.abs(stats.totalAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-gray-500 mt-1">
             {stats.totalCount} 笔交易
@@ -76,13 +76,13 @@ export default function CategorySummaryCard({
           <div className={`text-2xl font-semibold ${
             stats.thisMonthAmount >= 0 ? 'text-green-600' : 'text-red-600'
           }`}>
-            {stats.thisMonthAmount >= 0 ? '+' : ''}{currencySymbol}{Math.abs(stats.thisMonthAmount).toFixed(2)}
+            {stats.thisMonthAmount >= 0 ? '+' : ''}{currencySymbol}{Math.abs(stats.thisMonthAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           {stats.monthlyChange !== 0 && (
             <div className={`text-xs ${
               stats.monthlyChange > 0 ? 'text-green-600' : 'text-red-600'
             }`}>
-              {stats.monthlyChange > 0 ? '↗' : '↘'} {Math.abs(stats.monthlyChange).toFixed(1)}% vs 上月
+              {stats.monthlyChange > 0 ? '↗' : '↘'} {Math.abs(stats.monthlyChange).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% vs 上月
             </div>
           )}
         </div>
@@ -95,7 +95,7 @@ export default function CategorySummaryCard({
           <div className={`text-2xl font-semibold ${
             stats.thisYearAmount >= 0 ? 'text-blue-600' : 'text-red-600'
           }`}>
-            {stats.thisYearAmount >= 0 ? '+' : ''}{currencySymbol}{Math.abs(stats.thisYearAmount).toFixed(2)}
+            {stats.thisYearAmount >= 0 ? '+' : ''}{currencySymbol}{Math.abs(stats.thisYearAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -105,7 +105,7 @@ export default function CategorySummaryCard({
             平均金额
           </div>
           <div className="text-2xl font-semibold text-gray-900">
-            {currencySymbol}{averageAmount.toFixed(2)}
+            {currencySymbol}{averageAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-gray-500 mt-1">
             每笔交易
@@ -131,7 +131,7 @@ export default function CategorySummaryCard({
           <div>
             <span className="text-gray-500">上月金额</span>
             <div className="font-medium text-gray-900">
-              {currencySymbol}{Math.abs(stats.lastMonthAmount).toFixed(2)}
+              {currencySymbol}{Math.abs(stats.lastMonthAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
           <div>

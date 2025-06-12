@@ -52,7 +52,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-2 sm:p-4">
         {/* 背景遮罩 */}
-        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 transition-opacity" />
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 transition-opacity" />
 
         {/* 模态框内容 */}
         <div

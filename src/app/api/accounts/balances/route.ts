@@ -5,42 +5,12 @@ import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { convertMultipleCurrencies } from '@/lib/currency-conversion'
 
-// 计算当前月份的流量汇总
-function calculateCurrentMonthFlow(account: any): Record<string, any> {
-  const now = new Date()
-  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
-
-  const balances: Record<string, any> = {}
-
-  account.transactions.forEach((transaction: any) => {
-    const transactionDate = new Date(transaction.date)
-
-    // 只计算当前月份的交易
-    if (transactionDate >= currentMonthStart && transactionDate <= currentMonthEnd) {
-      const currencyCode = transaction.currency.code
-      const amount = transaction.amount
-
-      if (!balances[currencyCode]) {
-        balances[currencyCode] = {
-          amount: 0,
-          currency: {
-            code: transaction.currency.code,
-            symbol: transaction.currency.symbol,
-            name: transaction.currency.name
-          }
-        }
-      }
-
-      // 流量账户：收入为正，支出为正（都是流入的概念）
-      if (transaction.type === 'INCOME' || transaction.type === 'EXPENSE') {
-        balances[currencyCode].amount += amount
-      }
-    }
-  })
-
-  return balances
-}
+// 这个函数已经不需要了，因为我们现在使用统一的 calculateAccountBalance 函数
+// 保留注释以便理解之前的逻辑
+// function calculateCurrentMonthFlow(account: any): Record<string, any> {
+//   // 之前的逻辑：计算当前月份的流量汇总
+//   // 现在由 calculateAccountBalance 统一处理
+// }
 
 // 批量获取所有账户余额
 export async function GET(request: NextRequest) {
@@ -130,7 +100,16 @@ export async function GET(request: NextRequest) {
         balances = calculateAccountBalance(serializedAccount)
       } else {
         // 流量账户：计算当前月份的流量汇总
-        balances = calculateCurrentMonthFlow(serializedAccount)
+        // 使用期间计算，默认为当前月份
+        const now = new Date()
+        const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+
+        balances = calculateAccountBalance(serializedAccount, {
+          periodStart,
+          periodEnd,
+          usePeriodCalculation: true
+        })
       }
 
       // 转换为API响应格式

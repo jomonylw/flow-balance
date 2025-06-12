@@ -76,7 +76,7 @@ export default function NetWorthCard({ accounts, baseCurrency }: NetWorthCardPro
             </dt>
             <dd className="flex items-baseline">
               <div className={`text-2xl font-semibold ${netWorth >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
-                {currencySymbol}{netWorth.toFixed(2)}
+                {currencySymbol}{netWorth.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <div className="ml-2 flex items-baseline text-sm font-semibold text-green-600">
                 {/* 这里可以添加变化百分比 */}
@@ -92,13 +92,13 @@ export default function NetWorthCard({ accounts, baseCurrency }: NetWorthCardPro
           <div>
             <span className="text-gray-500">{t('dashboard.total.assets.card')}</span>
             <div className="font-medium text-green-600">
-              {currencySymbol}{assets.toFixed(2)}
+              {currencySymbol}{assets.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
           <div>
             <span className="text-gray-500">{t('dashboard.total.liabilities.card')}</span>
             <div className="font-medium text-red-600">
-              {currencySymbol}{liabilities.toFixed(2)}
+              {currencySymbol}{liabilities.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </div>

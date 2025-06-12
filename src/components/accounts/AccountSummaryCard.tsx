@@ -169,7 +169,7 @@ export default function AccountSummaryCard({
             <div className={`text-3xl font-bold ${
               stockStats.currentBalance >= 0 ? 'text-gray-900' : 'text-red-600'
             }`}>
-              {currencySymbol}{Math.abs(stockStats.currentBalance).toFixed(2)}
+              {currencySymbol}{Math.abs(stockStats.currentBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
@@ -179,7 +179,7 @@ export default function AccountSummaryCard({
               上月余额
             </div>
             <div className="text-2xl font-semibold text-gray-600">
-              {currencySymbol}{Math.abs(stockStats.lastMonthBalance).toFixed(2)}
+              {currencySymbol}{Math.abs(stockStats.lastMonthBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
@@ -191,10 +191,10 @@ export default function AccountSummaryCard({
             <div className={`text-2xl font-semibold ${
               stockStats.monthlyChange >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
-              {stockStats.monthlyChange >= 0 ? '+' : ''}{stockStats.monthlyChange.toFixed(1)}%
+              {stockStats.monthlyChange >= 0 ? '+' : ''}{stockStats.monthlyChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              {currencySymbol}{Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance).toFixed(2)}
+              {currencySymbol}{Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
@@ -206,10 +206,10 @@ export default function AccountSummaryCard({
             <div className={`text-2xl font-semibold ${
               stockStats.yearToDateChange >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
-              {stockStats.yearToDateChange >= 0 ? '+' : ''}{stockStats.yearToDateChange.toFixed(1)}%
+              {stockStats.yearToDateChange >= 0 ? '+' : ''}{stockStats.yearToDateChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              年初: {currencySymbol}{Math.abs(stockStats.yearStartBalance).toFixed(2)}
+              年初: {currencySymbol}{Math.abs(stockStats.yearStartBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </div>
@@ -271,7 +271,7 @@ export default function AccountSummaryCard({
             <div className={`text-3xl font-bold ${
               accountType === 'INCOME' ? 'text-green-600' : 'text-red-600'
             }`}>
-              {currencySymbol}{flowStats.totalAmount.toFixed(2)}
+              {currencySymbol}{flowStats.totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
@@ -283,7 +283,7 @@ export default function AccountSummaryCard({
             <div className={`text-2xl font-semibold ${
               accountType === 'INCOME' ? 'text-green-600' : 'text-red-600'
             }`}>
-              {currencySymbol}{flowStats.thisMonthAmount.toFixed(2)}
+              {currencySymbol}{flowStats.thisMonthAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
@@ -293,7 +293,7 @@ export default function AccountSummaryCard({
               上月金额
             </div>
             <div className="text-2xl font-semibold text-gray-600">
-              {currencySymbol}{flowStats.lastMonthAmount.toFixed(2)}
+              {currencySymbol}{flowStats.lastMonthAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
@@ -305,10 +305,10 @@ export default function AccountSummaryCard({
             <div className={`text-2xl font-semibold ${
               flowStats.monthlyChange >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
-              {flowStats.monthlyChange >= 0 ? '+' : ''}{flowStats.monthlyChange.toFixed(1)}%
+              {flowStats.monthlyChange >= 0 ? '+' : ''}{flowStats.monthlyChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              月均: {currencySymbol}{flowStats.averageMonthly.toFixed(2)}
+              月均: {currencySymbol}{flowStats.averageMonthly.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </div>
@@ -327,7 +327,7 @@ export default function AccountSummaryCard({
               <div className={`font-medium ${
                 accountType === 'INCOME' ? 'text-green-600' : 'text-red-600'
               }`}>
-                {currencySymbol}{flowStats.thisYearAmount.toFixed(2)}
+                {currencySymbol}{flowStats.thisYearAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div>

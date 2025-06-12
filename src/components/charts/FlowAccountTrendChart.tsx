@@ -181,11 +181,11 @@ export default function FlowAccountTrendChart({
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
             formatter: function (value: number) {
               if (Math.abs(value) >= 10000) {
-                return `${displayCurrency.symbol}${(value / 10000).toFixed(1)}万`
+                return `${displayCurrency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
               } else if (Math.abs(value) >= 1000) {
-                return `${displayCurrency.symbol}${(value / 1000).toFixed(1)}k`
+                return `${displayCurrency.symbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
               }
-              return `${displayCurrency.symbol}${value.toFixed(0)}`
+              return `${displayCurrency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
             }
           },
           axisLine: {
@@ -210,11 +210,11 @@ export default function FlowAccountTrendChart({
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
             formatter: function (value: number) {
               if (Math.abs(value) >= 10000) {
-                return `${displayCurrency.symbol}${(value / 10000).toFixed(1)}万`
+                return `${displayCurrency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
               } else if (Math.abs(value) >= 1000) {
-                return `${displayCurrency.symbol}${(value / 1000).toFixed(1)}k`
+                return `${displayCurrency.symbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
               }
-              return `${displayCurrency.symbol}${value.toFixed(0)}`
+              return `${displayCurrency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
             }
           }
         }

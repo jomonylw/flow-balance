@@ -131,8 +131,8 @@ export default function MonthlySummaryChart({
           params.forEach((param: any) => {
             const value = param.value
             const formattedValue = value >= 0
-              ? `+${baseCurrency.symbol}${Math.abs(value).toFixed(2)}`
-              : `-${baseCurrency.symbol}${Math.abs(value).toFixed(2)}`
+              ? `+${baseCurrency.symbol}${Math.abs(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : `-${baseCurrency.symbol}${Math.abs(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             result += `<div style="display: flex; align-items: center; margin: 2px 0;">
               <span style="display: inline-block; width: 10px; height: 10px; background-color: ${param.color}; margin-right: 5px;"></span>
               <span style="flex: 1;">${param.seriesName}:</span>
@@ -167,11 +167,11 @@ export default function MonthlySummaryChart({
         axisLabel: {
           formatter: function (value: number) {
             if (Math.abs(value) >= 10000) {
-              return `${baseCurrency.symbol}${(value / 10000).toFixed(1)}万`
+              return `${baseCurrency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
             } else if (Math.abs(value) >= 1000) {
-              return `${baseCurrency.symbol}${(value / 1000).toFixed(1)}k`
+              return `${baseCurrency.symbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
             }
-            return `${baseCurrency.symbol}${value.toFixed(0)}`
+            return `${baseCurrency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
           }
         }
       },
@@ -303,7 +303,7 @@ export default function MonthlySummaryChart({
                 <span style="display: inline-block; width: 10px; height: 10px; background-color: ${param.color}; margin-right: 8px; border-radius: 50%;"></span>
                 <span style="margin-right: 8px;">${param.seriesName}:</span>
                 <span style="font-weight: bold; color: ${value >= 0 ? '#059669' : '#dc2626'};">
-                  ${baseCurrency.symbol}${Math.abs(value).toFixed(2)}${value < 0 ? ' (负)' : ''}
+                  ${baseCurrency.symbol}${Math.abs(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${value < 0 ? ' (负)' : ''}
                 </span>
               </div>
             `
@@ -311,7 +311,7 @@ export default function MonthlySummaryChart({
 
           result += `<div style="border-top: 1px solid #ccc; margin-top: 8px; padding-top: 4px; font-weight: bold;">
             总计: <span style="color: ${total >= 0 ? '#059669' : '#dc2626'};">
-              ${baseCurrency.symbol}${Math.abs(total).toFixed(2)}${total < 0 ? ' (负)' : ''}
+              ${baseCurrency.symbol}${Math.abs(total).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${total < 0 ? ' (负)' : ''}
             </span>
           </div>`
 
@@ -343,11 +343,11 @@ export default function MonthlySummaryChart({
         axisLabel: {
           formatter: function (value: number) {
             if (Math.abs(value) >= 10000) {
-              return `${baseCurrency.symbol}${(value / 10000).toFixed(1)}万`
+              return `${baseCurrency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
             } else if (Math.abs(value) >= 1000) {
-              return `${baseCurrency.symbol}${(value / 1000).toFixed(1)}k`
+              return `${baseCurrency.symbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
             }
-            return `${baseCurrency.symbol}${value.toFixed(0)}`
+            return `${baseCurrency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
           }
         }
       },
@@ -398,13 +398,13 @@ export default function MonthlySummaryChart({
           <div className="text-center">
             <div className="text-gray-500 mb-1">当前总余额</div>
             <div className="text-lg font-semibold text-blue-600">
-              {baseCurrency.symbol}{latestBalance.toFixed(2)}
+              {baseCurrency.symbol}{latestBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
           <div className="text-center">
             <div className="text-gray-500 mb-1">平均余额</div>
             <div className="text-lg font-semibold text-gray-600">
-              {baseCurrency.symbol}{averageBalance.toFixed(2)}
+              {baseCurrency.symbol}{averageBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
           <div className="text-center">
@@ -425,7 +425,7 @@ export default function MonthlySummaryChart({
               {baseCurrency.symbol}{Object.values(monthlyData).reduce((sum, monthData) => {
                 const currencyData = monthData[baseCurrency.code] || { income: 0 }
                 return sum + currencyData.income
-              }, 0).toFixed(2)}
+              }, 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
           <div className="text-center">
@@ -434,7 +434,7 @@ export default function MonthlySummaryChart({
               {baseCurrency.symbol}{Object.values(monthlyData).reduce((sum, monthData) => {
                 const currencyData = monthData[baseCurrency.code] || { expense: 0 }
                 return sum + currencyData.expense
-              }, 0).toFixed(2)}
+              }, 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
           <div className="text-center">
@@ -448,7 +448,7 @@ export default function MonthlySummaryChart({
               {baseCurrency.symbol}{Object.values(monthlyData).reduce((sum, monthData) => {
                 const currencyData = monthData[baseCurrency.code] || { balance: 0 }
                 return sum + currencyData.balance
-              }, 0).toFixed(2)}
+              }, 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </div>

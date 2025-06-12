@@ -41,21 +41,61 @@ export async function GET() {
       transactions: account.transactions.map(t => ({
         type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
         amount: parseFloat(t.amount.toString()),
+        date: t.date.toISOString(),
         currency: t.currency
       }))
     }))
 
-    // 使用新的支持货币转换的余额计算逻辑
+    // 分离存量类账户和流量类账户
+    const stockAccounts = accountsForCalculation.filter(account =>
+      account.category?.type === 'ASSET' || account.category?.type === 'LIABILITY'
+    )
+    const flowAccounts = accountsForCalculation.filter(account =>
+      account.category?.type === 'INCOME' || account.category?.type === 'EXPENSE'
+    )
+
+    // 计算净资产（只包含存量类账户）
     const totalBalanceResult = await calculateTotalBalanceWithConversion(
       user.id,
-      accountsForCalculation,
+      stockAccounts,
       baseCurrency
     )
 
     // 计算各账户余额（包含转换信息）
     const accountBalances = []
-    for (const account of accountsForCalculation) {
+
+    // 计算存量类账户余额（当前时点）
+    for (const account of stockAccounts) {
       const balances = calculateAccountBalance(account)
+
+      // 只显示有余额的账户
+      const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
+      if (hasBalance) {
+        const balancesRecord: Record<string, number> = {}
+        Object.values(balances).forEach(balance => {
+          balancesRecord[balance.currencyCode] = balance.amount
+        })
+
+        accountBalances.push({
+          id: account.id,
+          name: account.name,
+          category: account.category,
+          balances: balancesRecord
+        })
+      }
+    }
+
+    // 计算流量类账户余额（当前月份期间）
+    const now = new Date()
+    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+
+    for (const account of flowAccounts) {
+      const balances = calculateAccountBalance(account, {
+        periodStart,
+        periodEnd,
+        usePeriodCalculation: true
+      })
 
       // 只显示有余额的账户
       const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
@@ -152,15 +192,72 @@ export async function GET() {
       totalExpenseInBaseCurrency = Object.values(activitySummary).reduce((sum, activity) => sum + activity.expense, 0)
     }
 
+    // 计算总资产和总负债（本位币）
+    const assetAccountsForTotal = stockAccounts.filter(account => account.category?.type === 'ASSET')
+    const liabilityAccountsForTotal = stockAccounts.filter(account => account.category?.type === 'LIABILITY')
+
+    const totalAssetsResult = await calculateTotalBalanceWithConversion(
+      user.id,
+      assetAccountsForTotal,
+      baseCurrency
+    )
+
+    const totalLiabilitiesResult = await calculateTotalBalanceWithConversion(
+      user.id,
+      liabilityAccountsForTotal,
+      baseCurrency
+    )
+
     // 验证账户类型设置
     const validation = validateAccountTypes(accountsForCalculation)
 
+    // 计算净资产 = 总资产 - 总负债
+    const netWorthAmount = totalAssetsResult.totalInBaseCurrency - totalLiabilitiesResult.totalInBaseCurrency
+    const netWorthHasErrors = totalAssetsResult.hasConversionErrors || totalLiabilitiesResult.hasConversionErrors
+
+    // 合并资产和负债的原币种余额
+    const combinedByCurrency: Record<string, any> = {}
+
+    // 添加资产余额（正数）
+    Object.entries(totalAssetsResult.totalsByOriginalCurrency).forEach(([currency, balance]) => {
+      combinedByCurrency[currency] = {
+        currencyCode: currency,
+        amount: balance.amount,
+        currency: balance.currency
+      }
+    })
+
+    // 减去负债余额（从净资产角度）
+    Object.entries(totalLiabilitiesResult.totalsByOriginalCurrency).forEach(([currency, balance]) => {
+      if (combinedByCurrency[currency]) {
+        combinedByCurrency[currency].amount -= balance.amount
+      } else {
+        combinedByCurrency[currency] = {
+          currencyCode: currency,
+          amount: -balance.amount,
+          currency: balance.currency
+        }
+      }
+    })
+
     return successResponse({
       netWorth: {
-        amount: totalBalanceResult.totalInBaseCurrency,
+        amount: netWorthAmount,
         currency: baseCurrency,
-        byCurrency: totalBalanceResult.totalsByOriginalCurrency,
-        hasConversionErrors: totalBalanceResult.hasConversionErrors
+        byCurrency: combinedByCurrency,
+        hasConversionErrors: netWorthHasErrors
+      },
+      totalAssets: {
+        amount: totalAssetsResult.totalInBaseCurrency,
+        currency: baseCurrency,
+        accountCount: assetAccountsForTotal.length,
+        hasConversionErrors: totalAssetsResult.hasConversionErrors
+      },
+      totalLiabilities: {
+        amount: totalLiabilitiesResult.totalInBaseCurrency,
+        currency: baseCurrency,
+        accountCount: liabilityAccountsForTotal.length,
+        hasConversionErrors: totalLiabilitiesResult.hasConversionErrors
       },
       accountBalances,
       recentActivity: {
@@ -186,8 +283,8 @@ export async function GET() {
       validation,
       currencyConversion: {
         baseCurrency,
-        conversionDetails: totalBalanceResult.conversionDetails,
-        hasErrors: totalBalanceResult.hasConversionErrors
+        conversionDetails: [...totalAssetsResult.conversionDetails, ...totalLiabilitiesResult.conversionDetails],
+        hasErrors: totalAssetsResult.hasConversionErrors || totalLiabilitiesResult.hasConversionErrors
       }
     })
   } catch (error) {

@@ -150,7 +150,7 @@ export default function StockAccountSummaryCard({
               ? 'text-gray-900 dark:text-gray-100'
               : 'text-red-600 dark:text-red-400'
           }`}>
-            {currencySymbol}{Math.abs(stockStats.currentBalance).toFixed(2)}
+            {currencySymbol}{Math.abs(stockStats.currentBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -160,7 +160,7 @@ export default function StockAccountSummaryCard({
             {t('account.balance.last.month')}
           </div>
           <div className="text-2xl font-semibold text-gray-600 dark:text-gray-300">
-            {currencySymbol}{Math.abs(stockStats.lastMonthBalance).toFixed(2)}
+            {currencySymbol}{Math.abs(stockStats.lastMonthBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -174,10 +174,10 @@ export default function StockAccountSummaryCard({
               ? 'text-green-600 dark:text-green-400'
               : 'text-red-600 dark:text-red-400'
           }`}>
-            {stockStats.monthlyChange >= 0 ? '+' : ''}{stockStats.monthlyChange.toFixed(1)}%
+            {stockStats.monthlyChange >= 0 ? '+' : ''}{stockStats.monthlyChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {currencySymbol}{Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance).toFixed(2)}
+            {currencySymbol}{Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -191,10 +191,10 @@ export default function StockAccountSummaryCard({
               ? 'text-green-600 dark:text-green-400'
               : 'text-red-600 dark:text-red-400'
           }`}>
-            {stockStats.yearToDateChange >= 0 ? '+' : ''}{stockStats.yearToDateChange.toFixed(1)}%
+            {stockStats.yearToDateChange >= 0 ? '+' : ''}{stockStats.yearToDateChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {t('account.balance.year.start')}: {currencySymbol}{Math.abs(stockStats.yearStartBalance).toFixed(2)}
+            {t('account.balance.year.start')}: {currencySymbol}{Math.abs(stockStats.yearStartBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
       </div>

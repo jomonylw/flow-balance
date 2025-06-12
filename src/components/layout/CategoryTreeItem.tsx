@@ -344,7 +344,7 @@ export default function CategoryTreeItem({
             {category.name}
           </div>
           <div className={`text-xs mt-1 ${getAmountColor()}`}>
-            {currencySymbol}{Math.abs(balance).toFixed(2)}
+            {currencySymbol}{Math.abs(balance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 

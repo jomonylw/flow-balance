@@ -145,12 +145,12 @@ export default function NetWorthChart({ data, currency, loading = false, error }
           formatter: function(value: number) {
             if (Math.abs(value) >= 10000) {
               return isMobile ?
-                `${(value / 10000).toFixed(1)}万` :
-                `${currency.symbol}${(value / 10000).toFixed(1)}万`
+                `${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万` :
+                `${currency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
             }
             return isMobile ?
-              `${value.toLocaleString()}` :
-              `${currency.symbol}${value.toLocaleString()}`
+              `${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}` :
+              `${currency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
           }
         },
         axisLine: {

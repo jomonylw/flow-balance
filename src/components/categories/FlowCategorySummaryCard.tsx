@@ -279,7 +279,7 @@ export default function FlowCategorySummaryCard({
           <div className={`text-2xl font-bold ${
             flowStats.thisMonthNet >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
           }`}>
-            {(baseCurrency?.symbol || currencySymbol)}{Math.abs(flowStats.thisMonthNet).toFixed(2)}
+            {(baseCurrency?.symbol || currencySymbol)}{Math.abs(flowStats.thisMonthNet).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {flowStats.thisMonthTransactionCount} {t('category.transaction.count')}
@@ -294,10 +294,10 @@ export default function FlowCategorySummaryCard({
           <div className={`text-xl font-semibold ${
             flowStats.thisYearNet >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
           }`}>
-            {(baseCurrency?.symbol || currencySymbol)}{Math.abs(flowStats.thisYearNet).toFixed(2)}
+            {(baseCurrency?.symbol || currencySymbol)}{Math.abs(flowStats.thisYearNet).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {t('category.monthly.average.flow')}: {(baseCurrency?.symbol || currencySymbol)}{Math.abs(flowStats.thisYearMonthlyAverage).toFixed(2)}
+            {t('category.monthly.average.flow')}: {(baseCurrency?.symbol || currencySymbol)}{Math.abs(flowStats.thisYearMonthlyAverage).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -309,10 +309,10 @@ export default function FlowCategorySummaryCard({
           <div className={`text-xl font-semibold ${
             flowStats.lastYearNet >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
           }`}>
-            {(baseCurrency?.symbol || currencySymbol)}{Math.abs(flowStats.lastYearNet).toFixed(2)}
+            {(baseCurrency?.symbol || currencySymbol)}{Math.abs(flowStats.lastYearNet).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {t('category.monthly.average.flow')}: {(baseCurrency?.symbol || currencySymbol)}{Math.abs(flowStats.lastYearMonthlyAverage).toFixed(2)}
+            {t('category.monthly.average.flow')}: {(baseCurrency?.symbol || currencySymbol)}{Math.abs(flowStats.lastYearMonthlyAverage).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
       </div>
@@ -330,10 +330,10 @@ export default function FlowCategorySummaryCard({
                 <div className={`text-lg font-semibold ${
                   data.thisMonth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                 }`}>
-                  {data.symbol}{Math.abs(data.thisMonth).toFixed(2)}
+                  {data.symbol}{Math.abs(data.thisMonth).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  {t('common.this.year')}: {data.symbol}{Math.abs(data.thisYear).toFixed(2)}
+                  {t('common.this.year')}: {data.symbol}{Math.abs(data.thisYear).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
             ))}

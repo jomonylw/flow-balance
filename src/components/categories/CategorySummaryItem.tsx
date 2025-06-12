@@ -59,7 +59,7 @@ export default function CategorySummaryItem({
         <span className={`ml-2 ${
           simpleBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
         }`}>
-          {currencySymbol}{Math.abs(simpleBalance).toFixed(2)}
+          {currencySymbol}{Math.abs(simpleBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       )
     }
@@ -93,11 +93,11 @@ export default function CategorySummaryItem({
                 <span className={`${
                   balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                 }`}>
-                  {originalSymbol}{Math.abs(balance).toFixed(2)}
+                  {originalSymbol}{Math.abs(balance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 {convertedAmount !== undefined && currencyCode !== baseCurrency?.code && (
                   <span className="text-xs text-gray-400">
-                    ≈ {baseCurrency?.symbol}{Math.abs(convertedAmount).toFixed(2)}
+                    ≈ {baseCurrency?.symbol}{Math.abs(convertedAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 )}
               </div>

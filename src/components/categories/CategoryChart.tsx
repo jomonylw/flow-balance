@@ -52,9 +52,9 @@ export default function CategoryChart({
         formatter: function(params: any) {
           let result = `${params[0].axisValue}<br/>`
           params.forEach((param: any) => {
-            const value = param.value >= 0 
-              ? `+${currencySymbol}${param.value.toFixed(2)}`
-              : `-${currencySymbol}${Math.abs(param.value).toFixed(2)}`
+            const value = param.value >= 0
+              ? `+${currencySymbol}${param.value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : `-${currencySymbol}${Math.abs(param.value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             result += `${param.marker}${param.seriesName}: ${value}<br/>`
           })
           return result
@@ -85,7 +85,7 @@ export default function CategoryChart({
         type: 'value',
         axisLabel: {
           formatter: function(value: number) {
-            return `${currencySymbol}${value.toFixed(0)}`
+            return `${currencySymbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
           }
         }
       },

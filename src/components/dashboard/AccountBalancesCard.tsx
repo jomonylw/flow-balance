@@ -108,7 +108,7 @@ export default function AccountBalancesCard({ accounts, baseCurrency }: AccountB
                   ? 'text-gray-900'
                   : 'text-red-600'
               }`}>
-                {currencySymbol}{account.balance.toFixed(2)}
+                {currencySymbol}{account.balance.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
           </Link>

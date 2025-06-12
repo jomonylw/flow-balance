@@ -70,7 +70,7 @@ export default function RecentActivityCard({ transactions, baseCurrency }: Recen
             </dt>
             <dd className="flex items-baseline">
               <div className={`text-2xl font-semibold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {net >= 0 ? '+' : ''}{currencySymbol}{net.toFixed(2)}
+                {net >= 0 ? '+' : ''}{currencySymbol}{net.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <div className="ml-2 flex items-baseline text-sm font-medium text-gray-500">
                 {t('dashboard.transactions.count', { count })}
@@ -86,13 +86,13 @@ export default function RecentActivityCard({ transactions, baseCurrency }: Recen
           <div>
             <span className="text-gray-500">{t('dashboard.income')}</span>
             <div className="font-medium text-green-600">
-              +{currencySymbol}{income.toFixed(2)}
+              +{currencySymbol}{income.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
           <div>
             <span className="text-gray-500">{t('dashboard.expense')}</span>
             <div className="font-medium text-red-600">
-              -{currencySymbol}{expense.toFixed(2)}
+              -{currencySymbol}{expense.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </div>

@@ -110,7 +110,7 @@ export default function FlowAccountSummaryCard({
               ? 'text-green-600 dark:text-green-400'
               : 'text-red-600 dark:text-red-400'
           }`}>
-            {currencySymbol}{flowStats.totalAmount.toFixed(2)}
+            {currencySymbol}{flowStats.totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -124,7 +124,7 @@ export default function FlowAccountSummaryCard({
               ? 'text-green-600 dark:text-green-400'
               : 'text-red-600 dark:text-red-400'
           }`}>
-            {currencySymbol}{flowStats.thisMonthAmount.toFixed(2)}
+            {currencySymbol}{flowStats.thisMonthAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -134,7 +134,7 @@ export default function FlowAccountSummaryCard({
             {t('account.amount.last.month')}
           </div>
           <div className="text-2xl font-semibold text-gray-600 dark:text-gray-300">
-            {currencySymbol}{flowStats.lastMonthAmount.toFixed(2)}
+            {currencySymbol}{flowStats.lastMonthAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 
@@ -148,10 +148,10 @@ export default function FlowAccountSummaryCard({
               ? 'text-green-600 dark:text-green-400'
               : 'text-red-600 dark:text-red-400'
           }`}>
-            {flowStats.monthlyChange >= 0 ? '+' : ''}{flowStats.monthlyChange.toFixed(1)}%
+            {flowStats.monthlyChange >= 0 ? '+' : ''}{flowStats.monthlyChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {t('account.average.monthly')}: {currencySymbol}{flowStats.averageMonthly.toFixed(2)}
+            {t('account.average.monthly')}: {currencySymbol}{flowStats.averageMonthly.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
       </div>
@@ -172,7 +172,7 @@ export default function FlowAccountSummaryCard({
                 ? 'text-green-600 dark:text-green-400'
                 : 'text-red-600 dark:text-red-400'
             }`}>
-              {currencySymbol}{flowStats.thisYearAmount.toFixed(2)}
+              {currencySymbol}{flowStats.thisYearAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
           <div>

@@ -97,7 +97,7 @@ export default function TransactionStats({
                 总收入
               </dt>
               <dd className="text-2xl font-semibold text-green-600">
-                {currencySymbol}{stats.totalIncome.toFixed(2)}
+                {currencySymbol}{stats.totalIncome.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </dd>
               <dd className="text-xs text-gray-500">
                 {stats.incomeCount} 笔交易
@@ -123,7 +123,7 @@ export default function TransactionStats({
                 总支出
               </dt>
               <dd className="text-2xl font-semibold text-red-600">
-                {currencySymbol}{stats.totalExpense.toFixed(2)}
+                {currencySymbol}{stats.totalExpense.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </dd>
               <dd className="text-xs text-gray-500">
                 {stats.expenseCount} 笔交易
@@ -155,7 +155,7 @@ export default function TransactionStats({
               <dd className={`text-2xl font-semibold ${
                 stats.totalNet >= 0 ? 'text-blue-600' : 'text-orange-600'
               }`}>
-                {stats.totalNet >= 0 ? '+' : ''}{currencySymbol}{stats.totalNet.toFixed(2)}
+                {stats.totalNet >= 0 ? '+' : ''}{currencySymbol}{stats.totalNet.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </dd>
               <dd className="text-xs text-gray-500">
                 {stats.totalCount} 笔交易
@@ -187,13 +187,13 @@ export default function TransactionStats({
               <dd className={`text-2xl font-semibold ${
                 stats.thisMonthNet >= 0 ? 'text-purple-600' : 'text-yellow-600'
               }`}>
-                {stats.thisMonthNet >= 0 ? '+' : ''}{currencySymbol}{stats.thisMonthNet.toFixed(2)}
+                {stats.thisMonthNet >= 0 ? '+' : ''}{currencySymbol}{stats.thisMonthNet.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </dd>
               {stats.monthlyChange !== 0 && (
                 <dd className={`text-xs ${
                   stats.monthlyChange > 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
-                  {stats.monthlyChange > 0 ? '↗' : '↘'} {Math.abs(stats.monthlyChange).toFixed(1)}% vs 上月
+                  {stats.monthlyChange > 0 ? '↗' : '↘'} {Math.abs(stats.monthlyChange).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% vs 上月
                 </dd>
               )}
             </dl>

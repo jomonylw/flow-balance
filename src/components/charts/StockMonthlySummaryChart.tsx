@@ -212,7 +212,7 @@ export default function StockMonthlySummaryChart({
                 }; margin-right: 8px; border-radius: 50%;"></span>
                 <span style="margin-right: 8px;">${param?.seriesName ?? 'N/A'}:</span>
                 <span style="font-weight: bold; color: ${value >= 0 ? '#059669' : '#dc2626'};">
-                  ${baseCurrency.symbol}${Math.abs(value).toFixed(2)}${value < 0 ? ' (负)' : ''}
+                  ${baseCurrency.symbol}${Math.abs(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${value < 0 ? ' (负)' : ''}
                 </span>
               </div>
             `
@@ -220,7 +220,7 @@ export default function StockMonthlySummaryChart({
 
           result += `<div style="border-top: 1px solid #ccc; margin-top: 8px; padding-top: 4px; font-weight: bold;">
             总计: <span style="color: ${total >= 0 ? '#059669' : '#dc2626'};">
-              ${baseCurrency.symbol}${Math.abs(total).toFixed(2)}${total < 0 ? ' (负)' : ''}
+              ${baseCurrency.symbol}${Math.abs(total).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${total < 0 ? ' (负)' : ''}
             </span>
           </div>`
 
@@ -259,11 +259,11 @@ export default function StockMonthlySummaryChart({
           axisLabel: {
             formatter: function (value: number) {
               if (Math.abs(value) >= 10000) {
-                return `${baseCurrency.symbol}${(value / 10000).toFixed(1)}万`
+                return `${baseCurrency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
               } else if (Math.abs(value) >= 1000) {
-                return `${baseCurrency.symbol}${(value / 1000).toFixed(1)}k`
+                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
               }
-              return `${baseCurrency.symbol}${value.toFixed(0)}`
+              return `${baseCurrency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
             },
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
           },
@@ -278,11 +278,11 @@ export default function StockMonthlySummaryChart({
           axisLabel: {
             formatter: function (value: number) {
               if (Math.abs(value) >= 10000) {
-                return `${baseCurrency.symbol}${(value / 10000).toFixed(1)}万`
+                return `${baseCurrency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
               } else if (Math.abs(value) >= 1000) {
-                return `${baseCurrency.symbol}${(value / 1000).toFixed(1)}k`
+                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
               }
-              return `${baseCurrency.symbol}${value.toFixed(0)}`
+              return `${baseCurrency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
             },
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
           },

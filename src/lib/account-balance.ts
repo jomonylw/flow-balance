@@ -158,6 +158,11 @@ export interface CalculationOptions {
   asOfDate?: Date
   includePendingTransactions?: boolean
   validateData?: boolean
+  // 流量类账户的期间计算选项
+  periodStart?: Date
+  periodEnd?: Date
+  // 是否使用期间计算（默认为true，流量类账户按期间计算）
+  usePeriodCalculation?: boolean
 }
 
 export interface AccountBalance {
@@ -171,6 +176,101 @@ export interface AccountBalance {
 }
 
 /**
+ * 计算流量类账户的期间余额
+ * 流量类账户的逻辑：累加指定期间内的交易
+ */
+function calculateFlowAccountBalance(
+  account: Account,
+  transactions: Transaction[],
+  options: CalculationOptions = {}
+): Record<string, AccountBalance> {
+  const { validateData = true, periodStart, periodEnd } = options
+  const balances: Record<string, AccountBalance> = {}
+
+  // 确定计算期间
+  let startDate: Date
+  let endDate: Date
+
+  if (periodStart && periodEnd) {
+    startDate = periodStart
+    endDate = periodEnd
+  } else {
+    // 默认计算当前月份
+    const now = new Date()
+    startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+  }
+
+  if (validateData) {
+    console.log(`计算流量类账户 ${account.name} 期间余额: ${startDate.toISOString().split('T')[0]} 到 ${endDate.toISOString().split('T')[0]}`)
+  }
+
+  // 过滤期间内的交易
+  const periodTransactions = transactions.filter(transaction => {
+    const transactionDate = new Date(transaction.date || 0)
+    return transactionDate >= startDate && transactionDate <= endDate
+  })
+
+  // 累加期间内的交易
+  periodTransactions.forEach(transaction => {
+    const currencyCode = transaction.currency?.code
+
+    if (!currencyCode) {
+      if (validateData) {
+        console.warn(`账户 ${account.name} 中发现无效币种:`, transaction)
+      }
+      return
+    }
+
+    if (!balances[currencyCode]) {
+      balances[currencyCode] = {
+        currencyCode,
+        amount: 0,
+        currency: transaction.currency
+      }
+    }
+
+    const amount = transaction.amount
+    const accountType = account.category.type
+
+    // 根据账户类型和交易类型计算余额
+    try {
+      switch (accountType) {
+        case 'INCOME':
+          // 收入类账户：只记录收入交易
+          if (transaction.type === 'INCOME') {
+            balances[currencyCode].amount += amount
+          } else if (validateData && transaction.type !== 'BALANCE_ADJUSTMENT') {
+            console.warn(`收入类账户 ${account.name} 中发现非收入交易:`, transaction)
+          }
+          break
+
+        case 'EXPENSE':
+          // 支出类账户：只记录支出交易
+          if (transaction.type === 'EXPENSE') {
+            balances[currencyCode].amount += amount
+          } else if (validateData && transaction.type !== 'BALANCE_ADJUSTMENT') {
+            console.warn(`支出类账户 ${account.name} 中发现非支出交易:`, transaction)
+          }
+          break
+
+        default:
+          if (validateData) {
+            console.warn(`未知的流量类账户类型: ${accountType}`)
+          }
+          break
+      }
+    } catch (error) {
+      if (validateData) {
+        console.error(`计算流量类账户 ${account.name} 余额时发生错误:`, error, transaction)
+      }
+    }
+  })
+
+  return balances
+}
+
+/**
  * 计算单个账户的余额
  * @param account 账户信息
  * @param options 计算选项
@@ -180,7 +280,7 @@ export function calculateAccountBalance(
   account: Account,
   options: CalculationOptions = {}
 ): Record<string, AccountBalance> {
-  const { asOfDate, validateData = true } = options
+  const { asOfDate, validateData = true, usePeriodCalculation = true } = options
   const balances: Record<string, AccountBalance> = {}
 
   // 数据验证
@@ -220,16 +320,22 @@ export function calculateAccountBalance(
     return true
   })
 
-  // 对于存量类账户，需要特殊处理BALANCE_ADJUSTMENT
+  // 区分存量类账户和流量类账户
   const accountType = account.category.type
   const isStockAccount = accountType === 'ASSET' || accountType === 'LIABILITY'
+  const isFlowAccount = accountType === 'INCOME' || accountType === 'EXPENSE'
 
   if (isStockAccount) {
     // 存量类账户：使用最新的BALANCE_ADJUSTMENT作为基准，然后累加其他交易
     return calculateStockAccountBalance(account, transactions, options)
   }
 
-  // 流量类账户：累加所有交易
+  if (isFlowAccount && usePeriodCalculation) {
+    // 流量类账户：使用期间计算
+    return calculateFlowAccountBalance(account, transactions, options)
+  }
+
+  // 兜底逻辑：累加所有交易（用于向后兼容或特殊情况）
   transactions.forEach(transaction => {
     const currencyCode = transaction.currency?.code
 
@@ -620,6 +726,7 @@ export async function calculateTotalBalanceWithConversion(
 
   for (const account of accounts) {
     const accountBalances = calculateAccountBalance(account, options)
+    const accountType = account.category?.type
 
     Object.values(accountBalances).forEach(balance => {
       const currencyCode = balance.currencyCode
@@ -632,6 +739,8 @@ export async function calculateTotalBalanceWithConversion(
         }
       }
 
+      // 直接累加余额，不调整符号
+      // 符号调整应该在更高层的逻辑中处理
       totalsByOriginalCurrency[currencyCode].amount += balance.amount
     })
   }

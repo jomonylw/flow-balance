@@ -268,7 +268,7 @@ export default function SmartCategoryChart({
         formatter: (params: any) => {
           const date = params[0].axisValue
           const balance = params[0].value
-          return `${date}<br/>余额: ${currencySymbol}${balance.toFixed(2)}`
+          return `${date}<br/>余额: ${currencySymbol}${balance.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
         }
       },
       xAxis: {
@@ -284,7 +284,7 @@ export default function SmartCategoryChart({
       yAxis: {
         type: 'value',
         axisLabel: {
-          formatter: (value: number) => `${currencySymbol}${value.toFixed(0)}`
+          formatter: (value: number) => `${currencySymbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
         }
       },
       series: [{
@@ -337,7 +337,7 @@ export default function SmartCategoryChart({
         formatter: (params: any) => {
           const date = params[0].axisValue
           const amount = params[0].value
-          return `${date}<br/>${accountType === 'INCOME' ? '收入' : '支出'}: ${currencySymbol}${amount.toFixed(2)}`
+          return `${date}<br/>${accountType === 'INCOME' ? '收入' : '支出'}: ${currencySymbol}${amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
         }
       },
       xAxis: {
@@ -353,7 +353,7 @@ export default function SmartCategoryChart({
       yAxis: {
         type: 'value',
         axisLabel: {
-          formatter: (value: number) => `${currencySymbol}${value.toFixed(0)}`
+          formatter: (value: number) => `${currencySymbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
         }
       },
       series: [{

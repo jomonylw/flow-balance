@@ -381,7 +381,7 @@ export default function SmartCategorySummaryCard({
             <div className={`text-2xl font-bold ${
               stockStats.currentNetValue >= 0 ? 'text-gray-900' : 'text-red-600'
             }`}>
-              {currencySymbol}{Math.abs(stockStats.currentNetValue).toFixed(2)}
+              {currencySymbol}{Math.abs(stockStats.currentNetValue).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-xs text-gray-500 mt-1">
               {stockStats.transactionCount} 笔交易
@@ -396,10 +396,10 @@ export default function SmartCategorySummaryCard({
             <div className={`text-xl font-semibold ${
               stockStats.monthlyChange >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
-              {stockStats.monthlyChange >= 0 ? '+' : ''}{stockStats.monthlyChange.toFixed(1)}%
+              {stockStats.monthlyChange >= 0 ? '+' : ''}{stockStats.monthlyChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              上月: {currencySymbol}{Math.abs(stockStats.lastMonthNetValue).toFixed(2)}
+              上月: {currencySymbol}{Math.abs(stockStats.lastMonthNetValue).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
@@ -411,10 +411,10 @@ export default function SmartCategorySummaryCard({
             <div className={`text-xl font-semibold ${
               stockStats.yearToDateChange >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
-              {stockStats.yearToDateChange >= 0 ? '+' : ''}{stockStats.yearToDateChange.toFixed(1)}%
+              {stockStats.yearToDateChange >= 0 ? '+' : ''}{stockStats.yearToDateChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              年初: {currencySymbol}{Math.abs(stockStats.yearStartNetValue).toFixed(2)}
+              年初: {currencySymbol}{Math.abs(stockStats.yearStartNetValue).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </div>
@@ -454,7 +454,7 @@ export default function SmartCategorySummaryCard({
             <div className={`text-2xl font-bold ${
               accountType === 'INCOME' ? 'text-green-600' : 'text-red-600'
             }`}>
-              {currencySymbol}{flowStats.thisMonthFlow.toFixed(2)}
+              {currencySymbol}{flowStats.thisMonthFlow.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-xs text-gray-500 mt-1">
               {flowStats.transactionCount} 笔交易
@@ -469,10 +469,10 @@ export default function SmartCategorySummaryCard({
             <div className={`text-xl font-semibold ${
               flowStats.monthlyChange >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
-              {flowStats.monthlyChange >= 0 ? '+' : ''}{flowStats.monthlyChange.toFixed(1)}%
+              {flowStats.monthlyChange >= 0 ? '+' : ''}{flowStats.monthlyChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              上月: {currencySymbol}{flowStats.lastMonthFlow.toFixed(2)}
+              上月: {currencySymbol}{flowStats.lastMonthFlow.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
@@ -484,10 +484,10 @@ export default function SmartCategorySummaryCard({
             <div className={`text-xl font-semibold ${
               accountType === 'INCOME' ? 'text-green-600' : 'text-red-600'
             }`}>
-              {currencySymbol}{flowStats.thisYearFlow.toFixed(2)}
+              {currencySymbol}{flowStats.thisYearFlow.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              月均: {currencySymbol}{flowStats.averageMonthly.toFixed(2)}
+              月均: {currencySymbol}{flowStats.averageMonthly.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </div>

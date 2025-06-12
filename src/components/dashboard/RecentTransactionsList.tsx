@@ -87,7 +87,7 @@ export default function RecentTransactionsList({
   }
 
   const getAmountDisplay = (transaction: Transaction) => {
-    const amount = transaction.amount.toFixed(2)
+    const amount = transaction.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const symbol = transaction.currency.symbol || currencySymbol
 
     switch (transaction.type) {

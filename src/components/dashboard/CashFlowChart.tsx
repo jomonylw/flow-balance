@@ -108,9 +108,9 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
             formatter: function(value: number) {
               const absValue = Math.abs(value)
               if (absValue >= 10000) {
-                return `${value < 0 ? '-' : ''}${currency.symbol}${(absValue / 10000).toFixed(1)}万`
+                return `${value < 0 ? '-' : ''}${currency.symbol}${(absValue / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
               }
-              return `${value < 0 ? '-' : ''}${currency.symbol}${absValue.toLocaleString()}`
+              return `${value < 0 ? '-' : ''}${currency.symbol}${absValue.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
             }
           },
           axisLine: {
@@ -132,7 +132,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
             color: '#6b7280',
             formatter: function(value: number) {
               if (Math.abs(value) >= 10000) {
-                return `${currency.symbol}${(value / 10000).toFixed(1)}万`
+                return `${currency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
               }
               return `${currency.symbol}${value.toLocaleString()}`
             }

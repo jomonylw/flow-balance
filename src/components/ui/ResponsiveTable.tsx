@@ -192,7 +192,7 @@ export const columnRenderers = {
   // 货币格式化
   currency: (symbol: string = '¥') => (value: number) => (
     <span className={value >= 0 ? 'text-green-600' : 'text-red-600'}>
-      {value >= 0 ? '' : '-'}{symbol}{Math.abs(value).toLocaleString()}
+      {value >= 0 ? '' : '-'}{symbol}{Math.abs(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
     </span>
   ),
 

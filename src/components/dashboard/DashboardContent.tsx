@@ -425,24 +425,20 @@ export default function DashboardContent({
                 <div>
                   <p className="text-sm font-medium text-blue-700">{t('dashboard.total.assets.card')}</p>
                   <p className="text-2xl font-bold text-blue-900">
-                    {summaryData.netWorth.currency.symbol}
-                    {(() => {
-                      const assetAccounts = summaryData.accountBalances.filter((acc: any) => acc.category.type === 'ASSET')
-                      const totalAssets = assetAccounts.reduce((sum: number, acc: any) => {
-                        const balance = acc.balances[summaryData.netWorth.currency.code] || 0
-                        return sum + Math.max(0, balance) // 只计算正余额
-                      }, 0)
-                      return totalAssets.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    })()}
+                    {summaryData.totalAssets ? (
+                      <>
+                        {summaryData.totalAssets.currency.symbol}
+                        {summaryData.totalAssets.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </>
+                    ) : (
+                      <>
+                        {summaryData.netWorth.currency.symbol}
+                        0.00
+                      </>
+                    )}
                   </p>
                   <p className="text-xs text-blue-600 mt-1">
-                    {summaryData.accountBalances.filter((acc: any) =>
-                      acc.category.type === 'ASSET' &&
-                      Object.values(acc.balances).some((balance: any) => Math.abs(balance) > 0.01)
-                    ).length} {t('dashboard.accounts.count', { count: summaryData.accountBalances.filter((acc: any) =>
-                      acc.category.type === 'ASSET' &&
-                      Object.values(acc.balances).some((balance: any) => Math.abs(balance) > 0.01)
-                    ).length }).replace(/\d+\s*/, '')}
+                    {summaryData.totalAssets ? summaryData.totalAssets.accountCount : 0} {t('dashboard.accounts.count', { count: summaryData.totalAssets ? summaryData.totalAssets.accountCount : 0 }).replace(/\d+\s*/, '')}
                   </p>
                 </div>
                 <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -459,26 +455,20 @@ export default function DashboardContent({
                 <div>
                   <p className="text-sm font-medium text-red-700">{t('dashboard.total.liabilities.card')}</p>
                   <p className="text-2xl font-bold text-red-900">
-                    {summaryData.netWorth.currency.symbol}
-                    {(() => {
-                      const liabilityAccounts = summaryData.accountBalances.filter((acc: any) => acc.category.type === 'LIABILITY')
-                      const totalLiabilities = liabilityAccounts.reduce((sum: number, acc: any) => {
-                        const balance = acc.balances[summaryData.netWorth.currency.code] || 0
-                        // 负债账户的余额：正数表示欠债，负数表示多付了
-                        // 总负债应该显示所有正余额的总和（实际欠债金额）
-                        return sum + Math.max(0, balance)
-                      }, 0)
-                      return totalLiabilities.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    })()}
+                    {summaryData.totalLiabilities ? (
+                      <>
+                        {summaryData.totalLiabilities.currency.symbol}
+                        {summaryData.totalLiabilities.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </>
+                    ) : (
+                      <>
+                        {summaryData.netWorth.currency.symbol}
+                        0.00
+                      </>
+                    )}
                   </p>
                   <p className="text-xs text-red-600 mt-1">
-                    {summaryData.accountBalances.filter((acc: any) =>
-                      acc.category.type === 'LIABILITY' &&
-                      Object.values(acc.balances).some((balance: any) => Math.abs(balance) > 0.01)
-                    ).length} {t('dashboard.accounts.count', { count: summaryData.accountBalances.filter((acc: any) =>
-                      acc.category.type === 'LIABILITY' &&
-                      Object.values(acc.balances).some((balance: any) => Math.abs(balance) > 0.01)
-                    ).length }).replace(/\d+\s*/, '')}
+                    {summaryData.totalLiabilities ? summaryData.totalLiabilities.accountCount : 0} {t('dashboard.accounts.count', { count: summaryData.totalLiabilities ? summaryData.totalLiabilities.accountCount : 0 }).replace(/\d+\s*/, '')}
                   </p>
                 </div>
                 <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">

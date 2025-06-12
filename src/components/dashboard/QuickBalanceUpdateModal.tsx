@@ -237,7 +237,7 @@ export default function QuickBalanceUpdateModal({
                   {selectedAccount.category.type === 'ASSET' ? '资产账户' : '负债账户'} • 存量数据
                 </p>
                 <p className="text-sm text-gray-600">
-                  当前余额: {currencySymbol}{currentBalance.toFixed(2)}
+                  当前余额: {currencySymbol}{currentBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
             </div>

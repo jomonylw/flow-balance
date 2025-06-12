@@ -130,7 +130,7 @@ export default function StockCategoryBalanceCard({
           <div className={`text-3xl font-bold ${
             totalBalance >= 0 ? 'text-gray-900' : 'text-red-600'
           }`}>
-            {currencySymbol}{Math.abs(totalBalance).toFixed(2)}
+            {currencySymbol}{Math.abs(totalBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             {totalBalance < 0 && <span className="text-sm ml-1">(负)</span>}
           </div>
           <div className="text-xs text-gray-500 mt-1">
@@ -152,7 +152,7 @@ export default function StockCategoryBalanceCard({
                     balance >= 0 ? 'text-gray-900' : 'text-red-600'
                   }`}>
                     {currency === baseCurrency.code ? currencySymbol : ''}
-                    {Math.abs(balance).toFixed(2)}
+                    {Math.abs(balance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     {balance < 0 && <span className="text-xs ml-1">(负)</span>}
                   </span>
                 </div>
@@ -183,7 +183,7 @@ export default function StockCategoryBalanceCard({
                         balance >= 0 ? 'text-gray-900' : 'text-red-600'
                       }`}>
                         {currency === baseCurrency.code ? currencySymbol : ''}
-                        {Math.abs(balance).toFixed(2)}
+                        {Math.abs(balance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         {balance < 0 && <span className="text-xs ml-1">(负)</span>}
                       </span>
                     </div>

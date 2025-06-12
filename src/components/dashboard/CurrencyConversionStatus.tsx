@@ -81,7 +81,7 @@ export default function CurrencyConversionStatus({
                     {conversion.originalCurrency} → {conversion.targetCurrency}
                   </span>
                   <span className="font-mono">
-                    1:{conversion.exchangeRate.toFixed(4)}
+                    1:{conversion.exchangeRate.toLocaleString('zh-CN', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
                   </span>
                 </div>
               ))}
