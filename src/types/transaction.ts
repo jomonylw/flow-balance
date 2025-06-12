@@ -70,3 +70,11 @@ export interface User {
     }
   }
 }
+export interface TrendDataPoint {
+  date: string
+  originalAmount: number
+  originalCurrency: string
+  convertedAmount: number
+  hasConversionError: boolean
+  transactionCount: number
+}

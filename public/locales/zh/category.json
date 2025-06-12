@@ -44,5 +44,20 @@
   "category.currency.distribution": "币种分布",
   "category.stock.update.tip": "存量类分类建议在账户页面进行余额更新",
   "category.balance.change.records": "余额历史",
-  "category.balance.change.description": "记录该分类下所有账户的余额变化历史"
+  "category.balance.change.description": "记录该分类下所有账户的余额变化历史",
+  "category.flow.add.tip": "流量类分类可以添加交易记录",
+  "category.type.flow": "流量",
+  "category.cumulative.net.flow": "累计净流量",
+  "category.this.month.net.flow": "本月净流量",
+  "category.cumulative.flow": "累计流量",
+  "category.year.to.date.total.flow": "年初至今总流量",
+  "category.this.month.total.flow": "本月总流量",
+  "category.this.year.total.flow": "今年总流量",
+  "category.last.year.total.flow": "上年总流量",
+  "category.monthly.average.flow": "月均",
+  "category.no.currency.data": "暂无币种数据",
+  "category.total.income": "总收入",
+  "category.total.expense": "总支出",
+  "category.total.accounts": "总账户数",
+  "category.flow.summary.description": "以下显示各子分类和账户的本月流量数据，如本月无交易则显示累计流量"
 }

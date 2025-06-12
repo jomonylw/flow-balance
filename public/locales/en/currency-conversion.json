@@ -7,5 +7,6 @@
   "currency.conversion.missing.rate": "Missing Rate",
   "currency.conversion.more.successful": "{{count}} more successful conversions...",
   "currency.conversion.more.failed": "{{count}} more failed conversions...",
-  "currency.conversion.setup.missing": "Setup Missing Exchange Rates →"
+  "currency.conversion.setup.missing": "Setup Missing Exchange Rates →",
+  "currency.conversion.error": "Currency conversion error"
 }

@@ -11,10 +11,8 @@ interface BalanceInfo {
 }
 
 interface CategorySummaryItemProps {
-  id: string
   name: string
   href: string
-  type: 'stock' | 'flow'
   
   // For stock type (assets/liabilities)
   balances?: BalanceInfo[]
@@ -33,10 +31,8 @@ interface CategorySummaryItemProps {
 }
 
 export default function CategorySummaryItem({
-  id,
   name,
   href,
-  type,
   balances = [],
   baseCurrency,
   currencies = [],
@@ -50,6 +46,24 @@ export default function CategorySummaryItem({
   const { t } = useLanguage()
   
   const renderStockContent = () => {
+    if (isSubcategory) {
+      return (
+        <span className="text-gray-500 dark:text-gray-400">
+          {subcategoryLabel || t('category.subcategory')}
+        </span>
+      )
+    }
+
+    if (simpleBalance !== undefined) {
+      return (
+        <span className={`ml-2 ${
+          simpleBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+        }`}>
+          {currencySymbol}{Math.abs(simpleBalance).toFixed(2)}
+        </span>
+      )
+    }
+    
     const hasBalances = balances.length > 0
 
     if (!hasBalances) {
@@ -94,32 +108,6 @@ export default function CategorySummaryItem({
     )
   }
   
-  const renderFlowContent = () => {
-    if (isSubcategory) {
-      return (
-        <span className="text-gray-500 dark:text-gray-400">
-          {subcategoryLabel || t('category.subcategory')}
-        </span>
-      )
-    }
-
-    if (simpleBalance !== undefined) {
-      return (
-        <span className={`ml-2 ${
-          simpleBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-        }`}>
-          {currencySymbol}{Math.abs(simpleBalance).toFixed(2)}
-        </span>
-      )
-    }
-
-    return (
-      <span className="text-gray-500 dark:text-gray-400">
-        {t('account.transaction.count.value', { count: transactionCount })}
-      </span>
-    )
-  }
-  
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
       <Link
@@ -129,7 +117,7 @@ export default function CategorySummaryItem({
         {name}
       </Link>
       <div className="text-sm text-gray-600 dark:text-gray-400">
-        {type === 'stock' ? renderStockContent() : renderFlowContent()}
+        {renderStockContent()}
       </div>
     </div>
   )

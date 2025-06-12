@@ -40,5 +40,7 @@
   "common.pagination.showing": "Showing {{start}} to {{end}} of {{total}} records",
   "common.date.today": "Today",
   "common.date.yesterday": "Yesterday",
-  "common.date.days.ago": "{{days}} days ago"
+  "common.date.days.ago": "{{days}} days ago",
+  "common.retry": "Retry",
+  "common.this.year": "This Year"
 }

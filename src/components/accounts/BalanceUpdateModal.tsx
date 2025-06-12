@@ -162,6 +162,16 @@ export default function BalanceUpdateModal({
         const newBalance = parseFloat(formData.newBalance)
         const balanceChange = newBalance - currentBalance
 
+        // 添加调试信息
+        console.log('前端提交数据:', {
+          newBalance,
+          balanceChange,
+          currentBalance,
+          formData: formData.newBalance,
+          accountId: account.id,
+          updateDate: formData.updateDate
+        })
+
         const response = await fetch('/api/balance-update', {
           method: 'POST',
           headers: {
@@ -180,7 +190,8 @@ export default function BalanceUpdateModal({
         const result = await response.json()
 
         if (result.success) {
-          showSuccess(t('balance.update.modal.update.success'), `${account.name} ${t('balance.update.modal.balance.updated')}`)
+          const message = result.data?.message || `${account.name} ${t('balance.update.modal.balance.updated')}`
+          showSuccess(t('balance.update.modal.update.success'), message)
           onSuccess()
           onClose()
         } else {

@@ -1,16 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
 import TransactionList from '@/components/transactions/TransactionList'
-import CategorySummaryCard from './CategorySummaryCard'
-import CategoryChart from './CategoryChart'
-import SmartCategorySummaryCard from './SmartCategorySummaryCard'
-import SmartCategoryChart from './SmartCategoryChart'
-import FlowMonthlySummaryChart from '@/components/charts/FlowMonthlySummaryChart'
+import FlowCategorySummaryCard from './FlowCategorySummaryCard'
 import CategorySummaryItem from './CategorySummaryItem'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
+import FlowMonthlySummaryChart from '@/components/charts/FlowMonthlySummaryChart'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import {
@@ -23,8 +20,39 @@ import {
   User
 } from '@/types/transaction'
 
-// 定义图表组件期望的数据格式
-interface MonthlyDataForChart {
+
+
+// API 数据格式 - 直接使用 MonthlyReport[] 数组
+interface MonthlyDataItem {
+  month: string
+  childCategories: {
+    id: string
+    name: string
+    type: string
+    order: number
+    accountCount: number
+    balances: {
+      original: Record<string, number>
+      converted: Record<string, number>
+    }
+  }[]
+  directAccounts: {
+    id: string
+    name: string
+    categoryId: string
+    balances: {
+      original: Record<string, number>
+      converted: Record<string, number>
+    }
+    transactionCount: number
+  }[]
+}
+
+// 后端直接返回 MonthlyReport[] 数组
+type FlowSummaryData = MonthlyDataItem[]
+
+// 图表组件期望的数据格式
+interface FlowMonthlyData {
   [monthKey: string]: {
     [currencyCode: string]: {
       income: number
@@ -36,27 +64,7 @@ interface MonthlyDataForChart {
   }
 }
 
-interface SummaryData {
-  transactionSummary: {
-    [currency: string]: {
-      net: number
-      income: number
-      expense: number
-    }
-  }
-  children: { id: string; name: string }[]
-  accounts: {
-    id: string
-    name: string
-    balances?: { [currency: string]: number }
-    transactionCount: number
-  }[]
-}
-
-interface MonthlyData {
-  monthlyData: { month: string; income: number; expense: number; net: number }[]
-  baseCurrency: string
-}
+type TimeRange = 'last12months' | 'all'
 
 interface FlowCategoryDetailViewProps {
   category: Category
@@ -79,9 +87,7 @@ export default function FlowCategoryDetailView({
   const { showSuccess, showError } = useToast()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<TransactionFormData | null>(null)
-  const [timeRange, setTimeRange] = useState('thisMonth')
-  const [summaryData, setSummaryData] = useState<SummaryData | null>(null)
-  const [monthlyData, setMonthlyData] = useState<MonthlyData | null>(null)
+  const [summaryData, setSummaryData] = useState<FlowSummaryData | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -92,25 +98,105 @@ export default function FlowCategoryDetailView({
     itemsPerPage: 10
   })
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
+  const [chartData, setChartData] = useState<FlowMonthlyData | null>(null)
+  const [timeRange, setTimeRange] = useState<TimeRange>('last12months')
+
+  // 数据转换函数：将API返回的数据转换为图表需要的格式
+  const transformDataForChart = useCallback((data: FlowSummaryData, baseCurrencyCode: string): FlowMonthlyData => {
+    const chartData: FlowMonthlyData = {}
+
+    data.forEach(monthItem => {
+      const monthKey = monthItem.month
+      chartData[monthKey] = {
+        [baseCurrencyCode]: {
+          income: 0,
+          expense: 0,
+          balance: 0,
+          transactionCount: 0,
+          categories: {}
+        }
+      }
+
+      let totalIncome = 0
+      let totalExpense = 0
+      let totalTransactionCount = 0
+
+      // 处理子分类
+      monthItem.childCategories.forEach(childCategory => {
+        let categoryIncome = 0
+        let categoryExpense = 0
+
+        Object.values(childCategory.balances.converted).forEach(balance => {
+          const amount = balance as number
+          if (amount > 0) {
+            categoryIncome += amount
+            totalIncome += amount
+          } else if (amount < 0) {
+            categoryExpense += Math.abs(amount)
+            totalExpense += Math.abs(amount)
+          }
+        })
+
+        if (categoryIncome > 0 || categoryExpense > 0) {
+          chartData[monthKey][baseCurrencyCode].categories[childCategory.name] = {
+            income: categoryIncome,
+            expense: categoryExpense,
+            balance: categoryIncome - categoryExpense
+          }
+        }
+      })
+
+      // 处理直属账户
+      monthItem.directAccounts.forEach(account => {
+        let accountIncome = 0
+        let accountExpense = 0
+
+        Object.values(account.balances.converted).forEach(balance => {
+          const amount = balance as number
+          if (amount > 0) {
+            accountIncome += amount
+            totalIncome += amount
+          } else if (amount < 0) {
+            accountExpense += Math.abs(amount)
+            totalExpense += Math.abs(amount)
+          }
+        })
+
+        totalTransactionCount += account.transactionCount
+
+        if (accountIncome > 0 || accountExpense > 0) {
+          chartData[monthKey][baseCurrencyCode].categories[account.name] = {
+            income: accountIncome,
+            expense: accountExpense,
+            balance: accountIncome - accountExpense
+          }
+        }
+      })
+
+      // 设置月度汇总
+      chartData[monthKey][baseCurrencyCode].income = totalIncome
+      chartData[monthKey][baseCurrencyCode].expense = totalExpense
+      chartData[monthKey][baseCurrencyCode].balance = totalIncome - totalExpense
+      chartData[monthKey][baseCurrencyCode].transactionCount = totalTransactionCount
+    })
+
+    return chartData
+  }, [])
 
   // 获取分类汇总数据
   useEffect(() => {
     const fetchSummaryData = async () => {
       try {
-        // 并行获取汇总数据和月度数据
-        const [summaryRes, monthlyRes] = await Promise.all([
-          fetch(`/api/categories/${category.id}/summary`),
-          fetch(`/api/analytics/monthly-summary?categoryId=${category.id}&months=12`)
-        ])
+        const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
 
         if (summaryRes.ok) {
           const summaryResult = await summaryRes.json()
           setSummaryData(summaryResult.data)
-        }
 
-        if (monthlyRes.ok) {
-          const monthlyResult = await monthlyRes.json()
-          setMonthlyData(monthlyResult.data)
+          // 转换数据为图表格式
+          const baseCurrencyCode = user.settings?.baseCurrency?.code || 'CNY'
+          const transformedData = transformDataForChart(summaryResult.data, baseCurrencyCode)
+          setChartData(transformedData)
         }
       } catch (error) {
         console.error('Error fetching summary data:', error)
@@ -118,10 +204,10 @@ export default function FlowCategoryDetailView({
     }
 
     fetchSummaryData()
-  }, [category.id])
+  }, [category.id, user.settings?.baseCurrency?.code, transformDataForChart])
 
   // 获取交易记录
-  const loadTransactions = async (page = 1) => {
+  const loadTransactions = useCallback(async (page = 1) => {
     setIsLoadingTransactions(true)
     try {
       const params = new URLSearchParams({
@@ -148,11 +234,11 @@ export default function FlowCategoryDetailView({
     } finally {
       setIsLoadingTransactions(false)
     }
-  }
+  }, [category.id, pagination.itemsPerPage, showError])
 
   useEffect(() => {
     loadTransactions(pagination.currentPage)
-  }, [pagination.currentPage, category.id])
+  }, [pagination.currentPage, category.id, loadTransactions])
 
   const handlePageChange = (page: number) => {
     setPagination(prev => ({ ...prev, currentPage: page }))
@@ -219,19 +305,16 @@ export default function FlowCategoryDetailView({
     // 重新获取汇总数据
     const fetchSummaryData = async () => {
       try {
-        const [summaryRes, monthlyRes] = await Promise.all([
-          fetch(`/api/categories/${category.id}/summary`),
-          fetch(`/api/analytics/monthly-summary?categoryId=${category.id}&months=12`)
-        ])
+        const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
 
         if (summaryRes.ok) {
           const summaryResult = await summaryRes.json()
           setSummaryData(summaryResult.data)
-        }
 
-        if (monthlyRes.ok) {
-          const monthlyResult = await monthlyRes.json()
-          setMonthlyData(monthlyResult.data)
+          // 更新图表数据
+          const baseCurrencyCode = user.settings?.baseCurrency?.code || 'CNY'
+          const transformedData = transformDataForChart(summaryResult.data, baseCurrencyCode)
+          setChartData(transformedData)
         }
       } catch (error) {
         console.error('Error fetching summary data:', error)
@@ -242,93 +325,31 @@ export default function FlowCategoryDetailView({
     loadTransactions(pagination.currentPage)
   }
 
-  // 计算分类统计
-  const calculateStats = () => {
-    const now = new Date()
-    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const thisYear = new Date(now.getFullYear(), 0, 1)
+  // 根据时间范围过滤图表数据
+  const getFilteredChartData = useCallback(() => {
+    if (!chartData) return {}
 
-    let totalIncome = 0
-    let totalExpense = 0
-    let thisMonthIncome = 0
-    let thisMonthExpense = 0
-    let lastMonthIncome = 0
-    let lastMonthExpense = 0
-    let thisYearIncome = 0
-    let thisYearExpense = 0
-    let incomeCount = 0
-    let expenseCount = 0
+    const allMonths = Object.keys(chartData).sort()
+    let filteredMonths: string[]
 
-    transactions.forEach(transaction => {
-      const transactionDate = new Date(transaction.date)
-      const amount = transaction.amount
+    if (timeRange === 'last12months') {
+      // 获取最近12个月的数据
+      filteredMonths = allMonths.slice(-12)
+    } else {
+      // 全部数据
+      filteredMonths = allMonths
+    }
 
-      if (transaction.type === 'INCOME') {
-        incomeCount++
-        totalIncome += amount
-
-        if (transactionDate >= thisMonth) {
-          thisMonthIncome += amount
-        }
-
-        if (transactionDate >= lastMonth && transactionDate < thisMonth) {
-          lastMonthIncome += amount
-        }
-
-        if (transactionDate >= thisYear) {
-          thisYearIncome += amount
-        }
-      } else if (transaction.type === 'EXPENSE') {
-        expenseCount++
-        totalExpense += amount
-
-        if (transactionDate >= thisMonth) {
-          thisMonthExpense += amount
-        }
-
-        if (transactionDate >= lastMonth && transactionDate < thisMonth) {
-          lastMonthExpense += amount
-        }
-
-        if (transactionDate >= thisYear) {
-          thisYearExpense += amount
-        }
-      }
+    const filteredData: FlowMonthlyData = {}
+    filteredMonths.forEach(month => {
+      filteredData[month] = chartData[month]
     })
 
-    const totalAmount = totalIncome - totalExpense
-    const thisMonthAmount = thisMonthIncome - thisMonthExpense
-    const lastMonthAmount = lastMonthIncome - lastMonthExpense
-    const thisYearAmount = thisYearIncome - thisYearExpense
+    return filteredData
+  }, [chartData, timeRange])
 
-    const monthlyChange = lastMonthAmount !== 0
-      ? ((thisMonthAmount - lastMonthAmount) / Math.abs(lastMonthAmount)) * 100
-      : 0
-
-    return {
-      totalAmount,
-      totalIncome,
-      totalExpense,
-      thisMonthAmount,
-      thisMonthIncome,
-      thisMonthExpense,
-      lastMonthAmount,
-      lastMonthIncome,
-      lastMonthExpense,
-      thisYearAmount,
-      thisYearIncome,
-      thisYearExpense,
-      monthlyChange,
-      incomeCount,
-      expenseCount,
-      totalCount: transactions.length,
-      averageAmount: transactions.length > 0 ? totalAmount / transactions.length : 0
-    }
-  }
-
-  const stats = calculateStats()
-  const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
+  const baseCurrency = user.settings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
+  const currencySymbol = baseCurrency.symbol
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -338,7 +359,7 @@ export default function FlowCategoryDetailView({
           <li className="inline-flex items-center">
             <Link
               href="/dashboard"
-              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600"
+              className="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
             >
               <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
@@ -351,7 +372,7 @@ export default function FlowCategoryDetailView({
               <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
               </svg>
-              <span className="ml-1 text-sm font-medium text-gray-500 md:ml-2">
+              <span className="ml-1 text-sm font-medium text-gray-500 dark:text-gray-400 md:ml-2">
                 {category.name}
               </span>
             </div>
@@ -359,7 +380,7 @@ export default function FlowCategoryDetailView({
         </ol>
       </nav>
 
-      {/* 分类标题和操作 */}
+      {/* 分类标题 */}
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center">
           {category.icon && (
@@ -371,15 +392,15 @@ export default function FlowCategoryDetailView({
             </div>
           )}
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{category.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{category.name}</h1>
             {category.description && (
-              <p className="mt-2 text-gray-600">{category.description}</p>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">{category.description}</p>
             )}
             <div className="mt-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 category.type === 'INCOME'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
               }`}>
                 {category.type === 'INCOME' ? t('category.type.income') : t('category.type.expense')} • {t('category.type.flow.data')}
               </span>
@@ -397,186 +418,173 @@ export default function FlowCategoryDetailView({
             </svg>
             {t('transaction.create')}
           </button>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            💡 {t('category.flow.add.tip')}
+          </div>
         </div>
       </div>
 
-      {/* 智能分类摘要卡片 */}
+      {/* 分类摘要卡片 */}
       <div className="mb-8">
-        {category.type ? (
-          <SmartCategorySummaryCard
-            category={{ ...category, transactions: category.transactions || [] }}
+        {(category.type === 'INCOME' || category.type === 'EXPENSE') && (
+          <FlowCategorySummaryCard
+            category={{
+              ...category,
+              type: category.type,
+              transactions: category.transactions || []
+            }}
             currencySymbol={currencySymbol}
             summaryData={summaryData}
-          />
-        ) : (
-          <CategorySummaryCard
-            category={{ ...category, transactions: category.transactions || [] }}
-            stats={stats}
-            currencySymbol={currencySymbol}
+            baseCurrency={baseCurrency}
           />
         )}
       </div>
 
       {/* 汇总数据展示 */}
-      {summaryData && (
+      {summaryData && summaryData.length > 0 && (
         <div className="mb-8">
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('category.summary')}
             </h2>
 
-            {/* 总余额/净收支 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {summaryData.transactionSummary && Object.entries(summaryData.transactionSummary).map(([currency, data]) => (
-                <div key={currency} className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-sm text-gray-500 mb-1">
-                    {currency} {t('category.net.cash.flow')}
-                  </div>
-                  <div className={`text-xl font-semibold ${
-                    data.net >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {currencySymbol}{Math.abs(data.net).toFixed(2)}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    {t('category.income')}: {currencySymbol}{data.income.toFixed(2)} | {t('category.expense')}: {currencySymbol}{data.expense.toFixed(2)}
-                  </div>
-                </div>
-              ))}
-            </div>
+            {(() => {
+              // 使用最新月份的数据（数组第一个元素）
+              const latestMonthData = summaryData[0]
+              if (!latestMonthData) return null
 
-            {/* 子分类汇总 */}
-            {summaryData.children && summaryData.children.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.subcategories')}</h3>
-                <div className="space-y-2">
-                  {summaryData.children.map((child) => (
-                    <CategorySummaryItem
-                      key={child.id}
-                      id={child.id}
-                      name={child.name}
-                      href={`/categories/${child.id}`}
-                      type="flow"
-                      isSubcategory={true}
-                      subcategoryLabel={t('category.subcategory')}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+              return (
+                <>
+                  {/* 子分类汇总 */}
+                  {latestMonthData.childCategories && latestMonthData.childCategories.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.subcategories')}</h3>
+                      <div className="space-y-2">
+                        {latestMonthData.childCategories.map((child) => {
+                          // 转换余额数据为组件需要的格式
+                          const balanceInfos = Object.entries(child.balances.original).map(([currencyCode, balance]) => {
+                            const convertedAmount = child.balances.converted[currencyCode] || balance
+                            return {
+                              currencyCode,
+                              balance: balance as number,
+                              convertedAmount: convertedAmount as number
+                            }
+                          })
 
-            {/* 直属账户汇总 */}
-            {summaryData.accounts && summaryData.accounts.length > 0 && (
-              <div>
-                <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.accounts')}</h3>
-                <div className="space-y-2">
-                  {summaryData.accounts.map((account) => {
-                    // 获取第一个余额用于显示（流量类账户通常只有一个货币）
-                    const firstBalance = account.balances && Object.keys(account.balances).length > 0
-                      ? Object.values(account.balances)[0]
-                      : undefined
+                          return (
+                            <CategorySummaryItem
+                              key={child.id}
+                              name={child.name}
+                              href={`/categories/${child.id}`}
+                              balances={balanceInfos}
+                              baseCurrency={baseCurrency}
+                              currencies={currencies}
+                              accountCount={child.accountCount || 0}
+                            />
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
 
-                    return (
-                      <CategorySummaryItem
-                        key={account.id}
-                        id={account.id}
-                        name={account.name}
-                        href={`/accounts/${account.id}`}
-                        type="flow"
-                        simpleBalance={firstBalance}
-                        currencySymbol={currencySymbol}
-                        transactionCount={account.transactionCount}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+                  {/* 直属账户汇总 */}
+                  {latestMonthData.directAccounts && latestMonthData.directAccounts.length > 0 && (
+                    <div>
+                      <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">{t('category.accounts')}</h3>
+                      <div className="space-y-2">
+                        {latestMonthData.directAccounts.map((account) => {
+                          // 转换余额数据为组件需要的格式
+                          const balanceInfos = Object.entries(account.balances.original).map(([currencyCode, balance]) => {
+                            const convertedAmount = account.balances.converted[currencyCode] || balance
+                            return {
+                              currencyCode,
+                              balance: balance as number,
+                              convertedAmount: convertedAmount as number
+                            }
+                          })
+
+                          return (
+                            <CategorySummaryItem
+                              key={account.id}
+                              name={account.name}
+                              href={`/accounts/${account.id}`}
+                              balances={balanceInfos}
+                              baseCurrency={baseCurrency}
+                              currencies={currencies}
+                              transactionCount={account.transactionCount}
+                            />
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         </div>
       )}
 
       {/* 月度汇总图表 */}
-      {monthlyData && (() => {
-        const baseCurrencyForChart = currencies.find(c => c.code === monthlyData.baseCurrency)
+      {chartData && (() => {
+        const baseCurrencyForChart = currencies.find(c => c.code === baseCurrency.code)
         if (!baseCurrencyForChart) return null
 
-        const transformDataForChart = (data: { month: string; income: number; expense: number; net: number }[], currencyCode: string): MonthlyDataForChart => {
-          const transformed: MonthlyDataForChart = {}
-          data.forEach(item => {
-            const monthKey = item.month
-            transformed[monthKey] = {
-              [currencyCode]: {
-                income: item.income,
-                expense: item.expense,
-                balance: item.net,
-                transactionCount: 0, // API doesn't provide this, default to 0
-                categories: {} // API doesn't provide this, default to empty object
-              }
-            }
-          })
-          return transformed
-        }
-
-        const chartData = transformDataForChart(monthlyData.monthlyData, monthlyData.baseCurrency)
+        const filteredData = getFilteredChartData()
 
         return (
           <div className="mb-8">
-            <FlowMonthlySummaryChart
-              monthlyData={chartData}
-              baseCurrency={baseCurrencyForChart}
-              title={`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
-              height={400}
-            />
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
+                </h2>
+
+                {/* 时间范围选择器 */}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setTimeRange('last12months')}
+                    className={`px-3 py-1 text-sm rounded ${
+                      timeRange === 'last12months'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {t('time.last.12.months')}
+                  </button>
+                  <button
+                    onClick={() => setTimeRange('all')}
+                    className={`px-3 py-1 text-sm rounded ${
+                      timeRange === 'all'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {t('time.all')}
+                  </button>
+                </div>
+              </div>
+
+              <FlowMonthlySummaryChart
+                monthlyData={filteredData}
+                baseCurrency={baseCurrencyForChart}
+                title={`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
+                height={400}
+              />
+            </div>
           </div>
         )
       })()}
 
-      {/* 图表和时间范围选择 */}
-      <div className="bg-white shadow rounded-lg mb-8">
-        <div className="px-6 py-4 border-b border-gray-200">
+      {/* 交易记录 */}
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t('category.trend.analysis')}
-            </h2>
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="thisMonth">{t('time.this.month')}</option>
-              <option value="last3Months">{t('time.last.3.months')}</option>
-              <option value="last6Months">{t('time.last.6.months')}</option>
-              <option value="thisYear">{t('time.this.year')}</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="p-6">
-          {category.type ? (
-            <SmartCategoryChart
-              category={{ ...category, transactions: category.transactions || [] }}
-              timeRange={timeRange}
-              currencySymbol={currencySymbol}
-            />
-          ) : (
-            <CategoryChart
-              transactions={transactions}
-              timeRange={timeRange}
-              currencySymbol={currencySymbol}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* 交易列表 */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('account.transactions')}
             </h2>
-            <span className="text-sm text-gray-500">
-              {t('account.total.transactions', { count: pagination.totalItems })}
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {t('common.total')} {pagination.totalItems} {t('category.transaction.count')}
             </span>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">

@@ -120,7 +120,7 @@ async function calculateMonthlyHistoricalBalances(
         const transactionDate = new Date(transaction.date)
         if (transactionDate <= monthEnd) {
           const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
-          balance += changeAmount !== null ? changeAmount : parseFloat(transaction.amount.toString())
+          balance = changeAmount !== null ? changeAmount : parseFloat(transaction.amount.toString())
         } else {
           break // 交易已排序，后续无需再检查
         }
@@ -217,6 +217,7 @@ export async function getStockCategorySummary(
       categoryId: { in: allCategoryIds }
     },
     include: {
+      currency: true,
       transactions: {
         where: { type: 'BALANCE_ADJUSTMENT' },
         include: { currency: true },
@@ -308,16 +309,18 @@ export async function getStockCategorySummary(
     const directAccounts = allAccounts.filter(acc => acc.categoryId === categoryId)
     directAccounts.forEach(acc => {
       const balances = accountMonthlyBalances[acc.id]?.[month]
-      if (balances) {
-        report.directAccounts.push({
-          id: acc.id,
-          name: acc.name,
-          description: acc.description || undefined,
-          categoryId: acc.categoryId,
-          balances: balances,
-          transactionCount: acc.transactions.length
-        })
-      }
+      const currencyCode = acc.currency?.code || baseCurrency.code
+      report.directAccounts.push({
+        id: acc.id,
+        name: acc.name,
+        description: acc.description || undefined,
+        categoryId: acc.categoryId,
+        balances: balances || {
+          original: { [currencyCode]: 0 },
+          converted: { [currencyCode]: 0 }
+        },
+        transactionCount: acc.transactions.length
+      })
     })
 
     monthlyReports[month] = report

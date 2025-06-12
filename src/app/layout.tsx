@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -7,16 +6,6 @@ import { UserDataProvider } from "@/contexts/UserDataContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import ThemeScript from "@/components/ThemeScript";
 import LanguageScript from "@/components/LanguageScript";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Flow Balance - 个人财务管理",
@@ -35,7 +24,7 @@ export default function RootLayout({
         <LanguageScript />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className="antialiased"
       >
         <ThemeProvider>
           <LanguageProvider>

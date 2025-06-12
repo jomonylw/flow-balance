@@ -305,6 +305,17 @@ export default function TransactionFormModal({
       }
 
       console.log('Submitting transaction:', { url, method, formData })
+      console.log('Form data details:', {
+        accountId: formData.accountId,
+        categoryId: formData.categoryId,
+        currencyCode: formData.currencyCode,
+        type: formData.type,
+        amount: formData.amount,
+        description: formData.description,
+        date: formData.date,
+        tagIds: formData.tagIds,
+        notes: formData.notes
+      })
 
       const response = await fetch(url, {
         method,
@@ -315,6 +326,8 @@ export default function TransactionFormModal({
       })
 
       console.log('Response status:', response.status, response.statusText)
+      console.log('Response ok:', response.ok)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
 
       // 检查响应是否为JSON
       const contentType = response.headers.get('content-type')
@@ -322,11 +335,22 @@ export default function TransactionFormModal({
         const textResponse = await response.text()
         console.error('Non-JSON response:', textResponse)
         setErrors({ general: `服务器响应格式错误 (${response.status}): ${textResponse}` })
+        showError(transaction ? '更新交易失败' : '创建交易失败', `服务器响应格式错误: ${textResponse}`)
         return
       }
 
-      const result = await response.json()
-      console.log('Parsed response:', result)
+      let result
+      try {
+        result = await response.json()
+        console.log('Parsed response:', result)
+      } catch (parseError) {
+        console.error('JSON parsing error:', parseError)
+        const textResponse = await response.text()
+        console.error('Raw response text:', textResponse)
+        setErrors({ general: '服务器响应解析失败' })
+        showError(transaction ? '更新交易失败' : '创建交易失败', '服务器响应解析失败')
+        return
+      }
 
       if (result.success) {
         console.log('Transaction created/updated successfully')
@@ -353,7 +377,9 @@ export default function TransactionFormModal({
           result: result,
           formData: formData,
           url: url,
-          method: method
+          method: method,
+          responseHeaders: Object.fromEntries(response.headers.entries()),
+          contentType: response.headers.get('content-type')
         })
 
         setErrors({ general: errorMessage })
@@ -361,9 +387,18 @@ export default function TransactionFormModal({
       }
     } catch (error) {
       console.error('Transaction form error:', error)
+      console.error('Error type:', typeof error)
+      console.error('Error constructor:', error?.constructor?.name)
+      console.error('Error message:', error instanceof Error ? error.message : String(error))
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+
       let errorMessage: string
       if (error instanceof SyntaxError) {
         errorMessage = '服务器响应解析失败'
+      } else if (error instanceof TypeError) {
+        errorMessage = '请求处理错误'
+      } else if (error instanceof Error) {
+        errorMessage = error.message || t('error.network')
       } else {
         errorMessage = t('error.network')
       }

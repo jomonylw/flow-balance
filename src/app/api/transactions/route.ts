@@ -113,6 +113,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('Received transaction data:', body)
+
     const {
       accountId,
       categoryId,
@@ -124,6 +126,18 @@ export async function POST(request: NextRequest) {
       date,
       tagIds = []
     } = body
+
+    console.log('Parsed transaction fields:', {
+      accountId,
+      categoryId,
+      currencyCode,
+      type,
+      amount,
+      description,
+      notes,
+      date,
+      tagIds
+    })
 
     // 验证必填字段
     if (!accountId || !categoryId || !currencyCode || !type || !amount || !description || !date) {
@@ -230,6 +244,11 @@ export async function POST(request: NextRequest) {
     return successResponse(transaction, '交易创建成功')
   } catch (error) {
     console.error('Create transaction error:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      name: error instanceof Error ? error.name : 'Unknown error type'
+    })
     return errorResponse('创建交易失败', 500)
   }
 }

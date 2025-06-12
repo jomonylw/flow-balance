@@ -44,5 +44,20 @@
   "category.currency.distribution": "Currency Distribution",
   "category.stock.update.tip": "Stock categories recommend updating balances on account pages",
   "category.balance.change.records": "Balance History",
-  "category.balance.change.description": "Records balance change history for all accounts in this category"
+  "category.balance.change.description": "Records balance change history for all accounts in this category",
+  "category.flow.add.tip": "Flow categories can add transaction records",
+  "category.type.flow": "Flow",
+  "category.cumulative.net.flow": "Cumulative Net Flow",
+  "category.this.month.net.flow": "This Month Net Flow",
+  "category.cumulative.flow": "Cumulative Flow",
+  "category.year.to.date.total.flow": "Year-to-date Total Flow",
+  "category.this.month.total.flow": "This Month Total Flow",
+  "category.this.year.total.flow": "This Year Total Flow",
+  "category.last.year.total.flow": "Last Year Total Flow",
+  "category.monthly.average.flow": "Monthly Average",
+  "category.no.currency.data": "No currency data",
+  "category.total.income": "Total Income",
+  "category.total.expense": "Total Expense",
+  "category.total.accounts": "Total Accounts",
+  "category.flow.summary.description": "The following shows monthly flow data for subcategories and accounts. If no transactions this month, cumulative flow is displayed."
 }

@@ -374,10 +374,8 @@ export default function StockCategoryDetailView({
                           return (
                             <CategorySummaryItem
                               key={child.id}
-                              id={child.id}
                               name={child.name}
                               href={`/categories/${child.id}`}
-                              type="stock"
                               balances={balanceInfos}
                               baseCurrency={baseCurrency}
                               currencies={currencies}
@@ -408,10 +406,8 @@ export default function StockCategoryDetailView({
                           return (
                             <CategorySummaryItem
                               key={account.id}
-                              id={account.id}
                               name={account.name}
                               href={`/accounts/${account.id}`}
-                              type="stock"
                               balances={balanceInfos}
                               baseCurrency={baseCurrency}
                               currencies={currencies}

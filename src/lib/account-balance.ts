@@ -25,6 +25,110 @@ function extractBalanceChangeFromNotes(notes: string): number | null {
   return null
 }
 
+/**
+ * 计算存量类账户的余额
+ * 存量类账户的逻辑：使用最新的BALANCE_ADJUSTMENT作为基准余额，然后累加该日期之后的其他交易
+ */
+function calculateStockAccountBalance(
+  account: Account,
+  transactions: Transaction[],
+  options: CalculationOptions = {}
+): Record<string, AccountBalance> {
+  const { validateData = true } = options
+  const balances: Record<string, AccountBalance> = {}
+
+  // 按日期排序交易
+  const sortedTransactions = [...transactions].sort((a, b) => {
+    const dateA = new Date(a.date || 0).getTime()
+    const dateB = new Date(b.date || 0).getTime()
+    return dateA - dateB
+  })
+
+  // 按币种分组处理
+  const transactionsByCurrency: Record<string, Transaction[]> = {}
+  sortedTransactions.forEach(transaction => {
+    const currencyCode = transaction.currency?.code
+    if (!currencyCode) return
+
+    if (!transactionsByCurrency[currencyCode]) {
+      transactionsByCurrency[currencyCode] = []
+    }
+    transactionsByCurrency[currencyCode].push(transaction)
+  })
+
+  // 为每种币种计算余额
+  Object.entries(transactionsByCurrency).forEach(([currencyCode, currencyTransactions]) => {
+    // 找到最新的BALANCE_ADJUSTMENT记录
+    let latestBalanceAdjustment: Transaction | null = null
+    let latestBalanceDate = new Date(0)
+
+    currencyTransactions.forEach(transaction => {
+      if (transaction.type === 'BALANCE_ADJUSTMENT') {
+        const transactionDate = new Date(transaction.date || 0)
+        if (transactionDate > latestBalanceDate) {
+          latestBalanceAdjustment = transaction
+          latestBalanceDate = transactionDate
+        }
+      }
+    })
+
+    // 初始化余额
+    let currentBalance = 0
+    let baseDate = new Date(0)
+
+    if (latestBalanceAdjustment) {
+      // 如果有余额调整记录，使用该记录的金额作为基准余额
+      currentBalance = latestBalanceAdjustment.amount
+      baseDate = new Date(latestBalanceAdjustment.date || 0)
+
+      if (validateData) {
+        console.log(`账户 ${account.name} 使用余额调整基准: ${currentBalance} ${currencyCode} (${baseDate.toISOString().split('T')[0]})`)
+      }
+    }
+
+    // 累加基准日期之后的其他交易
+    currencyTransactions.forEach(transaction => {
+      if (transaction.type === 'BALANCE_ADJUSTMENT') {
+        // 跳过BALANCE_ADJUSTMENT，因为已经在上面处理了
+        return
+      }
+
+      const transactionDate = new Date(transaction.date || 0)
+      if (transactionDate <= baseDate) {
+        // 跳过基准日期之前的交易
+        return
+      }
+
+      const amount = transaction.amount
+      const accountType = account.category.type
+
+      // 根据账户类型和交易类型计算余额变化
+      if (accountType === 'ASSET') {
+        if (transaction.type === 'INCOME') {
+          currentBalance += amount
+        } else if (transaction.type === 'EXPENSE') {
+          currentBalance -= amount
+        }
+      } else if (accountType === 'LIABILITY') {
+        if (transaction.type === 'INCOME') {
+          currentBalance += amount
+        } else if (transaction.type === 'EXPENSE') {
+          currentBalance -= amount
+        }
+      }
+    })
+
+    // 设置最终余额
+    balances[currencyCode] = {
+      currencyCode,
+      amount: currentBalance,
+      currency: currencyTransactions[0].currency
+    }
+  })
+
+  return balances
+}
+
 export interface Transaction {
   id?: string
   type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
@@ -116,6 +220,16 @@ export function calculateAccountBalance(
     return true
   })
 
+  // 对于存量类账户，需要特殊处理BALANCE_ADJUSTMENT
+  const accountType = account.category.type
+  const isStockAccount = accountType === 'ASSET' || accountType === 'LIABILITY'
+
+  if (isStockAccount) {
+    // 存量类账户：使用最新的BALANCE_ADJUSTMENT作为基准，然后累加其他交易
+    return calculateStockAccountBalance(account, transactions, options)
+  }
+
+  // 流量类账户：累加所有交易
   transactions.forEach(transaction => {
     const currencyCode = transaction.currency?.code
 
@@ -174,14 +288,8 @@ export function calculateAccountBalance(
           } else if (transaction.type === 'EXPENSE') {
             balances[currencyCode].amount -= amount
           } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
-            // 余额调整：根据交易备注中的变化金额确定方向
-            const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
-            if (changeAmount !== null) {
-              balances[currencyCode].amount += changeAmount
-            } else {
-              // 如果无法提取变化金额，使用正值（这种情况不应该发生）
-              balances[currencyCode].amount += amount
-            }
+            // 余额调整：直接使用存储的变化金额（已包含正负号）
+            balances[currencyCode].amount += amount
           }
           break
 
@@ -192,14 +300,8 @@ export function calculateAccountBalance(
           } else if (transaction.type === 'EXPENSE') {
             balances[currencyCode].amount -= amount
           } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
-            // 余额调整：根据交易备注中的变化金额确定方向
-            const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
-            if (changeAmount !== null) {
-              balances[currencyCode].amount += changeAmount
-            } else {
-              // 如果无法提取变化金额，使用正值（这种情况不应该发生）
-              balances[currencyCode].amount += amount
-            }
+            // 余额调整：直接使用存储的变化金额（已包含正负号）
+            balances[currencyCode].amount += amount
           }
           break
 
@@ -241,13 +343,8 @@ export function calculateAccountBalance(
           } else if (transaction.type === 'EXPENSE') {
             balances[currencyCode].amount -= amount
           } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
-            // 对于未分类账户，余额调整按变化金额处理
-            const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
-            if (changeAmount !== null) {
-              balances[currencyCode].amount += changeAmount
-            } else {
-              balances[currencyCode].amount += amount
-            }
+            // 余额调整：直接使用存储的变化金额（已包含正负号）
+            balances[currencyCode].amount += amount
           }
           break
       }

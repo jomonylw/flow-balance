@@ -10,5 +10,22 @@
   "chart.net.worth.trend.description": "Shows recent net worth change trends",
   "chart.balance.trend": "Balance Change Trend",
   "chart.account.balance": "Account Balance",
-  "chart.total.balance": "Total Balance"
+  "chart.total.balance": "Total Balance",
+  "chart.account.trend": "Account Trend",
+  "chart.balance.change.trend": "Balance Change Trend",
+  "chart.transaction.flow.trend": "Transaction Flow Trend",
+  "chart.range.last.month": "Last Month",
+  "chart.range.last.year": "Last Year",
+  "chart.range.all": "All",
+  "chart.daily": "Daily",
+  "chart.monthly": "Monthly",
+  "chart.balance.amount": "Balance Amount",
+  "chart.balance.amount.original.currency": "Balance Amount (Original Currency)",
+  "chart.transaction.amount": "Transaction Amount",
+  "chart.cumulative.amount": "Cumulative Amount",
+  "chart.no.balance.data": "No balance change data available",
+  "chart.no.transaction.data": "No transaction data available",
+  "chart.stock.account.trend.description": "Shows historical balance change trends for this account",
+  "chart.flow.account.trend.description": "Shows historical transaction trends for this account",
+  "chart.coming.soon": "Chart feature coming soon"
 }

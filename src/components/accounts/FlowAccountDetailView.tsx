@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
 import TransactionList from '@/components/transactions/TransactionList'
 import FlowAccountSummaryCard from './FlowAccountSummaryCard'
+import FlowAccountTrendChart from '@/components/charts/FlowAccountTrendChart'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { useToast } from '@/contexts/ToastContext'
@@ -19,8 +20,11 @@ import {
   Tag,
   Transaction,
   TransactionFormData,
-  User
+  User,
+  TrendDataPoint
 } from '@/types/transaction'
+
+type TimeRange = 'lastMonth' | 'lastYear' | 'all'
 
 interface FlowAccountDetailViewProps {
   account: Account
@@ -38,7 +42,7 @@ export default function FlowAccountDetailView({
   user
 }: FlowAccountDetailViewProps) {
   const { t } = useLanguage()
-  const { showSuccess, showError, showInfo } = useToast()
+  const { showSuccess, showError } = useToast()
   const router = useRouter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<TransactionFormData | null>(null)
@@ -51,6 +55,37 @@ export default function FlowAccountDetailView({
     itemsPerPage: 10
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [trendData, setTrendData] = useState<TrendDataPoint[]>([])
+  const [timeRange, setTimeRange] = useState<TimeRange>('lastYear')
+  const [isTrendLoading, setIsTrendLoading] = useState(true)
+
+  const fetchTrendData = async (range: TimeRange) => {
+    setIsTrendLoading(true)
+    try {
+      const granularity = range === 'lastMonth' ? 'daily' : 'monthly'
+      const url = `/api/accounts/${account.id}/trends?range=${range}&granularity=${granularity}`
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error('Failed to fetch trend data')
+      }
+      const result = await response.json()
+      if (result.success) {
+        setTrendData(result.data.data || [])
+      } else {
+        throw new Error(result.error || 'Failed to fetch trend data')
+      }
+    } catch (error) {
+      console.error('Error fetching trend data:', error)
+      showError('获取趋势数据失败', error instanceof Error ? error.message : '未知错误')
+      setTrendData([])
+    } finally {
+      setIsTrendLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchTrendData(timeRange)
+  }, [account.id, timeRange])
 
   const handleAddTransaction = () => {
     setEditingTransaction(null)
@@ -299,6 +334,23 @@ export default function FlowAccountDetailView({
           account={{ ...account, transactions: account.transactions || [] }}
           balance={flowTotal}
           currencySymbol={currencySymbol}
+        />
+      </div>
+
+      {/* 账户趋势图表 */}
+      <div className="mb-8">
+        <FlowAccountTrendChart
+          trendData={trendData}
+          account={{
+            id: account.id,
+            name: account.name,
+            type: account.category.type || 'INCOME'
+          }}
+          displayCurrency={account.currency || user.settings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }}
+          height={400}
+          timeRange={timeRange}
+          setTimeRange={setTimeRange}
+          isLoading={isTrendLoading}
         />
       </div>
 

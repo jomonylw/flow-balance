@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import BalanceUpdateModal from './BalanceUpdateModal'
 import TransactionList from '@/components/transactions/TransactionList'
 import StockAccountSummaryCard from './StockAccountSummaryCard'
+import StockAccountTrendChart from '@/components/charts/StockAccountTrendChart'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { useToast } from '@/contexts/ToastContext'
@@ -14,8 +15,11 @@ import {
   Account,
   Currency,
   Transaction,
-  User
+  User,
+  TrendDataPoint
 } from '@/types/transaction'
+
+type TimeRange = 'lastMonth' | 'lastYear' | 'all'
 
 interface StockAccountDetailViewProps {
   account: Account
@@ -43,6 +47,37 @@ export default function StockAccountDetailView({
     itemsPerPage: 10
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [trendData, setTrendData] = useState<TrendDataPoint[]>([])
+  const [timeRange, setTimeRange] = useState<TimeRange>('lastYear')
+  const [isTrendLoading, setIsTrendLoading] = useState(true)
+
+  const fetchTrendData = async (range: TimeRange) => {
+    setIsTrendLoading(true)
+    try {
+      const granularity = range === 'lastMonth' ? 'daily' : 'monthly'
+      const url = `/api/accounts/${account.id}/trends?range=${range}&granularity=${granularity}`
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error('Failed to fetch trend data')
+      }
+      const result = await response.json()
+      if (result.success) {
+        setTrendData(result.data.data || [])
+      } else {
+        throw new Error(result.error || 'Failed to fetch trend data')
+      }
+    } catch (error) {
+      console.error('Error fetching trend data:', error)
+      showError('获取趋势数据失败', error instanceof Error ? error.message : '未知错误')
+      setTrendData([])
+    } finally {
+      setIsTrendLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchTrendData(timeRange)
+  }, [account.id, timeRange])
 
   const handleUpdateBalance = () => {
     setIsBalanceUpdateModalOpen(true)
@@ -328,6 +363,23 @@ export default function StockAccountDetailView({
             currencySymbol={currencySymbol}
           />
         )}
+      </div>
+
+      {/* 账户趋势图表 */}
+      <div className="mb-6 sm:mb-8">
+        <StockAccountTrendChart
+          trendData={trendData}
+          account={{
+            id: account.id,
+            name: account.name,
+            type: account.category.type || 'ASSET'
+          }}
+          displayCurrency={account.currency || user.settings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }}
+          height={400}
+          timeRange={timeRange}
+          setTimeRange={setTimeRange}
+          isLoading={isTrendLoading}
+        />
       </div>
 
       {/* 余额变化记录 */}

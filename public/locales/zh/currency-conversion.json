@@ -7,5 +7,6 @@
   "currency.conversion.missing.rate": "缺失汇率",
   "currency.conversion.more.successful": "还有 {{count}} 个成功转换...",
   "currency.conversion.more.failed": "还有 {{count}} 个失败转换...",
-  "currency.conversion.setup.missing": "设置缺失的汇率 →"
+  "currency.conversion.setup.missing": "设置缺失的汇率 →",
+  "currency.conversion.error": "货币转换错误"
 }

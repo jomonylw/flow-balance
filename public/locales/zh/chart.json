@@ -10,5 +10,22 @@
   "chart.net.worth.trend.description": "显示最近的净资产变化趋势",
   "chart.balance.trend": "余额变动趋势",
   "chart.account.balance": "账户余额",
-  "chart.total.balance": "总余额"
+  "chart.total.balance": "总余额",
+  "chart.account.trend": "账户趋势",
+  "chart.balance.change.trend": "余额变动趋势",
+  "chart.transaction.flow.trend": "交易流水趋势",
+  "chart.range.last.month": "近1月",
+  "chart.range.last.year": "近1年",
+  "chart.range.all": "全部",
+  "chart.daily": "每日",
+  "chart.monthly": "每月",
+  "chart.balance.amount": "余额金额",
+  "chart.balance.amount.original.currency": "余额金额（原币种）",
+  "chart.transaction.amount": "交易金额",
+  "chart.cumulative.amount": "累计金额",
+  "chart.no.balance.data": "暂无余额变动数据",
+  "chart.no.transaction.data": "暂无交易数据",
+  "chart.stock.account.trend.description": "显示账户余额的历史变化趋势",
+  "chart.flow.account.trend.description": "显示账户收支交易的历史趋势",
+  "chart.coming.soon": "图表功能即将推出"
 }

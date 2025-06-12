@@ -39,7 +39,10 @@ export interface AccountSummary {
   name: string
   description?: string
   categoryId: string
-  balances: Record<string, number>
+  balances: Record<string, number> | {
+    original: Record<string, number>
+    converted: Record<string, number>
+  }
   transactionCount: number
   // 新增：多时间点余额数据
   historicalBalances?: {
@@ -56,7 +59,10 @@ export interface ChildCategorySummary {
   id: string
   name: string
   type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-  balances: Record<string, number>
+  balances: Record<string, number> | {
+    original: Record<string, number>
+    converted: Record<string, number>
+  }
   accountCount: number
   order: number
   // 新增：多时间点余额数据

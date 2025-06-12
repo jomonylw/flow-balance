@@ -63,23 +63,33 @@ export async function POST(request: NextRequest) {
 
     // 验证金额
     const changeAmount = parseFloat(balanceChange)
-    if (isNaN(changeAmount)) {
+    const newBalanceAmount = parseFloat(newBalance)
+    if (isNaN(changeAmount) || isNaN(newBalanceAmount)) {
       return errorResponse('无效的金额', 400)
     }
 
-    // 创建余额调整交易
-    // 对于存量类账户，我们创建专门的BALANCE_ADJUSTMENT类型交易来记录余额变化
-    const transaction = await prisma.transaction.create({
-      data: {
+    // 验证前端提交的余额和计算的变化金额是否一致
+    console.log('API接收数据验证:', {
+      newBalance: newBalanceAmount,
+      balanceChange: changeAmount,
+      accountId,
+      updateDate
+    })
+
+    const updateDateObj = new Date(updateDate)
+    const startOfDay = new Date(updateDateObj.getFullYear(), updateDateObj.getMonth(), updateDateObj.getDate())
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1)
+
+    // 检查当天是否已有BALANCE_ADJUSTMENT记录
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: {
         userId: user.id,
         accountId,
-        categoryId: account.categoryId,
-        currencyCode,
         type: 'BALANCE_ADJUSTMENT',
-        amount: Math.abs(changeAmount), // 存储绝对值，方向通过账户类型和业务逻辑确定
-        description: `余额更新 - ${account.name}`,
-        notes: notes || `余额更新：${currency.symbol}${newBalance?.toFixed(2) || 'N/A'}。变化金额：${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)}`,
-        date: new Date(updateDate)
+        date: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
       },
       include: {
         account: {
@@ -97,6 +107,62 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    let transaction
+    const transactionData = {
+      userId: user.id,
+      accountId,
+      categoryId: account.categoryId,
+      currencyCode,
+      type: 'BALANCE_ADJUSTMENT' as const,
+      amount: newBalanceAmount, // 存储目标余额，而不是变化金额
+      description: `余额更新 - ${account.name}`,
+      notes: notes || `余额更新：${currency.symbol}${newBalanceAmount.toFixed(2)}。变化金额：${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)}`,
+      date: updateDateObj
+    }
+
+    if (existingTransaction) {
+      // 如果当天已有记录，则更新现有记录
+      transaction = await prisma.transaction.update({
+        where: {
+          id: existingTransaction.id
+        },
+        data: transactionData,
+        include: {
+          account: {
+            include: {
+              category: true
+            }
+          },
+          category: true,
+          currency: true,
+          tags: {
+            include: {
+              tag: true
+            }
+          }
+        }
+      })
+    } else {
+      // 如果当天没有记录，则创建新记录
+      transaction = await prisma.transaction.create({
+        data: transactionData,
+        include: {
+          account: {
+            include: {
+              category: true
+            }
+          },
+          category: true,
+          currency: true,
+          tags: {
+            include: {
+              tag: true
+            }
+          }
+        }
+      })
+    }
+
     // 记录余额更新历史（可选：创建一个专门的余额历史表）
     // 这里我们可以在未来扩展一个 BalanceHistory 表来跟踪余额变化
 
@@ -108,8 +174,11 @@ export async function POST(request: NextRequest) {
         notes: transaction.notes || undefined
       },
       balanceChange: changeAmount,
-      newBalance: newBalance,
-      message: `${account.name} 余额已更新`
+      newBalance: newBalanceAmount,
+      isUpdate: !!existingTransaction,
+      message: existingTransaction
+        ? `${account.name} 当天余额记录已更新`
+        : `${account.name} 余额已更新`
     })
 
   } catch (error) {
@@ -174,37 +243,112 @@ export async function GET(request: NextRequest) {
 
     // 计算每个时点的累计余额
     const balanceHistory = []
-    let cumulativeBalance = 0
 
     // 按时间正序处理以计算累计余额
-    const sortedTransactions = [...transactions].reverse()
+    const sortedTransactions = [...transactions].sort((a, b) =>
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
 
-    for (const transaction of sortedTransactions) {
-      const amount = parseFloat(transaction.amount.toString())
-      
-      // 根据账户类型和交易类型计算余额变化
-      let balanceChange = 0
-      if (account.category.type === 'ASSET') {
-        balanceChange = transaction.type === 'INCOME' ? amount : -amount
-      } else if (account.category.type === 'LIABILITY') {
-        balanceChange = transaction.type === 'INCOME' ? amount : -amount
-      }
+    // 对于存量类账户，需要特殊处理BALANCE_ADJUSTMENT
+    const isStockAccount = account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
+    let cumulativeBalance = 0
 
-      cumulativeBalance += balanceChange
+    if (isStockAccount) {
+      // 存量类账户：找到最新的BALANCE_ADJUSTMENT作为基准
+      let latestBalanceAdjustment = null
+      let latestBalanceDate = new Date(0)
 
-      balanceHistory.unshift({
-        date: transaction.date.toISOString(),
-        balance: cumulativeBalance,
-        change: balanceChange,
-        transaction: {
-          id: transaction.id,
-          type: transaction.type,
-          amount: amount,
-          description: transaction.description,
-          notes: transaction.notes
+      sortedTransactions.forEach(transaction => {
+        if (transaction.type === 'BALANCE_ADJUSTMENT') {
+          const transactionDate = new Date(transaction.date)
+          if (transactionDate > latestBalanceDate) {
+            latestBalanceAdjustment = transaction
+            latestBalanceDate = transactionDate
+          }
         }
       })
+
+      // 如果有余额调整记录，使用该记录作为基准
+      if (latestBalanceAdjustment) {
+        cumulativeBalance = parseFloat(latestBalanceAdjustment.amount.toString())
+
+        // 添加余额调整记录到历史
+        balanceHistory.push({
+          date: latestBalanceAdjustment.date.toISOString(),
+          balance: cumulativeBalance,
+          change: cumulativeBalance, // 对于余额调整，变化金额就是目标余额
+          transaction: {
+            id: latestBalanceAdjustment.id,
+            type: latestBalanceAdjustment.type,
+            amount: parseFloat(latestBalanceAdjustment.amount.toString()),
+            description: latestBalanceAdjustment.description,
+            notes: latestBalanceAdjustment.notes
+          }
+        })
+
+        // 处理余额调整之后的其他交易
+        sortedTransactions.forEach(transaction => {
+          if (transaction.type === 'BALANCE_ADJUSTMENT' ||
+              new Date(transaction.date) <= latestBalanceDate) {
+            return // 跳过余额调整记录和之前的交易
+          }
+
+          const amount = parseFloat(transaction.amount.toString())
+          let balanceChange = 0
+
+          if (account.category.type === 'ASSET') {
+            balanceChange = transaction.type === 'INCOME' ? amount : -amount
+          } else if (account.category.type === 'LIABILITY') {
+            balanceChange = transaction.type === 'INCOME' ? amount : -amount
+          }
+
+          cumulativeBalance += balanceChange
+
+          balanceHistory.push({
+            date: transaction.date.toISOString(),
+            balance: cumulativeBalance,
+            change: balanceChange,
+            transaction: {
+              id: transaction.id,
+              type: transaction.type,
+              amount: amount,
+              description: transaction.description,
+              notes: transaction.notes
+            }
+          })
+        })
+      }
+    } else {
+      // 流量类账户：累加所有交易
+      sortedTransactions.forEach(transaction => {
+        const amount = parseFloat(transaction.amount.toString())
+        let balanceChange = 0
+
+        if (account.category.type === 'INCOME') {
+          balanceChange = transaction.type === 'INCOME' ? amount : 0
+        } else if (account.category.type === 'EXPENSE') {
+          balanceChange = transaction.type === 'EXPENSE' ? amount : 0
+        }
+
+        cumulativeBalance += balanceChange
+
+        balanceHistory.push({
+          date: transaction.date.toISOString(),
+          balance: cumulativeBalance,
+          change: balanceChange,
+          transaction: {
+            id: transaction.id,
+            type: transaction.type,
+            amount: amount,
+            description: transaction.description,
+            notes: transaction.notes
+          }
+        })
+      })
     }
+
+    // 按日期倒序排列历史记录
+    balanceHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     return successResponse({
       account: {
