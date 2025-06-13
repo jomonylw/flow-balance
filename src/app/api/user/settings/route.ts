@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { baseCurrencyCode, dateFormat, theme, language } = body
+    const { baseCurrencyCode, dateFormat, theme, language, fireEnabled, fireSWR } = body
 
     // 验证币种代码
     if (baseCurrencyCode) {
@@ -64,6 +64,18 @@ export async function PUT(request: NextRequest) {
       return validationErrorResponse('无效的语言设置')
     }
 
+    // 验证FIRE设置
+    if (fireEnabled !== undefined && typeof fireEnabled !== 'boolean') {
+      return validationErrorResponse('无效的FIRE启用设置')
+    }
+
+    if (fireSWR !== undefined) {
+      const swrValue = parseFloat(fireSWR)
+      if (isNaN(swrValue) || swrValue < 0 || swrValue > 20) {
+        return validationErrorResponse('安全提取率必须在0-20%之间')
+      }
+    }
+
     // 获取或创建用户设置
     const existingSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id }
@@ -78,7 +90,9 @@ export async function PUT(request: NextRequest) {
           ...(baseCurrencyCode && { baseCurrencyCode }),
           ...(dateFormat && { dateFormat }),
           ...(theme && { theme }),
-          ...(language && { language })
+          ...(language && { language }),
+          ...(fireEnabled !== undefined && { fireEnabled }),
+          ...(fireSWR !== undefined && { fireSWR })
         },
         include: { baseCurrency: true }
       })
@@ -90,7 +104,9 @@ export async function PUT(request: NextRequest) {
           baseCurrencyCode: baseCurrencyCode || 'USD',
           dateFormat: dateFormat || 'YYYY-MM-DD',
           theme: theme || 'system',
-          language: language || 'zh'
+          language: language || 'zh',
+          fireEnabled: fireEnabled !== undefined ? fireEnabled : false,
+          fireSWR: fireSWR !== undefined ? fireSWR : 4.0
         },
         include: { baseCurrency: true }
       })

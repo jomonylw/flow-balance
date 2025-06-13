@@ -52,6 +52,8 @@ interface UserSettings {
   baseCurrencyId: string
   language: string
   theme: string
+  fireEnabled?: boolean
+  fireSWR?: number
   baseCurrency: Currency
 }
 

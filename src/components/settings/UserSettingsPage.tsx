@@ -15,7 +15,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 
 interface UserSettingsPageProps {
   user: User
-  userSettings: (UserSettings & { baseCurrency: Currency }) | null
+  userSettings: (UserSettings & { baseCurrency: Currency | null }) | null
   currencies: Currency[]
 }
 

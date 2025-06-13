@@ -24,12 +24,9 @@ export default async function SettingsPreviewPage() {
 
   return (
     <MobilePreview>
-      <UserSettingsPage 
+      <UserSettingsPage
         user={user}
-        userSettings={userSettings && userSettings.baseCurrency ? {
-          ...userSettings,
-          baseCurrency: userSettings.baseCurrency
-        } : null}
+        userSettings={userSettings}
         currencies={currencies}
       />
     </MobilePreview>

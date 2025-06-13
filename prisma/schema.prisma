@@ -41,6 +41,9 @@ model UserSettings {
   dateFormat       String @default("YYYY-MM-DD")
   theme            String @default("system") // 主题设置：light, dark, system
   language         String @default("zh") // 语言设置：zh, en
+  // FIRE 设置
+  fireEnabled      Boolean @default(false) // 是否显示 FIRE 面板
+  fireSWR          Float @default(4.0) // 安全提取率 (Safe Withdrawal Rate)，默认 4.0%
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

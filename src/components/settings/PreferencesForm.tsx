@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import { UserSettings, Currency } from '@prisma/client'
 import SelectField from '@/components/ui/SelectField'
+import ToggleSwitch from '@/components/ui/ToggleSwitch'
+import Slider from '@/components/ui/Slider'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useUserData } from '@/contexts/UserDataContext'
 
 interface PreferencesFormProps {
-  userSettings: (UserSettings & { baseCurrency: Currency }) | null
+  userSettings: (UserSettings & { baseCurrency: Currency | null }) | null
   currencies: Currency[]
 }
 
@@ -20,7 +22,9 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
     baseCurrencyCode: userSettings?.baseCurrencyCode || '',
     dateFormat: userSettings?.dateFormat || 'YYYY-MM-DD',
     theme: (userSettings as any)?.theme || 'system',
-    language: (userSettings as any)?.language || 'zh'
+    language: (userSettings as any)?.language || 'zh',
+    fireEnabled: (userSettings as any)?.fireEnabled || false,
+    fireSWR: (userSettings as any)?.fireSWR || 4.0
   })
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -34,7 +38,9 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
     setFormData(prev => ({
       ...prev,
       theme: (userSettings as any)?.theme || savedTheme || 'system',
-      language: (userSettings as any)?.language || savedLanguage || 'zh'
+      language: (userSettings as any)?.language || savedLanguage || 'zh',
+      fireEnabled: (userSettings as any)?.fireEnabled || false,
+      fireSWR: (userSettings as any)?.fireSWR || 4.0
     }))
   }, [userSettings])
 
@@ -67,7 +73,29 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
       ...prev,
       [name]: value
     }))
-    
+
+    // 清除消息
+    if (message) setMessage('')
+    if (error) setError('')
+  }
+
+  const handleToggleChange = (name: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked
+    }))
+
+    // 清除消息
+    if (message) setMessage('')
+    if (error) setError('')
+  }
+
+  const handleSliderChange = (name: string, value: number) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+
     // 清除消息
     if (message) setMessage('')
     if (error) setError('')
@@ -218,6 +246,39 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
           />
         </div>
 
+        {/* FIRE 设置 */}
+        <div className="border-t border-gray-200 dark:border-gray-700 mt-8"></div>
+        <div className="mb-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
+            <span className="mr-2">🔥</span>
+            {t('preferences.fire.settings')}
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('preferences.fire.settings.description')}</p>
+        </div>
+
+        <div className="space-y-4">
+          <ToggleSwitch
+            name="fireEnabled"
+            label={t('preferences.fire.enabled')}
+            checked={formData.fireEnabled}
+            onChange={(checked) => handleToggleChange('fireEnabled', checked)}
+            help={t('preferences.fire.enabled.help')}
+          />
+
+          {formData.fireEnabled && (
+            <Slider
+              name="fireSWR"
+              label={t('preferences.fire.swr')}
+              value={formData.fireSWR}
+              onChange={(value) => handleSliderChange('fireSWR', value)}
+              min={0}
+              max={20}
+              step={0.1}
+              help={t('preferences.fire.swr.help')}
+              formatValue={(value) => `${value.toFixed(1)}%`}
+            />
+          )}
+        </div>
 
           {/* 本位币说明 */}
 
@@ -238,6 +299,30 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
               </p>
             </div>
           </div>
+
+          {/* FIRE 说明 */}
+          {formData.fireEnabled && (
+            <div className="bg-orange-50 dark:bg-orange-900 border border-orange-200 dark:border-orange-700 rounded-lg p-4 sm:p-6">
+              <h4 className="text-sm font-medium text-orange-800 dark:text-orange-200 mb-3 flex items-center">
+                <span className="mr-2">🔥</span>
+                {t('preferences.fire.about')}
+              </h4>
+              <div className="text-sm text-orange-700 dark:text-orange-300 space-y-2">
+                <p>
+                  {t('preferences.fire.description')}
+                </p>
+                <p>
+                  {t('preferences.fire.swr.description')}
+                </p>
+                <p>
+                  {t('preferences.fire.swr.default.explanation')}
+                </p>
+                <p className="font-medium">
+                  {t('preferences.fire.swr.range.note')}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* 设置说明 */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">

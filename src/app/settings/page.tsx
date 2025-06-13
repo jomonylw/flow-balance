@@ -24,12 +24,9 @@ export default async function SettingsPage() {
 
   return (
     <AppLayout>
-      <UserSettingsPage 
+      <UserSettingsPage
         user={user}
-        userSettings={userSettings && userSettings.baseCurrency ? {
-          ...userSettings,
-          baseCurrency: userSettings.baseCurrency
-        } : null}
+        userSettings={userSettings}
         currencies={currencies}
       />
     </AppLayout>
