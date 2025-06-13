@@ -1,5 +1,7 @@
 'use client'
 
+import { useLanguage } from '@/contexts/LanguageContext'
+
 interface Account {
   id: string
   name: string
@@ -35,6 +37,8 @@ export default function TransactionFilters({
   accounts,
   categories
 }: TransactionFiltersProps) {
+  const { t } = useLanguage()
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     onFilterChange({ [name]: value })
@@ -56,13 +60,13 @@ export default function TransactionFilters({
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900">筛选条件</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('transaction.filter')}</h3>
         {hasActiveFilters && (
           <button
             onClick={handleClearFilters}
-            className="text-sm text-blue-600 hover:text-blue-500"
+            className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
           >
-            清除所有筛选
+            {t('common.clear.all')}
           </button>
         )}
       </div>
@@ -70,8 +74,8 @@ export default function TransactionFilters({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* 搜索 */}
         <div className="xl:col-span-2">
-          <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-            搜索
+          <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('transaction.search')}
           </label>
           <input
             type="text"
@@ -79,43 +83,42 @@ export default function TransactionFilters({
             name="search"
             value={filters.search}
             onChange={handleInputChange}
-            placeholder="搜索描述或备注..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder={t('transaction.search.placeholder')}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
         </div>
 
         {/* 交易类型 */}
         <div>
-          <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-            交易类型
+          <label htmlFor="type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('transaction.type')}
           </label>
           <select
             id="type"
             name="type"
             value={filters.type}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
-            <option value="">全部类型</option>
-            <option value="INCOME">收入</option>
-            <option value="EXPENSE">支出</option>
-            <option value="TRANSFER">转账</option>
+            <option value="">{t('type.all')}</option>
+            <option value="INCOME">{t('type.income')}</option>
+            <option value="EXPENSE">{t('type.expense')}</option>
           </select>
         </div>
 
         {/* 账户 */}
         <div>
-          <label htmlFor="accountId" className="block text-sm font-medium text-gray-700 mb-1">
-            账户
+          <label htmlFor="accountId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('transaction.account')}
           </label>
           <select
             id="accountId"
             name="accountId"
             value={filters.accountId}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
-            <option value="">全部账户</option>
+            <option value="">{t('account.all')}</option>
             {accounts.map(account => (
               <option key={account.id} value={account.id}>
                 {account.name} ({account.category.name})
@@ -126,17 +129,17 @@ export default function TransactionFilters({
 
         {/* 分类 */}
         <div>
-          <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">
-            分类
+          <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('transaction.category')}
           </label>
           <select
             id="categoryId"
             name="categoryId"
             value={filters.categoryId}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
-            <option value="">全部分类</option>
+            <option value="">{t('category.all')}</option>
             {categories.map(category => (
               <option key={category.id} value={category.id}>
                 {category.name}
@@ -147,8 +150,8 @@ export default function TransactionFilters({
 
         {/* 开始日期 */}
         <div>
-          <label htmlFor="dateFrom" className="block text-sm font-medium text-gray-700 mb-1">
-            开始日期
+          <label htmlFor="dateFrom" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('time.date.from')}
           </label>
           <input
             type="date"
@@ -156,14 +159,14 @@ export default function TransactionFilters({
             name="dateFrom"
             value={filters.dateFrom}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
         </div>
 
         {/* 结束日期 */}
         <div>
-          <label htmlFor="dateTo" className="block text-sm font-medium text-gray-700 mb-1">
-            结束日期
+          <label htmlFor="dateTo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('time.date.to')}
           </label>
           <input
             type="date"
@@ -171,7 +174,7 @@ export default function TransactionFilters({
             name="dateTo"
             value={filters.dateTo}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
         </div>
       </div>

@@ -79,5 +79,13 @@
   "transaction.delete.transaction.title": "Delete Transaction",
   "transaction.delete.transaction.message": "Are you sure you want to delete this transaction? This action cannot be undone.",
   "transaction.delete.batch.title": "Batch Delete Confirmation",
-  "transaction.delete.batch.message": "Are you sure you want to delete the selected {{count}} records? This action cannot be undone."
+  "transaction.delete.batch.message": "Are you sure you want to delete the selected {{count}} records? This action cannot be undone.",
+  "transaction.search.placeholder": "Search description or notes...",
+  "transaction.stats.total.income": "Total Income",
+  "transaction.stats.total.expense": "Total Expense",
+  "transaction.stats.net.flow": "Net Flow",
+  "transaction.stats.this.month.net": "This Month Net",
+  "transaction.stats.count.transactions": "{{count}} transactions",
+  "transaction.stats.total.records": "Total {{count}} records",
+  "transaction.stats.vs.last.month": "vs last month"
 }

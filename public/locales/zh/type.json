@@ -10,5 +10,6 @@
   "type.stock.data": "存量数据",
   "type.income.account": "收入账户",
   "type.expense.account": "支出账户",
-  "type.flow.data": "流量数据"
+  "type.flow.data": "流量数据",
+  "type.all": "全部类型"
 }

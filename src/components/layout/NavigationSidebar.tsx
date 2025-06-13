@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import SidebarSearchBox from './SidebarSearchBox'
 import SidebarDashboardLink from './SidebarDashboardLink'
+import SidebarFireLink from './SidebarFireLink'
 import SidebarTransactionsLink from './SidebarTransactionsLink'
 import SidebarReportsLink from './SidebarReportsLink'
 import OptimizedCategoryAccountTree, { OptimizedCategoryAccountTreeRef } from './OptimizedCategoryAccountTree'
@@ -139,6 +140,9 @@ export default function NavigationSidebar({
         <div className="p-4 space-y-4">
           {/* Dashboard 链接 */}
           <SidebarDashboardLink onNavigate={onNavigate} />
+
+          {/* FIRE 征途链接 */}
+          <SidebarFireLink onNavigate={onNavigate} />
 
           {/* 交易链接 */}
           <SidebarTransactionsLink onNavigate={onNavigate} />

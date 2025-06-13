@@ -79,5 +79,13 @@
   "transaction.delete.transaction.title": "删除交易",
   "transaction.delete.transaction.message": "确定要删除这条交易吗？此操作不可撤销。",
   "transaction.delete.batch.title": "批量删除确认",
-  "transaction.delete.batch.message": "确定要删除选中的 {{count}} 条记录吗？此操作不可撤销。"
+  "transaction.delete.batch.message": "确定要删除选中的 {{count}} 条记录吗？此操作不可撤销。",
+  "transaction.search.placeholder": "搜索描述或备注...",
+  "transaction.stats.total.income": "总收入",
+  "transaction.stats.total.expense": "总支出",
+  "transaction.stats.net.flow": "净收支",
+  "transaction.stats.this.month.net": "本月净额",
+  "transaction.stats.count.transactions": "{{count}} 笔交易",
+  "transaction.stats.total.records": "总计 {{count}} 笔记录",
+  "transaction.stats.vs.last.month": "vs 上月"
 }

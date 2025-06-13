@@ -34,10 +34,10 @@
   "preferences.fire.enabled": "显示 FIRE 面板",
   "preferences.fire.enabled.help": "启用后将在仪表板显示 FIRE 相关统计和进度",
   "preferences.fire.swr": "安全提取率 (SWR)",
-  "preferences.fire.swr.help": "用于计算 FIRE 目标的年度安全提取率，通常为 3-5%",
+  "preferences.fire.swr.help": "用于计算 FIRE 目标的年度安全提取率，范围 1.0%-10.0%",
   "preferences.fire.about": "关于 FIRE 和安全提取率",
   "preferences.fire.description": "FIRE（Financial Independence, Retire Early）是一种通过积累足够资产来实现财务独立和提前退休的理财策略。",
   "preferences.fire.swr.description": "安全提取率（Safe Withdrawal Rate）是指每年可以从投资组合中提取的资金比例，而不会耗尽本金。",
   "preferences.fire.swr.default.explanation": "默认设置为 4.0% 是基于著名的\"4% 规则\"，该规则源于 Trinity Study 研究，表明在历史数据中，4% 的年提取率在 30 年期间有很高的成功率。",
-  "preferences.fire.swr.range.note": "您可以根据个人风险偏好调整这个比例：保守投资者可选择 3-3.5%，激进投资者可选择 4.5-5%。"
+  "preferences.fire.swr.range.note": "您可以根据个人风险偏好调整这个比例：保守投资者可选择 2.5-3.5%，激进投资者可选择 4.5-6%，极端情况可达 10%。"
 }

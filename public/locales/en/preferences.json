@@ -34,10 +34,10 @@
   "preferences.fire.enabled": "Show FIRE Panel",
   "preferences.fire.enabled.help": "When enabled, FIRE-related statistics and progress will be displayed on the dashboard",
   "preferences.fire.swr": "Safe Withdrawal Rate (SWR)",
-  "preferences.fire.swr.help": "Annual safe withdrawal rate used to calculate FIRE targets, typically 3-5%",
+  "preferences.fire.swr.help": "Annual safe withdrawal rate used to calculate FIRE targets, range 1.0%-10.0%",
   "preferences.fire.about": "About FIRE and Safe Withdrawal Rate",
   "preferences.fire.description": "FIRE (Financial Independence, Retire Early) is a financial strategy to achieve financial independence and early retirement by accumulating sufficient assets.",
   "preferences.fire.swr.description": "Safe Withdrawal Rate (SWR) is the percentage of funds that can be withdrawn annually from an investment portfolio without depleting the principal.",
   "preferences.fire.swr.default.explanation": "The default 4.0% is based on the famous '4% Rule' from the Trinity Study, which shows that a 4% annual withdrawal rate has a high success rate over a 30-year period in historical data.",
-  "preferences.fire.swr.range.note": "You can adjust this rate based on your personal risk preference: conservative investors may choose 3-3.5%, while aggressive investors may choose 4.5-5%."
+  "preferences.fire.swr.range.note": "You can adjust this rate based on your personal risk preference: conservative investors may choose 2.5-3.5%, aggressive investors may choose 4.5-6%, extreme cases up to 10%."
 }

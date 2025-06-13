@@ -271,8 +271,8 @@ export default function PreferencesForm({ userSettings, currencies }: Preference
               label={t('preferences.fire.swr')}
               value={formData.fireSWR}
               onChange={(value) => handleSliderChange('fireSWR', value)}
-              min={0}
-              max={20}
+              min={1.0}
+              max={10.0}
               step={0.1}
               help={t('preferences.fire.swr.help')}
               formatValue={(value) => `${value.toFixed(1)}%`}

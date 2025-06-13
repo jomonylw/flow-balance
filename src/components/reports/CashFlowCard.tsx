@@ -1,352 +1,335 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { CalendarIcon, Download, RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
+import { zhCN, enUS } from 'date-fns/locale'
+import { useLanguage } from '@/contexts/LanguageContext'
+import WithTranslation from '@/components/ui/WithTranslation'
 
+// 个人现金流量表数据类型
 interface Currency {
   code: string
   symbol: string
   name: string
 }
 
-interface TransactionInfo {
+interface Transaction {
   id: string
-  date: string
+  amount: number
   description: string
-  amount: number
-  account: string
+  date: string
+  type: 'INCOME' | 'EXPENSE'
 }
 
-interface CategoryFlow {
-  amount: number
-  transactions: TransactionInfo[]
+interface AccountSummary {
+  id: string
+  name: string
+  type: 'INCOME' | 'EXPENSE'
+  categoryName: string
+  currency: Currency
+  totalAmount: number
+  transactionCount: number
+  transactions: Transaction[]
 }
 
-interface ActivityFlow {
-  inflows: Record<string, { categories: Record<string, CategoryFlow>, total: number }>
-  outflows: Record<string, { categories: Record<string, CategoryFlow>, total: number }>
-  net: Record<string, number>
+interface CurrencyTotal {
+  currency: Currency
+  totalIncome: number
+  totalExpense: number
+  netCashFlow: number
 }
 
-interface CashFlowData {
-  operatingActivities: ActivityFlow
-  investingActivities: ActivityFlow
-  financingActivities: ActivityFlow
-  netCashFlow: Record<string, number>
-}
-
-interface CashFlowResponse {
-  cashFlow: CashFlowData
+interface PersonalCashFlowResponse {
   period: {
     start: string
     end: string
   }
   baseCurrency: Currency
+  cashFlow: {
+    incomeAccounts: AccountSummary[]
+    expenseAccounts: AccountSummary[]
+  }
   summary: {
-    operatingCashFlow: Record<string, number>
-    investingCashFlow: Record<string, number>
-    financingCashFlow: Record<string, number>
-    netCashFlow: Record<string, number>
+    currencyTotals: Record<string, CurrencyTotal>
+    totalTransactions: number
   }
 }
 
 export default function CashFlowCard() {
-  const [data, setData] = useState<CashFlowResponse | null>(null)
+  const { t, language } = useLanguage()
+  const [data, setData] = useState<PersonalCashFlowResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const [endDate, setEndDate] = useState<Date>(new Date())
   const [isStartCalendarOpen, setIsStartCalendarOpen] = useState(false)
   const [isEndCalendarOpen, setIsEndCalendarOpen] = useState(false)
 
-  const fetchCashFlow = async () => {
+  // Get the appropriate locale for date formatting
+  const dateLocale = language === 'zh' ? zhCN : enUS
+
+  const fetchCashFlow = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(
-        `/api/reports/cash-flow?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+        `/api/reports/personal-cash-flow?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
       )
       if (response.ok) {
         const result = await response.json()
         setData(result.data)
       }
     } catch (error) {
-      console.error('获取现金流量表失败:', error)
+      console.error(t('reports.cash.flow.fetch.error'), error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [startDate, endDate, t])
 
   useEffect(() => {
     fetchCashFlow()
-  }, [startDate, endDate])
+  }, [fetchCashFlow])
 
   const formatCurrency = (amount: number, currency: Currency) => {
-    return `${currency.symbol}${amount.toLocaleString('zh-CN', { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
+    const locale = language === 'zh' ? 'zh-CN' : 'en-US'
+    return `${currency.symbol}${amount.toLocaleString(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     })}`
   }
 
-  const renderActivitySection = (
+  const renderAccountSection = (
     title: string,
-    activity: ActivityFlow,
-    baseCurrency: Currency,
-    color: string
+    accounts: AccountSummary[],
+    titleColor: string
   ) => (
-    <div className="mb-8">
-      <h4 className={`font-semibold text-lg mb-4 ${color}`}>{title}</h4>
-      
-      {/* 现金流入 */}
-      <div className="mb-4">
-        <h5 className="font-medium text-green-600 mb-2">现金流入</h5>
-        {Object.entries(activity.inflows).map(([currencyCode, { categories, total }]) => (
-          <div key={currencyCode} className="mb-3">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium text-gray-600">{currencyCode}</span>
-              <span className="font-semibold text-green-600">
-                +{formatCurrency(total, baseCurrency)}
-              </span>
-            </div>
-            <div className="ml-4 space-y-1">
-              {Object.entries(categories).map(([categoryName, categoryFlow]) => (
-                <div key={categoryName} className="flex justify-between text-sm">
-                  <span className="text-gray-600">{categoryName}</span>
-                  <span className="text-green-600">
-                    +{formatCurrency(categoryFlow.amount, baseCurrency)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="mb-6">
+      <h4 className={`font-semibold text-lg mb-4 ${titleColor} dark:opacity-90`}>{title}</h4>
 
-      {/* 现金流出 */}
-      <div className="mb-4">
-        <h5 className="font-medium text-red-600 mb-2">现金流出</h5>
-        {Object.entries(activity.outflows).map(([currencyCode, { categories, total }]) => (
-          <div key={currencyCode} className="mb-3">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium text-gray-600">{currencyCode}</span>
-              <span className="font-semibold text-red-600">
-                -{formatCurrency(total, baseCurrency)}
-              </span>
-            </div>
-            <div className="ml-4 space-y-1">
-              {Object.entries(categories).map(([categoryName, categoryFlow]) => (
-                <div key={categoryName} className="flex justify-between text-sm">
-                  <span className="text-gray-600">{categoryName}</span>
-                  <span className="text-red-600">
-                    -{formatCurrency(categoryFlow.amount, baseCurrency)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 净现金流 */}
-      <div className="border-t pt-3">
-        <div className="flex justify-between font-bold">
-          <span>净现金流</span>
-          <div>
-            {Object.entries(activity.net).map(([currencyCode, net]) => (
-              <div key={currencyCode} className={net >= 0 ? 'text-green-600' : 'text-red-600'}>
-                {net >= 0 ? '+' : ''}{formatCurrency(net, baseCurrency)}
-              </div>
-            ))}
-          </div>
+      {accounts.length === 0 ? (
+        <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+          {t('reports.cash.flow.no.data')}
         </div>
-      </div>
+      ) : (
+        <div className="space-y-4">
+          {accounts.map(account => (
+            <div key={account.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div className="flex justify-between items-center mb-2">
+                <div>
+                  <h5 className="font-medium text-gray-900 dark:text-gray-100">{account.name}</h5>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{account.categoryName}</p>
+                </div>
+                <div className="text-right">
+                  <div className={`font-semibold ${account.type === 'INCOME' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {formatCurrency(account.totalAmount, account.currency)}
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {account.transactionCount} {language === 'zh' ? '笔交易' : 'transactions'}
+                  </div>
+                </div>
+              </div>
+
+              {/* 显示最近的几笔交易 */}
+              {account.transactions.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-600">
+                  <div className="space-y-1">
+                    {account.transactions.slice(0, 3).map(transaction => (
+                      <div key={transaction.id} className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400 truncate flex-1 mr-2">
+                          {transaction.description}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400 text-xs mr-2">
+                          {format(new Date(transaction.date), language === 'zh' ? 'MM/dd' : 'MM/dd')}
+                        </span>
+                        <span className={`font-medium ${account.type === 'INCOME' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {formatCurrency(transaction.amount, account.currency)}
+                        </span>
+                      </div>
+                    ))}
+                    {account.transactions.length > 3 && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 text-center pt-1">
+                        {language === 'zh' ? `还有 ${account.transactions.length - 3} 笔交易...` : `${account.transactions.length - 3} more transactions...`}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 
   if (!data) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            个人现金流量表
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchCashFlow}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            {loading ? '加载中...' : '暂无数据'}
-          </div>
-        </CardContent>
-      </Card>
+      <WithTranslation>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {t('reports.cash.flow.title')}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchCashFlow}
+                disabled={loading}
+                title={t('reports.cash.flow.refresh')}
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              {loading ? t('reports.cash.flow.loading') : t('reports.cash.flow.no.data')}
+            </div>
+          </CardContent>
+        </Card>
+      </WithTranslation>
     )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>个人现金流量表</CardTitle>
-          <div className="flex gap-2">
-            <Popover open={isStartCalendarOpen} onOpenChange={setIsStartCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {format(startDate, 'MM/dd', { locale: zhCN })}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setStartDate(Array.isArray(date) ? date[0] : date)
-                      setIsStartCalendarOpen(false)
-                    }
-                  }}
-                  locale={zhCN}
-                />
-              </PopoverContent>
-            </Popover>
-            <span className="text-gray-500">至</span>
-            <Popover open={isEndCalendarOpen} onOpenChange={setIsEndCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {format(endDate, 'MM/dd', { locale: zhCN })}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setEndDate(Array.isArray(date) ? date[0] : date)
-                      setIsEndCalendarOpen(false)
-                    }
-                  }}
-                  locale={zhCN}
-                />
-              </PopoverContent>
-            </Popover>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchCashFlow}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4" />
-            </Button>
+    <WithTranslation>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>{t('reports.cash.flow.title')}</CardTitle>
+            <div className="flex gap-2">
+              <Popover open={isStartCalendarOpen} onOpenChange={setIsStartCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {format(startDate, language === 'zh' ? 'MM/dd' : 'MM/dd', { locale: dateLocale })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setStartDate(Array.isArray(date) ? date[0] : date)
+                        setIsStartCalendarOpen(false)
+                      }
+                    }}
+                    locale={dateLocale}
+                  />
+                </PopoverContent>
+              </Popover>
+              <span className="text-gray-500 dark:text-gray-400">{t('reports.cash.flow.to')}</span>
+              <Popover open={isEndCalendarOpen} onOpenChange={setIsEndCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {format(endDate, language === 'zh' ? 'MM/dd' : 'MM/dd', { locale: dateLocale })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setEndDate(Array.isArray(date) ? date[0] : date)
+                        setIsEndCalendarOpen(false)
+                      }
+                    }}
+                    locale={dateLocale}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchCashFlow}
+                disabled={loading}
+                title={t('reports.cash.flow.refresh')}
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button variant="outline" size="sm" title={t('reports.cash.flow.download')}>
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-        <p className="text-sm text-gray-500">
-          期间: {format(new Date(data.period.start), 'yyyy年MM月dd日', { locale: zhCN })} 至{' '}
-          {format(new Date(data.period.end), 'yyyy年MM月dd日', { locale: zhCN })}
-        </p>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {/* 经营活动现金流 */}
-          {renderActivitySection(
-            '经营活动现金流量',
-            data.cashFlow.operatingActivities,
-            data.baseCurrency,
-            'text-blue-600'
-          )}
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {t('reports.cash.flow.period')}: {format(new Date(data.period.start), language === 'zh' ? 'yyyy年MM月dd日' : 'MMM dd, yyyy', { locale: dateLocale })} {t('reports.cash.flow.to')}{' '}
+            {format(new Date(data.period.end), language === 'zh' ? 'yyyy年MM月dd日' : 'MMM dd, yyyy', { locale: dateLocale })}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Income Accounts */}
+            {renderAccountSection(
+              t('reports.cash.flow.income'),
+              data.cashFlow.incomeAccounts,
+              'text-green-600 dark:text-green-400'
+            )}
 
-          {/* 投资活动现金流 */}
-          {renderActivitySection(
-            '投资活动现金流量',
-            data.cashFlow.investingActivities,
-            data.baseCurrency,
-            'text-purple-600'
-          )}
+            {/* Expense Accounts */}
+            {renderAccountSection(
+              t('reports.cash.flow.expense'),
+              data.cashFlow.expenseAccounts,
+              'text-red-600 dark:text-red-400'
+            )}
 
-          {/* 筹资活动现金流 */}
-          {renderActivitySection(
-            '筹资活动现金流量',
-            data.cashFlow.financingActivities,
-            data.baseCurrency,
-            'text-orange-600'
-          )}
+            {/* Net Cash Flow for the Period */}
+            <div className="border-t-2 border-gray-200 dark:border-gray-700 pt-4">
+              <div className="flex justify-between font-bold text-lg">
+                <span className="text-gray-900 dark:text-gray-100">{t('reports.cash.flow.net.cash.flow')}</span>
+                <div>
+                  {Object.entries(data.summary.currencyTotals).map(([currencyCode, currencyTotal]) => (
+                    <div key={currencyCode} className={currencyTotal.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      {currencyTotal.netCashFlow >= 0 ? '+' : ''}{formatCurrency(currencyTotal.netCashFlow, currencyTotal.currency)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
 
-          {/* 总净现金流 */}
-          <div className="border-t-2 pt-4">
-            <div className="flex justify-between font-bold text-lg">
-              <span>本期净现金流量</span>
+          {/* Summary Information */}
+          <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">{t('reports.cash.flow.summary')}</h4>
+            <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
-                {Object.entries(data.cashFlow.netCashFlow).map(([currencyCode, netFlow]) => (
-                  <div key={currencyCode} className={netFlow >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {netFlow >= 0 ? '+' : ''}{formatCurrency(netFlow, data.baseCurrency)}
-                  </div>
-                ))}
+                <span className="text-gray-600 dark:text-gray-400">{t('reports.cash.flow.total.income')}</span>
+                <div className="font-semibold">
+                  {Object.entries(data.summary.currencyTotals).map(([currencyCode, currencyTotal]) => (
+                    <div key={currencyCode} className="text-green-600 dark:text-green-400">
+                      +{formatCurrency(currencyTotal.totalIncome, currencyTotal.currency)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className="text-gray-600 dark:text-gray-400">{t('reports.cash.flow.total.expense')}</span>
+                <div className="font-semibold">
+                  {Object.entries(data.summary.currencyTotals).map(([currencyCode, currencyTotal]) => (
+                    <div key={currencyCode} className="text-red-600 dark:text-red-400">
+                      -{formatCurrency(currencyTotal.totalExpense, currencyTotal.currency)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className="text-gray-600 dark:text-gray-400">{t('reports.cash.flow.net.summary')}</span>
+                <div className="font-semibold">
+                  {Object.entries(data.summary.currencyTotals).map(([currencyCode, currencyTotal]) => (
+                    <div key={currencyCode} className={currencyTotal.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      {currencyTotal.netCashFlow >= 0 ? '+' : ''}{formatCurrency(currencyTotal.netCashFlow, currencyTotal.currency)}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* 汇总信息 */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-semibold mb-2">现金流量摘要</h4>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-            <div>
-              <span className="text-gray-600">经营现金流:</span>
-              <div className="font-semibold">
-                {Object.entries(data.summary.operatingCashFlow).map(([currencyCode, flow]) => (
-                  <div key={currencyCode} className={flow >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {flow >= 0 ? '+' : ''}{formatCurrency(flow, data.baseCurrency)}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <span className="text-gray-600">投资现金流:</span>
-              <div className="font-semibold">
-                {Object.entries(data.summary.investingCashFlow).map(([currencyCode, flow]) => (
-                  <div key={currencyCode} className={flow >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {flow >= 0 ? '+' : ''}{formatCurrency(flow, data.baseCurrency)}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <span className="text-gray-600">筹资现金流:</span>
-              <div className="font-semibold">
-                {Object.entries(data.summary.financingCashFlow).map(([currencyCode, flow]) => (
-                  <div key={currencyCode} className={flow >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {flow >= 0 ? '+' : ''}{formatCurrency(flow, data.baseCurrency)}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <span className="text-gray-600">净现金流:</span>
-              <div className="font-semibold">
-                {Object.entries(data.summary.netCashFlow).map(([currencyCode, flow]) => (
-                  <div key={currencyCode} className={flow >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {flow >= 0 ? '+' : ''}{formatCurrency(flow, data.baseCurrency)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </WithTranslation>
   )
 }

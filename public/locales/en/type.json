@@ -10,5 +10,6 @@
   "type.stock.data": "Stock Data",
   "type.income.account": "Income Account",
   "type.expense.account": "Expense Account",
-  "type.flow.data": "Flow Data"
+  "type.flow.data": "Flow Data",
+  "type.all": "All Types"
 }

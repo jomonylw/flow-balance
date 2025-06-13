@@ -40,7 +40,11 @@ try {
 
   // 构建查询条件
   const where: Record<string, unknown> = {
-    userId: user.id
+    userId: user.id,
+    // 排除余额调整类型的交易
+    type: {
+      not: 'BALANCE_ADJUSTMENT'
+    }
   }
 
   if (accountId) where.accountId = accountId
@@ -49,7 +53,13 @@ try {
     const allCategoryIds = [categoryId, ...descendantIds]
     where.categoryId = { in: allCategoryIds }
   }
-  if (type) where.type = type
+  if (type) {
+    // 如果指定了类型过滤，需要同时排除BALANCE_ADJUSTMENT
+    where.type = {
+      equals: type,
+      not: 'BALANCE_ADJUSTMENT'
+    }
+  }
 
   // 日期范围过滤
   if (dateFrom || dateTo) {

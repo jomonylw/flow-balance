@@ -111,8 +111,8 @@ export function PopoverContent({
   }
   
   return (
-    <div 
-      className={`absolute top-full mt-2 z-50 ${alignClasses[align]} ${className}`}
+    <div
+      className={`absolute top-full mt-2 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg ${alignClasses[align]} ${className}`}
     >
       {children}
     </div>

@@ -59,5 +59,6 @@
   "category.total.income": "总收入",
   "category.total.expense": "总支出",
   "category.total.accounts": "总账户数",
-  "category.flow.summary.description": "以下显示各子分类和账户的本月流量数据，如本月无交易则显示累计流量"
+  "category.flow.summary.description": "以下显示各子分类和账户的本月流量数据，如本月无交易则显示累计流量",
+  "category.all": "全部分类"
 }

@@ -59,5 +59,6 @@
   "category.total.income": "Total Income",
   "category.total.expense": "Total Expense",
   "category.total.accounts": "Total Accounts",
-  "category.flow.summary.description": "The following shows monthly flow data for subcategories and accounts. If no transactions this month, cumulative flow is displayed."
+  "category.flow.summary.description": "The following shows monthly flow data for subcategories and accounts. If no transactions this month, cumulative flow is displayed.",
+  "category.all": "All Categories"
 }

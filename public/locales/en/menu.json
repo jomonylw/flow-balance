@@ -1,6 +1,5 @@
 {
   "menu.reports.description": "View detailed financial data",
   "menu.settings.description": "Manage accounts and preferences",
-  "menu.help.description": "Get help and support",
   "menu.logout.description": "Safely logout from current account"
 }

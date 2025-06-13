@@ -18,6 +18,7 @@
   "common.submit": "Submit",
   "common.reset": "Reset",
   "common.clear": "Clear",
+  "common.clear.all": "Clear All Filters",
   "common.select": "Select",
   "common.all": "All",
   "common.none": "None",

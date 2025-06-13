@@ -18,6 +18,7 @@
   "common.submit": "提交",
   "common.reset": "重置",
   "common.clear": "清除",
+  "common.clear.all": "清除所有筛选",
   "common.select": "选择",
   "common.all": "全部",
   "common.none": "无",

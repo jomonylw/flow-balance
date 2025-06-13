@@ -21,6 +21,7 @@
   "account.add.transaction": "Add Transaction",
   "account.update.balance": "Update Balance",
   "account.view.all": "View All",
+  "account.all": "All Accounts",
   "account.use.clear.option": "Please use \"Clear balance history and delete\" option.",
   "account.balance.history.cleared": "Balance history cleared",
   "account.balance.history.clear.failed": "Failed to clear balance history",

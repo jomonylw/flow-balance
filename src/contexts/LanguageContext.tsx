@@ -20,7 +20,7 @@ interface LanguageProviderProps {
 const namespaces = [
   'account', 'account-settings', 'auth', 'balance-update', 'category', 'chart', 'common',
   'confirm', 'currency-conversion', 'dashboard', 'data', 'error', 'exchange-rate',
-  'feature', 'form', 'menu', 'nav', 'password', 'preferences', 'reports', 'settings',
+  'feature', 'fire', 'form', 'menu', 'nav', 'password', 'preferences', 'reports', 'settings',
   'sidebar', 'status', 'success', 'time', 'transaction', 'type', 'validation'
 ];
 

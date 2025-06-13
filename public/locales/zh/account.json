@@ -21,6 +21,7 @@
   "account.add.transaction": "添加交易",
   "account.update.balance": "更新余额",
   "account.view.all": "查看全部",
+  "account.all": "全部账户",
   "account.use.clear.option": "请使用“清空余额历史并删除”选项。",
   "account.balance.history.cleared": "余额历史已清空",
   "account.balance.history.clear.failed": "清空余额历史失败",

@@ -10,5 +10,7 @@
   "time.last.3.months": "Last 3 Months",
   "time.last.6.months": "Last 6 Months",
   "time.last.12.months": "Last Year",
-  "time.all": "All"
+  "time.all": "All",
+  "time.date.from": "Start Date",
+  "time.date.to": "End Date"
 }
