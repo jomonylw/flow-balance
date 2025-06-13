@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
+import type { Transaction } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -255,7 +256,10 @@ export async function GET(request: NextRequest) {
 
     if (isStockAccount) {
       // 存量类账户：找到最新的BALANCE_ADJUSTMENT作为基准
-      let latestBalanceAdjustment = null
+      let latestBalanceAdjustment: (Transaction & {
+        currency: any;
+        category: any;
+      }) | null = null
       let latestBalanceDate = new Date(0)
 
       sortedTransactions.forEach(transaction => {
@@ -270,19 +274,19 @@ export async function GET(request: NextRequest) {
 
       // 如果有余额调整记录，使用该记录作为基准
       if (latestBalanceAdjustment) {
-        cumulativeBalance = parseFloat(latestBalanceAdjustment.amount.toString())
+        cumulativeBalance = parseFloat((latestBalanceAdjustment as any).amount.toString())
 
         // 添加余额调整记录到历史
         balanceHistory.push({
-          date: latestBalanceAdjustment.date.toISOString(),
+          date: (latestBalanceAdjustment as any).date.toISOString(),
           balance: cumulativeBalance,
           change: cumulativeBalance, // 对于余额调整，变化金额就是目标余额
           transaction: {
-            id: latestBalanceAdjustment.id,
-            type: latestBalanceAdjustment.type,
-            amount: parseFloat(latestBalanceAdjustment.amount.toString()),
-            description: latestBalanceAdjustment.description,
-            notes: latestBalanceAdjustment.notes
+            id: (latestBalanceAdjustment as any).id,
+            type: (latestBalanceAdjustment as any).type,
+            amount: parseFloat((latestBalanceAdjustment as any).amount.toString()),
+            description: (latestBalanceAdjustment as any).description,
+            notes: (latestBalanceAdjustment as any).notes
           }
         })
 

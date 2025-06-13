@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import TransactionFormModal from './TransactionFormModal'
 import TransactionList from './TransactionList'
 import TransactionFilters from './TransactionFilters'
@@ -68,7 +68,7 @@ export default function TransactionListView({
   const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
 
   // 加载交易数据
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -85,6 +85,11 @@ export default function TransactionListView({
       if (filters.search) params.append('search', filters.search)
 
       const response = await fetch(`/api/transactions?${params}`)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
       const result = await response.json()
 
       if (result.success) {
@@ -92,18 +97,21 @@ export default function TransactionListView({
         setPagination(result.data.pagination)
       } else {
         console.error('Failed to load transactions:', result.error)
+        showError(t('error.load.transactions'), result.error || t('error.unknown'))
       }
     } catch (error) {
       console.error('Error loading transactions:', error)
+      const errorMessage = error instanceof Error ? error.message : t('error.network')
+      showError(t('error.load.transactions'), errorMessage)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [pagination.page, pagination.limit, filters, showError, t])
 
   // 初始加载和过滤条件变化时重新加载
   useEffect(() => {
     loadTransactions()
-  }, [pagination.page, filters])
+  }, [loadTransactions])
 
   const handleAddTransaction = () => {
     setEditingTransaction(null)

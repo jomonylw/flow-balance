@@ -115,14 +115,59 @@ export default function TransactionFormModal({
     setAvailableTags(tags)
   }, [tags])
 
+  // 确保交易类型与账户类型保持同步
+  useEffect(() => {
+    if (formData.accountId) {
+      const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
+      if (selectedAccount) {
+        const accountType = selectedAccount.category?.type
+        console.log('Account changed effect - Account type:', accountType, 'Current transaction type:', formData.type)
+
+        // 检查当前交易类型是否与账户类型匹配
+        if (accountType === 'INCOME' && formData.type !== 'INCOME') {
+          console.log('Auto-correcting transaction type to INCOME')
+          setFormData(prev => ({ ...prev, type: 'INCOME' }))
+        } else if (accountType === 'EXPENSE' && formData.type !== 'EXPENSE') {
+          console.log('Auto-correcting transaction type to EXPENSE')
+          setFormData(prev => ({ ...prev, type: 'EXPENSE' }))
+        }
+      }
+    }
+  }, [formData.accountId, formData.type, accounts]) // 依赖账户ID、交易类型和账户列表
+
+  // 确保货币与账户货币限制保持同步
+  useEffect(() => {
+    if (formData.accountId) {
+      const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
+      if (selectedAccount && selectedAccount.currencyCode) {
+        console.log('Account currency restriction effect - Account currency:', selectedAccount.currencyCode, 'Current form currency:', formData.currencyCode)
+
+        // 如果账户有货币限制且当前表单货币不匹配，自动更正
+        if (formData.currencyCode !== selectedAccount.currencyCode) {
+          console.log('Auto-correcting currency to:', selectedAccount.currencyCode)
+          setFormData(prev => ({
+            ...prev,
+            currencyCode: selectedAccount.currencyCode || prev.currencyCode
+          }))
+        }
+      }
+    }
+  }, [formData.accountId, formData.currencyCode, accounts]) // 依赖账户ID、货币代码和账户列表
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
+
+    console.log('HandleChange called:', { name, value, currentFormData: formData })
 
     // 如果选择了账户，自动设置对应的分类和交易类型
     if (name === 'accountId' && value) {
       const selectedAccount = accounts.find(acc => acc.id === value)
+      console.log('Selected account:', selectedAccount)
+
       if (selectedAccount) {
         const accountType = selectedAccount.category?.type
+        console.log('Account type:', accountType)
+
         let defaultType = formData.type
 
         // 根据账户类型智能设置默认交易类型
@@ -131,6 +176,8 @@ export default function TransactionFormModal({
         } else if (accountType === 'EXPENSE') {
           defaultType = 'EXPENSE'
         }
+
+        console.log('Setting transaction type to:', defaultType)
 
         const updates: Partial<typeof formData> = {
           [name]: value,
@@ -141,12 +188,33 @@ export default function TransactionFormModal({
         // 如果账户有货币限制，自动设置货币
         if (selectedAccount.currencyCode) {
           updates.currencyCode = selectedAccount.currencyCode
+          console.log('Auto-setting currency to account currency:', selectedAccount.currencyCode)
         }
 
-        setFormData(prev => ({ ...prev, ...updates }))
+        console.log('Form updates:', updates)
+        setFormData(prev => {
+          const newData = { ...prev, ...updates }
+          console.log('New form data after account change:', newData)
+          return newData
+        })
       } else {
         setFormData(prev => ({ ...prev, [name]: value }))
       }
+    } else if (name === 'type') {
+      // 当手动更改交易类型时，验证是否与账户类型匹配
+      const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
+      if (selectedAccount) {
+        const accountType = selectedAccount.category?.type
+        console.log('Manual type change - Account type:', accountType, 'New type:', value)
+
+        // 验证交易类型与账户类型的匹配性
+        if ((accountType === 'INCOME' && value !== 'INCOME') ||
+            (accountType === 'EXPENSE' && value !== 'EXPENSE')) {
+          console.warn('Transaction type mismatch with account type')
+          // 显示警告但仍允许设置，让后端验证处理
+        }
+      }
+      setFormData(prev => ({ ...prev, [name]: value as 'INCOME' | 'EXPENSE' }))
     } else {
       setFormData(prev => ({ ...prev, [name]: value }))
     }
@@ -162,6 +230,8 @@ export default function TransactionFormModal({
     const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
     const accountType = selectedAccount?.category?.type
 
+    console.log('Getting available transaction types for account:', selectedAccount?.name, 'type:', accountType)
+
     if (!accountType) {
       return [
         { value: 'INCOME', label: '收入' },
@@ -171,10 +241,13 @@ export default function TransactionFormModal({
 
     switch (accountType) {
       case 'INCOME':
+        console.log('Returning INCOME option only')
         return [{ value: 'INCOME', label: '收入' }]
       case 'EXPENSE':
+        console.log('Returning EXPENSE option only')
         return [{ value: 'EXPENSE', label: '支出' }]
       default:
+        console.log('Returning both INCOME and EXPENSE options')
         return [
           { value: 'INCOME', label: '收入' },
           { value: 'EXPENSE', label: '支出' }
@@ -271,6 +344,41 @@ export default function TransactionFormModal({
     if (!formData.description) newErrors.description = t('transaction.modal.enter.description')
     if (!formData.date) newErrors.date = t('transaction.modal.select.date')
 
+    // 额外验证：检查交易类型与账户类型的匹配性
+    if (formData.accountId && formData.type) {
+      const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
+      if (selectedAccount) {
+        const accountType = selectedAccount.category?.type
+        console.log('Validation - Account type:', accountType, 'Transaction type:', formData.type)
+
+        if (accountType === 'INCOME' && formData.type !== 'INCOME') {
+          newErrors.type = '收入类账户只能记录收入交易，请选择正确的交易类型'
+          console.error('Validation failed: Income account with non-income transaction')
+        } else if (accountType === 'EXPENSE' && formData.type !== 'EXPENSE') {
+          newErrors.type = '支出类账户只能记录支出交易，请选择正确的交易类型'
+          console.error('Validation failed: Expense account with non-expense transaction')
+        }
+      }
+    }
+
+    // 额外验证：检查货币与账户货币限制的匹配性
+    if (formData.accountId && formData.currencyCode) {
+      const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
+      if (selectedAccount && selectedAccount.currencyCode) {
+        console.log('Validation - Account currency:', selectedAccount.currencyCode, 'Transaction currency:', formData.currencyCode)
+
+        if (selectedAccount.currencyCode !== formData.currencyCode) {
+          newErrors.currencyCode = `此账户只能使用 ${selectedAccount.currency?.name} (${selectedAccount.currencyCode})，无法使用 ${formData.currencyCode}`
+          console.error('Validation failed: Currency mismatch', {
+            accountCurrency: selectedAccount.currencyCode,
+            transactionCurrency: formData.currencyCode,
+            accountName: selectedAccount.name
+          })
+        }
+      }
+    }
+
+    console.log('Form validation result:', { errors: newErrors, isValid: Object.keys(newErrors).length === 0 })
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -302,6 +410,37 @@ export default function TransactionFormModal({
         console.error('Missing required fields:', missingFields)
         setErrors({ general: `缺少必填字段: ${missingFields.join(', ')}` })
         return
+      }
+
+      // 额外的账户类型验证
+      const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
+      if (selectedAccount) {
+        const accountType = selectedAccount.category?.type
+        console.log('Pre-submit validation - Account:', selectedAccount.name, 'Type:', accountType, 'Transaction type:', formData.type)
+
+        if (accountType === 'INCOME' && formData.type !== 'INCOME') {
+          const errorMsg = '收入类账户只能记录收入交易，请选择正确的交易类型'
+          console.error('Pre-submit validation failed:', errorMsg)
+          setErrors({ general: errorMsg })
+          return
+        } else if (accountType === 'EXPENSE' && formData.type !== 'EXPENSE') {
+          const errorMsg = '支出类账户只能记录支出交易，请选择正确的交易类型'
+          console.error('Pre-submit validation failed:', errorMsg)
+          setErrors({ general: errorMsg })
+          return
+        }
+
+        // 额外的货币验证
+        if (selectedAccount.currencyCode && selectedAccount.currencyCode !== formData.currencyCode) {
+          const errorMsg = `此账户只能使用 ${selectedAccount.currency?.name} (${selectedAccount.currencyCode})，无法使用 ${formData.currencyCode}`
+          console.error('Pre-submit currency validation failed:', {
+            accountCurrency: selectedAccount.currencyCode,
+            transactionCurrency: formData.currencyCode,
+            accountName: selectedAccount.name
+          })
+          setErrors({ general: errorMsg })
+          return
+        }
       }
 
       console.log('Submitting transaction:', { url, method, formData })

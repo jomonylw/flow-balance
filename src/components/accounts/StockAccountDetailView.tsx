@@ -157,11 +157,12 @@ export default function StockAccountDetailView({
           totalItems: result.data.pagination.total
         }))
       } else {
-        showError('加载交易失败', result.error)
+        showError(t('error.load.transactions'), result.error || t('error.unknown'))
       }
     } catch (error) {
       console.error('Failed to load transactions', error)
-      showError('加载交易失败', '网络错误')
+      const errorMessage = error instanceof Error ? error.message : t('error.network')
+      showError(t('error.load.transactions'), errorMessage)
     } finally {
       setIsLoading(false)
     }

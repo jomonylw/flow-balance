@@ -191,15 +191,16 @@ export default function StockCategoryDetailView({
           totalItems: result.data.pagination.total
         }))
       } else {
-        showError('加载交易记录失败', result.error)
+        showError(t('error.load.transactions'), result.error || t('error.unknown'))
       }
     } catch (error) {
       console.error('Error fetching transactions:', error)
-      showError('加载交易记录失败', '网络错误')
+      const errorMessage = error instanceof Error ? error.message : t('error.network')
+      showError(t('error.load.transactions'), errorMessage)
     } finally {
       setIsLoadingTransactions(false)
     }
-  }, [category.id, pagination.itemsPerPage, showError])
+  }, [category.id, pagination.itemsPerPage, showError, t])
 
   useEffect(() => {
     loadTransactions(pagination.currentPage)
@@ -217,10 +218,10 @@ export default function StockCategoryDetailView({
       if (transaction.account?.id) {
         window.location.href = `/accounts/${transaction.account.id}`
       } else {
-        showError('错误', '无法找到对应的账户信息')
+        showError(t('common.error'), t('error.account.not.found'))
       }
     } else {
-      showError('错误', '存量分类只能编辑余额调整记录')
+      showError(t('common.error'), t('error.stock.category.edit.only.balance'))
     }
   }
 
@@ -240,16 +241,16 @@ export default function StockCategoryDetailView({
       })
 
       if (response.ok) {
-        showSuccess('成功', '记录已删除')
+        showSuccess(t('success.deleted'), t('transaction.record.deleted'))
         // 重新获取数据
         loadTransactions(pagination.currentPage)
       } else {
         const error = await response.json()
-        showError('删除失败', error.message || '删除记录时发生错误')
+        showError(t('common.delete.failed'), error.message || t('error.unknown'))
       }
     } catch (error) {
       console.error('Error deleting transaction:', error)
-      showError('删除失败', '网络错误，请稍后重试')
+      showError(t('common.delete.failed'), t('error.network'))
     } finally {
       setShowDeleteConfirm(false)
       setDeletingTransactionId(null)
@@ -486,7 +487,7 @@ export default function StockCategoryDetailView({
       <ConfirmationModal
         isOpen={showDeleteConfirm}
         title={t('transaction.delete')}
-        message="确定要删除这条记录吗？此操作不可撤销。"
+        message={t('confirm.delete.transaction')}
         confirmLabel={t('common.confirm.delete')}
         cancelLabel={t('common.cancel')}
         onConfirm={handleConfirmDelete}

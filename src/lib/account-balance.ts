@@ -78,8 +78,8 @@ function calculateStockAccountBalance(
 
     if (latestBalanceAdjustment) {
       // 如果有余额调整记录，使用该记录的金额作为基准余额
-      currentBalance = latestBalanceAdjustment.amount
-      baseDate = new Date(latestBalanceAdjustment.date || 0)
+      currentBalance = (latestBalanceAdjustment as Transaction).amount
+      baseDate = new Date((latestBalanceAdjustment as Transaction).date || 0)
 
       if (validateData) {
         console.log(`账户 ${account.name} 使用余额调整基准: ${currentBalance} ${currencyCode} (${baseDate.toISOString().split('T')[0]})`)

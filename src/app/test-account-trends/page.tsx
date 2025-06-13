@@ -150,14 +150,17 @@ export default function TestAccountTrends() {
                       存量账户趋势图表 (Stock Account)
                     </h2>
                     <StockAccountTrendChart
-                      accountId={selectedAccountId}
+                      trendData={[]}
                       account={{
                         id: selectedAccount.id,
                         name: selectedAccount.name,
                         type: selectedAccount.category?.type || 'ASSET'
                       }}
-                      baseCurrency={mockBaseCurrency}
+                      displayCurrency={mockBaseCurrency}
                       height={400}
+                      timeRange="lastYear"
+                      setTimeRange={() => {}}
+                      isLoading={false}
                     />
                   </div>
                 ) : (
@@ -166,14 +169,17 @@ export default function TestAccountTrends() {
                       流量账户趋势图表 (Flow Account)
                     </h2>
                     <FlowAccountTrendChart
-                      accountId={selectedAccountId}
+                      trendData={[]}
                       account={{
                         id: selectedAccount.id,
                         name: selectedAccount.name,
                         type: selectedAccount.category?.type || 'INCOME'
                       }}
-                      baseCurrency={mockBaseCurrency}
+                      displayCurrency={mockBaseCurrency}
                       height={400}
+                      timeRange="lastYear"
+                      setTimeRange={() => {}}
+                      isLoading={false}
                     />
                   </div>
                 )}

@@ -226,15 +226,16 @@ export default function FlowCategoryDetailView({
           totalItems: result.data.pagination.total
         }))
       } else {
-        showError('加载交易记录失败', result.error)
+        showError(t('error.load.transactions'), result.error || t('error.unknown'))
       }
     } catch (error) {
       console.error('Error fetching transactions:', error)
-      showError('加载交易记录失败', '网络错误')
+      const errorMessage = error instanceof Error ? error.message : t('error.network')
+      showError(t('error.load.transactions'), errorMessage)
     } finally {
       setIsLoadingTransactions(false)
     }
-  }, [category.id, pagination.itemsPerPage, showError])
+  }, [category.id, pagination.itemsPerPage, showError, t])
 
   useEffect(() => {
     loadTransactions(pagination.currentPage)

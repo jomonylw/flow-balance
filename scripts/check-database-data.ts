@@ -78,8 +78,8 @@ async function checkDatabaseData() {
     const exchangeRates = await prisma.exchangeRate.findMany({
       where: { userId: user.id },
       include: {
-        fromCurrency: true,
-        toCurrency: true
+        fromCurrencyRef: true,
+        toCurrencyRef: true
       },
       orderBy: { updatedAt: 'desc' }
     })
@@ -87,7 +87,7 @@ async function checkDatabaseData() {
     if (exchangeRates.length > 0) {
       console.log(`  找到 ${exchangeRates.length} 个汇率设置:`)
       exchangeRates.forEach(rate => {
-        console.log(`    ${rate.fromCurrency.code} -> ${rate.toCurrency.code}: ${rate.rate} (${rate.updatedAt.toISOString().split('T')[0]})`)
+        console.log(`    ${rate.fromCurrencyRef.code} -> ${rate.toCurrencyRef.code}: ${rate.rate} (${rate.updatedAt.toISOString().split('T')[0]})`)
       })
     } else {
       console.log(`  ❌ 没有设置汇率`)
