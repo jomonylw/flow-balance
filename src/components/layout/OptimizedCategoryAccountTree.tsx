@@ -118,6 +118,7 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
   // 使用新的数据更新监听系统
   useAllDataListener(async (event) => {
     const { type, silent } = event
+    console.log('[OptimizedCategoryAccountTree] Received data update event:', event)
 
     if (silent) return
 
@@ -128,6 +129,7 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
       case 'transaction-update':
       case 'transaction-delete':
         // 余额相关更新：强制刷新余额数据
+        console.log('[OptimizedCategoryAccountTree] Refreshing balances for transaction/balance event')
         await refreshBalances()
         break
 
@@ -135,6 +137,7 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
       case 'account-update':
       case 'account-delete':
         // 账户相关更新：刷新账户数据和余额数据
+        console.log('[OptimizedCategoryAccountTree] Refreshing accounts and balances for account event')
         await refreshAccounts()
         await refreshBalances()
         break
@@ -142,32 +145,57 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
       case 'category-create':
       case 'category-update':
       case 'category-delete':
-        // 分类相关更新：刷新分类数据
+        // 分类相关更新：刷新分类数据和账户数据（账户的分类信息可能变化）
+        console.log('[OptimizedCategoryAccountTree] Refreshing categories and accounts for category event')
         await refreshCategories()
+        await refreshAccounts()
         break
 
       default:
         // 其他更新：刷新余额数据
+        console.log('[OptimizedCategoryAccountTree] Refreshing balances for unknown event')
         await refreshBalances()
         break
     }
   })
 
-  // 保持对旧事件系统的兼容性
+  // 监听自定义数据变化事件（来自NavigationSidebar的handleDataChange）
   useEffect(() => {
-    const handleDataChange = (event: CustomEvent) => {
-      const { silent } = event.detail || {}
-      if (!silent) {
-        // 只刷新余额数据，其他数据由UserDataContext管理
-        refreshBalances()
+    const handleDataChange = async (event: Event) => {
+      const customEvent = event as CustomEvent
+      const options = customEvent.detail || {}
+      console.log('[OptimizedCategoryAccountTree] Received custom data change event:', options)
+
+      // 如果是静默更新，跳过
+      if (options.silent) return
+
+      switch (options.type) {
+        case 'category':
+          console.log('[OptimizedCategoryAccountTree] Refreshing categories and accounts for custom category event')
+          await refreshCategories()
+          await refreshAccounts() // 账户的分类信息可能变化
+          break
+        case 'account':
+          console.log('[OptimizedCategoryAccountTree] Refreshing accounts and balances for custom account event')
+          await refreshAccounts()
+          await refreshBalances()
+          break
+        case 'full':
+        default:
+          // 全量刷新
+          console.log('[OptimizedCategoryAccountTree] Full refresh for custom event')
+          await refreshCategories()
+          await refreshAccounts()
+          await refreshBalances()
+          break
       }
     }
 
-    window.addEventListener('dataChange', handleDataChange as EventListener)
+    window.addEventListener('dataChange', handleDataChange)
     return () => {
-      window.removeEventListener('dataChange', handleDataChange as EventListener)
+      window.removeEventListener('dataChange', handleDataChange)
     }
-  }, [refreshBalances])
+  }, [refreshCategories, refreshAccounts, refreshBalances])
 
   // 构建树状结构并合并余额数据
   const enrichedTreeData = useMemo(() => {

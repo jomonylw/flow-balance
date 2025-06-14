@@ -10,6 +10,7 @@ import OptimizedCategoryAccountTree, { OptimizedCategoryAccountTreeRef } from '.
 import TopCategoryModal from '@/components/ui/TopCategoryModal'
 import TranslationLoader from '@/components/ui/TranslationLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { publishCategoryCreate } from '@/utils/DataUpdateManager'
 
 
 interface NavigationSidebarProps {
@@ -90,8 +91,17 @@ export default function NavigationSidebar({
       })
 
       if (response.ok) {
+        const result = await response.json()
         setShowAddTopCategoryModal(false)
-        handleDataChange({ type: 'category' })
+
+        // 发布分类创建事件
+        await publishCategoryCreate(undefined, {
+          newCategory: result.data,
+          parentCategory: null
+        })
+
+        // 通知树状结构刷新
+        handleDataChange({ type: 'category', silent: false })
       } else {
         const error = await response.json()
         throw new Error(error.message || '创建分类失败')
@@ -153,9 +163,26 @@ export default function NavigationSidebar({
           {/* 分类和账户树 */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {t('sidebar.categories')}
-              </h3>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {t('sidebar.categories')}
+                </h3>
+                <button
+                  onClick={handleAddTopCategory}
+                  className="p-1 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors"
+                  title={t('sidebar.add.top.category')}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
+              </div>
               <button
                 onClick={toggleAllCategories}
                 className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -205,19 +232,6 @@ export default function NavigationSidebar({
             />
           </div>
         </div>
-      </div>
-
-      {/* 底部添加按钮 */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <button
-          onClick={handleAddTopCategory}
-          className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          {t('sidebar.add.top.category')}
-        </button>
       </div>
 
       {/* 添加顶级分类模态框 */}

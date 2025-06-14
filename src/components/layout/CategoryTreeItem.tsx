@@ -12,7 +12,7 @@ import CategorySelector from '@/components/ui/CategorySelector'
 import CategorySettingsModal from '@/components/ui/CategorySettingsModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
-import { publishCategoryCreate, publishAccountCreate } from '@/utils/DataUpdateManager'
+import { publishCategoryCreate, publishCategoryDelete, publishAccountCreate } from '@/utils/DataUpdateManager'
 
 interface Account {
   id: string
@@ -189,7 +189,15 @@ export default function CategoryTreeItem({
       if (response.ok) {
         setShowDeleteConfirm(false)
         showSuccess('删除成功', `分类"${category.name}"已删除`)
-        onDataChange({ type: 'category', silent: true })
+
+        // 发布分类删除事件
+        await publishCategoryDelete(category.id, {
+          deletedCategory: category,
+          parentId: category.parentId
+        })
+
+        // 通知树状结构刷新
+        onDataChange({ type: 'category', silent: false })
       } else {
         const error = await response.json()
         showError('删除失败', error.message || '未知错误')
@@ -251,7 +259,8 @@ export default function CategoryTreeItem({
           parentCategory: category
         })
 
-        onDataChange({ type: 'category', silent: true })
+        // 通知树状结构刷新
+        onDataChange({ type: 'category', silent: false })
       } else {
         const error = await response.json()
         showError('添加失败', error.message || '添加子分类失败')

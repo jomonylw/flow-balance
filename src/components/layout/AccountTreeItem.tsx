@@ -11,7 +11,7 @@ import BalanceUpdateModal from '@/components/accounts/BalanceUpdateModal'
 import SimpleFlowTransactionModal from '@/components/transactions/SimpleFlowTransactionModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
-
+import { publishAccountDelete } from '@/utils/DataUpdateManager'
 import CurrencyTag from '@/components/ui/CurrencyTag'
 
 interface Account {
@@ -190,7 +190,14 @@ export default function AccountTreeItem({
         removeAccount(account.id)
         setShowDeleteConfirm(false)
         showSuccess('删除成功', `账户"${account.name}"已删除`)
-        onDataChange({ type: 'account', silent: true })
+
+        // 发布账户删除事件
+        await publishAccountDelete(account.id, account.categoryId, {
+          deletedAccount: account
+        })
+
+        // 通知树状结构刷新
+        onDataChange({ type: 'account', silent: false })
       } else {
         const error = await response.json()
         showError('删除失败', error.message || '未知错误')
