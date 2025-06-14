@@ -11,6 +11,7 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import FlowMonthlySummaryChart from '@/components/charts/FlowMonthlySummaryChart'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTransactionListener } from '@/hooks/useDataUpdateListener'
 import {
   Account,
   Category,
@@ -102,6 +103,12 @@ export default function FlowCategoryDetailView({
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
   const [chartData, setChartData] = useState<FlowMonthlyData | null>(null)
   const [timeRange, setTimeRange] = useState<TimeRange>('last12months')
+
+  // 监听交易相关事件
+  useTransactionListener(async () => {
+    // 重新加载交易列表和汇总数据
+    handleTransactionSuccess()
+  }, undefined, [category.id])
 
   // 数据转换函数：将API返回的数据转换为图表需要的格式
   const transformDataForChart = useCallback((data: FlowSummaryData, baseCurrencyCode: string): FlowMonthlyData => {

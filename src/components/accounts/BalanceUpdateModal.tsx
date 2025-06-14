@@ -7,6 +7,7 @@ import SelectField from '@/components/ui/SelectField'
 import AuthButton from '@/components/ui/AuthButton'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useToast } from '@/contexts/ToastContext'
+import { publishBalanceUpdate } from '@/utils/DataUpdateManager'
 
 interface Currency {
   code: string
@@ -177,6 +178,7 @@ export default function BalanceUpdateModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log(`[BalanceUpdateModal] handleSubmit called for account ${account.id}`)
 
     // 在提交前再次确保币种值正确
     if (!formData.currencyCode && account.currencyCode) {
@@ -186,9 +188,11 @@ export default function BalanceUpdateModal({
     }
 
     if (!validateForm()) {
+      console.log(`[BalanceUpdateModal] Form validation failed`)
       return
     }
 
+    console.log(`[BalanceUpdateModal] Starting balance update, editingTransaction:`, editingTransaction)
     setIsLoading(true)
 
     try {
@@ -223,6 +227,7 @@ export default function BalanceUpdateModal({
           }
         })
 
+        console.log(`[BalanceUpdateModal] Sending PUT request to /api/transactions/${editingTransaction.id}`)
         const response = await fetch(`/api/transactions/${editingTransaction.id}`, {
           method: 'PUT',
           headers: {
@@ -232,12 +237,25 @@ export default function BalanceUpdateModal({
         })
 
         const result = await response.json()
+        console.log(`[BalanceUpdateModal] Edit transaction response:`, result)
 
         if (result.success) {
+          console.log(`[BalanceUpdateModal] Balance update successful for account ${account.id}`)
           showSuccess(t('balance.update.modal.update.success'), `${account.name} ${t('balance.update.modal.balance.updated')}`)
+
+          // 发布余额更新事件
+          console.log(`[BalanceUpdateModal] Publishing balance update event for account ${account.id}`)
+          await publishBalanceUpdate(account.id, {
+            newBalance: parseFloat(formData.newBalance),
+            currencyCode: account.currencyCode,
+            transaction: result.transaction
+          })
+          console.log(`[BalanceUpdateModal] Balance update event published successfully`)
+
           onSuccess()
           onClose()
         } else {
+          console.log(`[BalanceUpdateModal] Edit transaction failed:`, result)
           const errorMessage = result.error || t('balance.update.modal.update.failed')
           setErrors({ general: errorMessage })
           showError(t('balance.update.modal.update.failed'), errorMessage)
@@ -257,6 +275,7 @@ export default function BalanceUpdateModal({
           updateDate: formData.updateDate
         })
 
+        console.log(`[BalanceUpdateModal] Sending POST request to /api/balance-update`)
         const response = await fetch('/api/balance-update', {
           method: 'POST',
           headers: {
@@ -273,24 +292,38 @@ export default function BalanceUpdateModal({
         })
 
         const result = await response.json()
+        console.log(`[BalanceUpdateModal] Create balance update response:`, result)
 
         if (result.success) {
           const message = result.data?.message || `${account.name} ${t('balance.update.modal.balance.updated')}`
+          console.log(`[BalanceUpdateModal] Balance update successful for account ${account.id}`)
           showSuccess(t('balance.update.modal.update.success'), message)
+
+          // 发布余额更新事件
+          console.log(`[BalanceUpdateModal] Publishing balance update event for account ${account.id}`)
+          await publishBalanceUpdate(account.id, {
+            newBalance: parseFloat(formData.newBalance),
+            currencyCode: account.currencyCode,
+            transaction: result.transaction
+          })
+          console.log(`[BalanceUpdateModal] Balance update event published successfully`)
+
           onSuccess()
           onClose()
         } else {
+          console.log(`[BalanceUpdateModal] Create balance update failed:`, result)
           const errorMessage = result.error || t('balance.update.modal.update.failed')
           setErrors({ general: errorMessage })
           showError(t('balance.update.modal.update.failed'), errorMessage)
         }
       }
     } catch (error) {
-      console.error('Balance update error:', error)
+      console.error('[BalanceUpdateModal] Balance update error:', error)
       const errorMessage = t('error.network')
       setErrors({ general: errorMessage })
       showError(t('balance.update.modal.update.failed'), errorMessage)
     } finally {
+      console.log(`[BalanceUpdateModal] Balance update completed, setting isLoading to false`)
       setIsLoading(false)
     }
   }

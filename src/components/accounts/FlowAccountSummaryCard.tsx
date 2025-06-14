@@ -1,6 +1,8 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTransactionListener } from '@/hooks/useDataUpdateListener'
 
 interface Category {
   name: string
@@ -35,6 +37,45 @@ export default function FlowAccountSummaryCard({
   const { t } = useLanguage()
   const accountType = account.category.type || 'EXPENSE'
 
+  // 本地状态管理最新的交易数据
+  const [transactions, setTransactions] = useState<Transaction[]>(account.transactions)
+  const [isLoading, setIsLoading] = useState(false)
+
+  // 获取最新的交易数据
+  const fetchLatestTransactions = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/accounts/${account.id}/transactions?limit=1000`)
+      const result = await response.json()
+      if (result.success) {
+        setTransactions(result.data.transactions.map((t: any) => ({
+          type: t.type,
+          amount: parseFloat(t.amount.toString()),
+          date: t.date
+        })))
+      }
+    } catch (error) {
+      console.error('Error fetching latest transactions:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 监听交易相关事件
+  useTransactionListener(async (event) => {
+    // 检查是否是当前账户的交易
+    if (event.accountId === account.id) {
+      await fetchLatestTransactions()
+    }
+  }, [account.id])
+
+  // 初始化时如果没有交易数据，获取一次
+  useEffect(() => {
+    if (transactions.length === 0) {
+      fetchLatestTransactions()
+    }
+  }, [account.id])
+
   // 流量类账户统计（收入/支出）
   const calculateFlowStats = () => {
     const now = new Date()
@@ -47,7 +88,7 @@ export default function FlowAccountSummaryCard({
     let thisYearAmount = 0
     let totalAmount = 0
 
-    account.transactions.forEach(transaction => {
+    transactions.forEach(transaction => {
       const transactionDate = new Date(transaction.date)
       const amount = transaction.amount
       
@@ -87,7 +128,13 @@ export default function FlowAccountSummaryCard({
   const flowStats = calculateFlowStats()
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 relative">
+      {/* 加载指示器 */}
+      {isLoading && (
+        <div className="absolute top-2 right-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+        </div>
+      )}
       {/* 账户类型标识 */}
       <div className="mb-4">
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

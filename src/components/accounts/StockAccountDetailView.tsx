@@ -11,6 +11,7 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useBalanceUpdateListener, useTransactionListener } from '@/hooks/useDataUpdateListener'
 import {
   Account,
   Currency,
@@ -50,6 +51,24 @@ export default function StockAccountDetailView({
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([])
   const [timeRange, setTimeRange] = useState<TimeRange>('lastYear')
   const [isTrendLoading, setIsTrendLoading] = useState(true)
+
+  // 监听余额更新事件
+  useBalanceUpdateListener(async (event) => {
+    // 检查是否是当前账户的更新
+    if (event.accountId === account.id) {
+      await loadTransactions(pagination.currentPage)
+      await fetchTrendData(timeRange)
+    }
+  }, [account.id])
+
+  // 监听交易相关事件（主要是删除操作）
+  useTransactionListener(async (event) => {
+    // 检查是否是当前账户的交易
+    if (event.accountId === account.id) {
+      await loadTransactions(pagination.currentPage)
+      await fetchTrendData(timeRange)
+    }
+  }, [account.id])
 
   const fetchTrendData = async (range: TimeRange) => {
     setIsTrendLoading(true)

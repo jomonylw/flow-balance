@@ -11,6 +11,7 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTransactionListener } from '@/hooks/useDataUpdateListener'
 
 
 import {
@@ -45,7 +46,15 @@ export default function FlowAccountDetailView({
   const { showSuccess, showError } = useToast()
   const router = useRouter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState<TransactionFormData | null>(null)
+  const [editingTransaction, setEditingTransaction] = useState<{
+    id: string
+    accountId: string
+    amount: number
+    description: string
+    notes?: string
+    date: string
+    tagIds?: string[]
+  } | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [pagination, setPagination] = useState({
@@ -58,6 +67,15 @@ export default function FlowAccountDetailView({
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([])
   const [timeRange, setTimeRange] = useState<TimeRange>('lastYear')
   const [isTrendLoading, setIsTrendLoading] = useState(true)
+
+  // 监听交易相关事件
+  useTransactionListener(async (event) => {
+    // 检查是否是当前账户的交易
+    if (event.accountId === account.id) {
+      await loadTransactions(pagination.currentPage)
+      await fetchTrendData(timeRange)
+    }
+  }, [account.id])
 
   const fetchTrendData = async (range: TimeRange) => {
     setIsTrendLoading(true)
@@ -396,7 +414,7 @@ export default function FlowAccountDetailView({
         isOpen={isTransactionModalOpen}
         onClose={() => setIsTransactionModalOpen(false)}
         onSuccess={handleTransactionSuccess}
-        transaction={editingTransaction}
+        transaction={editingTransaction || undefined}
         account={account}
         currencies={currencies}
         tags={tags}

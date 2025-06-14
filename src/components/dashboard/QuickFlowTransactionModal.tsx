@@ -377,13 +377,11 @@ export default function QuickFlowTransactionModal({
                           style={formData.tagIds.includes(tag.id) && currentColor ? {
                             backgroundColor: currentColor + '20',
                             color: currentColor,
-                            borderColor: currentColor + '40',
-                            ringColor: currentColor + '60'
+                            borderColor: currentColor + '40'
                           } : formData.tagIds.includes(tag.id) ? {
                             backgroundColor: '#DBEAFE',
                             color: '#1E40AF',
-                            borderColor: '#93C5FD',
-                            ringColor: '#3B82F6'
+                            borderColor: '#93C5FD'
                           } : {
                             backgroundColor: '#F9FAFB',
                             color: '#374151',

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, forwardRef, useImperativeHandle }
 import CategoryTreeItem from './CategoryTreeItem'
 import AccountTreeItem from './AccountTreeItem'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useAllDataListener } from '@/hooks/useDataUpdateListener'
 
 interface Category {
   id: string
@@ -70,7 +71,10 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
     accountBalances,
     isLoadingBalances,
     balancesError,
-    fetchBalances
+    fetchBalances,
+    refreshBalances,
+    refreshAccounts,
+    refreshCategories
   } = useUserData()
 
   const initialFetchDone = useRef(false)
@@ -111,13 +115,51 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
     }
   }, [userDataLoading, categories, accounts, fetchBalances])
 
-  // 监听数据变化事件
+  // 使用新的数据更新监听系统
+  useAllDataListener(async (event) => {
+    const { type, silent } = event
+
+    if (silent) return
+
+    // 根据事件类型决定刷新策略
+    switch (type) {
+      case 'balance-update':
+      case 'transaction-create':
+      case 'transaction-update':
+      case 'transaction-delete':
+        // 余额相关更新：强制刷新余额数据
+        await refreshBalances()
+        break
+
+      case 'account-create':
+      case 'account-update':
+      case 'account-delete':
+        // 账户相关更新：刷新账户数据和余额数据
+        await refreshAccounts()
+        await refreshBalances()
+        break
+
+      case 'category-create':
+      case 'category-update':
+      case 'category-delete':
+        // 分类相关更新：刷新分类数据
+        await refreshCategories()
+        break
+
+      default:
+        // 其他更新：刷新余额数据
+        await refreshBalances()
+        break
+    }
+  })
+
+  // 保持对旧事件系统的兼容性
   useEffect(() => {
     const handleDataChange = (event: CustomEvent) => {
       const { silent } = event.detail || {}
       if (!silent) {
         // 只刷新余额数据，其他数据由UserDataContext管理
-        fetchBalances()
+        refreshBalances()
       }
     }
 
@@ -125,7 +167,7 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
     return () => {
       window.removeEventListener('dataChange', handleDataChange as EventListener)
     }
-  }, [])
+  }, [refreshBalances])
 
   // 构建树状结构并合并余额数据
   const enrichedTreeData = useMemo(() => {

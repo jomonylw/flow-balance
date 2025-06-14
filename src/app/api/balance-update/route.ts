@@ -3,7 +3,8 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
 import type { Transaction } from '@prisma/client'
-
+import { publishBalanceUpdate, publishTransactionUpdate } from '@/utils/DataUpdateManager'
+ 
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser()
@@ -166,7 +167,18 @@ export async function POST(request: NextRequest) {
 
     // 记录余额更新历史（可选：创建一个专门的余额历史表）
     // 这里我们可以在未来扩展一个 BalanceHistory 表来跟踪余额变化
-
+ 
+    // 发布余额更新事件
+    await publishBalanceUpdate(accountId, {
+      newBalance: newBalanceAmount,
+      currencyCode
+    })
+ 
+    // 同时发布交易更新事件，因为余额调整也是一种交易
+    await publishTransactionUpdate(accountId, account.categoryId, {
+      transactionId: transaction.id
+    })
+ 
     return successResponse({
       transaction: {
         ...transaction,
@@ -181,7 +193,7 @@ export async function POST(request: NextRequest) {
         ? `${account.name} 当天余额记录已更新`
         : `${account.name} 余额已更新`
     })
-
+ 
   } catch (error) {
     console.error('Balance update error:', error)
     return errorResponse('余额更新失败', 500)

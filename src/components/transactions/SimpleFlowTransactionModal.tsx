@@ -9,6 +9,7 @@ import TagFormModal from '@/components/ui/TagFormModal'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
+import { publishTransactionCreate, publishTransactionUpdate } from '@/utils/DataUpdateManager'
 
 interface Account {
   id: string
@@ -215,10 +216,26 @@ export default function SimpleFlowTransactionModal({
       const result = await response.json()
 
       if (result.success) {
-        const successMessage = transaction 
-          ? t('transaction.modal.update.success') 
+        const successMessage = transaction
+          ? t('transaction.modal.update.success')
           : t('transaction.modal.create.success')
         showSuccess(successMessage, `${formData.amount} ${currencyInfo?.symbol || accountCurrency}`)
+
+        // 发布交易更新事件
+        if (transaction) {
+          await publishTransactionUpdate(account.id, account.category.id, {
+            transaction: result.transaction,
+            amount: parseFloat(formData.amount),
+            currencyCode: accountCurrency
+          })
+        } else {
+          await publishTransactionCreate(account.id, account.category.id, {
+            transaction: result.transaction,
+            amount: parseFloat(formData.amount),
+            currencyCode: accountCurrency
+          })
+        }
+
         onSuccess()
         onClose()
       } else {
@@ -387,13 +404,11 @@ export default function SimpleFlowTransactionModal({
                         style={formData.tagIds.includes(tag.id) && currentColor ? {
                           backgroundColor: currentColor + '20',
                           color: currentColor,
-                          borderColor: currentColor + '40',
-                          ringColor: currentColor + '60'
+                          borderColor: currentColor + '40'
                         } : formData.tagIds.includes(tag.id) ? {
                           backgroundColor: '#DBEAFE',
                           color: '#1E40AF',
-                          borderColor: '#93C5FD',
-                          ringColor: '#3B82F6'
+                          borderColor: '#93C5FD'
                         } : {
                           backgroundColor: '#F9FAFB',
                           color: '#374151',

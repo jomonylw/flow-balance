@@ -12,6 +12,7 @@ import CategorySelector from '@/components/ui/CategorySelector'
 import CategorySettingsModal from '@/components/ui/CategorySettingsModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
+import { publishCategoryCreate, publishAccountCreate } from '@/utils/DataUpdateManager'
 
 interface Account {
   id: string
@@ -240,8 +241,16 @@ export default function CategoryTreeItem({
       })
 
       if (response.ok) {
+        const result = await response.json()
         setShowAddSubcategoryDialog(false)
         showSuccess('添加成功', '子分类已添加')
+
+        // 发布分类创建事件
+        await publishCategoryCreate(category.id, {
+          newCategory: result.data,
+          parentCategory: category
+        })
+
         onDataChange({ type: 'category', silent: true })
       } else {
         const error = await response.json()
@@ -257,6 +266,13 @@ export default function CategoryTreeItem({
     try {
       setShowAddAccountDialog(false)
       showSuccess('添加成功', '账户已添加')
+
+      // 发布账户创建事件
+      await publishAccountCreate(category.id, {
+        newAccount: account,
+        category: category
+      })
+
       onDataChange({ type: 'account', silent: true })
     } catch (error) {
       console.error('Error adding account:', error)

@@ -12,6 +12,7 @@ import TranslationLoader from '../ui/TranslationLoader'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { validateAccountData, validateAccountDataWithI18n, validateChartData } from '@/lib/data-validation'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useAllDataListener } from '@/hooks/useDataUpdateListener'
 
 interface User {
   id: string
@@ -90,6 +91,12 @@ export default function DashboardContent({
   const [validationResult, setValidationResult] = useState<any>(null)
   const [summaryData, setSummaryData] = useState<any>(null)
   const [isLoadingSummary, setIsLoadingSummary] = useState(true)
+
+  // 监听所有数据更新事件
+  useAllDataListener(async () => {
+    // 重新获取仪表板数据
+    await handleTransactionSuccess()
+  })
 
   const handleQuickTransaction = (type: 'INCOME' | 'EXPENSE') => {
     setDefaultTransactionType(type)

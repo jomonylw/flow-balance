@@ -11,6 +11,7 @@ import QuickBalanceUpdateModal from '@/components/dashboard/QuickBalanceUpdateMo
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useBalanceUpdateListener, useTransactionListener } from '@/hooks/useDataUpdateListener'
 import {
   Category,
   Currency,
@@ -92,6 +93,20 @@ export default function StockCategoryDetailView({
     itemsPerPage: 10
   })
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
+
+  // 监听余额更新事件
+  useBalanceUpdateListener(async (event) => {
+    // 检查是否是当前分类相关的账户
+    if (event.accountId && accounts.some(account => account.id === event.accountId)) {
+      await handleBalanceUpdateSuccess()
+    }
+  }, accounts.map(account => account.id))
+
+  // 监听交易相关事件
+  useTransactionListener(async (event) => {
+    // 重新加载交易列表和汇总数据
+    await handleBalanceUpdateSuccess()
+  }, accounts.map(account => account.id), [category.id])
 
   // 获取分类汇总数据
   useEffect(() => {
@@ -388,10 +403,10 @@ export default function StockCategoryDetailView({
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {t('balance.update.button', '更新余额')}
+            {t('balance.update.button') || '更新余额'}
           </button>
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            💡 {t('category.stock.update.tip', '点击更新该分类下账户的余额')}
+            💡 {t('category.stock.update.tip') || '点击更新该分类下账户的余额'}
           </div>
         </div>
       </div>

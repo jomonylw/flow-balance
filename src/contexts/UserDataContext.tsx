@@ -107,7 +107,8 @@ interface UserDataContextType extends UserData {
   refreshAccounts: () => Promise<void>
   refreshCategories: () => Promise<void>
   refreshUserSettings: () => Promise<void>
-  fetchBalances: () => Promise<void>
+  fetchBalances: (force?: boolean) => Promise<void>
+  refreshBalances: () => Promise<void>
   // 更新数据（用于同步修改）
   updateTag: (tag: Tag) => void
   addTag: (tag: Tag) => void
@@ -124,6 +125,8 @@ interface UserDataContextType extends UserData {
   // 检查账户是否有交易记录的缓存
   accountTransactionCache: Record<string, boolean>
   setAccountHasTransactions: (accountId: string, hasTransactions: boolean) => void
+  // 更新单个账户余额
+  updateAccountBalance: (accountId: string, newBalance: number, currencyCode: string) => void
 }
 
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined)
@@ -283,9 +286,9 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
     }
   }, [])
 
-  const fetchBalances = useCallback(async () => {
-    // 如果已经有余额数据，则不重新获取，避免不必要的加载状态
-    if (userData.accountBalances) {
+  const fetchBalances = useCallback(async (force = false) => {
+    // 如果已经有余额数据且不是强制刷新，则不重新获取，避免不必要的加载状态
+    if (userData.accountBalances && !force) {
       return
     }
     try {
@@ -306,6 +309,55 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
       }))
     }
   }, [userData.accountBalances])
+
+  // 强制刷新余额数据
+  const refreshBalances = useCallback(async () => {
+    return fetchBalances(true)
+  }, [fetchBalances])
+
+  // 更新单个账户余额（用于实时更新）
+  const updateAccountBalance = useCallback((accountId: string, newBalance: number, currencyCode: string) => {
+    setUserData(prev => {
+      if (!prev.accountBalances) return prev
+
+      const currentAccountBalance = prev.accountBalances[accountId]
+      if (!currentAccountBalance) return prev
+
+      const updatedBalances = {
+        ...currentAccountBalance.balances,
+        [currencyCode]: {
+          ...currentAccountBalance.balances[currencyCode],
+          amount: newBalance
+        }
+      }
+
+      // 重新计算基础货币余额
+      const baseCurrencyCode = prev.userSettings?.baseCurrency?.code || 'CNY'
+      let balanceInBaseCurrency = 0
+
+      Object.entries(updatedBalances).forEach(([code, balance]) => {
+        if (code === baseCurrencyCode) {
+          balanceInBaseCurrency += balance.amount
+        } else {
+          // 这里应该使用汇率转换，暂时使用原值
+          balanceInBaseCurrency += balance.amount
+        }
+      })
+
+      return {
+        ...prev,
+        accountBalances: {
+          ...prev.accountBalances,
+          [accountId]: {
+            ...currentAccountBalance,
+            balances: updatedBalances,
+            balanceInBaseCurrency
+          }
+        },
+        lastUpdated: new Date()
+      }
+    })
+  }, [])
 
   // 初始化数据
   useEffect(() => {
@@ -421,6 +473,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
     refreshCategories,
     refreshUserSettings,
     fetchBalances,
+    refreshBalances,
     updateTag,
     addTag,
     removeTag,
@@ -433,7 +486,8 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
     updateUserSettings,
     getBaseCurrency,
     accountTransactionCache,
-    setAccountHasTransactions
+    setAccountHasTransactions,
+    updateAccountBalance
   }), [
     userData,
     refreshAll,
@@ -443,6 +497,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
     refreshCategories,
     refreshUserSettings,
     fetchBalances,
+    refreshBalances,
     updateTag,
     addTag,
     removeTag,
@@ -455,7 +510,8 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({ children }) 
     updateUserSettings,
     getBaseCurrency,
     accountTransactionCache,
-    setAccountHasTransactions
+    setAccountHasTransactions,
+    updateAccountBalance
   ])
 
   return (

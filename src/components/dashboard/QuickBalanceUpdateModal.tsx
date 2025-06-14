@@ -7,6 +7,7 @@ import SelectField from '@/components/ui/SelectField'
 import AuthButton from '@/components/ui/AuthButton'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
+import { publishBalanceUpdate } from '@/utils/DataUpdateManager'
 
 interface QuickBalanceUpdateModalProps {
   isOpen: boolean
@@ -163,6 +164,16 @@ export default function QuickBalanceUpdateModal({
 
       if (result.success) {
         showSuccess('余额更新成功', `${selectedAccount?.name} 余额已更新`)
+
+        // 发布余额更新事件
+        console.log(`[QuickBalanceUpdateModal] Publishing balance update event for account ${formData.accountId}`)
+        await publishBalanceUpdate(formData.accountId, {
+          newBalance: parseFloat(formData.newBalance),
+          currencyCode: formData.currencyCode,
+          transaction: result.transaction
+        })
+        console.log(`[QuickBalanceUpdateModal] Balance update event published successfully`)
+
         onSuccess()
         onClose()
       } else {
