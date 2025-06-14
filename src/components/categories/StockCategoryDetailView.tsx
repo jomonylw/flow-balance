@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 import TransactionList from '@/components/transactions/TransactionList'
 import StockCategorySummaryCard from './StockCategorySummaryCard'
 import StockMonthlySummaryChart from '@/components/charts/StockMonthlySummaryChart'
 import CategorySummaryItem from './CategorySummaryItem'
 import QuickBalanceUpdateModal from '@/components/dashboard/QuickBalanceUpdateModal'
+import DetailPageLayout from '@/components/ui/DetailPageLayout'
 
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
@@ -339,77 +339,34 @@ export default function StockCategoryDetailView({
   const currencySymbol = baseCurrency.symbol
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* 面包屑导航 */}
-      <nav className="flex mb-6" aria-label="Breadcrumb">
-        <ol className="inline-flex items-center space-x-1 md:space-x-3">
-          <li className="inline-flex items-center">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-              </svg>
-              {t('nav.dashboard')}
-            </Link>
-          </li>
-          <li>
-            <div className="flex items-center">
-              <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="ml-1 text-sm font-medium text-gray-500 dark:text-gray-400 md:ml-2">
-                {category.name}
-              </span>
-            </div>
-          </li>
-        </ol>
-      </nav>
-
-      {/* 分类标题 */}
-      <div className="flex justify-between items-start mb-6">
-        <div className="flex items-center">
-          {category.icon && (
-            <div
-              className="h-12 w-12 rounded-lg flex items-center justify-center mr-4"
-              style={{ backgroundColor: category.color + '20' || '#f3f4f6' }}
-            >
-              <span className="text-2xl">{category.icon}</span>
-            </div>
-          )}
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{category.name}</h1>
-            {category.description && (
-              <p className="mt-2 text-gray-600 dark:text-gray-400">{category.description}</p>
-            )}
-            <div className="mt-2">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                category.type === 'ASSET'
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                  : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-              }`}>
-                {category.type === 'ASSET' ? t('category.type.asset') : t('category.type.liability')} • {t('category.type.stock.data')}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={handleBalanceUpdate}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {t('balance.update.button') || '更新余额'}
-          </button>
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            💡 {t('category.stock.update.tip') || '点击更新该分类下账户的余额'}
-          </div>
-        </div>
-      </div>
+    <DetailPageLayout
+      categoryId={category.id}
+      title={category.name}
+      subtitle={category.description}
+      icon={category.icon}
+      iconBackgroundColor={category.color + '20' || '#f3f4f6'}
+      badge={
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          category.type === 'ASSET'
+            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+            : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+        }`}>
+          {category.type === 'ASSET' ? t('category.type.asset') : t('category.type.liability')} • {t('category.type.stock.data')}
+        </span>
+      }
+      actions={
+        <button
+          onClick={handleBalanceUpdate}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {t('balance.update.button') || '更新余额'}
+        </button>
+      }
+      actionsTip={t('category.stock.update.tip') || '点击更新该分类下账户的余额'}
+    >
 
       {/* 分类摘要卡片 */}
       <div className="mb-8">
@@ -592,6 +549,6 @@ export default function StockCategoryDetailView({
         onSuccess={handleBalanceUpdateSuccess}
         accountType={category.type as 'ASSET' | 'LIABILITY'}
       />
-    </div>
+    </DetailPageLayout>
   )
 }

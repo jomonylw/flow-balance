@@ -6,6 +6,8 @@ import TransactionList from './TransactionList'
 import TransactionFilters from './TransactionFilters'
 import TransactionStats from './TransactionStats'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
+import PageContainer from '@/components/ui/PageContainer'
+import TranslationLoader from '@/components/ui/TranslationLoader'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useUserData } from '@/contexts/UserDataContext'
@@ -178,107 +180,115 @@ export default function TransactionListView({
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* 页面标题 */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('transaction.list')}</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            {t('transaction.list.subtitle')}
-          </p>
+    <TranslationLoader
+      fallback={
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="space-y-4">
+            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      }
+    >
+      <PageContainer
+        title={t('transaction.list')}
+        subtitle={t('transaction.list.subtitle')}
+        actions={
+          <button
+            onClick={handleAddTransaction}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            {t('transaction.create')}
+          </button>
+        }
+      >
+
+        {/* 统计卡片 */}
+        <div className="mb-8">
+          <TransactionStats
+            transactions={transactions}
+            currencySymbol={currencySymbol}
+          />
         </div>
 
-        <button
-          onClick={handleAddTransaction}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
-        >
-          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          {t('transaction.create')}
-        </button>
-      </div>
+        {/* 过滤器 */}
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6">
+          <TransactionFilters
+            filters={filters}
+            onFilterChange={handleFilterChange}
+          />
+        </div>
 
-      {/* 统计卡片 */}
-      <div className="mb-8">
-        <TransactionStats
-          transactions={transactions}
-          currencySymbol={currencySymbol}
-        />
-      </div>
-
-      {/* 过滤器 */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6">
-        <TransactionFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-        />
-      </div>
-
-      {/* 交易列表 */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {t('account.transactions')}
-            </h2>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {t('account.total.transactions', { count: pagination.total })}
-              </span>
+        {/* 交易列表 */}
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {t('account.transactions')}
+              </h2>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('account.total.transactions', { count: pagination.total })}
+                </span>
+              </div>
             </div>
           </div>
+
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+              <p className="mt-2 text-gray-500 dark:text-gray-400">{t('common.loading')}</p>
+            </div>
+          ) : (
+            <TransactionList
+              transactions={transactions}
+              onEdit={handleEditTransaction}
+              onDelete={handleDeleteTransaction}
+              currencySymbol={currencySymbol}
+              showAccount={true}
+              pagination={{
+                currentPage: pagination.page,
+                totalPages: pagination.totalPages,
+                totalItems: pagination.total,
+                onPageChange: handlePageChange,
+                itemsPerPage: pagination.limit
+              }}
+            />
+          )}
         </div>
-        
-        {isLoading ? (
-          <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">{t('common.loading')}</p>
-          </div>
-        ) : (
-          <TransactionList
-            transactions={transactions}
-            onEdit={handleEditTransaction}
-            onDelete={handleDeleteTransaction}
-            currencySymbol={currencySymbol}
-            showAccount={true}
-            pagination={{
-              currentPage: pagination.page,
-              totalPages: pagination.totalPages,
-              totalItems: pagination.total,
-              onPageChange: handlePageChange,
-              itemsPerPage: pagination.limit
-            }}
-          />
-        )}
-      </div>
 
-      {/* 交易表单模态框 */}
-      <TransactionFormModal
-        isOpen={isTransactionModalOpen}
-        onClose={() => setIsTransactionModalOpen(false)}
-        onSuccess={handleTransactionSuccess}
-        transaction={editingTransaction}
-        accounts={accounts}
-        categories={categories}
-        currencies={currencies}
-        tags={tags}
-      />
+        {/* 交易表单模态框 */}
+        <TransactionFormModal
+          isOpen={isTransactionModalOpen}
+          onClose={() => setIsTransactionModalOpen(false)}
+          onSuccess={handleTransactionSuccess}
+          transaction={editingTransaction}
+          accounts={accounts}
+          categories={categories}
+          currencies={currencies}
+          tags={tags}
+        />
 
-      {/* 删除确认模态框 */}
-      <ConfirmationModal
-        isOpen={showDeleteConfirm}
-        title={t('transaction.delete')}
-        message={t('confirm.delete.transaction')}
-        confirmLabel={t('common.confirm.delete')}
-        cancelLabel={t('common.cancel')}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => {
-          setShowDeleteConfirm(false)
-          setDeletingTransactionId(null)
-        }}
-        variant="danger"
-      />
-    </div>
+        {/* 删除确认模态框 */}
+        <ConfirmationModal
+          isOpen={showDeleteConfirm}
+          title={t('transaction.delete')}
+          message={t('confirm.delete.transaction')}
+          confirmLabel={t('common.confirm.delete')}
+          cancelLabel={t('common.cancel')}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => {
+            setShowDeleteConfirm(false)
+            setDeletingTransactionId(null)
+          }}
+          variant="danger"
+        />
+      </PageContainer>
+    </TranslationLoader>
   )
 }

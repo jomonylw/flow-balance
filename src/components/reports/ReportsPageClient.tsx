@@ -4,21 +4,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Info, AlertTriangle } from 'lucide-react'
 import BalanceSheetCard from './BalanceSheetCard'
 import CashFlowCard from './CashFlowCard'
+import PageContainer from '@/components/ui/PageContainer'
+import TranslationLoader from '@/components/ui/TranslationLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function ReportsPageClient() {
   const { t } = useLanguage()
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">{t('reports.title')}</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
-            {t('reports.subtitle')}
-          </p>
+    <TranslationLoader
+      fallback={
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="space-y-4">
+            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
         </div>
-      </div>
+      }
+    >
+      <PageContainer
+        title={t('reports.title')}
+        subtitle={t('reports.subtitle')}
+      >
 
       {/* 重要说明 */}
       <Card className="border-blue-200 bg-blue-50">
@@ -70,40 +80,41 @@ export default function ReportsPageClient() {
         </CardContent>
       </Card>
 
-      {/* 资产负债表 */}
-      <BalanceSheetCard />
+        {/* 资产负债表 */}
+        <BalanceSheetCard />
 
-      {/* 现金流量表 */}
-      <CashFlowCard />
+        {/* 现金流量表 */}
+        <CashFlowCard />
 
-      {/* 使用说明 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('reports.usage.instructions')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 text-xs sm:text-sm">
-            <div>
-              <h4 className="font-semibold mb-2">{t('reports.balance.sheet.tips')}</h4>
-              <ul className="space-y-1 text-gray-600">
-                <li>• {t('reports.balance.sheet.tip.1')}</li>
-                <li>• {t('reports.balance.sheet.tip.2')}</li>
-                <li>• {t('reports.balance.sheet.tip.3')}</li>
-                <li>• {t('reports.balance.sheet.tip.4')}</li>
-              </ul>
+        {/* 使用说明 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('reports.usage.instructions')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 text-xs sm:text-sm">
+              <div>
+                <h4 className="font-semibold mb-2">{t('reports.balance.sheet.tips')}</h4>
+                <ul className="space-y-1 text-gray-600">
+                  <li>• {t('reports.balance.sheet.tip.1')}</li>
+                  <li>• {t('reports.balance.sheet.tip.2')}</li>
+                  <li>• {t('reports.balance.sheet.tip.3')}</li>
+                  <li>• {t('reports.balance.sheet.tip.4')}</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">{t('reports.cash.flow.tips')}</h4>
+                <ul className="space-y-1 text-gray-600">
+                  <li>• {t('reports.cash.flow.tip.1')}</li>
+                  <li>• {t('reports.cash.flow.tip.2')}</li>
+                  <li>• {t('reports.cash.flow.tip.3')}</li>
+                  <li>• {t('reports.cash.flow.tip.4')}</li>
+                </ul>
+              </div>
             </div>
-            <div>
-              <h4 className="font-semibold mb-2">{t('reports.cash.flow.tips')}</h4>
-              <ul className="space-y-1 text-gray-600">
-                <li>• {t('reports.cash.flow.tip.1')}</li>
-                <li>• {t('reports.cash.flow.tip.2')}</li>
-                <li>• {t('reports.cash.flow.tip.3')}</li>
-                <li>• {t('reports.cash.flow.tip.4')}</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </PageContainer>
+    </TranslationLoader>
   )
 }

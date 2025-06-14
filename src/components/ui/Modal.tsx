@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 interface ModalProps {
   isOpen: boolean
@@ -12,6 +13,11 @@ interface ModalProps {
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -48,11 +54,11 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
     xl: 'max-w-4xl'
   }
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-2 sm:p-4">
         {/* 背景遮罩 */}
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 transition-opacity" />
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 transition-opacity" onClick={onClose} />
 
         {/* 模态框内容 */}
         <div
@@ -60,11 +66,11 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
           className={`
             relative w-full ${sizeClasses[size]} bg-white dark:bg-gray-800 shadow-xl transform transition-all
             mx-2 sm:mx-0 rounded-lg sm:rounded-lg
-            max-h-[90vh] sm:max-h-[85vh] overflow-hidden
+            max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col
           `}
         >
           {/* 头部 */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex-shrink-0 flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate pr-4">
               {title}
             </h3>
@@ -80,11 +86,17 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
           </div>
 
           {/* 内容 */}
-          <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-120px)] sm:max-h-[calc(85vh-120px)] bg-white dark:bg-gray-800">
+          <div className="flex-grow p-4 sm:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-800/50">
             {children}
           </div>
         </div>
       </div>
     </div>
   )
+
+  if (!isMounted) {
+    return null
+  }
+
+  return createPortal(modalContent, document.body)
 }

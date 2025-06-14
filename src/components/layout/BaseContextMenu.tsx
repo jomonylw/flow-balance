@@ -74,6 +74,11 @@ export default function BaseContextMenu({
         left = triggerRect.left - menuWidth - 8
       }
 
+      // 新增：确保菜单不会在左侧屏幕外
+      if (left < 20) {
+        left = 20
+      }
+
       // 确保不超出视口顶部和底部
       if (top < 20) {
         top = 20

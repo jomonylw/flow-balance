@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
 import QuickFlowTransactionModal from '@/components/dashboard/QuickFlowTransactionModal'
 import TransactionList from '@/components/transactions/TransactionList'
@@ -9,6 +8,7 @@ import FlowCategorySummaryCard from './FlowCategorySummaryCard'
 import CategorySummaryItem from './CategorySummaryItem'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import FlowMonthlySummaryChart from '@/components/charts/FlowMonthlySummaryChart'
+import DetailPageLayout from '@/components/ui/DetailPageLayout'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTransactionListener } from '@/hooks/useDataUpdateListener'
@@ -362,78 +362,34 @@ export default function FlowCategoryDetailView({
   const currencySymbol = baseCurrency.symbol
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* 面包屑导航 */}
-      <nav className="flex mb-6" aria-label="Breadcrumb">
-        <ol className="inline-flex items-center space-x-1 md:space-x-3">
-          <li className="inline-flex items-center">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-              </svg>
-              {t('nav.dashboard')}
-            </Link>
-          </li>
-          <li>
-            <div className="flex items-center">
-              <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="ml-1 text-sm font-medium text-gray-500 dark:text-gray-400 md:ml-2">
-                {category.name}
-              </span>
-            </div>
-          </li>
-        </ol>
-      </nav>
-
-      {/* 分类标题 */}
-      <div className="flex justify-between items-start mb-6">
-        <div className="flex items-center">
-          {category.icon && (
-            <div
-              className="h-12 w-12 rounded-lg flex items-center justify-center mr-4"
-              style={{ backgroundColor: category.color + '20' || '#f3f4f6' }}
-            >
-              <span className="text-2xl">{category.icon}</span>
-            </div>
-          )}
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{category.name}</h1>
-            {category.description && (
-              <p className="mt-2 text-gray-600 dark:text-gray-400">{category.description}</p>
-            )}
-            <div className="mt-2">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                category.type === 'INCOME'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-              }`}>
-                {category.type === 'INCOME' ? t('category.type.income') : t('category.type.expense')} • {t('category.type.flow.data')}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={handleAddTransaction}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            {t('transaction.create')}
-          </button>
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            💡 {t('category.flow.add.tip')}
-          </div>
-        </div>
-      </div>
-
+    <DetailPageLayout
+      categoryId={category.id}
+      title={category.name}
+      subtitle={category.description}
+      icon={category.icon}
+      iconBackgroundColor={category.color + '20' || '#f3f4f6'}
+      badge={
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          category.type === 'INCOME'
+            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+        }`}>
+          {category.type === 'INCOME' ? t('category.type.income') : t('category.type.expense')} • {t('category.type.flow.data')}
+        </span>
+      }
+      actions={
+        <button
+          onClick={handleAddTransaction}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          {t('transaction.create')}
+        </button>
+      }
+      actionsTip={t('category.flow.add.tip')}
+    >
       {/* 分类摘要卡片 */}
       <div className="mb-8">
         {(category.type === 'INCOME' || category.type === 'EXPENSE') && (
@@ -659,6 +615,6 @@ export default function FlowCategoryDetailView({
         }}
         variant="danger"
       />
-    </div>
+    </DetailPageLayout>
   )
 }

@@ -56,11 +56,11 @@ export default function PageContainer({
           {/* 标题区域 */}
           {title && (
             <div className="min-w-0 flex-1">
-              <h1 className={`font-bold text-gray-900 ${getTextSize('3xl')}`}>
+              <h1 className={`font-bold text-gray-900 dark:text-gray-100 ${getTextSize('3xl')}`}>
                 {title}
               </h1>
               {subtitle && (
-                <p className={`mt-2 text-gray-600 ${getTextSize('base')}`}>
+                <p className={`mt-2 text-gray-600 dark:text-gray-400 ${getTextSize('base')}`}>
                   {subtitle}
                 </p>
               )}
@@ -105,15 +105,15 @@ export function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
         {items.map((item, index) => (
           <li key={index} className="inline-flex items-center">
             {index > 0 && (
-              <svg 
-                className="w-4 h-4 sm:w-6 sm:h-6 text-gray-400 mx-1" 
-                fill="currentColor" 
+              <svg
+                className="w-4 h-4 sm:w-6 sm:h-6 text-gray-400 dark:text-gray-500 mx-1"
+                fill="currentColor"
                 viewBox="0 0 20 20"
               >
-                <path 
-                  fillRule="evenodd" 
-                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" 
-                  clipRule="evenodd" 
+                <path
+                  fillRule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clipRule="evenodd"
                 />
               </svg>
             )}
@@ -121,7 +121,7 @@ export function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
             {item.href ? (
               <a
                 href={item.href}
-                className={`inline-flex items-center font-medium text-gray-700 hover:text-blue-600 ${getTextSize('sm')}`}
+                className={`inline-flex items-center font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 ${getTextSize('sm')}`}
               >
                 {item.icon && (
                   <span className="mr-1 sm:mr-2">
@@ -133,7 +133,7 @@ export function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
                 </span>
               </a>
             ) : (
-              <span className={`inline-flex items-center font-medium text-gray-500 ${getTextSize('sm')}`}>
+              <span className={`inline-flex items-center font-medium text-gray-500 dark:text-gray-400 ${getTextSize('sm')}`}>
                 {item.icon && (
                   <span className="mr-1 sm:mr-2">
                     {item.icon}
@@ -197,10 +197,10 @@ export function ResponsiveButton({
   const isMobile = useIsMobile()
 
   const variantClasses = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500 border border-gray-300'
+    primary: 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400',
+    secondary: 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 focus:ring-gray-500 dark:focus:ring-gray-400',
+    danger: 'bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 focus:ring-red-500 dark:focus:ring-red-400',
+    ghost: 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-gray-500 dark:focus:ring-gray-400 border border-gray-300 dark:border-gray-600'
   }
 
   const sizeClasses = {

@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import SimpleFlowTransactionModal from '@/components/transactions/SimpleFlowTransactionModal'
 import TransactionList from '@/components/transactions/TransactionList'
 import FlowAccountSummaryCard from './FlowAccountSummaryCard'
 import FlowAccountTrendChart from '@/components/charts/FlowAccountTrendChart'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
+import DetailPageLayout from '@/components/ui/DetailPageLayout'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -243,7 +243,43 @@ export default function FlowAccountDetailView({
   const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <DetailPageLayout
+      accountId={account.id}
+      title={account.name}
+      subtitle={`${account.category.name}${account.description ? ` • ${account.description}` : ''}`}
+      badge={
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          (account.category.type === 'INCOME')
+            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+            : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+        }`}>
+          {account.category.type === 'INCOME' ? t('type.income.account') : t('type.expense.account')} • {t('type.flow.data')}
+        </span>
+      }
+      actions={
+        <>
+          <button
+            onClick={handleAddTransaction}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            {t('account.add.transaction')}
+          </button>
+
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="inline-flex items-center px-4 py-2 border border-red-300 dark:border-red-600 text-sm font-medium rounded-md shadow-sm text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            {t('account.delete')}
+          </button>
+        </>
+      }
+    >
       {/* 账户类型提示横幅 */}
       <div className={`mb-6 p-4 rounded-lg border-l-4 ${
         (account.category.type === 'INCOME')
@@ -272,75 +308,6 @@ export default function FlowAccountDetailView({
               })}
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* 面包屑导航 */}
-      <nav className="flex mb-6" aria-label="Breadcrumb">
-        <ol className="inline-flex items-center space-x-1 md:space-x-3">
-          <li className="inline-flex items-center">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-              </svg>
-              {t('nav.dashboard')}
-            </Link>
-          </li>
-          <li>
-            <div className="flex items-center">
-              <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="ml-1 text-sm font-medium text-gray-500 dark:text-gray-400 md:ml-2">
-                {account.name}
-              </span>
-            </div>
-          </li>
-        </ol>
-      </nav>
-
-      {/* 账户标题和操作 */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{account.name}</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            {account.category.name}
-            {account.description && ` • ${account.description}`}
-          </p>
-          <div className="mt-2">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              (account.category.type === 'INCOME')
-                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-            }`}>
-              {account.category.type === 'INCOME' ? t('type.income.account') : t('type.expense.account')} • {t('type.flow.data')}
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex space-x-3">
-          <button
-            onClick={handleAddTransaction}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            {t('account.add.transaction')}
-          </button>
-
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="inline-flex items-center px-4 py-2 border border-red-300 dark:border-red-600 text-sm font-medium rounded-md shadow-sm text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          >
-            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            {t('account.delete')}
-          </button>
         </div>
       </div>
 
@@ -429,6 +396,6 @@ export default function FlowAccountDetailView({
         onConfirm={handleDeleteAccount}
         onCancel={() => setShowDeleteConfirm(false)}
       />
-    </div>
+    </DetailPageLayout>
   )
 }

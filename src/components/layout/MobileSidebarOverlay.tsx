@@ -64,15 +64,15 @@ export default function MobileSidebarOverlay({
       {/* 背景遮罩 */}
       <div
         className={`
-          fixed inset-0 bg-black transition-opacity duration-300 ease-out
-          ${isOpen ? 'bg-opacity-50' : 'bg-opacity-0'}
+          fixed inset-0 bg-black/50 transition-opacity duration-300 ease-out
+          ${isOpen ? 'opacity-100' : 'opacity-0'}
         `}
         onClick={onClose}
       />
 
       {/* 侧边栏内容 */}
       <div className={`
-        fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl
+        fixed top-0 left-0 h-full w-[22rem] max-w-[85vw] bg-white shadow-2xl
         transform transition-all duration-300 ease-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}
@@ -106,7 +106,7 @@ export default function MobileSidebarOverlay({
         </div>
 
         {/* 侧边栏内容 */}
-        <div className="h-full overflow-hidden">
+        <div className="h-full overflow-y-auto">
           {children}
         </div>
 

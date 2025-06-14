@@ -179,9 +179,6 @@ export default function NavigationSidebar({
         `}
         style={!isMobile ? { width: `${width}px` } : undefined}
       >
-      {/* 移动端顶部间距 */}
-      {isMobile && <div className="h-16" />}
-
       {/* 搜索框 */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <SidebarSearchBox
@@ -215,11 +212,11 @@ export default function NavigationSidebar({
                 </h3>
                 <button
                   onClick={handleAddTopCategory}
-                  className="group/add flex items-center justify-center w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-800/60 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md"
+                  className="group/add flex items-center justify-center w-7 h-7 rounded-md bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-800/60 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md"
                   title={t('sidebar.add.top.category')}
                 >
                   <svg
-                    className="w-3.5 h-3.5 transition-transform duration-200 group-hover/add:rotate-90"
+                    className="w-4 h-4 transition-transform duration-200 group-hover/add:rotate-90"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -231,30 +228,30 @@ export default function NavigationSidebar({
               </div>
               <button
                 onClick={toggleAllCategories}
-                className="group/toggle flex items-center justify-center w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600/60 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md"
+                className="group/toggle flex items-center justify-center w-7 h-7 rounded-md bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600/60 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md"
                 title={areAllCategoriesExpanded ? t('sidebar.collapse.categories') : t('sidebar.expand.categories')}
               >
                 {areAllCategoriesExpanded ? (
                   // 收起所有 - 统一图标大小
                   <svg
-                    className="w-3.5 h-3.5 transition-all duration-300 group-hover/toggle:scale-110"
+                    className="w-4 h-4 transition-all duration-300 group-hover/toggle:scale-110"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 16l3-3 3 3m0-6l-3-3-3 3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
                   </svg>
                 ) : (
                   // 展开所有 - 统一图标大小
                   <svg
-                    className="w-3.5 h-3.5 transition-all duration-300 group-hover/toggle:scale-110"
+                    className="w-4 h-4 transition-all duration-300 group-hover/toggle:scale-110"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l-5 5-5-5m10 6l-5 5-5-5" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 )}
               </button>

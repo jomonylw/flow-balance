@@ -139,6 +139,16 @@ html {
   }
 }
 
+/* 隐藏滚动条工具类 */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 /* 树状菜单美化样式 */
 .tree-item-gradient-active {
   background: linear-gradient(135deg,
