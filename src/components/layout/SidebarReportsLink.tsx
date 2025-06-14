@@ -43,17 +43,17 @@ export default function SidebarReportsLink({ onNavigate }: SidebarReportsLinkPro
           {t('nav.reports')}
         </div>
         
-        <div className="flex items-center space-x-1">
+        {/* <div className="flex items-center space-x-1"> */}
           {/* 新功能标识 */}
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {/* <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
             {t('common.new')}
-          </span>
-          <button className="text-gray-400 hover:text-gray-600 focus:outline-none">
+          </span> */}
+          {/* <button className="text-gray-400 hover:text-gray-600 focus:outline-none">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
             </svg>
-          </button>
-        </div>
+          </button> */}
+        {/* </div> */}
       </Link>
     </div>
   )
