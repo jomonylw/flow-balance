@@ -34,15 +34,20 @@ try {
   const dateFrom = searchParams.get('dateFrom')
   const dateTo = searchParams.get('dateTo')
   const search = searchParams.get('search')
+  const tagIds = searchParams.get('tagIds')?.split(',').filter(Boolean) || []
+  const excludeBalanceAdjustment = searchParams.get('excludeBalanceAdjustment') === 'true'
   const page = parseInt(searchParams.get('page') || '1')
   const limit = parseInt(searchParams.get('limit') || '20')
   const skip = (page - 1) * limit
 
   // 构建查询条件
   const where: Record<string, unknown> = {
-    userId: user.id,
-    // 排除余额调整类型的交易
-    type: {
+    userId: user.id
+  }
+
+  // 根据参数决定是否排除余额调整类型的交易
+  if (excludeBalanceAdjustment) {
+    where.type = {
       not: 'BALANCE_ADJUSTMENT'
     }
   }
@@ -54,10 +59,15 @@ try {
     where.categoryId = { in: allCategoryIds }
   }
   if (type) {
-    // 如果指定了类型过滤，需要同时排除BALANCE_ADJUSTMENT
-    where.type = {
-      equals: type,
-      not: 'BALANCE_ADJUSTMENT'
+    if (excludeBalanceAdjustment) {
+      // 如果排除余额调整记录，需要同时排除BALANCE_ADJUSTMENT
+      where.type = {
+        equals: type,
+        not: 'BALANCE_ADJUSTMENT'
+      }
+    } else {
+      // 如果不排除余额调整记录，直接按类型过滤
+      where.type = type
     }
   }
 
@@ -80,6 +90,17 @@ try {
       ]
     }
 
+    // 标签筛选
+    if (tagIds.length > 0) {
+      where.tags = {
+        some: {
+          tagId: {
+            in: tagIds
+          }
+        }
+      }
+    }
+
     const [transactions, total] = await Promise.all([
       prisma.transaction.findMany({
         where,
@@ -100,8 +121,19 @@ try {
       prisma.transaction.count({ where })
     ])
 
+    // 格式化交易数据，移除标签颜色信息
+    const formattedTransactions = transactions.map(transaction => ({
+      ...transaction,
+      tags: transaction.tags.map(tt => ({
+        tag: {
+          id: tt.tag.id,
+          name: tt.tag.name
+        }
+      }))
+    }))
+
     return successResponse({
-      transactions,
+      transactions: formattedTransactions,
       pagination: {
         page,
         limit,
@@ -269,7 +301,18 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return successResponse(transaction, '交易创建成功')
+    // 格式化交易数据，移除标签颜色信息
+    const formattedTransaction = {
+      ...transaction,
+      tags: transaction.tags.map(tt => ({
+        tag: {
+          id: tt.tag.id,
+          name: tt.tag.name
+        }
+      }))
+    }
+
+    return successResponse(formattedTransaction, '交易创建成功')
   } catch (error) {
     console.error('Create transaction error:', error)
     console.error('Error details:', {

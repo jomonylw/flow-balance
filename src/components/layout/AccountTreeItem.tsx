@@ -8,7 +8,7 @@ import DeleteConfirmModal from '@/components/ui/DeleteConfirmModal'
 import CategorySelector from '@/components/ui/CategorySelector'
 import AccountSettingsModal from '@/components/ui/AccountSettingsModal'
 import BalanceUpdateModal from '@/components/accounts/BalanceUpdateModal'
-import TransactionFormModal from '@/components/transactions/TransactionFormModal'
+import SimpleFlowTransactionModal from '@/components/transactions/SimpleFlowTransactionModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
 
@@ -414,21 +414,14 @@ export default function AccountTreeItem({
         currencyCode={accountCurrency}
       />
 
-      {/* 交易表单模态框 */}
-      <TransactionFormModal
+      {/* 简化的流量账户交易表单模态框 */}
+      <SimpleFlowTransactionModal
         isOpen={showTransactionModal}
         onClose={() => setShowTransactionModal(false)}
         onSuccess={handleTransactionSuccess}
-        accounts={accounts.filter(acc => {
-          // 只显示流量类账户
-          const accType = acc.category?.type
-          return accType === 'INCOME' || accType === 'EXPENSE'
-        })}
-        categories={categories}
+        account={account}
         currencies={currencies}
         tags={tags}
-        defaultAccountId={account.id}
-        defaultCategoryId={account.categoryId}
       />
     </div>
   )

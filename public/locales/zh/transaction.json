@@ -87,5 +87,14 @@
   "transaction.stats.this.month.net": "本月净额",
   "transaction.stats.count.transactions": "{{count}} 笔交易",
   "transaction.stats.total.records": "总计 {{count}} 笔记录",
-  "transaction.stats.vs.last.month": "vs 上月"
+  "transaction.stats.vs.last.month": "vs 上月",
+  "transaction.filter.tags": "标签筛选",
+  "transaction.filter.tags.placeholder": "选择标签...",
+  "transaction.filter.tags.all": "所有标签",
+  "transaction.filter.tags.selected": "已选择 {{count}} 个标签",
+  "transaction.filter.tags.clear": "清除标签筛选",
+  "transaction.filter.no.tags": "暂无标签",
+  "transaction.filter.basic": "基础筛选",
+  "transaction.filter.date.range": "日期范围",
+  "transaction.filter.quick.date": "快速日期选择"
 }

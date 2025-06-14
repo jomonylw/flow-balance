@@ -142,11 +142,11 @@ export default function StockAccountDetailView({
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
-        accountId: account.id,
         page: page.toString(),
         limit: pagination.itemsPerPage.toString()
       })
-      const response = await fetch(`/api/transactions?${params}`)
+      // 使用账户专用的交易API，包含余额调整记录
+      const response = await fetch(`/api/accounts/${account.id}/transactions?${params}`)
       const result = await response.json()
       if (result.success) {
         setTransactions(result.data.transactions)
@@ -154,7 +154,7 @@ export default function StockAccountDetailView({
           ...prev,
           currentPage: result.data.pagination.page,
           totalPages: result.data.pagination.totalPages,
-          totalItems: result.data.pagination.total
+          totalItems: result.data.pagination.totalCount
         }))
       } else {
         showError(t('error.load.transactions'), result.error || t('error.unknown'))

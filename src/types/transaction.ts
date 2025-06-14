@@ -20,6 +20,12 @@ export interface Tag {
   color?: string
 }
 
+// 交易中的标签类型（不包含颜色信息）
+export interface TransactionTag {
+  id: string
+  name: string
+}
+
 export interface Account {
   id: string
   name: string
@@ -43,7 +49,7 @@ export interface Transaction {
   date: string
   category: Category
   currency: Currency
-  tags: { tag: Tag }[]
+  tags: { tag: TransactionTag }[]
   account?: Account
 }
 

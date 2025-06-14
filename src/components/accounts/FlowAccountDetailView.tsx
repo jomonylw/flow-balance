@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import TransactionFormModal from '@/components/transactions/TransactionFormModal'
+import SimpleFlowTransactionModal from '@/components/transactions/SimpleFlowTransactionModal'
 import TransactionList from '@/components/transactions/TransactionList'
 import FlowAccountSummaryCard from './FlowAccountSummaryCard'
 import FlowAccountTrendChart from '@/components/charts/FlowAccountTrendChart'
@@ -93,18 +93,15 @@ export default function FlowAccountDetailView({
   }
 
   const handleEditTransaction = (transaction: Transaction) => {
-    // 转换为TransactionFormModal期望的格式
+    // 转换为SimpleFlowTransactionModal期望的格式
     const formTransaction = {
       id: transaction.id,
       accountId: account.id,
-      categoryId: transaction.category.id,
-      currencyCode: transaction.currency.code,
-      type: transaction.type === 'BALANCE_ADJUSTMENT' ? 'EXPENSE' : transaction.type,
       amount: transaction.amount,
       description: transaction.description,
       notes: transaction.notes,
       date: transaction.date,
-      tagIds: transaction.tags.map(t => t.tag.id)
+      tagIds: transaction.tags ? transaction.tags.map(tt => tt.tag.id) : []
     }
     setEditingTransaction(formTransaction)
     setIsTransactionModalOpen(true)
@@ -114,11 +111,11 @@ export default function FlowAccountDetailView({
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
-        accountId: account.id,
         page: page.toString(),
         limit: pagination.itemsPerPage.toString()
       })
-      const response = await fetch(`/api/transactions?${params}`)
+      // 使用账户专用的交易API，确保数据一致性
+      const response = await fetch(`/api/accounts/${account.id}/transactions?${params}`)
       const result = await response.json()
       if (result.success) {
         setTransactions(result.data.transactions)
@@ -126,7 +123,7 @@ export default function FlowAccountDetailView({
           ...prev,
           currentPage: result.data.pagination.page,
           totalPages: result.data.pagination.totalPages,
-          totalItems: result.data.pagination.total
+          totalItems: result.data.pagination.totalCount
         }))
       } else {
         showError(t('error.load.transactions'), result.error || t('error.unknown'))
@@ -394,18 +391,15 @@ export default function FlowAccountDetailView({
         )}
       </div>
 
-      {/* 交易表单模态框 */}
-      <TransactionFormModal
+      {/* 简化的交易表单模态框 */}
+      <SimpleFlowTransactionModal
         isOpen={isTransactionModalOpen}
         onClose={() => setIsTransactionModalOpen(false)}
         onSuccess={handleTransactionSuccess}
         transaction={editingTransaction}
-        accounts={[{ id: account.id, name: account.name, category: account.category }]}
-        categories={categories}
+        account={account}
         currencies={currencies}
         tags={tags}
-        defaultAccountId={account.id}
-        defaultType={account.category.type as 'INCOME' | 'EXPENSE'}
       />
 
       {/* 删除确认模态框 */}

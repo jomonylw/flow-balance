@@ -307,8 +307,7 @@ GET /api/accounts/[id]/transactions
           {
             "tag": {
               "id": "tag_id",
-              "name": "标签名称",
-              "color": "#3B82F6"
+              "name": "标签名称"
             }
           }
         ]
@@ -335,9 +334,17 @@ GET /api/transactions
 - `page` (可选) - 页码
 - `limit` (可选) - 每页数量
 - `accountId` (可选) - 账户ID筛选
+- `categoryId` (可选) - 分类ID筛选
 - `type` (可选) - 交易类型筛选
-- `startDate` (可选) - 开始日期
-- `endDate` (可选) - 结束日期
+- `dateFrom` (可选) - 开始日期
+- `dateTo` (可选) - 结束日期
+- `search` (可选) - 搜索关键词
+- `excludeBalanceAdjustment` (可选) - 是否排除余额调整记录，默认为 false
+
+**说明**：
+- 默认情况下，API返回所有类型的交易记录（包括余额调整记录）
+- 通用交易页面使用 `excludeBalanceAdjustment=true` 来排除余额调整记录
+- 存量账户类别页面使用默认行为来包含余额调整记录
 
 ### 创建交易
 ```http

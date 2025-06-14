@@ -85,8 +85,7 @@ export async function GET() {
         categoryName: transaction.category.name,
         tags: transaction.tags.map(tt => ({
           id: tt.tag.id,
-          name: tt.tag.name,
-          color: tt.tag.color
+          name: tt.tag.name
         })),
         createdAt: transaction.createdAt
       })),

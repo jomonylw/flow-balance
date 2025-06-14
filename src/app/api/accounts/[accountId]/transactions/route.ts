@@ -117,8 +117,10 @@ export async function GET(
         name: transaction.category.name
       },
       tags: transaction.tags.map(tt => ({
-        id: tt.tag.id,
-        name: tt.tag.name
+        tag: {
+          id: tt.tag.id,
+          name: tt.tag.name
+        }
       })),
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt

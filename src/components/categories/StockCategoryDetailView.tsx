@@ -179,6 +179,7 @@ export default function StockCategoryDetailView({
         categoryId: category.id,
         page: page.toString(),
         limit: pagination.itemsPerPage.toString()
+        // 存量账户类别页面默认包含余额调整记录，不需要特殊参数
       })
       const response = await fetch(`/api/transactions?${params}`)
       const result = await response.json()

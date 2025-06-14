@@ -87,5 +87,14 @@
   "transaction.stats.this.month.net": "This Month Net",
   "transaction.stats.count.transactions": "{{count}} transactions",
   "transaction.stats.total.records": "Total {{count}} records",
-  "transaction.stats.vs.last.month": "vs last month"
+  "transaction.stats.vs.last.month": "vs last month",
+  "transaction.filter.tags": "Filter by Tags",
+  "transaction.filter.tags.placeholder": "Select tags...",
+  "transaction.filter.tags.all": "All Tags",
+  "transaction.filter.tags.selected": "{{count}} tags selected",
+  "transaction.filter.tags.clear": "Clear tag filters",
+  "transaction.filter.no.tags": "No tags available",
+  "transaction.filter.basic": "Basic Filters",
+  "transaction.filter.date.range": "Date Range",
+  "transaction.filter.quick.date": "Quick Date Selection"
 }

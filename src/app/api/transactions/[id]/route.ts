@@ -36,7 +36,18 @@ export async function GET(
       return notFoundResponse('交易记录不存在')
     }
 
-    return successResponse(transaction)
+    // 格式化交易数据，移除标签颜色信息
+    const formattedTransaction = {
+      ...transaction,
+      tags: transaction.tags.map(tt => ({
+        tag: {
+          id: tt.tag.id,
+          name: tt.tag.name
+        }
+      }))
+    }
+
+    return successResponse(formattedTransaction)
   } catch (error) {
     console.error('Get transaction error:', error)
     return errorResponse('获取交易记录失败', 500)
@@ -93,7 +104,10 @@ export async function PUT(
     const [account, category] = await Promise.all([
       prisma.account.findFirst({
         where: { id: accountId, userId: user.id },
-        include: { category: true }
+        include: {
+          category: true,
+          currency: true
+        }
       }),
       prisma.category.findFirst({
         where: { id: categoryId, userId: user.id }
@@ -106,6 +120,20 @@ export async function PUT(
 
     if (!category) {
       return errorResponse('分类不存在', 400)
+    }
+
+    // 验证账户货币限制
+    if (account.currencyCode && account.currencyCode !== currencyCode) {
+      return errorResponse(`此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`, 400)
+    }
+
+    // 验证币种
+    const currency = await prisma.currency.findUnique({
+      where: { code: currencyCode }
+    })
+
+    if (!currency) {
+      return errorResponse('币种不存在', 400)
     }
 
     // 验证账户类型与交易类型的匹配性
@@ -172,7 +200,18 @@ export async function PUT(
       }
     })
 
-    return successResponse(transaction, '交易更新成功')
+    // 格式化交易数据，移除标签颜色信息
+    const formattedTransaction = {
+      ...transaction,
+      tags: transaction.tags.map(tt => ({
+        tag: {
+          id: tt.tag.id,
+          name: tt.tag.name
+        }
+      }))
+    }
+
+    return successResponse(formattedTransaction, '交易更新成功')
   } catch (error) {
     console.error('Update transaction error:', error)
     return errorResponse('更新交易失败', 500)

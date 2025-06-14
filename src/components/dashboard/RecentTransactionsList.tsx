@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { useUserData } from '@/contexts/UserDataContext'
 
 interface Currency {
   code: string
@@ -43,11 +46,18 @@ interface RecentTransactionsListProps {
   baseCurrency?: Currency
 }
 
-export default function RecentTransactionsList({ 
-  transactions, 
-  baseCurrency 
+export default function RecentTransactionsList({
+  transactions,
+  baseCurrency
 }: RecentTransactionsListProps) {
+  const { tags: userTags } = useUserData()
   const currencySymbol = baseCurrency?.symbol || '$'
+
+  // 获取标签颜色信息
+  const getTagColor = (tagId: string): string | undefined => {
+    const userTag = userTags.find(tag => tag.id === tagId)
+    return userTag?.color
+  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -171,17 +181,25 @@ export default function RecentTransactionsList({
               </div>
 
               {/* 标签 */}
-              {transaction.tags.length > 0 && (
+              {transaction.tags && transaction.tags.length > 0 && (
                 <div className="flex items-center space-x-1 mt-2">
-                  {transaction.tags.slice(0, 3).map(({ tag }) => (
-                    <span
-                      key={tag.id}
-                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                      style={tag.color ? { backgroundColor: tag.color + '20', color: tag.color } : {}}
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
+                  {transaction.tags.slice(0, 3).map(({ tag }) => {
+                    // 安全检查：确保tag对象存在
+                    if (!tag) return null
+
+                    // 从 UserDataContext 获取标签颜色信息
+                    const currentColor = getTagColor(tag.id)
+
+                    return (
+                      <span
+                        key={tag.id}
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                        style={currentColor ? { backgroundColor: currentColor + '20', color: currentColor } : {}}
+                      >
+                        {tag.name}
+                      </span>
+                    )
+                  })}
                   {transaction.tags.length > 3 && (
                     <span className="text-xs text-gray-500">
                       +{transaction.tags.length - 3}

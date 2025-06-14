@@ -9,43 +9,15 @@ export default async function TransactionsPage() {
     return null
   }
 
-  // 获取必要的数据
-  const [accounts, categories, currencies, tags, userSettings] = await Promise.all([
-    prisma.account.findMany({
-      where: { userId: user.id },
-      include: { category: true },
-      orderBy: { name: 'asc' }
-    }),
-    prisma.category.findMany({
-      where: { userId: user.id },
-      orderBy: { name: 'asc' }
-    }),
-    prisma.currency.findMany({
-      orderBy: { code: 'asc' }
-    }),
-    prisma.tag.findMany({
-      where: { userId: user.id },
-      orderBy: { name: 'asc' }
-    }),
-    prisma.userSettings.findUnique({
-      where: { userId: user.id },
-      include: { baseCurrency: true }
-    })
-  ])
+  // 获取用户设置用于基础货币信息
+  const userSettings = await prisma.userSettings.findUnique({
+    where: { userId: user.id },
+    include: { baseCurrency: true }
+  })
 
   return (
     <AppLayout>
       <TransactionListView
-        accounts={accounts.map(account => ({
-          ...account,
-          description: account.description || undefined
-        }))}
-        categories={categories}
-        currencies={currencies}
-        tags={tags.map(tag => ({
-          ...tag,
-          color: tag.color || undefined
-        }))}
         user={{
           ...user,
           settings: userSettings ? {

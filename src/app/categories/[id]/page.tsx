@@ -70,8 +70,8 @@ const serializeTransactions = (transactions: PrismaTransaction[]): Transaction[]
     },
     tags: transaction.tags ? transaction.tags.map((tt) => ({
       tag: {
-        ...tt.tag,
-        color: tt.tag.color || undefined
+        id: tt.tag.id,
+        name: tt.tag.name
       }
     })) : []
   }))

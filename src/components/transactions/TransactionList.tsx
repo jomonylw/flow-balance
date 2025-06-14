@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useUserData } from '@/contexts/UserDataContext'
 import { Transaction } from '@/types/transaction'
 
 interface TransactionListProps {
@@ -44,11 +45,18 @@ export default function TransactionList({
   // listType = 'default'
 }: TransactionListProps) {
   const { t } = useLanguage()
+  const { tags: userTags } = useUserData()
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set())
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false)
   const [showSingleDeleteConfirm, setShowSingleDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
   const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null)
+
+  // 获取最新的标签颜色信息
+  const getUpdatedTagColor = (tagId: string): string | undefined => {
+    const userTag = userTags.find(tag => tag.id === tagId)
+    return userTag?.color
+  }
 
   // 判断是否为余额调整记录
   const isBalanceAdjustment = (transaction: Transaction) => {
@@ -499,17 +507,25 @@ export default function TransactionList({
             {/* 标签和备注 - 共享布局 */}
             <div className="mt-2 sm:ml-12">
               {/* 标签 */}
-              {transaction.tags.length > 0 && (
+              {transaction.tags && transaction.tags.length > 0 && (
                 <div className="flex items-center flex-wrap gap-1 mb-2">
-                  {transaction.tags.slice(0, 3).map(({ tag }) => (
-                    <span
-                      key={tag.id}
-                      className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                      style={tag.color ? { backgroundColor: tag.color + '20', color: tag.color } : {}}
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
+                  {transaction.tags.slice(0, 3).map(({ tag }) => {
+                    // 安全检查：确保tag对象存在
+                    if (!tag) return null
+
+                    // 从 UserDataContext 获取标签颜色信息
+                    const currentColor = getUpdatedTagColor(tag.id)
+
+                    return (
+                      <span
+                        key={tag.id}
+                        className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                        style={currentColor ? { backgroundColor: currentColor + '20', color: currentColor } : {}}
+                      >
+                        {tag.name}
+                      </span>
+                    )
+                  })}
                   {transaction.tags.length > 3 && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       +{transaction.tags.length - 3}

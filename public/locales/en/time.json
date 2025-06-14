@@ -12,5 +12,6 @@
   "time.last.12.months": "Last Year",
   "time.all": "All",
   "time.date.from": "Start Date",
-  "time.date.to": "End Date"
+  "time.date.to": "End Date",
+  "time.quick.filter": "Quick Filter"
 }

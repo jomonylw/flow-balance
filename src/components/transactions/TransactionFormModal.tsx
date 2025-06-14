@@ -8,6 +8,7 @@ import TextAreaField from '@/components/ui/TextAreaField'
 import AuthButton from '@/components/ui/AuthButton'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useUserData } from '@/contexts/UserDataContext'
 
 import {
   Account,
@@ -46,17 +47,26 @@ export default function TransactionFormModal({
 }: TransactionFormModalProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { tags: userTags } = useUserData()
+
+  // 简化表单数据结构 - 减少用户需要填写的字段
   const [formData, setFormData] = useState({
     accountId: '',
     categoryId: '',
-    currencyCode: currencies && currencies.length > 0 ? currencies[0].code : 'USD',
+    currencyCode: '',
     type: 'EXPENSE' as 'INCOME' | 'EXPENSE',
     amount: '',
     description: '',
-    notes: '',
     date: new Date().toISOString().split('T')[0],
+    notes: '',
     tagIds: [] as string[]
   })
+
+  // 获取最新的标签颜色信息
+  const getUpdatedTagColor = (tagId: string): string | undefined => {
+    const userTag = userTags.find(tag => tag.id === tagId)
+    return userTag?.color
+  }
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -761,7 +771,7 @@ export default function TransactionFormModal({
                   onChange={(e) => setNewTagName(e.target.value)}
                   placeholder={t('transaction.modal.tag.name.placeholder')}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  onKeyPress={(e) => {
+                  onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
                       handleCreateTag()
@@ -786,27 +796,32 @@ export default function TransactionFormModal({
           {/* 现有标签选择 */}
           {availableTags.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {availableTags.map(tag => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => handleTagToggle(tag.id)}
-                  className={`
-                    inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors touch-manipulation
-                    ${formData.tagIds.includes(tag.id)
-                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                      : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
-                    }
-                  `}
-                  style={tag.color && formData.tagIds.includes(tag.id) ? {
-                    backgroundColor: tag.color + '20',
-                    color: tag.color,
-                    borderColor: tag.color + '40'
-                  } : {}}
-                >
-                  {tag.name}
-                </button>
-              ))}
+              {availableTags.map(tag => {
+                // 从 UserDataContext 获取标签颜色信息
+                const currentColor = getUpdatedTagColor(tag.id)
+
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => handleTagToggle(tag.id)}
+                    className={`
+                      inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors touch-manipulation
+                      ${formData.tagIds.includes(tag.id)
+                        ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                        : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                      }
+                    `}
+                    style={currentColor && formData.tagIds.includes(tag.id) ? {
+                      backgroundColor: currentColor + '20',
+                      color: currentColor,
+                      borderColor: currentColor + '40'
+                    } : {}}
+                  >
+                    {tag.name}
+                  </button>
+                )
+              })}
             </div>
           )}
 

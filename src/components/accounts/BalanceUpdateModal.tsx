@@ -65,9 +65,25 @@ export default function BalanceUpdateModal({
       if (editingTransaction) {
         // 编辑模式：从现有交易记录加载数据
         const transactionDate = new Date(editingTransaction.date).toISOString().split('T')[0]
+        const editCurrencyCode = editingTransaction.currencyCode || account.currencyCode || currencyCode
+
+        console.log('编辑模式表单初始化:', {
+          editingTransaction: {
+            id: editingTransaction.id,
+            amount: editingTransaction.amount,
+            currencyCode: editingTransaction.currencyCode,
+            date: editingTransaction.date
+          },
+          account: {
+            currencyCode: account.currencyCode,
+            currency: account.currency
+          },
+          finalCurrencyCode: editCurrencyCode
+        })
+
         setFormData({
           newBalance: editingTransaction.amount.toString(),
-          currencyCode: editingTransaction.currencyCode,
+          currencyCode: editCurrencyCode,
           updateDate: transactionDate,
           notes: editingTransaction.notes || ''
         })
@@ -84,6 +100,25 @@ export default function BalanceUpdateModal({
       setErrors({})
     }
   }, [isOpen, currentBalance, currencyCode, editingTransaction, account.currencyCode])
+
+  // 额外的useEffect确保编辑模式下币种值正确设置
+  useEffect(() => {
+    if (isOpen && editingTransaction && (!formData.currencyCode || formData.currencyCode === '')) {
+      const correctCurrencyCode = editingTransaction.currencyCode || account.currencyCode || currencyCode
+      console.log('修正编辑模式下的币种值:', {
+        current: formData.currencyCode,
+        correct: correctCurrencyCode,
+        editingTransaction: editingTransaction.currencyCode,
+        account: account.currencyCode,
+        fallback: currencyCode
+      })
+
+      setFormData(prev => ({
+        ...prev,
+        currencyCode: correctCurrencyCode
+      }))
+    }
+  }, [isOpen, editingTransaction, formData.currencyCode, account.currencyCode, currencyCode])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -104,7 +139,8 @@ export default function BalanceUpdateModal({
       newErrors.newBalance = '请输入有效的数字'
     }
 
-    if (!formData.currencyCode) {
+    // 更严格的币种验证
+    if (!formData.currencyCode || formData.currencyCode.trim() === '') {
       newErrors.currencyCode = '请选择币种'
     }
 
@@ -112,13 +148,43 @@ export default function BalanceUpdateModal({
       newErrors.updateDate = '请选择更新日期'
     }
 
+    // 添加详细的调试信息
+    console.log('前端表单验证详细信息:', {
+      formData: {
+        ...formData,
+        currencyCodeType: typeof formData.currencyCode,
+        currencyCodeLength: formData.currencyCode?.length,
+        currencyCodeValue: `"${formData.currencyCode}"`
+      },
+      account: {
+        id: account.id,
+        name: account.name,
+        currencyCode: account.currencyCode,
+        currency: account.currency
+      },
+      availableCurrencies: availableCurrencies?.map(c => c.code),
+      currencyOptions: currencyOptions,
+      errors: newErrors,
+      editingTransaction: editingTransaction ? {
+        id: editingTransaction.id,
+        currencyCode: editingTransaction.currencyCode
+      } : null
+    })
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
+    // 在提交前再次确保币种值正确
+    if (!formData.currencyCode && account.currencyCode) {
+      console.log('提交前修正币种:', account.currencyCode)
+      setFormData(prev => ({ ...prev, currencyCode: account.currencyCode! }))
+      return
+    }
+
     if (!validateForm()) {
       return
     }
@@ -128,22 +194,41 @@ export default function BalanceUpdateModal({
     try {
       if (editingTransaction) {
         // 编辑模式：更新现有交易
+        const requestData = {
+          accountId: account.id,
+          categoryId: account.category.id,
+          currencyCode: formData.currencyCode,
+          type: editingTransaction.type,
+          amount: parseFloat(formData.newBalance),
+          description: `${t('balance.update.modal.balance.update')} - ${account.name}`,
+          notes: formData.notes || t('balance.update.modal.balance.record.update'),
+          date: formData.updateDate,
+          tagIds: [] // 余额更新记录通常不需要标签
+        }
+
+        // 添加调试信息
+        console.log('编辑余额记录提交数据:', {
+          requestData,
+          editingTransaction: {
+            id: editingTransaction.id,
+            type: editingTransaction.type,
+            currencyCode: editingTransaction.currencyCode,
+            amount: editingTransaction.amount
+          },
+          account: {
+            id: account.id,
+            name: account.name,
+            currencyCode: account.currencyCode,
+            currency: account.currency
+          }
+        })
+
         const response = await fetch(`/api/transactions/${editingTransaction.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            accountId: account.id,
-            categoryId: account.category.id,
-            currencyCode: formData.currencyCode,
-            type: editingTransaction.type,
-            amount: parseFloat(formData.newBalance),
-            description: `${t('balance.update.modal.balance.update')} - ${account.name}`,
-            notes: formData.notes || t('balance.update.modal.balance.record.update'),
-            date: formData.updateDate,
-            tagIds: [] // 余额更新记录通常不需要标签
-          })
+          body: JSON.stringify(requestData)
         })
 
         const result = await response.json()
@@ -227,12 +312,50 @@ export default function BalanceUpdateModal({
     label: `${currency.code} - ${currency.name}`
   }))
 
+  // 如果账户有货币限制但在可用货币列表中找不到，添加一个临时选项
+  if (account.currencyCode && currencyOptions.length === 0) {
+    currencyOptions.push({
+      value: account.currencyCode,
+      label: `${account.currencyCode} - ${account.currency?.name || account.currencyCode}`
+    })
+  }
+
+  // 在编辑模式下，如果交易的币种不在选项中，也要添加
+  if (editingTransaction && editingTransaction.currencyCode &&
+      !currencyOptions.find(opt => opt.value === editingTransaction.currencyCode)) {
+    const transactionCurrency = currencies.find(c => c.code === editingTransaction.currencyCode)
+    currencyOptions.push({
+      value: editingTransaction.currencyCode,
+      label: `${editingTransaction.currencyCode} - ${transactionCurrency?.name || editingTransaction.currencyCode}`
+    })
+  }
+
   const selectedCurrency = (currencies || []).find(c => c.code === formData.currencyCode)
   const currencySymbol = selectedCurrency?.symbol || '$'
 
   // 当前余额显示的货币符号（基于传入的 currencyCode 参数）
   const currentBalanceCurrency = (currencies || []).find(c => c.code === currencyCode)
   const currentBalanceCurrencySymbol = currentBalanceCurrency?.symbol || '$'
+
+  // 组件渲染时的调试信息
+  console.log('BalanceUpdateModal 渲染调试信息:', {
+    isOpen,
+    editingTransaction: editingTransaction ? {
+      id: editingTransaction.id,
+      currencyCode: editingTransaction.currencyCode,
+      amount: editingTransaction.amount
+    } : null,
+    formData,
+    account: {
+      id: account.id,
+      name: account.name,
+      currencyCode: account.currencyCode,
+      currency: account.currency
+    },
+    currencyOptions,
+    availableCurrencies: availableCurrencies?.map(c => c.code),
+    allCurrencies: currencies?.map(c => c.code)
+  })
 
   return (
     <Modal
@@ -274,7 +397,7 @@ export default function BalanceUpdateModal({
           <SelectField
             name="currencyCode"
             label={t('balance.update.modal.currency')}
-            value={formData.currencyCode}
+            value={formData.currencyCode || ''}
             onChange={handleChange}
             options={currencyOptions}
             error={errors.currencyCode}
@@ -282,6 +405,12 @@ export default function BalanceUpdateModal({
             help={account.currencyCode ? `此账户限制使用 ${account.currency?.name} (${account.currencyCode})` : undefined}
             required
           />
+          {/* 调试信息显示 */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-2 text-xs text-gray-500">
+              调试: currencyCode="{formData.currencyCode}", options={currencyOptions.length}, disabled={!!account.currencyCode}
+            </div>
+          )}
         </div>
 
         {/* 新余额和更新日期 */}

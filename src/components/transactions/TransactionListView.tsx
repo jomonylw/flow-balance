@@ -8,21 +8,14 @@ import TransactionStats from './TransactionStats'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useUserData } from '@/contexts/UserDataContext'
 import {
-  Account,
-  Category,
-  Currency,
-  Tag,
   Transaction,
   TransactionFormData,
   User
 } from '@/types/transaction'
 
 interface TransactionListViewProps {
-  accounts: Account[]
-  categories: Category[]
-  currencies: Currency[]
-  tags: Tag[]
   user: User
 }
 
@@ -33,17 +26,15 @@ interface Filters {
   dateFrom: string
   dateTo: string
   search: string
+  tagIds: string[]
 }
 
 export default function TransactionListView({
-  accounts,
-  categories,
-  currencies,
-  tags,
   user
 }: TransactionListViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { accounts, categories, currencies, tags } = useUserData()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
@@ -62,7 +53,8 @@ export default function TransactionListView({
     type: '',
     dateFrom: '',
     dateTo: '',
-    search: ''
+    search: '',
+    tagIds: []
   })
 
   const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
@@ -73,7 +65,8 @@ export default function TransactionListView({
     try {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
-        limit: pagination.limit.toString()
+        limit: pagination.limit.toString(),
+        excludeBalanceAdjustment: 'true' // 通用交易页面排除余额调整记录
       })
 
       // 添加过滤条件
@@ -83,6 +76,7 @@ export default function TransactionListView({
       if (filters.dateFrom) params.append('dateFrom', filters.dateFrom)
       if (filters.dateTo) params.append('dateTo', filters.dateTo)
       if (filters.search) params.append('search', filters.search)
+      if (filters.tagIds && filters.tagIds.length > 0) params.append('tagIds', filters.tagIds.join(','))
 
       const response = await fetch(`/api/transactions?${params}`)
 
@@ -218,8 +212,6 @@ export default function TransactionListView({
         <TransactionFilters
           filters={filters}
           onFilterChange={handleFilterChange}
-          accounts={accounts}
-          categories={categories}
         />
       </div>
 

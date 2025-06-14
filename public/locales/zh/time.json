@@ -12,5 +12,6 @@
   "time.last.12.months": "近一年",
   "time.all": "全部",
   "time.date.from": "开始日期",
-  "time.date.to": "结束日期"
+  "time.date.to": "结束日期",
+  "time.quick.filter": "快速筛选"
 }
