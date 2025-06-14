@@ -11,6 +11,7 @@ import TopCategoryModal from '@/components/ui/TopCategoryModal'
 import TranslationLoader from '@/components/ui/TranslationLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { publishCategoryCreate } from '@/utils/DataUpdateManager'
+import { useSidebarWidth } from '@/hooks/useSidebarWidth'
 
 
 interface NavigationSidebarProps {
@@ -27,6 +28,16 @@ export default function NavigationSidebar({
   const [showAddTopCategoryModal, setShowAddTopCategoryModal] = useState(false)
   const [areAllCategoriesExpanded, setAreAllCategoriesExpanded] = useState(false)
   const categoryTreeRef = useRef<OptimizedCategoryAccountTreeRef>(null)
+  const sidebarRef = useRef<HTMLDivElement>(null)
+
+  // 侧边栏宽度管理
+  const {
+    width,
+    isDragging,
+    startDragging,
+    stopDragging,
+    handleDrag
+  } = useSidebarWidth()
 
   const handleAddTopCategory = () => {
     setShowAddTopCategoryModal(true)
@@ -43,6 +54,36 @@ export default function NavigationSidebar({
       }
     }
   }
+
+  // 拖拽事件处理
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging && sidebarRef.current) {
+        const rect = sidebarRef.current.getBoundingClientRect()
+        handleDrag(e.clientX, rect)
+      }
+    }
+
+    const handleMouseUp = () => {
+      if (isDragging) {
+        stopDragging()
+      }
+    }
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isDragging, handleDrag, stopDragging])
 
   // 定期检查展开状态
   useEffect(() => {
@@ -130,10 +171,14 @@ export default function NavigationSidebar({
         </div>
       }
     >
-      <div className={`
-        ${isMobile ? 'w-full' : 'w-80'}
-        bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full
-      `}>
+      <div
+        ref={sidebarRef}
+        className={`
+          ${isMobile ? 'w-full' : ''}
+          bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full relative
+        `}
+        style={!isMobile ? { width: `${width}px` } : undefined}
+      >
       {/* 移动端顶部间距 */}
       {isMobile && <div className="h-16" />}
 
@@ -233,6 +278,18 @@ export default function NavigationSidebar({
           </div>
         </div>
       </div>
+
+      {/* 拖拽手柄 - 仅在桌面端显示 */}
+      {!isMobile && (
+        <div
+          className="absolute top-0 right-0 w-3 h-full cursor-col-resize group z-10"
+          onMouseDown={startDragging}
+          title="拖拽调整侧边栏宽度"
+        >
+          {/* hover时的右边缘高亮 - 覆盖整个右侧边缘 */}
+          <div className="absolute right-0 top-0 w-1 h-full bg-blue-400 dark:bg-blue-500 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"></div>
+        </div>
+      )}
 
       {/* 添加顶级分类模态框 */}
       <TopCategoryModal
