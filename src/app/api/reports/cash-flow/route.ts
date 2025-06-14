@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
+import { convertMultipleCurrencies } from '@/lib/currency-conversion'
 
 /**
  * 个人现金流量表 API
@@ -181,9 +182,81 @@ export async function GET(request: NextRequest) {
       const operatingNet = cashFlow.operatingActivities.net[currencyCode] || 0
       const investingNet = cashFlow.investingActivities.net[currencyCode] || 0
       const financingNet = cashFlow.financingActivities.net[currencyCode] || 0
-      
+
       cashFlow.netCashFlow[currencyCode] = operatingNet + investingNet + financingNet
     })
+
+    // 货币转换到本位币
+    let baseCurrencyTotals = {
+      operatingCashFlow: 0,
+      investingCashFlow: 0,
+      financingCashFlow: 0,
+      netCashFlow: 0
+    }
+
+    try {
+      // 准备转换数据
+      const operatingAmounts = Object.entries(cashFlow.operatingActivities.net)
+        .filter(([_, amount]) => Math.abs(amount) > 0.01)
+        .map(([currencyCode, amount]) => ({
+          amount: Math.abs(amount),
+          currency: currencyCode
+        }))
+
+      const investingAmounts = Object.entries(cashFlow.investingActivities.net)
+        .filter(([_, amount]) => Math.abs(amount) > 0.01)
+        .map(([currencyCode, amount]) => ({
+          amount: Math.abs(amount),
+          currency: currencyCode
+        }))
+
+      const financingAmounts = Object.entries(cashFlow.financingActivities.net)
+        .filter(([_, amount]) => Math.abs(amount) > 0.01)
+        .map(([currencyCode, amount]) => ({
+          amount: Math.abs(amount),
+          currency: currencyCode
+        }))
+
+      // 执行货币转换
+      const [operatingConversions, investingConversions, financingConversions] = await Promise.all([
+        convertMultipleCurrencies(user.id, operatingAmounts, baseCurrency.code, periodEnd),
+        convertMultipleCurrencies(user.id, investingAmounts, baseCurrency.code, periodEnd),
+        convertMultipleCurrencies(user.id, financingAmounts, baseCurrency.code, periodEnd)
+      ])
+
+      // 计算本位币总计（保持正负号）
+      baseCurrencyTotals.operatingCashFlow = operatingConversions.reduce((sum, result, index) => {
+        const originalAmount = Object.values(cashFlow.operatingActivities.net)[index] || 0
+        const convertedAmount = result.success ? result.convertedAmount : result.originalAmount
+        return sum + (originalAmount >= 0 ? convertedAmount : -convertedAmount)
+      }, 0)
+
+      baseCurrencyTotals.investingCashFlow = investingConversions.reduce((sum, result, index) => {
+        const originalAmount = Object.values(cashFlow.investingActivities.net)[index] || 0
+        const convertedAmount = result.success ? result.convertedAmount : result.originalAmount
+        return sum + (originalAmount >= 0 ? convertedAmount : -convertedAmount)
+      }, 0)
+
+      baseCurrencyTotals.financingCashFlow = financingConversions.reduce((sum, result, index) => {
+        const originalAmount = Object.values(cashFlow.financingActivities.net)[index] || 0
+        const convertedAmount = result.success ? result.convertedAmount : result.originalAmount
+        return sum + (originalAmount >= 0 ? convertedAmount : -convertedAmount)
+      }, 0)
+
+      baseCurrencyTotals.netCashFlow = baseCurrencyTotals.operatingCashFlow +
+                                      baseCurrencyTotals.investingCashFlow +
+                                      baseCurrencyTotals.financingCashFlow
+
+    } catch (error) {
+      console.error('货币转换失败:', error)
+      // 如果转换失败，使用原始数据（仅限本位币）
+      baseCurrencyTotals = {
+        operatingCashFlow: cashFlow.operatingActivities.net[baseCurrency.code] || 0,
+        investingCashFlow: cashFlow.investingActivities.net[baseCurrency.code] || 0,
+        financingCashFlow: cashFlow.financingActivities.net[baseCurrency.code] || 0,
+        netCashFlow: cashFlow.netCashFlow[baseCurrency.code] || 0
+      }
+    }
 
     return successResponse({
       cashFlow,
@@ -196,7 +269,8 @@ export async function GET(request: NextRequest) {
         operatingCashFlow: cashFlow.operatingActivities.net,
         investingCashFlow: cashFlow.investingActivities.net,
         financingCashFlow: cashFlow.financingActivities.net,
-        netCashFlow: cashFlow.netCashFlow
+        netCashFlow: cashFlow.netCashFlow,
+        baseCurrencyTotals
       }
     })
   } catch (error) {

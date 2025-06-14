@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
 import { AccountType } from '@prisma/client'
+import { convertMultipleCurrencies } from '@/lib/currency-conversion'
 
 /**
  * 个人现金流量表 API
@@ -140,7 +141,7 @@ export async function GET(request: NextRequest) {
 
     // 计算净现金流
     for (const currencyCode in currencyTotals) {
-      currencyTotals[currencyCode].netCashFlow = 
+      currencyTotals[currencyCode].netCashFlow =
         currencyTotals[currencyCode].totalIncome - currencyTotals[currencyCode].totalExpense
     }
 
@@ -151,6 +152,59 @@ export async function GET(request: NextRequest) {
     // 排序：按总金额降序
     incomeAccounts.sort((a, b) => b.totalAmount - a.totalAmount)
     expenseAccounts.sort((a, b) => b.totalAmount - a.totalAmount)
+
+    // 货币转换到本位币
+    let baseCurrencyTotals = {
+      totalIncome: 0,
+      totalExpense: 0,
+      netCashFlow: 0
+    }
+
+    try {
+      // 准备转换数据
+      const incomeAmounts = Object.entries(currencyTotals)
+        .filter(([_, total]) => total.totalIncome > 0)
+        .map(([currencyCode, total]) => ({
+          amount: total.totalIncome,
+          currency: currencyCode
+        }))
+
+      const expenseAmounts = Object.entries(currencyTotals)
+        .filter(([_, total]) => total.totalExpense > 0)
+        .map(([currencyCode, total]) => ({
+          amount: total.totalExpense,
+          currency: currencyCode
+        }))
+
+      // 执行货币转换
+      const [incomeConversions, expenseConversions] = await Promise.all([
+        convertMultipleCurrencies(user.id, incomeAmounts, baseCurrency.code),
+        convertMultipleCurrencies(user.id, expenseAmounts, baseCurrency.code)
+      ])
+
+      // 计算本位币总计
+      baseCurrencyTotals.totalIncome = incomeConversions.reduce((sum, result) =>
+        sum + (result.success ? result.convertedAmount : result.originalAmount), 0
+      )
+
+      baseCurrencyTotals.totalExpense = expenseConversions.reduce((sum, result) =>
+        sum + (result.success ? result.convertedAmount : result.originalAmount), 0
+      )
+
+      baseCurrencyTotals.netCashFlow = baseCurrencyTotals.totalIncome - baseCurrencyTotals.totalExpense
+
+    } catch (error) {
+      console.error('货币转换失败:', error)
+      // 如果转换失败，使用原始数据（仅限本位币）
+      const baseCurrencyData = currencyTotals[baseCurrency.code]
+      if (baseCurrencyData) {
+        baseCurrencyTotals = {
+          totalIncome: baseCurrencyData.totalIncome,
+          totalExpense: baseCurrencyData.totalExpense,
+          netCashFlow: baseCurrencyData.netCashFlow
+        }
+      }
+    }
 
     const response = {
       period: {
@@ -164,6 +218,7 @@ export async function GET(request: NextRequest) {
       },
       summary: {
         currencyTotals,
+        baseCurrencyTotals,
         totalTransactions: transactions.length
       }
     }

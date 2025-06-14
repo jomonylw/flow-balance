@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface MissingRateInfo {
   fromCurrency: string
@@ -25,6 +26,7 @@ interface ExchangeRateAlertProps {
 
 export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertProps) {
   const { t } = useLanguage()
+  const { resolvedTheme } = useTheme()
   const [missingRates, setMissingRates] = useState<MissingRateInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [dismissed, setDismissed] = useState(false)
@@ -66,7 +68,9 @@ export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertP
   }
 
   return (
-    <div className={`bg-yellow-50 border-l-4 border-yellow-400 p-4 ${className}`}>
+    <div className={`border-l-4 border-yellow-400 p-4 ${className} ${
+      resolvedTheme === 'dark' ? 'bg-yellow-900/20' : 'bg-yellow-50'
+    }`}>
       <div className="flex">
         <div className="flex-shrink-0">
           <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -74,10 +78,10 @@ export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertP
           </svg>
         </div>
         <div className="ml-3 flex-1">
-          <h3 className="text-sm font-medium text-yellow-800">
+          <h3 className={`text-sm font-medium ${resolvedTheme === 'dark' ? 'text-yellow-300' : 'text-yellow-800'}`}>
             {t('exchange.rate.alert.title')}
           </h3>
-          <div className="mt-2 text-sm text-yellow-700">
+          <div className={`mt-2 text-sm ${resolvedTheme === 'dark' ? 'text-yellow-200' : 'text-yellow-700'}`}>
             <p>
               {t('exchange.rate.alert.description', { count: missingRates.length })}
             </p>
@@ -89,7 +93,7 @@ export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertP
                 </li>
               ))}
               {missingRates.length > 3 && (
-                <li className="text-yellow-600">
+                <li className={resolvedTheme === 'dark' ? 'text-yellow-300' : 'text-yellow-600'}>
                   {t('exchange.rate.alert.more.pairs', { count: missingRates.length - 3 })}
                 </li>
               )}
@@ -98,13 +102,21 @@ export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertP
           <div className="mt-4 flex space-x-3">
             <Link
               href="/settings?tab=exchange-rates"
-              className="bg-yellow-100 text-yellow-800 px-3 py-2 rounded-md text-sm font-medium hover:bg-yellow-200 transition-colors"
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                resolvedTheme === 'dark'
+                  ? 'bg-yellow-800 text-yellow-100 hover:bg-yellow-700'
+                  : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+              }`}
             >
               {t('exchange.rate.alert.setup.now')}
             </Link>
             <button
               onClick={handleDismiss}
-              className="text-yellow-700 text-sm font-medium hover:text-yellow-800"
+              className={`text-sm font-medium transition-colors ${
+                resolvedTheme === 'dark'
+                  ? 'text-yellow-200 hover:text-yellow-100'
+                  : 'text-yellow-700 hover:text-yellow-800'
+              }`}
             >
               {t('exchange.rate.alert.ignore')}
             </button>
@@ -114,7 +126,11 @@ export default function ExchangeRateAlert({ className = '' }: ExchangeRateAlertP
           <div className="-mx-1.5 -my-1.5">
             <button
               onClick={handleDismiss}
-              className="inline-flex bg-yellow-50 rounded-md p-1.5 text-yellow-400 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-yellow-50 focus:ring-yellow-600"
+              className={`inline-flex rounded-md p-1.5 text-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-600 ${
+                resolvedTheme === 'dark'
+                  ? 'bg-yellow-900/20 hover:bg-yellow-800/30 focus:ring-offset-yellow-900'
+                  : 'bg-yellow-50 hover:bg-yellow-100 focus:ring-offset-yellow-50'
+              }`}
             >
               <span className="sr-only">{t('exchange.rate.alert.close')}</span>
               <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

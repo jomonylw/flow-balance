@@ -9,6 +9,7 @@ import TagFormModal from '@/components/ui/TagFormModal'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface QuickFlowTransactionModalProps {
   isOpen: boolean
@@ -28,6 +29,7 @@ export default function QuickFlowTransactionModal({
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const { accounts, currencies, tags: userTags, getBaseCurrency } = useUserData()
+  const { resolvedTheme } = useTheme()
 
   // 表单数据
   const [formData, setFormData] = useState({
@@ -223,20 +225,22 @@ export default function QuickFlowTransactionModal({
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           {errors.general && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className={`border border-red-200 text-red-700 px-4 py-3 rounded ${
+              resolvedTheme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'
+            }`}>
               {errors.general}
             </div>
           )}
 
           {/* 交易类型显示 */}
-          <div className="bg-gray-50 p-4 rounded-lg">
+          <div className={`p-4 rounded-lg ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
             <div className="flex items-center space-x-2">
               <span className="text-lg">{accountTypeInfo.icon}</span>
               <span className={`font-medium ${accountTypeInfo.color}`}>
                 {accountTypeInfo.label}交易
               </span>
             </div>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className={`text-sm mt-1 ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
               请选择{accountTypeInfo.label}账户并填写交易信息
             </p>
           </div>
@@ -255,19 +259,21 @@ export default function QuickFlowTransactionModal({
 
           {/* 显示选中账户的货币信息 */}
           {selectedAccount && (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+            <div className={`border border-blue-200 rounded-md p-3 ${
+              resolvedTheme === 'dark' ? 'bg-blue-900/20' : 'bg-blue-50'
+            }`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm text-blue-700">
+                  <div className={`text-sm ${resolvedTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>
                     已选择账户：<span className="font-medium">{selectedAccount.name}</span>
                   </div>
-                  <div className="text-sm text-blue-600">
+                  <div className={`text-sm ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
                     分类：{selectedAccount.category.name}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm text-blue-500">货币</div>
-                  <div className="font-medium text-blue-700">
+                  <div className={`text-sm ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`}>货币</div>
+                  <div className={`font-medium ${resolvedTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>
                     {currencyInfo?.symbol} {currencyInfo?.name}
                   </div>
                 </div>
@@ -313,7 +319,7 @@ export default function QuickFlowTransactionModal({
 
           {/* 标签选择 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block text-sm font-medium mb-2 ${resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
               标签（可选）
             </label>
             <div className="space-y-3">
@@ -359,7 +365,9 @@ export default function QuickFlowTransactionModal({
 
               {/* 可选标签列表 */}
               {userTags.length > 0 && (
-                <div className="border border-gray-200 rounded-md p-3 max-h-32 overflow-y-auto">
+                <div className={`border rounded-md p-3 max-h-32 overflow-y-auto ${
+                  resolvedTheme === 'dark' ? 'border-gray-600' : 'border-gray-200'
+                }`}>
                   <div className="flex flex-wrap gap-2">
                     {userTags.map(tag => {
                       // 从 UserDataContext 获取标签颜色信息
@@ -372,7 +380,7 @@ export default function QuickFlowTransactionModal({
                           onClick={() => handleTagToggle(tag.id)}
                           className={`
                             inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors
-                            ${formData.tagIds.includes(tag.id) ? 'ring-2 ring-offset-1' : 'hover:bg-gray-100'}
+                            ${formData.tagIds.includes(tag.id) ? 'ring-2 ring-offset-1' : (resolvedTheme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}
                           `}
                           style={formData.tagIds.includes(tag.id) && currentColor ? {
                             backgroundColor: currentColor + '20',
@@ -397,7 +405,7 @@ export default function QuickFlowTransactionModal({
               )}
 
               {/* 创建新标签 */}
-              <div className="border-t border-gray-200 pt-3">
+              <div className={`border-t pt-3 ${resolvedTheme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
                 <button
                   type="button"
                   onClick={() => setShowTagFormModal(true)}
@@ -414,7 +422,7 @@ export default function QuickFlowTransactionModal({
 
           {/* 备注 */}
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="notes" className={`block text-sm font-medium mb-1 ${resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
               备注（可选）
             </label>
             <textarea
@@ -423,17 +431,25 @@ export default function QuickFlowTransactionModal({
               value={formData.notes}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                resolvedTheme === 'dark'
+                  ? 'bg-gray-800 border-gray-600 text-gray-100'
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
               placeholder="添加备注信息..."
             />
           </div>
 
           {/* 操作按钮 */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          <div className={`flex justify-end space-x-3 pt-4 border-t ${resolvedTheme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className={`px-4 py-2 text-sm font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                resolvedTheme === 'dark'
+                  ? 'text-gray-300 bg-gray-800 hover:bg-gray-700'
+                  : 'text-gray-700 bg-white hover:bg-gray-50'
+              }`}
             >
               取消
             </button>

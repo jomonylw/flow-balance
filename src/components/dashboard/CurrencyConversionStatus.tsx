@@ -1,6 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Currency {
   code: string
@@ -33,6 +34,7 @@ export default function CurrencyConversionStatus({
   className = ''
 }: CurrencyConversionStatusProps) {
   const { t } = useLanguage()
+  const { resolvedTheme } = useTheme()
 
   if (conversionDetails.length === 0) {
     return null
@@ -42,13 +44,13 @@ export default function CurrencyConversionStatus({
   const failedConversions = conversionDetails.filter(c => !c.success)
 
   return (
-    <div className={`bg-white rounded-lg shadow p-4 ${className}`}>
+    <div className={`rounded-lg shadow p-4 ${className} ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-900">
+        <h3 className={`text-sm font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
           💱 {t('currency.conversion.status')}
         </h3>
         <div className="flex items-center space-x-2">
-          <span className="text-xs text-gray-500">
+          <span className={`text-xs ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
             {t('currency.base.currency')}: {baseCurrency.symbol} {baseCurrency.name}
           </span>
         </div>

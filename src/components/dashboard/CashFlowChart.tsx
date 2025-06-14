@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface CashFlowChartProps {
   data: {
@@ -24,6 +25,7 @@ interface CashFlowChartProps {
 
 export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
   const { t } = useLanguage()
+  const { resolvedTheme } = useTheme()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
 
@@ -32,7 +34,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
 
     // 初始化图表
     if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current)
+      chartInstance.current = echarts.init(chartRef.current, resolvedTheme === 'dark' ? 'dark' : null)
     }
 
     const option = {
@@ -182,7 +184,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
     return () => {
       window.removeEventListener('resize', handleResize)
     }
-  }, [data, currency])
+  }, [data, currency, resolvedTheme])
 
   useEffect(() => {
     return () => {
@@ -194,7 +196,11 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
   }, [])
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+    <div className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+      <div className="mb-4">
+        <h3 className={`text-base sm:text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{data.title}</h3>
+        <p className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('chart.transaction.flow.trend')}</p>
+      </div>
       <div
         ref={chartRef}
         style={{ width: '100%', height: window.innerWidth < 768 ? '300px' : '400px' }}

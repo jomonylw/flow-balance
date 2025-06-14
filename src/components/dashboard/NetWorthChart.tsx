@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as echarts from 'echarts'
 import { useIsMobile, useResponsive } from '@/hooks/useResponsive'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { getChartHeight } from '@/lib/responsive'
 
 interface NetWorthChartProps {
@@ -28,6 +29,7 @@ interface NetWorthChartProps {
 
 export default function NetWorthChart({ data, currency, loading = false, error }: NetWorthChartProps) {
   const { t } = useLanguage()
+  const { resolvedTheme } = useTheme()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
   const [chartError, setChartError] = useState<string | null>(null)
@@ -68,7 +70,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
 
       // 初始化图表
       if (!chartInstance.current) {
-        chartInstance.current = echarts.init(chartRef.current)
+        chartInstance.current = echarts.init(chartRef.current, resolvedTheme === 'dark' ? 'dark' : null)
       }
 
     const option = {
@@ -193,7 +195,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
       console.error('图表渲染错误:', error)
       setChartError(error instanceof Error ? error.message : '图表渲染失败')
     }
-  }, [data, currency, loading])
+  }, [data, currency, loading, resolvedTheme, isMobile, chartHeight])
 
   useEffect(() => {
     return () => {
@@ -207,11 +209,11 @@ export default function NetWorthChart({ data, currency, loading = false, error }
   // 渲染加载状态
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+      <div className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex items-center justify-center h-[300px] sm:h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-sm sm:text-base text-gray-500">正在加载图表数据...</p>
+            <p className={`text-sm sm:text-base ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>正在加载图表数据...</p>
           </div>
         </div>
       </div>
@@ -221,7 +223,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
   // 渲染错误状态
   if (error || chartError) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex items-center justify-center h-[400px]">
           <div className="text-center">
             <div className="text-red-500 mb-4">
@@ -229,8 +231,8 @@ export default function NetWorthChart({ data, currency, loading = false, error }
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">图表加载失败</h3>
-            <p className="text-sm text-gray-500 mb-4">{error || chartError}</p>
+            <h3 className={`text-lg font-medium mb-2 ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>图表加载失败</h3>
+            <p className={`text-sm mb-4 ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{error || chartError}</p>
             <button
               onClick={() => {
                 setChartError(null)
@@ -252,16 +254,16 @@ export default function NetWorthChart({ data, currency, loading = false, error }
   // 渲染空数据状态
   if (!data || !data.series || data.series.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex items-center justify-center h-[400px]">
           <div className="text-center">
-            <div className="text-gray-400 mb-4">
+            <div className={`mb-4 ${resolvedTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
               <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('chart.no.data')}</h3>
-            <p className="text-sm text-gray-500">{t('dashboard.add.accounts.transactions.first')}</p>
+            <h3 className={`text-lg font-medium mb-2 ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('chart.no.data')}</h3>
+            <p className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.add.accounts.transactions.first')}</p>
           </div>
         </div>
       </div>
@@ -269,10 +271,10 @@ export default function NetWorthChart({ data, currency, loading = false, error }
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+    <div className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
       <div className="mb-4">
-        <h3 className="text-base sm:text-lg font-medium text-gray-900">{data.title}</h3>
-        <p className="text-xs sm:text-sm text-gray-500">{t('chart.net.worth.trend.description')}</p>
+        <h3 className={`text-base sm:text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{data.title}</h3>
+        <p className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('chart.net.worth.trend.description')}</p>
       </div>
       <div
         ref={chartRef}

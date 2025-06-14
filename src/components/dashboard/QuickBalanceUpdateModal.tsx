@@ -7,6 +7,7 @@ import SelectField from '@/components/ui/SelectField'
 import AuthButton from '@/components/ui/AuthButton'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { publishBalanceUpdate } from '@/utils/DataUpdateManager'
 
 interface QuickBalanceUpdateModalProps {
@@ -24,6 +25,7 @@ export default function QuickBalanceUpdateModal({
 }: QuickBalanceUpdateModalProps) {
   const { showSuccess, showError } = useToast()
   const { accounts, currencies, getBaseCurrency, accountBalances, fetchBalances } = useUserData()
+  const { resolvedTheme } = useTheme()
 
   // 从context获取基础货币
   const baseCurrency = getBaseCurrency() || { code: 'CNY', symbol: '¥', name: '人民币' }
@@ -220,7 +222,9 @@ export default function QuickBalanceUpdateModal({
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {errors.general && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className={`border border-red-200 rounded-md p-4 ${
+            resolvedTheme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'
+          }`}>
             <div className="text-sm text-red-600">{errors.general}</div>
           </div>
         )}
@@ -242,19 +246,19 @@ export default function QuickBalanceUpdateModal({
         {/* 显示选中账户信息 */}
         {selectedAccount && (
           <div className={`p-4 rounded-lg border ${
-            selectedAccount.category.type === 'ASSET' 
-              ? 'bg-blue-50 border-blue-200' 
-              : 'bg-orange-50 border-orange-200'
+            selectedAccount.category.type === 'ASSET'
+              ? (resolvedTheme === 'dark' ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200')
+              : (resolvedTheme === 'dark' ? 'bg-orange-900/20 border-orange-700' : 'bg-orange-50 border-orange-200')
           }`}>
             <div className="flex items-center">
               <div className={`w-3 h-3 rounded-full mr-3 ${
                 selectedAccount.category.type === 'ASSET' ? 'bg-blue-500' : 'bg-orange-500'
               }`}></div>
               <div>
-                <p className="font-medium text-gray-900">
+                <p className={`font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                   {selectedAccount.category.type === 'ASSET' ? '资产账户' : '负债账户'} • 存量数据
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                   当前余额: {currencySymbol}{currentBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
@@ -275,7 +279,7 @@ export default function QuickBalanceUpdateModal({
             disabled={!!selectedAccount} // 选择账户后币种不可更改
           />
           {selectedAccount && (
-            <p className="mt-1 text-sm text-gray-500">
+            <p className={`mt-1 text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
               此账户只能使用 {currencies.find(c => c.code === selectedAccount.currencyCode)?.name} ({selectedAccount.currencyCode})
             </p>
           )}
@@ -322,7 +326,11 @@ export default function QuickBalanceUpdateModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className={`px-4 py-2 text-sm font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              resolvedTheme === 'dark'
+                ? 'text-gray-300 bg-gray-800 hover:bg-gray-700'
+                : 'text-gray-700 bg-white hover:bg-gray-50'
+            }`}
           >
             取消
           </button>

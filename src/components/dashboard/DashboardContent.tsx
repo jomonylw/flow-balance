@@ -10,8 +10,9 @@ import ExchangeRateAlert from './ExchangeRateAlert'
 import PageContainer from '../ui/PageContainer'
 import TranslationLoader from '../ui/TranslationLoader'
 import { calculateAccountBalance } from '@/lib/account-balance'
-import { validateAccountData, validateAccountDataWithI18n, validateChartData } from '@/lib/data-validation'
+import { validateAccountDataWithI18n, validateChartData } from '@/lib/data-validation'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useAllDataListener } from '@/hooks/useDataUpdateListener'
 
 interface User {
@@ -82,6 +83,7 @@ export default function DashboardContent({
   baseCurrency
 }: DashboardContentProps) {
   const { t } = useLanguage()
+  const { resolvedTheme } = useTheme()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
   const [defaultTransactionType, setDefaultTransactionType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE')
@@ -255,13 +257,13 @@ export default function DashboardContent({
     <TranslationLoader
       fallback={
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className={`h-8 rounded w-1/4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+          <div className={`h-4 rounded w-1/2 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-lg shadow p-6">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+              <div key={i} className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`h-4 rounded w-3/4 mb-2 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <div className={`h-8 rounded w-1/2 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
               </div>
             ))}
           </div>
@@ -279,9 +281,9 @@ export default function DashboardContent({
       {/* 数据质量评分 */}
       {validationResult && validationResult.score !== undefined && (
         <div className="mb-4 sm:mb-6">
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">{t('dashboard.data.quality.score')}</h3>
+              <h3 className={`text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('dashboard.data.quality.score')}</h3>
               <div className="flex items-center">
                 <div className={`text-2xl font-bold ${
                   validationResult.score >= 90 ? 'text-green-600' :
@@ -290,11 +292,11 @@ export default function DashboardContent({
                 }`}>
                   {validationResult.score}
                 </div>
-                <span className="text-gray-500 ml-1">/100</span>
+                <span className={`ml-1 ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>/100</span>
               </div>
             </div>
 
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+            <div className={`w-full rounded-full h-2 mb-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${
                   validationResult.score >= 90 ? 'bg-green-500' :
@@ -308,24 +310,24 @@ export default function DashboardContent({
             {validationResult.details && (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
                 <div className="text-center">
-                  <div className="text-base sm:text-lg font-semibold text-gray-900">{validationResult.details.accountsChecked}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">{t('dashboard.accounts.checked')}</div>
+                  <div className={`text-base sm:text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{validationResult.details.accountsChecked}</div>
+                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.accounts.checked')}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-base sm:text-lg font-semibold text-gray-900">{validationResult.details.transactionsChecked}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">{t('dashboard.transactions.checked')}</div>
+                  <div className={`text-base sm:text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{validationResult.details.transactionsChecked}</div>
+                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.transactions.checked')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-base sm:text-lg font-semibold text-red-600">{validationResult.details.categoriesWithoutType}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">{t('dashboard.categories.without.type')}</div>
+                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.categories.without.type')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-base sm:text-lg font-semibold text-red-600">{validationResult.details.invalidTransactions}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">{t('dashboard.invalid.transactions')}</div>
+                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.invalid.transactions')}</div>
                 </div>
                 <div className="text-center col-span-2 sm:col-span-1">
                   <div className="text-base sm:text-lg font-semibold text-yellow-600">{validationResult.details.businessLogicViolations}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">{t('dashboard.business.logic.violations')}</div>
+                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.business.logic.violations')}</div>
                 </div>
               </div>
             )}
@@ -406,20 +408,20 @@ export default function DashboardContent({
 
       {/* 智能财务统计 */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <h2 className={`text-xl font-semibold mb-4 ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
           {t('dashboard.financial.overview')}
-          <span className="ml-2 text-sm font-normal text-gray-500">
+          <span className={`ml-2 text-sm font-normal ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
             ({t('dashboard.api.data.note')})
           </span>
         </h2>
         {isLoadingSummary ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-lg shadow p-6">
+              <div key={i} className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                  <div className={`h-4 rounded w-1/2 mb-2 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                  <div className={`h-8 rounded w-3/4 mb-2 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                  <div className={`h-3 rounded w-1/3 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
                 </div>
               </div>
             ))}
@@ -557,10 +559,10 @@ export default function DashboardContent({
       {/* 基础统计卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* 账户数量 */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${resolvedTheme === 'dark' ? 'bg-blue-900' : 'bg-blue-100'}`}>
                 <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
@@ -568,10 +570,10 @@ export default function DashboardContent({
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">
+                <dt className={`text-sm font-medium truncate ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('dashboard.account.count')}
                 </dt>
-                <dd className="text-2xl font-semibold text-gray-900">
+                <dd className={`text-2xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                   {stats.accountCount}
                 </dd>
               </dl>
@@ -580,10 +582,10 @@ export default function DashboardContent({
         </div>
 
         {/* 交易数量 */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${resolvedTheme === 'dark' ? 'bg-green-900' : 'bg-green-100'}`}>
                 <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
@@ -591,10 +593,10 @@ export default function DashboardContent({
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">
+                <dt className={`text-sm font-medium truncate ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('dashboard.transaction.records')}
                 </dt>
-                <dd className="text-2xl font-semibold text-gray-900">
+                <dd className={`text-2xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                   {stats.transactionCount}
                 </dd>
               </dl>
@@ -603,10 +605,10 @@ export default function DashboardContent({
         </div>
 
         {/* 分类数量 */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${resolvedTheme === 'dark' ? 'bg-purple-900' : 'bg-purple-100'}`}>
                 <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                 </svg>
@@ -614,10 +616,10 @@ export default function DashboardContent({
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">
+                <dt className={`text-sm font-medium truncate ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('dashboard.category.count')}
                 </dt>
-                <dd className="text-2xl font-semibold text-gray-900">
+                <dd className={`text-2xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                   {stats.categoryCount}
                 </dd>
               </dl>
@@ -627,8 +629,8 @@ export default function DashboardContent({
       </div>
 
       {/* 快速操作 */}
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 sm:mb-8">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
+      <div className={`rounded-lg shadow p-4 sm:p-6 mb-6 sm:mb-8 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+        <h2 className={`text-base sm:text-lg font-semibold mb-4 ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
           {t('dashboard.quick.actions')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -664,22 +666,22 @@ export default function DashboardContent({
 
       {/* 图表展示区域 */}
       <div className="space-y-6">
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className={`text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
           📊 {t('dashboard.financial.trend.analysis')}
         </h2>
 
         {isLoadingCharts ? (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
               <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-                <div className="h-64 bg-gray-200 rounded"></div>
+                <div className={`h-4 rounded w-1/3 mb-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <div className={`h-64 rounded ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
               <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-                <div className="h-64 bg-gray-200 rounded"></div>
+                <div className={`h-4 rounded w-1/3 mb-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <div className={`h-64 rounded ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
               </div>
             </div>
           </div>
@@ -697,9 +699,9 @@ export default function DashboardContent({
             />
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-center text-gray-500">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className={`text-center ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <svg className={`mx-auto h-12 w-12 ${resolvedTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
               <p className="mt-2">{t('dashboard.no.chart.data')}</p>
@@ -709,70 +711,6 @@ export default function DashboardContent({
         )}
       </div>
 
-      {/* 功能状态 */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          🎉 Flow Balance 功能状态
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="font-medium text-green-700 mb-2">✅ 已完成功能</h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p>✅ 认证系统 - 登录、注册、登出</p>
-              <p>✅ 主界面布局 - 顶部状态栏、侧边导航、主内容区</p>
-              <p>✅ 数据库设计 - 完整的 Prisma Schema</p>
-              <p>✅ API 路由 - 分类、账户、交易管理</p>
-              <p>✅ 交易表单模态框 - 添加/编辑交易</p>
-              <p>✅ <strong>存量流量概念区分</strong> - 正确的财务统计</p>
-              <p>✅ <strong>分类设置功能</strong> - 账户类型管理</p>
-              <p>✅ <strong>专业财务报表</strong> - 资产负债表、现金流量表</p>
-              <p>✅ <strong>智能统计面板</strong> - 区分存量和流量数据</p>
-              <p>✅ <strong>账户详情页面</strong> - 存量/流量差异化展示</p>
-              <p>✅ <strong>分类汇总页面</strong> - 层级聚合统计</p>
-              <p>✅ <strong>交易列表页面</strong> - 完整的交易管理</p>
-              <p>✅ <strong>图表可视化</strong> - ECharts 集成完成</p>
-              <p>✅ <strong>多币种汇率转换</strong> - 手动汇率设置</p>
-              <p>✅ <strong>货币管理系统</strong> - 用户自定义可用货币</p>
-              <p>✅ <strong>余额更新功能</strong> - 存量类账户专用</p>
-              <p>✅ <strong>响应式设计</strong> - PC/移动端适配</p>
-            </div>
-          </div>
-          <div>
-            <h3 className="font-medium text-blue-700 mb-2">🚧 开发中功能</h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p>🚧 数据导出功能 - PDF/Excel 报表导出</p>
-              <p>🚧 预算管理 - 预算 vs 实际对比</p>
-              <p>🚧 财务指标分析 - 关键指标计算</p>
-              <p>🚧 数据备份恢复 - 云端同步</p>
-              <p>🚧 高级图表 - 更多可视化选项</p>
-              <p>🚧 自动分类 - AI 智能分类建议</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">💡 新功能亮点</h4>
-          <div className="text-sm text-blue-800 space-y-1">
-            <p>• <strong>存量 vs 流量</strong>：正确区分资产负债（存量）和收入支出（流量）的统计方法</p>
-            <p>• <strong>分类设置</strong>：可以为大类设置账户类型，子分类自动继承</p>
-            <p>• <strong>专业报表</strong>：标准的个人资产负债表和现金流量表</p>
-            <p>• <strong>智能面板</strong>：根据账户类型显示不同的统计信息和录入选项</p>
-            <p>• <strong>多币种支持</strong>：完整的货币管理和汇率转换系统</p>
-            <p>• <strong>差异化操作</strong>：存量类账户"更新余额"，流量类账户"添加交易"</p>
-          </div>
-        </div>
-
-        <div className="mt-6 p-4 bg-green-50 rounded-lg">
-          <h4 className="font-medium text-green-900 mb-2">🎯 最新完成功能</h4>
-          <div className="text-sm text-green-800 space-y-1">
-            <p>• <strong>业务流程优化</strong>：全面审查并优化存量流量处理逻辑</p>
-            <p>• <strong>数据一致性</strong>：统一余额计算，确保图表数据准确性</p>
-            <p>• <strong>用户体验提升</strong>：智能化操作界面，类型特定的视觉反馈</p>
-            <p>• <strong>货币管理完善</strong>：用户可自定义货币，支持手动汇率设置</p>
-            <p>• <strong>专业财务工具</strong>：企业级个人财务管理功能</p>
-          </div>
-        </div>
-      </div>
 
       {/* 快速交易表单模态框 */}
       <QuickFlowTransactionModal

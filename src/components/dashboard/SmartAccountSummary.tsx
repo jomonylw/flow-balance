@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import QuickBalanceUpdateModal from './QuickBalanceUpdateModal'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Currency {
   code: string
@@ -31,6 +32,7 @@ export default function SmartAccountSummary({
   baseCurrency
 }: SmartAccountSummaryProps) {
   const { refreshAccounts } = useUserData()
+  const { resolvedTheme } = useTheme()
   const [selectedPeriod, setSelectedPeriod] = useState('month') // month, quarter, year
   const [flowData, setFlowData] = useState<any>(null)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
@@ -223,7 +225,7 @@ export default function SmartAccountSummary({
           <div className={`text-xs mt-1 ${netWorth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             资产 - 负债
           </div>
-          <div className="mt-2 text-xs text-gray-600">
+          <div className={`mt-2 text-xs ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
             <div>资产: {formatCurrency(assetData.total)}</div>
             <div>负债: {formatCurrency(liabilityData.total)}</div>
           </div>
@@ -240,7 +242,9 @@ export default function SmartAccountSummary({
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="text-xs border border-purple-300 rounded px-2 py-1 bg-white"
+              className={`text-xs border border-purple-300 rounded px-2 py-1 ${
+                resolvedTheme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'
+              }`}
             >
               <option value="month">近1月</option>
               <option value="quarter">近3月</option>
@@ -286,7 +290,7 @@ export default function SmartAccountSummary({
               </div>
             </div>
           ) : (
-            <div className="text-sm text-gray-500">加载中...</div>
+            <div className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>加载中...</div>
           )}
         </CardContent>
       </Card>

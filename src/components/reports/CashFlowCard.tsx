@@ -3,9 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon, Download, RefreshCw } from 'lucide-react'
+import { Download, RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN, enUS } from 'date-fns/locale'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -56,6 +54,11 @@ interface PersonalCashFlowResponse {
   }
   summary: {
     currencyTotals: Record<string, CurrencyTotal>
+    baseCurrencyTotals?: {
+      totalIncome: number
+      totalExpense: number
+      netCashFlow: number
+    }
     totalTransactions: number
   }
 }
@@ -64,10 +67,15 @@ export default function CashFlowCard() {
   const { t, language } = useLanguage()
   const [data, setData] = useState<PersonalCashFlowResponse | null>(null)
   const [loading, setLoading] = useState(false)
-  const [startDate, setStartDate] = useState<Date>(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
+    // 创建当月1号的日期字符串，然后解析为Date对象
+    const firstDayString = `${year}-${String(month + 1).padStart(2, '0')}-01`
+    return new Date(firstDayString)
+  })
   const [endDate, setEndDate] = useState<Date>(new Date())
-  const [isStartCalendarOpen, setIsStartCalendarOpen] = useState(false)
-  const [isEndCalendarOpen, setIsEndCalendarOpen] = useState(false)
 
   // Get the appropriate locale for date formatting
   const dateLocale = language === 'zh' ? zhCN : enUS
@@ -194,54 +202,24 @@ export default function CashFlowCard() {
 
   return (
     <WithTranslation>
-      <Card>
+      <Card className='mt-4'>
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>{t('reports.cash.flow.title')}</CardTitle>
-            <div className="flex gap-2">
-              <Popover open={isStartCalendarOpen} onOpenChange={setIsStartCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    {format(startDate, language === 'zh' ? 'MM/dd' : 'MM/dd', { locale: dateLocale })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        setStartDate(Array.isArray(date) ? date[0] : date)
-                        setIsStartCalendarOpen(false)
-                      }
-                    }}
-                    locale={dateLocale}
-                  />
-                </PopoverContent>
-              </Popover>
+            <div className="flex gap-2 items-center">
+              <input
+                type="date"
+                value={startDate.toISOString().split('T')[0]}
+                onChange={(e) => setStartDate(new Date(e.target.value))}
+                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
               <span className="text-gray-500 dark:text-gray-400">{t('reports.cash.flow.to')}</span>
-              <Popover open={isEndCalendarOpen} onOpenChange={setIsEndCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    {format(endDate, language === 'zh' ? 'MM/dd' : 'MM/dd', { locale: dateLocale })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        setEndDate(Array.isArray(date) ? date[0] : date)
-                        setIsEndCalendarOpen(false)
-                      }
-                    }}
-                    locale={dateLocale}
-                  />
-                </PopoverContent>
-              </Popover>
+              <input
+                type="date"
+                value={endDate.toISOString().split('T')[0]}
+                onChange={(e) => setEndDate(new Date(e.target.value))}
+                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
               <Button
                 variant="outline"
                 size="sm"
@@ -289,13 +267,29 @@ export default function CashFlowCard() {
                   ))}
                 </div>
               </div>
+
+              {/* Base Currency Summary */}
+              {data.summary.baseCurrencyTotals && (
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-600">
+                  <div className="flex justify-between font-semibold text-base">
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {t('reports.cash.flow.base.currency.total')} ({data.baseCurrency.code})
+                    </span>
+                    <div className={data.summary.baseCurrencyTotals.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      {data.summary.baseCurrencyTotals.netCashFlow >= 0 ? '+' : ''}{formatCurrency(data.summary.baseCurrencyTotals.netCashFlow, data.baseCurrency)}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Summary Information */}
           <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">{t('reports.cash.flow.summary')}</h4>
-            <div className="grid grid-cols-3 gap-4 text-sm">
+
+            {/* Original Currency Breakdown */}
+            <div className="grid grid-cols-3 gap-4 text-sm mb-4">
               <div>
                 <span className="text-gray-600 dark:text-gray-400">{t('reports.cash.flow.total.income')}</span>
                 <div className="font-semibold">
@@ -327,6 +321,38 @@ export default function CashFlowCard() {
                 </div>
               </div>
             </div>
+
+            {/* Base Currency Summary */}
+            {data.summary.baseCurrencyTotals && (
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {t('reports.cash.flow.total.income')} ({data.baseCurrency.code})
+                    </span>
+                    <div className="font-semibold text-green-600 dark:text-green-400">
+                      +{formatCurrency(data.summary.baseCurrencyTotals.totalIncome, data.baseCurrency)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {t('reports.cash.flow.total.expense')} ({data.baseCurrency.code})
+                    </span>
+                    <div className="font-semibold text-red-600 dark:text-red-400">
+                      -{formatCurrency(data.summary.baseCurrencyTotals.totalExpense, data.baseCurrency)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {t('reports.cash.flow.net.summary')} ({data.baseCurrency.code})
+                    </span>
+                    <div className={`font-semibold ${data.summary.baseCurrencyTotals.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {data.summary.baseCurrencyTotals.netCashFlow >= 0 ? '+' : ''}{formatCurrency(data.summary.baseCurrencyTotals.netCashFlow, data.baseCurrency)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

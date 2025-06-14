@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Info, AlertTriangle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import BalanceSheetCard from './BalanceSheetCard'
 import CashFlowCard from './CashFlowCard'
 import PageContainer from '@/components/ui/PageContainer'
@@ -31,7 +31,7 @@ export default function ReportsPageClient() {
       >
 
       {/* 重要说明 */}
-      <Card className="border-blue-200 bg-blue-50">
+      {/* <Card className="border-blue-200 bg-blue-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-700">
             <Info className="h-5 w-5" />
@@ -54,40 +54,42 @@ export default function ReportsPageClient() {
             </ul>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      {/* 账户类型设置提醒 */}
-      <Card className="border-amber-200 bg-amber-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-amber-700">
-            <AlertTriangle className="h-5 w-5" />
-            {t('reports.important.reminder')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-amber-700">
-          <div className="space-y-2 text-sm">
-            <p>{t('reports.account.type.setup.message')}</p>
-            <ul className="list-disc list-inside ml-4 space-y-1">
-              <li><strong>{t('reports.asset.type')}</strong>：{t('reports.asset.type.examples')}</li>
-              <li><strong>{t('reports.liability.type')}</strong>：{t('reports.liability.type.examples')}</li>
-              <li><strong>{t('reports.income.type')}</strong>：{t('reports.income.type.examples')}</li>
-              <li><strong>{t('reports.expense.type')}</strong>：{t('reports.expense.type.examples')}</li>
-            </ul>
-            <p className="mt-2">
-              {t('reports.category.type.reminder')}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+
 
         {/* 资产负债表 */}
         <BalanceSheetCard />
 
         {/* 现金流量表 */}
-        <CashFlowCard />
+        <CashFlowCard/>
+
+        {/* 账户类型设置提醒 */}
+        <Card className="border-amber-200 bg-amber-50 mt-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-700">
+              <AlertTriangle className="h-5 w-5" />
+              {t('reports.important.reminder')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-amber-700">
+            <div className="space-y-2 text-sm">
+              <p>{t('reports.account.type.setup.message')}</p>
+              <ul className="list-disc list-inside ml-4 space-y-1">
+                <li><strong>{t('reports.asset.type')}</strong>：{t('reports.asset.type.examples')}</li>
+                <li><strong>{t('reports.liability.type')}</strong>：{t('reports.liability.type.examples')}</li>
+                <li><strong>{t('reports.income.type')}</strong>：{t('reports.income.type.examples')}</li>
+                <li><strong>{t('reports.expense.type')}</strong>：{t('reports.expense.type.examples')}</li>
+              </ul>
+              <p className="mt-2">
+                {t('reports.category.type.reminder')}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* 使用说明 */}
-        <Card>
+        <Card className='mt-4'>
           <CardHeader>
             <CardTitle>{t('reports.usage.instructions')}</CardTitle>
           </CardHeader>
