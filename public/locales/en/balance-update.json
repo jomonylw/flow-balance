@@ -19,5 +19,6 @@
   "balance.update.modal.update.success": "Update successful",
   "balance.update.modal.balance.updated": "balance updated",
   "balance.update.modal.balance.record.update": "Balance record update",
-  "balance.update.modal.balance.update": "Balance update"
+  "balance.update.modal.balance.update": "Balance update",
+  "balance.update.button": "Update Balance"
 }

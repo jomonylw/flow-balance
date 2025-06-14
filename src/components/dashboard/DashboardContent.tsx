@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import TransactionFormModal from '@/components/transactions/TransactionFormModal'
+import QuickFlowTransactionModal from './QuickFlowTransactionModal'
 import QuickBalanceUpdateModal from '@/components/dashboard/QuickBalanceUpdateModal'
 import NetWorthChart from './NetWorthChart'
 import CashFlowChart from './CashFlowChart'
@@ -767,37 +767,11 @@ export default function DashboardContent({
         </div>
       </div>
 
-      {/* 交易表单模态框 */}
-      <TransactionFormModal
+      {/* 快速交易表单模态框 */}
+      <QuickFlowTransactionModal
         isOpen={isTransactionModalOpen}
         onClose={() => setIsTransactionModalOpen(false)}
         onSuccess={handleTransactionSuccess}
-        accounts={accounts.map(account => ({
-          ...account,
-          category: {
-            id: account.category.id || account.id, // 使用账户 ID 作为分类 ID 的占位符
-            name: account.category.name,
-            type: account.category.type
-          },
-          transactions: (account.transactions || []).map((t, index) => ({
-            id: `${account.id}-${index}`,
-            type: t.type,
-            amount: t.amount,
-            description: '交易记录',
-            notes: '',
-            date: new Date().toISOString(),
-            category: {
-              id: account.category.id || account.id,
-              name: account.category.name,
-              type: account.category.type
-            },
-            currency: t.currency,
-            tags: []
-          }))
-        })) as any}
-        categories={categories}
-        currencies={currencies}
-        tags={tags}
         defaultType={defaultTransactionType}
       />
 
@@ -806,9 +780,6 @@ export default function DashboardContent({
         isOpen={isBalanceUpdateModalOpen}
         onClose={() => setIsBalanceUpdateModalOpen(false)}
         onSuccess={handleTransactionSuccess}
-        accounts={accountsWithBalances}
-        currencies={currencies}
-        baseCurrency={baseCurrency}
       />
     </PageContainer>
     </TranslationLoader>

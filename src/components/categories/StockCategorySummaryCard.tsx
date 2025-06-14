@@ -253,13 +253,6 @@ export default function StockCategorySummaryCard({
         </div>
       </div>
 
-      {/* 存量特有信息 */}
-      {/* <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          💡 {t('category.stock.readonly.tip')}
-        </div>
-      </div> */}
-
       {/* 币种分布 */}
       {summaryData && summaryData.monthlyData && summaryData.monthlyData.length > 0 && (
         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">

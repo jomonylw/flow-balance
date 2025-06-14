@@ -19,5 +19,6 @@
   "balance.update.modal.update.success": "更新成功",
   "balance.update.modal.balance.updated": "余额已更新",
   "balance.update.modal.balance.record.update": "余额记录更新",
-  "balance.update.modal.balance.update": "余额更新"
+  "balance.update.modal.balance.update": "余额更新",
+  "balance.update.button": "更新余额"
 }

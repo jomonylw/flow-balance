@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import TransactionFormModal from '@/components/transactions/TransactionFormModal'
+import QuickFlowTransactionModal from '@/components/dashboard/QuickFlowTransactionModal'
 import TransactionList from '@/components/transactions/TransactionList'
 import FlowCategorySummaryCard from './FlowCategorySummaryCard'
 import CategorySummaryItem from './CategorySummaryItem'
@@ -86,6 +87,7 @@ export default function FlowCategoryDetailView({
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
+  const [isQuickTransactionModalOpen, setIsQuickTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<TransactionFormData | null>(null)
   const [summaryData, setSummaryData] = useState<FlowSummaryData | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -247,7 +249,7 @@ export default function FlowCategoryDetailView({
 
   const handleAddTransaction = () => {
     setEditingTransaction(null)
-    setIsTransactionModalOpen(true)
+    setIsQuickTransactionModalOpen(true)
   }
 
   const handleEditTransaction = (transaction: Transaction) => {
@@ -614,7 +616,16 @@ export default function FlowCategoryDetailView({
         )}
       </div>
 
-      {/* 交易表单模态框 */}
+      {/* 快速交易表单模态框 - 用于新增交易 */}
+      <QuickFlowTransactionModal
+        isOpen={isQuickTransactionModalOpen}
+        onClose={() => setIsQuickTransactionModalOpen(false)}
+        onSuccess={handleTransactionSuccess}
+        defaultType={category.type as 'INCOME' | 'EXPENSE'}
+        defaultCategoryId={category.id}
+      />
+
+      {/* 交易表单模态框 - 用于编辑交易 */}
       <TransactionFormModal
         isOpen={isTransactionModalOpen}
         onClose={() => setIsTransactionModalOpen(false)}

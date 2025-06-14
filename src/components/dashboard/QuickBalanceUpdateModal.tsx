@@ -6,43 +6,33 @@ import InputField from '@/components/ui/InputField'
 import SelectField from '@/components/ui/SelectField'
 import AuthButton from '@/components/ui/AuthButton'
 import { useToast } from '@/contexts/ToastContext'
-
-interface Currency {
-  code: string
-  name: string
-  symbol: string
-}
-
-interface Account {
-  id: string
-  name: string
-  currencyCode: string // 账户的货币代码
-  category: {
-    id: string
-    name: string
-    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-  }
-  balances: Record<string, number>
-}
+import { useUserData } from '@/contexts/UserDataContext'
 
 interface QuickBalanceUpdateModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
-  accounts: Account[]
-  currencies: Currency[]
-  baseCurrency: Currency
+  accountType?: 'ASSET' | 'LIABILITY' // 可选的账户类型筛选
 }
 
 export default function QuickBalanceUpdateModal({
   isOpen,
   onClose,
   onSuccess,
-  accounts,
-  currencies,
-  baseCurrency
+  accountType
 }: QuickBalanceUpdateModalProps) {
   const { showSuccess, showError } = useToast()
+  const { accounts, currencies, getBaseCurrency, accountBalances, fetchBalances } = useUserData()
+
+  // 从context获取基础货币
+  const baseCurrency = getBaseCurrency() || { code: 'CNY', symbol: '¥', name: '人民币' }
+
+  // 确保余额数据已加载
+  useEffect(() => {
+    if (isOpen && !accountBalances) {
+      fetchBalances()
+    }
+  }, [isOpen, accountBalances, fetchBalances])
   
   const [formData, setFormData] = useState({
     accountId: '',
@@ -55,14 +45,24 @@ export default function QuickBalanceUpdateModal({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
 
-  // 过滤出存量类账户（资产/负债）
-  const stockAccounts = accounts.filter(account => 
-    account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
-  )
+  // 过滤出存量类账户（资产/负债），如果指定了accountType则进一步筛选
+  const stockAccounts = accounts.filter(account => {
+    const isStockAccount = account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
+    if (!isStockAccount) return false
+
+    // 如果指定了accountType，则只显示该类型的账户
+    if (accountType) {
+      return account.category.type === accountType
+    }
+
+    // 否则显示所有存量类账户
+    return true
+  })
 
   // 获取选中账户的当前余额
   const selectedAccount = stockAccounts.find(account => account.id === formData.accountId)
-  const currentBalance = selectedAccount?.balances[formData.currencyCode] || 0
+  const accountBalance = accountBalances?.[formData.accountId]
+  const currentBalance = accountBalance?.balances[formData.currencyCode]?.amount || 0
   const currencySymbol = currencies.find(c => c.code === formData.currencyCode)?.symbol || ''
 
   // 重置表单
@@ -193,11 +193,18 @@ export default function QuickBalanceUpdateModal({
 
 
 
+  // 根据accountType生成标题
+  const getModalTitle = () => {
+    if (accountType === 'ASSET') return '更新资产账户余额'
+    if (accountType === 'LIABILITY') return '更新负债账户余额'
+    return '快速更新余额'
+  }
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="快速更新余额"
+      title={getModalTitle()}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -210,11 +217,11 @@ export default function QuickBalanceUpdateModal({
         {/* 账户选择 */}
         <SelectField
           name="accountId"
-          label="选择存量账户"
+          label={accountType === 'ASSET' ? '选择资产账户' : accountType === 'LIABILITY' ? '选择负债账户' : '选择存量账户'}
           value={formData.accountId}
           onChange={handleChange}
           options={[
-            { value: '', label: '请选择账户...' },
+            { value: '', label: accountType === 'ASSET' ? '请选择资产账户...' : accountType === 'LIABILITY' ? '请选择负债账户...' : '请选择账户...' },
             ...accountOptions
           ]}
           error={errors.accountId}

@@ -6,6 +6,7 @@ import TransactionList from '@/components/transactions/TransactionList'
 import StockCategorySummaryCard from './StockCategorySummaryCard'
 import StockMonthlySummaryChart from '@/components/charts/StockMonthlySummaryChart'
 import CategorySummaryItem from './CategorySummaryItem'
+import QuickBalanceUpdateModal from '@/components/dashboard/QuickBalanceUpdateModal'
 
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
@@ -77,6 +78,9 @@ export default function StockCategoryDetailView({
   const { showSuccess, showError } = useToast()
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null)
   const [monthlyData, setMonthlyData] = useState<MonthlyData | null>(null)
+  const [accounts, setAccounts] = useState<any[]>([])
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(true)
+  const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
@@ -115,6 +119,33 @@ export default function StockCategoryDetailView({
 
     fetchSummaryData()
   }, [category.id, user.settings?.baseCurrency?.code])
+
+  // 获取账户数据
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      setIsLoadingAccounts(true)
+      try {
+        const response = await fetch('/api/accounts')
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success) {
+            // 过滤出属于当前分类的账户（包括子分类的账户）
+            const categoryAccounts = result.data.filter((account: any) =>
+              account.categoryId === category.id ||
+              (account.category?.parentId === category.id)
+            )
+            setAccounts(categoryAccounts)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching accounts:', error)
+      } finally {
+        setIsLoadingAccounts(false)
+      }
+    }
+
+    fetchAccounts()
+  }, [category.id])
 
   // 根据新的 API 数据格式生成图表所需的数据
   const generateChartData = (monthlyData: MonthlyDataItem[], baseCurrencyCode: string): StockMonthlyDataForChart => {
@@ -258,7 +289,36 @@ export default function StockCategoryDetailView({
     }
   }
 
+  // 处理余额更新成功
+  const handleBalanceUpdateSuccess = () => {
+    // 重新获取汇总数据和交易记录
+    const fetchSummaryData = async () => {
+      try {
+        const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
+        if (summaryRes.ok) {
+          const summaryResult = await summaryRes.json()
+          setSummaryData({
+            monthlyData: summaryResult.data
+          })
+          const chartData = generateChartData(summaryResult.data, user.settings?.baseCurrency?.code || 'CNY')
+          setMonthlyData({
+            monthlyData: chartData,
+            baseCurrency: user.settings?.baseCurrency?.code || 'CNY'
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching summary data:', error)
+      }
+    }
 
+    fetchSummaryData()
+    loadTransactions(pagination.currentPage)
+  }
+
+  // 处理余额更新按钮点击
+  const handleBalanceUpdate = () => {
+    setIsBalanceUpdateModalOpen(true)
+  }
 
   const baseCurrency = user.settings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
   const currencySymbol = baseCurrency.symbol
@@ -320,8 +380,19 @@ export default function StockCategoryDetailView({
           </div>
         </div>
 
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          💡 {t('category.stock.update.tip')}
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleBalanceUpdate}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {t('balance.update.button', '更新余额')}
+          </button>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            💡 {t('category.stock.update.tip', '点击更新该分类下账户的余额')}
+          </div>
         </div>
       </div>
 
@@ -497,6 +568,14 @@ export default function StockCategoryDetailView({
           setDeletingTransactionId(null)
         }}
         variant="danger"
+      />
+
+      {/* 快速余额更新模态框 */}
+      <QuickBalanceUpdateModal
+        isOpen={isBalanceUpdateModalOpen}
+        onClose={() => setIsBalanceUpdateModalOpen(false)}
+        onSuccess={handleBalanceUpdateSuccess}
+        accountType={category.type as 'ASSET' | 'LIABILITY'}
       />
     </div>
   )

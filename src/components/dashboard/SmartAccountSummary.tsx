@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import QuickBalanceUpdateModal from './QuickBalanceUpdateModal'
+import { useUserData } from '@/contexts/UserDataContext'
 
 interface Currency {
   code: string
@@ -24,9 +26,24 @@ interface SmartAccountSummaryProps {
   baseCurrency: Currency
 }
 
-export default function SmartAccountSummary({ accounts, baseCurrency }: SmartAccountSummaryProps) {
+export default function SmartAccountSummary({
+  accounts,
+  baseCurrency
+}: SmartAccountSummaryProps) {
+  const { refreshAccounts } = useUserData()
   const [selectedPeriod, setSelectedPeriod] = useState('month') // month, quarter, year
   const [flowData, setFlowData] = useState<any>(null)
+  const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
+
+  // 处理余额更新
+  const handleBalanceUpdate = () => {
+    setIsBalanceUpdateModalOpen(true)
+  }
+
+  const handleBalanceUpdateSuccess = () => {
+    // 刷新账户数据
+    refreshAccounts()
+  }
 
   // 按账户类型分组账户
   const accountsByType = accounts.reduce((acc, account) => {
@@ -100,6 +117,7 @@ export default function SmartAccountSummary({ accounts, baseCurrency }: SmartAcc
   const netWorth = assetData.total - liabilityData.total
 
   return (
+    <>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {/* 资产总计 - 存量数据 */}
       <Card className="border-blue-200 bg-blue-50">
@@ -129,6 +147,19 @@ export default function SmartAccountSummary({ accounts, baseCurrency }: SmartAcc
                 还有 {assetData.accounts.length - 3} 个账户...
               </div>
             )}
+          </div>
+
+          {/* 更新余额按钮 */}
+          <div className="mt-3 pt-3 border-t border-blue-200">
+            <button
+              onClick={handleBalanceUpdate}
+              className="w-full flex items-center justify-center px-3 py-2 border border-blue-300 rounded-md text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+            >
+              <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              更新余额
+            </button>
           </div>
         </CardContent>
       </Card>
@@ -161,6 +192,19 @@ export default function SmartAccountSummary({ accounts, baseCurrency }: SmartAcc
                 还有 {liabilityData.accounts.length - 3} 个账户...
               </div>
             )}
+          </div>
+
+          {/* 更新余额按钮 */}
+          <div className="mt-3 pt-3 border-t border-red-200">
+            <button
+              onClick={handleBalanceUpdate}
+              className="w-full flex items-center justify-center px-3 py-2 border border-red-300 rounded-md text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 transition-colors"
+            >
+              <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              更新余额
+            </button>
           </div>
         </CardContent>
       </Card>
@@ -247,5 +291,13 @@ export default function SmartAccountSummary({ accounts, baseCurrency }: SmartAcc
         </CardContent>
       </Card>
     </div>
+
+    {/* 快速余额更新模态框 */}
+    <QuickBalanceUpdateModal
+      isOpen={isBalanceUpdateModalOpen}
+      onClose={() => setIsBalanceUpdateModalOpen(false)}
+      onSuccess={handleBalanceUpdateSuccess}
+    />
+  </>
   )
 }
