@@ -100,11 +100,11 @@ export default function BaseContextMenu({
 
   const getBadgeColor = (color: string) => {
     const colors = {
-      blue: 'bg-blue-100 text-blue-700 border-blue-200',
-      green: 'bg-green-100 text-green-700 border-green-200',
-      red: 'bg-red-100 text-red-700 border-red-200',
-      yellow: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-      gray: 'bg-gray-100 text-gray-700 border-gray-200'
+      blue: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700',
+      green: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700',
+      red: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700',
+      yellow: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700',
+      gray: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
     }
     return colors[color as keyof typeof colors] || colors.gray
   }
@@ -113,7 +113,7 @@ export default function BaseContextMenu({
     <div
       ref={menuRef}
       className={`
-        ${widthClass} bg-white rounded-xl shadow-xl ring-1 ring-gray-200 
+        ${widthClass} bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-gray-200 dark:ring-gray-700
         focus:outline-none transform transition-all duration-200 ease-out
         ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}
         ${className}
@@ -128,9 +128,9 @@ export default function BaseContextMenu({
         {title && (
           <>
             <div className="px-4 py-2">
-              <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
             </div>
-            <div className="border-t border-gray-100 mx-2 mb-2"></div>
+            <div className="border-t border-gray-100 dark:border-gray-700 mx-2 mb-2"></div>
           </>
         )}
 
@@ -138,7 +138,7 @@ export default function BaseContextMenu({
         <div className="px-2 space-y-1">
           {menuItems.map((item, index) => {
             if (item === 'divider') {
-              return <div key={index} className="border-t border-gray-100 my-2 mx-2" />
+              return <div key={index} className="border-t border-gray-100 dark:border-gray-700 my-2 mx-2" />
             }
 
             const menuItem = item as MenuItem
@@ -154,17 +154,17 @@ export default function BaseContextMenu({
                 }}
                 disabled={menuItem.disabled}
                 className={`
-                  group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg 
+                  group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg
                   transition-all duration-200 text-left
-                  ${menuItem.disabled 
-                    ? 'cursor-not-allowed opacity-50' 
+                  ${menuItem.disabled
+                    ? 'cursor-not-allowed opacity-50'
                     : 'hover:scale-[1.02] active:scale-[0.98]'
                   }
-                  ${menuItem.className || 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}
+                  ${menuItem.className || 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'}
                 `}
               >
                 {/* 图标 */}
-                <div className="flex items-center justify-center w-8 h-8 mr-3 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors duration-200">
+                <div className="flex items-center justify-center w-8 h-8 mr-3 bg-gray-100 dark:bg-gray-700 rounded-lg group-hover:bg-gray-200 dark:group-hover:bg-gray-600 transition-colors duration-200">
                   {menuItem.icon}
                 </div>
 
@@ -187,7 +187,7 @@ export default function BaseContextMenu({
                   </div>
                   {/* 描述 */}
                   {menuItem.description && (
-                    <div className="text-xs text-gray-500 mt-0.5 truncate">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
                       {menuItem.description}
                     </div>
                   )}

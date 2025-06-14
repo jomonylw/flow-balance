@@ -43,5 +43,12 @@
   "common.date.yesterday": "昨天",
   "common.date.days.ago": "{{days}}天前",
   "common.retry": "重试",
-  "common.this.year": "今年"
+  "common.this.year": "今年",
+  "common.theme.light": "明亮模式",
+  "common.theme.dark": "深色模式",
+  "common.theme.system": "跟随系统",
+  "common.theme.light.short": "明亮",
+  "common.theme.dark.short": "深色",
+  "common.theme.system.short": "自动",
+  "common.theme.select": "选择主题"
 }

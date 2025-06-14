@@ -90,6 +90,7 @@ export default function FlowAccountTrendChart({
     }
 
     const option: echarts.EChartsOption = {
+      backgroundColor: 'transparent',
       title: {
         text: t('chart.transaction.flow.trend'),
         left: 'center',

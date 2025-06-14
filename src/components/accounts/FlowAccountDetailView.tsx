@@ -247,8 +247,8 @@ export default function FlowAccountDetailView({
       {/* 账户类型提示横幅 */}
       <div className={`mb-6 p-4 rounded-lg border-l-4 ${
         (account.category.type === 'INCOME')
-          ? 'bg-green-50 border-green-400'
-          : 'bg-red-50 border-red-400'
+          ? 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-500'
+          : 'bg-red-50 dark:bg-red-900/20 border-red-400 dark:border-red-500'
       }`}>
         <div className="flex items-center">
           <div className="flex-shrink-0">
@@ -260,12 +260,12 @@ export default function FlowAccountDetailView({
           </div>
           <div className="ml-3">
             <p className={`text-sm font-medium ${
-              (account.category.type === 'INCOME') ? 'text-green-800' : 'text-red-800'
+              (account.category.type === 'INCOME') ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'
             }`}>
               📊 {t('account.flow.operation.tips')}
             </p>
             <p className={`text-sm ${
-              (account.category.type === 'INCOME') ? 'text-green-700' : 'text-red-700'
+              (account.category.type === 'INCOME') ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
             }`}>
               {t('account.flow.operation.description', {
                 type: account.category.type === 'INCOME' ? t('type.income') : t('type.expense')
@@ -281,7 +281,7 @@ export default function FlowAccountDetailView({
           <li className="inline-flex items-center">
             <Link
               href="/dashboard"
-              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600"
+              className="inline-flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
             >
               <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
@@ -294,7 +294,7 @@ export default function FlowAccountDetailView({
               <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
               </svg>
-              <span className="ml-1 text-sm font-medium text-gray-500 md:ml-2">
+              <span className="ml-1 text-sm font-medium text-gray-500 dark:text-gray-400 md:ml-2">
                 {account.name}
               </span>
             </div>
@@ -305,16 +305,16 @@ export default function FlowAccountDetailView({
       {/* 账户标题和操作 */}
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{account.name}</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{account.name}</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
             {account.category.name}
             {account.description && ` • ${account.description}`}
           </p>
           <div className="mt-2">
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
               (account.category.type === 'INCOME')
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
             }`}>
               {account.category.type === 'INCOME' ? t('type.income.account') : t('type.expense.account')} • {t('type.flow.data')}
             </span>
@@ -334,7 +334,7 @@ export default function FlowAccountDetailView({
 
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md shadow-sm text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            className="inline-flex items-center px-4 py-2 border border-red-300 dark:border-red-600 text-sm font-medium rounded-md shadow-sm text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
           >
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -371,17 +371,17 @@ export default function FlowAccountDetailView({
       </div>
 
       {/* 交易列表 */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {t('account.transactions')}
             </h2>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
               {t('account.total.transactions', { count: pagination.totalItems })}
             </span>
           </div>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             {t('account.transaction.description', {
               type: account.category.type === 'INCOME' ? t('type.income') : t('type.expense')
             })}
@@ -391,7 +391,7 @@ export default function FlowAccountDetailView({
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-500">{t('common.loading')}</p>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">{t('common.loading')}</p>
           </div>
         ) : (
           <TransactionList

@@ -172,6 +172,7 @@ export default function StockMonthlySummaryChart({
     const chartTitle = title || t('chart.stock.monthly.summary')
 
     const option: echarts.EChartsOption = {
+      backgroundColor: 'transparent',
       title: {
         text: chartTitle,
         left: 'center',

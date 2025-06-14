@@ -114,6 +114,7 @@ export default function StockAccountTrendChart({
     }
 
     const option: echarts.EChartsOption = {
+      backgroundColor: 'transparent',
       title: {
         text: t('chart.balance.change.trend'),
         left: 'center',

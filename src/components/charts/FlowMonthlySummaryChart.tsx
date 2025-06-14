@@ -167,6 +167,7 @@ export default function FlowMonthlySummaryChart({
     const chartTitle = title || (isIncomeCategory ? `${t('category.income')} - ${t('category.monthly.cash.flow.summary')}` : `${t('category.expense')} - ${t('category.monthly.cash.flow.summary')}`)
 
     const option: echarts.EChartsOption = {
+      backgroundColor: 'transparent',
       title: {
         text: chartTitle,
         left: 'center',

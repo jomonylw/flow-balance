@@ -43,5 +43,12 @@
   "common.date.yesterday": "Yesterday",
   "common.date.days.ago": "{{days}} days ago",
   "common.retry": "Retry",
-  "common.this.year": "This Year"
+  "common.this.year": "This Year",
+  "common.theme.light": "Light Mode",
+  "common.theme.dark": "Dark Mode",
+  "common.theme.system": "Follow System",
+  "common.theme.light.short": "Light",
+  "common.theme.dark.short": "Dark",
+  "common.theme.system.short": "Auto",
+  "common.theme.select": "Select Theme"
 }

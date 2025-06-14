@@ -125,18 +125,18 @@ export default function TransactionList({
 
     switch (transaction.type) {
       case 'INCOME':
-        return <span className="text-green-600 font-medium">+{symbol}{amount}</span>
+        return <span className="text-green-600 dark:text-green-400 font-medium">+{symbol}{amount}</span>
       case 'EXPENSE':
-        return <span className="text-red-600 font-medium">-{symbol}{amount}</span>
+        return <span className="text-red-600 dark:text-red-400 font-medium">-{symbol}{amount}</span>
 
       case 'BALANCE_ADJUSTMENT':
         // 余额调整：从备注中提取实际变化金额来显示正负号
         const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
         if (changeAmount !== null) {
           const sign = changeAmount >= 0 ? '+' : ''
-          return <span className="text-purple-600 font-medium">{sign}{symbol}{Math.abs(changeAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          return <span className="text-purple-600 dark:text-purple-400 font-medium">{sign}{symbol}{Math.abs(changeAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         } else {
-          return <span className="text-purple-600 font-medium">{symbol}{amount}</span>
+          return <span className="text-purple-600 dark:text-purple-400 font-medium">{symbol}{amount}</span>
         }
       default:
         return <span className="text-gray-600 dark:text-gray-400 font-medium">{symbol}{amount}</span>
@@ -331,7 +331,7 @@ export default function TransactionList({
                       type="checkbox"
                       checked={selectedTransactions.has(transaction.id)}
                       onChange={() => handleSelectTransaction(transaction.id)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
                     />
                   )}
                   <div className="flex-shrink-0">
@@ -348,7 +348,7 @@ export default function TransactionList({
                           {transaction.description}
                         </p>
                         {isBalanceAdjustment(transaction) && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
                             余额调整
                           </span>
                         )}
@@ -363,7 +363,7 @@ export default function TransactionList({
                           {!isBalanceAdjustment(transaction) && (
                             <>
                               <span> • </span>
-                              <span className="text-blue-600">
+                              <span className="text-blue-600 dark:text-blue-400">
                                 {transaction.type === 'INCOME' ? '收入' : '支出'}
                               </span>
                             </>
@@ -420,7 +420,7 @@ export default function TransactionList({
                   type="checkbox"
                   checked={selectedTransactions.has(transaction.id)}
                   onChange={() => handleSelectTransaction(transaction.id)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
                 />
               )}
 
@@ -439,7 +439,7 @@ export default function TransactionList({
                       </p>
                       {/* 交易类型标识 */}
                       {isBalanceAdjustment(transaction) && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
                           余额调整
                         </span>
                       )}
@@ -458,7 +458,7 @@ export default function TransactionList({
                       {!isBalanceAdjustment(transaction) && (
                         <>
                           <span>•</span>
-                          <span className="text-blue-600">
+                          <span className="text-blue-600 dark:text-blue-400">
                             {transaction.type === 'INCOME' ? '收入交易' : '支出交易'}
                           </span>
                         </>
