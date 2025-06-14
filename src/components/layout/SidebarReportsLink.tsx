@@ -14,46 +14,48 @@ export default function SidebarReportsLink({ onNavigate }: SidebarReportsLinkPro
   const isActive = pathname === '/reports'
 
   return (
-    <div className="mb-6">
+    <div className="mb-4">
       <Link
         href="/reports"
         onClick={onNavigate}
         className={`
-          flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors
+          group flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200
           ${isActive
-            ? 'bg-green-100 text-green-700 border border-green-200'
-            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+            ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg shadow-purple-500/25 transform scale-[1.02]'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:shadow-md hover:scale-[1.01] active:scale-[0.99] backdrop-blur-sm'
           }
         `}
       >
-        <div className="flex items-center">
-          <svg 
-            className={`mr-3 h-5 w-5 ${isActive ? 'text-green-600' : 'text-gray-400'}`} 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 00-2 2h-2a2 2 0 00-2 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2z" 
-            />
-          </svg>
-          {t('nav.reports')}
-        </div>
-        
-        {/* <div className="flex items-center space-x-1"> */}
-          {/* 新功能标识 */}
-          {/* <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            {t('common.new')}
-          </span> */}
-          {/* <button className="text-gray-400 hover:text-gray-600 focus:outline-none">
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+        <div className="flex items-center flex-1">
+          <div className={`
+            flex items-center justify-center w-10 h-10 rounded-lg mr-3 transition-all duration-200
+            ${isActive
+              ? 'bg-white/20 shadow-inner'
+              : 'bg-purple-100 dark:bg-purple-900/30 group-hover:bg-purple-200 dark:group-hover:bg-purple-800/50'
+            }
+          `}>
+            <svg
+              className={`h-5 w-5 ${isActive ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 00-2 2h-2a2 2 0 00-2 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2z"
+              />
             </svg>
-          </button> */}
-        {/* </div> */}
+          </div>
+          <span className="tracking-wide">{t('nav.reports')}</span>
+        </div>
+
+        {isActive && (
+          <div className="flex items-center">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+          </div>
+        )}
       </Link>
     </div>
   )

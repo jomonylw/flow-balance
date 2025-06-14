@@ -139,6 +139,37 @@ html {
   }
 }
 
+/* 树状菜单美化样式 */
+.tree-item-gradient-active {
+  background: linear-gradient(135deg,
+    rgb(239 246 255) 0%,
+    rgb(219 234 254) 50%,
+    rgb(191 219 254) 100%);
+}
+
+.dark .tree-item-gradient-active {
+  background: linear-gradient(135deg,
+    rgb(30 58 138 / 0.3) 0%,
+    rgb(30 64 175 / 0.2) 50%,
+    rgb(37 99 235 / 0.1) 100%);
+}
+
+.tree-item-gradient-hover {
+  background: linear-gradient(135deg,
+    rgb(249 250 251) 0%,
+    rgb(243 244 246) 50%,
+    rgb(229 231 235) 100%);
+}
+
+.dark .tree-item-gradient-hover {
+  background: linear-gradient(135deg,
+    rgb(31 41 55 / 0.5) 0%,
+    rgb(55 65 81 / 0.3) 50%,
+    rgb(75 85 99 / 0.2) 100%);
+}
+
+
+
 /* 文本截断工具类 */
 .line-clamp-2 {
   display: -webkit-box;

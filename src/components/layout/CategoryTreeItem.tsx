@@ -321,14 +321,20 @@ export default function CategoryTreeItem({
     <div className="relative">
       <div
         className={`
-          flex items-center group hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors cursor-pointer
-          ${isActive ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700' : ''}
+          flex items-center group rounded-lg transition-all duration-200 cursor-pointer
+          mx-1 my-0.5 border border-transparent
+          ${isActive
+            ? 'bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border-blue-200 dark:border-blue-700/50 shadow-sm'
+            : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-800/50 dark:hover:to-gray-700/30 hover:border-gray-200 dark:hover:border-gray-600/50 hover:shadow-sm'
+          }
         `}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        style={{ paddingLeft: `${level * 16 + 12}px` }}
         onClick={() => {
           router.push(`/categories/${category.id}`)
         }}
       >
+
+
         {/* 展开/折叠图标 */}
         <button
           onClick={(e) => {
@@ -337,38 +343,47 @@ export default function CategoryTreeItem({
             onToggle()
           }}
           className={`
-            mr-1 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors
-            ${hasChildren ? 'visible' : 'invisible'}
+            mr-2 p-1.5 rounded-lg transition-all duration-200
+            ${hasChildren
+              ? 'hover:bg-white/80 dark:hover:bg-gray-800/80 hover:shadow-md visible'
+              : 'invisible'
+            }
           `}
         >
           <svg
-            className={`h-3 w-3 text-gray-500 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+            className={`h-3.5 w-3.5 text-gray-500 dark:text-gray-400 transition-all duration-200 hover:text-gray-700 dark:hover:text-gray-200 ${isExpanded ? 'rotate-90' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            strokeWidth={2.5}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </button>
 
         {/* 分类图标 */}
-        <div className="mr-2 flex-shrink-0">
-          <svg className="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-          </svg>
+        <div className="mr-3 flex-shrink-0">
+          <div className="p-1.5 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 shadow-sm">
+            <svg className="h-4 w-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+            </svg>
+          </div>
         </div>
 
         {/* 分类名称和余额 */}
-        <div className="flex-1 py-2">
+        <div className="flex-1 py-3 min-w-0">
           <div
             className={`
-              text-sm font-medium truncate block
-              ${isActive ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'}
+              text-sm font-semibold truncate transition-colors duration-200
+              ${isActive
+                ? 'text-blue-700 dark:text-blue-300'
+                : 'text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-gray-100'
+              }
             `}
           >
             {category.name}
           </div>
-          <div className={`text-xs mt-1 ${getAmountColor()}`}>
+          <div className={`text-xs mt-1.5 font-semibold transition-colors duration-200 ${getAmountColor()}`}>
             {currencySymbol}{Math.abs(balance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
@@ -381,9 +396,9 @@ export default function CategoryTreeItem({
             setShowContextMenu(true)
           }}
           onContextMenu={handleContextMenu}
-          className="mr-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="mr-3 p-2 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:shadow-md"
         >
-          <svg className="h-4 w-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-4 w-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
           </svg>
         </button>
