@@ -71,7 +71,7 @@ export default function TagFormModal({
     e.preventDefault()
     
     if (!formData.name.trim()) {
-      showError('验证失败', '标签名称不能为空')
+      showError(t('validation.failed'), t('tag.name.required'))
       return
     }
 

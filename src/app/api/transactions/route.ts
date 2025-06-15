@@ -105,7 +105,11 @@ try {
       prisma.transaction.findMany({
         where,
         include: {
-          account: true,
+          account: {
+            include: {
+              category: true
+            }
+          },
           category: true,
           currency: true,
           tags: {
@@ -290,7 +294,11 @@ export async function POST(request: NextRequest) {
         }
       },
       include: {
-        account: true,
+        account: {
+          include: {
+            category: true
+          }
+        },
         category: true,
         currency: true,
         tags: {

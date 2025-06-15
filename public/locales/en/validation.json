@@ -1,4 +1,5 @@
 {
+  "validation.failed": "Validation Failed",
   "validation.account.type.mismatch": "Account \"{{accountName}}\" ({{accountType}}) contains mismatched transaction type: {{transactionType}}",
   "validation.stock.account.suggestion": "Stock account \"{{accountName}}\" should use \"Update Balance\" function instead of adding transactions directly",
   "validation.optimization.suggestions": "Optimization Suggestions"

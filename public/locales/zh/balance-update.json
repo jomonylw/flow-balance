@@ -48,5 +48,6 @@
   "balance.update.new.balance.placeholder": "输入新的余额",
   "balance.update.date": "更新日期",
   "balance.update.notes.optional": "备注（可选）",
-  "balance.update.notes.placeholder": "添加备注信息..."
+  "balance.update.notes.placeholder": "添加备注信息...",
+  "balance.update.default.notes": "余额更新"
 }

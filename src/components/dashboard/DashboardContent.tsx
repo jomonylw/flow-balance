@@ -41,6 +41,84 @@ interface Account {
 
 
 
+interface NetWorthChartData {
+  xAxis: string[]
+  series: {
+    name: string
+    type: string
+    data: number[]
+    smooth?: boolean
+    itemStyle: {
+      color: string
+    }
+  }[]
+}
+
+interface CashFlowChartData {
+  xAxis: string[]
+  series: {
+    name: string
+    type: string
+    data: number[]
+    itemStyle: {
+      color: string
+    }
+    yAxisIndex?: number
+  }[]
+}
+
+interface ChartData {
+  netWorthChart: NetWorthChartData
+  cashFlowChart: CashFlowChartData
+  currency: {
+    code: string
+    symbol: string
+  }
+}
+
+interface ValidationDetails {
+  accountsChecked: number
+  transactionsChecked: number
+  categoriesWithoutType: number
+  invalidTransactions: number
+  businessLogicViolations: number
+}
+
+interface ValidationResult {
+  isValid: boolean
+  errors: string[]
+  warnings: string[]
+  suggestions: string[]
+  score?: number
+  details?: ValidationDetails
+}
+
+interface SummaryData {
+  totalAssets: {
+    amount: number
+    currency: { symbol: string }
+    accountCount: number
+  }
+  totalLiabilities: {
+    amount: number
+    currency: { symbol: string }
+    accountCount: number
+  }
+  netWorth: {
+    amount: number
+    currency: { symbol: string }
+  }
+  recentActivity: {
+    summaryInBaseCurrency: {
+      net: number
+      income: number
+      expense: number
+    }
+    baseCurrency: { symbol: string }
+    period: string
+  }
+}
+
 interface Stats {
   accountCount: number
   transactionCount: number
@@ -63,11 +141,11 @@ export default function DashboardContent({
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
   const [defaultTransactionType, setDefaultTransactionType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE')
-  const [chartData, setChartData] = useState<any>(null)
+  const [chartData, setChartData] = useState<ChartData | null>(null)
   const [isLoadingCharts, setIsLoadingCharts] = useState(true)
   const [chartError, setChartError] = useState<string | null>(null)
-  const [validationResult, setValidationResult] = useState<any>(null)
-  const [summaryData, setSummaryData] = useState<any>(null)
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
+  const [summaryData, setSummaryData] = useState<SummaryData | null>(null)
   const [isLoadingSummary, setIsLoadingSummary] = useState(true)
 
   // 监听所有数据更新事件
@@ -315,61 +393,61 @@ export default function DashboardContent({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* 总资产 */}
             <div className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-medium ${resolvedTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>{t('dashboard.total.assets.card')}</p>
-                  <p className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-blue-100' : 'text-blue-900'}`}>
-                    {summaryData.totalAssets ? (
-                      <>
-                        {summaryData.totalAssets.currency.symbol}
-                        {summaryData.totalAssets.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </>
-                    ) : (
-                      <>
-                        {summaryData.netWorth.currency.symbol}
-                        0.00
-                      </>
-                    )}
-                  </p>
-                  <p className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
-                    {summaryData.totalAssets ? summaryData.totalAssets.accountCount : 0} {t('dashboard.accounts.count', { count: summaryData.totalAssets ? summaryData.totalAssets.accountCount : 0 }).replace(/\d+\s*/, '')}
-                  </p>
-                </div>
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${resolvedTheme === 'dark' ? 'bg-blue-800' : 'bg-blue-100'}`}>
+              <div className="flex items-center mb-3">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${resolvedTheme === 'dark' ? 'bg-blue-800' : 'bg-blue-100'}`}>
                   <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
                 </div>
+                <h3 className={`text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>{t('dashboard.total.assets.card')}</h3>
+              </div>
+              <div>
+                <p className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-blue-100' : 'text-blue-900'}`}>
+                  {summaryData.totalAssets ? (
+                    <>
+                      {summaryData.totalAssets.currency.symbol}
+                      {summaryData.totalAssets.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </>
+                  ) : (
+                    <>
+                      {summaryData.netWorth.currency.symbol}
+                      0.00
+                    </>
+                  )}
+                </p>
+                <p className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
+                  {summaryData.totalAssets ? summaryData.totalAssets.accountCount : 0} {t('dashboard.accounts.count', { count: summaryData.totalAssets ? summaryData.totalAssets.accountCount : 0 }).replace(/\d+\s*/, '')}
+                </p>
               </div>
             </div>
 
             {/* 总负债 */}
             <div className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200'}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-medium ${resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-700'}`}>{t('dashboard.total.liabilities.card')}</p>
-                  <p className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900'}`}>
-                    {summaryData.totalLiabilities ? (
-                      <>
-                        {summaryData.totalLiabilities.currency.symbol}
-                        {summaryData.totalLiabilities.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </>
-                    ) : (
-                      <>
-                        {summaryData.netWorth.currency.symbol}
-                        0.00
-                      </>
-                    )}
-                  </p>
-                  <p className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
-                    {summaryData.totalLiabilities ? summaryData.totalLiabilities.accountCount : 0} {t('dashboard.accounts.count', { count: summaryData.totalLiabilities ? summaryData.totalLiabilities.accountCount : 0 }).replace(/\d+\s*/, '')}
-                  </p>
-                </div>
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${resolvedTheme === 'dark' ? 'bg-red-800' : 'bg-red-100'}`}>
+              <div className="flex items-center mb-3">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${resolvedTheme === 'dark' ? 'bg-red-800' : 'bg-red-100'}`}>
                   <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                 </div>
+                <h3 className={`text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-700'}`}>{t('dashboard.total.liabilities.card')}</h3>
+              </div>
+              <div>
+                <p className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900'}`}>
+                  {summaryData.totalLiabilities ? (
+                    <>
+                      {summaryData.totalLiabilities.currency.symbol}
+                      {summaryData.totalLiabilities.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </>
+                  ) : (
+                    <>
+                      {summaryData.netWorth.currency.symbol}
+                      0.00
+                    </>
+                  )}
+                </p>
+                <p className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
+                  {summaryData.totalLiabilities ? summaryData.totalLiabilities.accountCount : 0} {t('dashboard.accounts.count', { count: summaryData.totalLiabilities ? summaryData.totalLiabilities.accountCount : 0 }).replace(/\d+\s*/, '')}
+                </p>
               </div>
             </div>
 
@@ -379,31 +457,8 @@ export default function DashboardContent({
                 ? (resolvedTheme === 'dark' ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200')
                 : (resolvedTheme === 'dark' ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200')
             }`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-medium ${
-                    summaryData.netWorth.amount >= 0
-                      ? (resolvedTheme === 'dark' ? 'text-green-300' : 'text-green-700')
-                      : (resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-700')
-                  }`}>{t('dashboard.net.worth.card')}</p>
-                  <p className={`text-2xl font-bold ${
-                    summaryData.netWorth.amount >= 0
-                      ? (resolvedTheme === 'dark' ? 'text-green-100' : 'text-green-900')
-                      : (resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900')
-                  }`}>
-                    {summaryData.netWorth.amount >= 0 ? '+' : '-'}
-                    {summaryData.netWorth.currency.symbol}
-                    {Math.abs(summaryData.netWorth.amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <p className={`text-xs mt-1 ${
-                    summaryData.netWorth.amount >= 0
-                      ? (resolvedTheme === 'dark' ? 'text-green-400' : 'text-green-600')
-                      : (resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600')
-                  }`}>
-                    {t('dashboard.assets.minus.liabilities')}
-                  </p>
-                </div>
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+              <div className="flex items-center mb-3">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${
                   summaryData.netWorth.amount >= 0
                     ? (resolvedTheme === 'dark' ? 'bg-green-800' : 'bg-green-100')
                     : (resolvedTheme === 'dark' ? 'bg-red-800' : 'bg-red-100')
@@ -412,32 +467,55 @@ export default function DashboardContent({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                   </svg>
                 </div>
+                <h3 className={`text-lg font-semibold ${
+                  summaryData.netWorth.amount >= 0
+                    ? (resolvedTheme === 'dark' ? 'text-green-300' : 'text-green-700')
+                    : (resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-700')
+                }`}>{t('dashboard.net.worth.card')}</h3>
+              </div>
+              <div>
+                <p className={`text-2xl font-bold ${
+                  summaryData.netWorth.amount >= 0
+                    ? (resolvedTheme === 'dark' ? 'text-green-100' : 'text-green-900')
+                    : (resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900')
+                }`}>
+                  {summaryData.netWorth.amount >= 0 ? '+' : '-'}
+                  {summaryData.netWorth.currency.symbol}
+                  {Math.abs(summaryData.netWorth.amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className={`text-xs mt-1 ${
+                  summaryData.netWorth.amount >= 0
+                    ? (resolvedTheme === 'dark' ? 'text-green-400' : 'text-green-600')
+                    : (resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600')
+                }`}>
+                  {t('dashboard.assets.minus.liabilities')}
+                </p>
               </div>
             </div>
 
             {/* 本月现金流 */}
             <div className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-purple-900/20 border-purple-700' : 'bg-purple-50 border-purple-200'}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-medium ${resolvedTheme === 'dark' ? 'text-purple-300' : 'text-purple-700'}`}>{t('dashboard.monthly.net.income')}</p>
-                  <p className={`text-2xl font-bold ${
-                    summaryData.recentActivity.summaryInBaseCurrency.net >= 0
-                      ? (resolvedTheme === 'dark' ? 'text-green-100' : 'text-green-900')
-                      : (resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900')
-                  }`}>
-                    {summaryData.recentActivity.summaryInBaseCurrency.net >= 0 ? '+' : ''}
-                    {summaryData.recentActivity.baseCurrency.symbol}
-                    {Math.abs(summaryData.recentActivity.summaryInBaseCurrency.net).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <p className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>
-                    {summaryData.recentActivity.period}
-                  </p>
-                </div>
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${resolvedTheme === 'dark' ? 'bg-purple-800' : 'bg-purple-100'}`}>
+              <div className="flex items-center mb-3">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${resolvedTheme === 'dark' ? 'bg-purple-800' : 'bg-purple-100'}`}>
                   <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </div>
+                <h3 className={`text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-purple-300' : 'text-purple-700'}`}>{t('dashboard.monthly.net.income')}</h3>
+              </div>
+              <div>
+                <p className={`text-2xl font-bold ${
+                  summaryData.recentActivity.summaryInBaseCurrency.net >= 0
+                    ? (resolvedTheme === 'dark' ? 'text-green-100' : 'text-green-900')
+                    : (resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900')
+                }`}>
+                  {summaryData.recentActivity.summaryInBaseCurrency.net >= 0 ? '+' : '-'}
+                  {summaryData.recentActivity.baseCurrency.symbol}
+                  {Math.abs(summaryData.recentActivity.summaryInBaseCurrency.net).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>
+                  {summaryData.recentActivity.period}
+                </p>
               </div>
               <div className="mt-3 space-y-1 text-xs">
                 <div className="flex justify-between">
@@ -592,8 +670,8 @@ export default function DashboardContent({
 
       {/* 图表展示区域 */}
       <div className="space-y-6">
-        <h2 className={`text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
-          📊 {t('dashboard.financial.trend.analysis')}
+        <h2 className={`text-xl font-semibold mb-4 ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+          {t('dashboard.financial.trend.analysis')}
         </h2>
 
         {isLoadingCharts ? (
@@ -641,7 +719,7 @@ export default function DashboardContent({
         <div className="mb-4 sm:mb-6">
           <div className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('dashboard.data.quality.score')}</h3>
+              <h2 className={`text-xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('dashboard.data.quality.score')}</h2>
               <div className="flex items-center">
                 <div className={`text-2xl font-bold ${
                   validationResult.score >= 90 ? 'text-green-600' :

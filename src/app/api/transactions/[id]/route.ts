@@ -21,7 +21,11 @@ export async function GET(
         userId: user.id
       },
       include: {
-        account: true,
+        account: {
+          include: {
+            category: true
+          }
+        },
         category: true,
         currency: true,
         tags: {
@@ -189,7 +193,11 @@ export async function PUT(
         }
       },
       include: {
-        account: true,
+        account: {
+          include: {
+            category: true
+          }
+        },
         category: true,
         currency: true,
         tags: {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import TransactionFormModal from '@/components/transactions/TransactionFormModal'
+import SimpleFlowTransactionModal from '@/components/transactions/SimpleFlowTransactionModal'
 import QuickFlowTransactionModal from '@/components/dashboard/QuickFlowTransactionModal'
 import TransactionList from '@/components/transactions/TransactionList'
 import FlowCategorySummaryCard from './FlowCategorySummaryCard'
@@ -18,7 +18,6 @@ import {
   Currency,
   Tag,
   Transaction,
-  TransactionFormData,
   User
 } from '@/types/transaction'
 
@@ -68,6 +67,18 @@ interface FlowMonthlyData {
 
 type TimeRange = 'last12months' | 'all'
 
+// 简化的编辑交易数据类型，适配 SimpleFlowTransactionModal
+// 与 SimpleFlowTransactionModal 内部的 Transaction 接口保持一致
+interface EditingTransactionData {
+  id: string
+  accountId: string
+  amount: number
+  description: string
+  notes?: string
+  date: string
+  tagIds?: string[]
+}
+
 interface FlowCategoryDetailViewProps {
   category: Category
   accounts: Account[]
@@ -87,9 +98,10 @@ export default function FlowCategoryDetailView({
 }: FlowCategoryDetailViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
-  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
+  const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false)
   const [isQuickTransactionModalOpen, setIsQuickTransactionModalOpen] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState<TransactionFormData | null>(null)
+  const [editingTransaction, setEditingTransaction] = useState<EditingTransactionData | null>(null)
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [summaryData, setSummaryData] = useState<FlowSummaryData | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
@@ -264,20 +276,33 @@ export default function FlowCategoryDetailView({
       showError('错误', '交易数据不完整，缺少账户信息。')
       return
     }
-    const formTransaction: TransactionFormData = {
+
+    // 构建简化的编辑交易数据
+    const editingData: EditingTransactionData = {
       id: transaction.id,
       accountId: transaction.account.id,
-      categoryId: transaction.category.id,
-      currencyCode: transaction.currency.code,
-      type: transaction.type === 'BALANCE' ? 'EXPENSE' : transaction.type,
       amount: transaction.amount,
       description: transaction.description,
       notes: transaction.notes,
       date: transaction.date,
       tagIds: transaction.tags.map(t => t.tag.id)
     }
-    setEditingTransaction(formTransaction)
-    setIsTransactionModalOpen(true)
+
+    // 构建完整的账户信息，包含完整的 category 信息
+    const fullAccount: Account = {
+      id: transaction.account.id,
+      name: transaction.account.name,
+      category: {
+        id: transaction.category.id, // 从交易的 category 获取 id
+        name: transaction.category.name, // 从交易的 category 获取 name
+        type: transaction.category.type // 从交易的 category 获取 type
+      },
+      currencyCode: transaction.currency.code // 从交易的 currency 获取货币代码
+    }
+
+    setEditingTransaction(editingData)
+    setEditingAccount(fullAccount)
+    setIsEditTransactionModalOpen(true)
   }
 
   const handleDeleteTransaction = (transactionId: string) => {
@@ -588,18 +613,22 @@ export default function FlowCategoryDetailView({
         defaultCategoryId={category.id}
       />
 
-      {/* 交易表单模态框 - 用于编辑交易 */}
-      <TransactionFormModal
-        isOpen={isTransactionModalOpen}
-        onClose={() => setIsTransactionModalOpen(false)}
-        onSuccess={handleTransactionSuccess}
-        transaction={editingTransaction}
-        accounts={accounts}
-        categories={categories}
-        currencies={currencies}
-        tags={tags}
-        defaultCategoryId={category.id}
-      />
+      {/* 简化交易表单模态框 - 用于编辑交易 */}
+      {editingAccount && (
+        <SimpleFlowTransactionModal
+          isOpen={isEditTransactionModalOpen}
+          onClose={() => {
+            setIsEditTransactionModalOpen(false)
+            setEditingTransaction(null)
+            setEditingAccount(null)
+          }}
+          onSuccess={handleTransactionSuccess}
+          transaction={editingTransaction || undefined}
+          account={editingAccount}
+          currencies={currencies}
+          tags={tags}
+        />
+      )}
 
       {/* 删除确认模态框 */}
       <ConfirmationModal

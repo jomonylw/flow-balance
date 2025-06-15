@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import Modal from '@/components/ui/Modal'
 import InputField from '@/components/ui/InputField'
-import SelectField from '@/components/ui/SelectField'
 import AuthButton from '@/components/ui/AuthButton'
 import TagFormModal from '@/components/ui/TagFormModal'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { publishTransactionCreate, publishTransactionUpdate } from '@/utils/DataUpdateManager'
 
 interface Account {
@@ -71,6 +71,7 @@ export default function SimpleFlowTransactionModal({
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const { tags: userTags } = useUserData()
+  const { resolvedTheme } = useTheme()
 
   // 简化的表单数据 - 保留必要字段包括标签
   const [formData, setFormData] = useState({
@@ -192,7 +193,7 @@ export default function SimpleFlowTransactionModal({
         accountId: account.id,
         categoryId: account.category.id, // 自动使用账户的分类
         currencyCode: accountCurrency, // 自动使用账户的货币
-        type: account.category.type === 'INCOME' ? 'INCOME' : 'EXPENSE', // 根据账户类型自动确定
+        type: account.category?.type === 'INCOME' ? 'INCOME' : 'EXPENSE', // 根据账户类型自动确定
         amount: parseFloat(formData.amount),
         description: formData.description.trim(),
         notes: formData.notes.trim(),
@@ -255,10 +256,11 @@ export default function SimpleFlowTransactionModal({
 
   // 获取账户类型的显示信息
   const getAccountTypeInfo = () => {
-    const isIncome = account.category.type === 'INCOME'
+    const accountType = account.category?.type
+    const isIncome = accountType === 'INCOME'
     return {
       icon: isIncome ? '💰' : '💸',
-      label: isIncome ? '收入' : '支出',
+      label: isIncome ? t('common.income') : t('common.expense'),
       color: isIncome ? 'text-green-600' : 'text-red-600'
     }
   }
@@ -269,33 +271,35 @@ export default function SimpleFlowTransactionModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${transaction ? '编辑' : '新增'}${accountTypeInfo.label}交易 - ${account.name}`}
+      title={`${transaction ? t('common.edit') : t('common.add')}${accountTypeInfo.label}${t('transaction.title')} - ${account.name}`}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {errors.general && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <div className={`border border-red-200 text-red-700 px-4 py-3 rounded ${
+            resolvedTheme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'
+          }`}>
             {errors.general}
           </div>
         )}
 
         {/* 账户信息显示 */}
-        <div className="bg-gray-50 p-4 rounded-lg">
+        <div className={`p-4 rounded-lg ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-lg">{accountTypeInfo.icon}</span>
                 <span className={`font-medium ${accountTypeInfo.color}`}>
-                  {accountTypeInfo.label}账户
+                  {accountTypeInfo.label}{t('account.title')}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className={`text-sm mt-1 ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                 {account.name} ({account.category.name})
               </p>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-500">货币</div>
-              <div className="font-medium">
+              <div className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('common.currency')}</div>
+              <div className={`font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                 {currencyInfo?.symbol} {currencyInfo?.name}
               </div>
             </div>
@@ -307,7 +311,7 @@ export default function SimpleFlowTransactionModal({
           <InputField
             type="number"
             name="amount"
-            label={`${accountTypeInfo.label}金额`}
+            label={`${accountTypeInfo.label}${t('transaction.amount')}`}
             value={formData.amount}
             onChange={handleChange}
             placeholder="0.00"
@@ -319,7 +323,7 @@ export default function SimpleFlowTransactionModal({
           <InputField
             type="date"
             name="date"
-            label="交易日期"
+            label={t('transaction.date')}
             value={formData.date}
             onChange={handleChange}
             error={errors.date}
@@ -330,18 +334,18 @@ export default function SimpleFlowTransactionModal({
         {/* 描述 */}
         <InputField
           name="description"
-          label="交易描述"
+          label={t('transaction.description')}
           value={formData.description}
           onChange={handleChange}
-          placeholder={`请输入${accountTypeInfo.label}描述...`}
+          placeholder={t('transaction.description.placeholder', { type: accountTypeInfo.label })}
           error={errors.description}
           required
         />
 
         {/* 标签选择 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            标签（可选）
+          <label className={`block text-sm font-medium mb-2 ${resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            {t('tag.label.optional')}
           </label>
           <div className="space-y-3">
             {/* 已选标签显示 */}
@@ -386,7 +390,9 @@ export default function SimpleFlowTransactionModal({
 
             {/* 可选标签列表 */}
             {availableTags.length > 0 && (
-              <div className="border border-gray-200 rounded-md p-3 max-h-32 overflow-y-auto">
+              <div className={`border rounded-md p-3 max-h-32 overflow-y-auto ${
+                resolvedTheme === 'dark' ? 'border-gray-600' : 'border-gray-200'
+              }`}>
                 <div className="flex flex-wrap gap-2">
                   {availableTags.map(tag => {
                     // 从 UserDataContext 获取标签颜色信息
@@ -399,7 +405,7 @@ export default function SimpleFlowTransactionModal({
                         onClick={() => handleTagToggle(tag.id)}
                         className={`
                           inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors
-                          ${formData.tagIds.includes(tag.id) ? 'ring-2 ring-offset-1' : 'hover:bg-gray-100'}
+                          ${formData.tagIds.includes(tag.id) ? 'ring-2 ring-offset-1' : (resolvedTheme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}
                         `}
                         style={formData.tagIds.includes(tag.id) && currentColor ? {
                           backgroundColor: currentColor + '20',
@@ -424,7 +430,7 @@ export default function SimpleFlowTransactionModal({
             )}
 
             {/* 创建新标签 */}
-            <div className="border-t border-gray-200 pt-3">
+            <div className={`border-t pt-3 ${resolvedTheme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
               <button
                 type="button"
                 onClick={() => setShowTagFormModal(true)}
@@ -433,7 +439,7 @@ export default function SimpleFlowTransactionModal({
                 <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                创建新标签
+                {t('tag.create.new')}
               </button>
             </div>
           </div>
@@ -441,8 +447,8 @@ export default function SimpleFlowTransactionModal({
 
         {/* 备注 */}
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            备注（可选）
+          <label htmlFor="notes" className={`block text-sm font-medium mb-1 ${resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            {t('transaction.notes.optional')}
           </label>
           <textarea
             id="notes"
@@ -450,23 +456,31 @@ export default function SimpleFlowTransactionModal({
             value={formData.notes}
             onChange={handleChange}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="添加备注信息..."
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              resolvedTheme === 'dark'
+                ? 'bg-gray-800 border-gray-600 text-gray-100'
+                : 'bg-white border-gray-300 text-gray-900'
+            }`}
+            placeholder={t('transaction.notes.placeholder')}
           />
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+        <div className={`flex justify-end space-x-3 pt-4 border-t ${resolvedTheme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className={`px-4 py-2 text-sm font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              resolvedTheme === 'dark'
+                ? 'text-gray-300 bg-gray-800 hover:bg-gray-700'
+                : 'text-gray-700 bg-white hover:bg-gray-50'
+            }`}
           >
-            取消
+            {t('common.cancel')}
           </button>
           <AuthButton
             type="submit"
-            label={transaction ? '保存更改' : `添加${accountTypeInfo.label}`}
+            label={transaction ? t('common.save.changes') : `${t('common.add')}${accountTypeInfo.label}`}
             isLoading={isLoading}
             disabled={isLoading}
           />

@@ -48,5 +48,6 @@
   "balance.update.new.balance.placeholder": "Enter new balance",
   "balance.update.date": "Update Date",
   "balance.update.notes.optional": "Notes (Optional)",
-  "balance.update.notes.placeholder": "Add note information..."
+  "balance.update.notes.placeholder": "Add note information...",
+  "balance.update.default.notes": "Balance Update"
 }

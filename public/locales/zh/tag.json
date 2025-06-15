@@ -26,5 +26,7 @@
   "tag.create.failed": "创建失败",
   "tag.update.failed": "更新失败",
   "tag.operation.failed": "操作失败",
-  "tag.created.and.added": "标签已创建并添加到当前交易"
+  "tag.created.and.added": "标签已创建并添加到当前交易",
+  "tag.label.optional": "标签（可选）",
+  "tag.create.new": "创建新标签"
 }

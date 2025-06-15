@@ -85,5 +85,6 @@
   "account.delete.item.type": "Account",
   "account.validation.name.required": "Account name is required",
   "account.validation.name.too.long": "Account name cannot exceed 50 characters",
-  "account.added": "Account added"
+  "account.added": "Account added",
+  "account.title": "Account"
 }

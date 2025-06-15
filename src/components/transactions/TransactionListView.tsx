@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import TransactionFormModal from './TransactionFormModal'
+import QuickFlowTransactionModal from '@/components/dashboard/QuickFlowTransactionModal'
+import SimpleFlowTransactionModal from './SimpleFlowTransactionModal'
 import TransactionList from './TransactionList'
 import TransactionFilters from './TransactionFilters'
 import TransactionStats from './TransactionStats'
@@ -13,7 +14,6 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useUserData } from '@/contexts/UserDataContext'
 import {
   Transaction,
-  TransactionFormData,
   User
 } from '@/types/transaction'
 
@@ -36,11 +36,12 @@ export default function TransactionListView({
 }: TransactionListViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
-  const { accounts, categories, currencies, tags } = useUserData()
+  const { currencies, tags } = useUserData()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState<TransactionFormData | null>(null)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
   const [pagination, setPagination] = useState({
@@ -111,7 +112,7 @@ export default function TransactionListView({
 
   const handleAddTransaction = () => {
     setEditingTransaction(null)
-    setIsTransactionModalOpen(true)
+    setIsCreateModalOpen(true)
   }
 
   const handleEditTransaction = (transaction: Transaction) => {
@@ -120,20 +121,8 @@ export default function TransactionListView({
       showError('错误', '交易数据不完整，缺少账户信息。')
       return
     }
-    const formTransaction: TransactionFormData = {
-      id: transaction.id,
-      accountId: transaction.account.id,
-      categoryId: transaction.category.id,
-      currencyCode: transaction.currency.code,
-      type: transaction.type === 'BALANCE' ? 'EXPENSE' : transaction.type,
-      amount: transaction.amount,
-      description: transaction.description,
-      notes: transaction.notes,
-      date: transaction.date,
-      tagIds: transaction.tags.map(t => t.tag.id)
-    }
-    setEditingTransaction(formTransaction)
-    setIsTransactionModalOpen(true)
+    setEditingTransaction(transaction)
+    setIsEditModalOpen(true)
   }
 
   const handleTransactionSuccess = () => {
@@ -262,17 +251,33 @@ export default function TransactionListView({
           )}
         </div>
 
-        {/* 交易表单模态框 */}
-        <TransactionFormModal
-          isOpen={isTransactionModalOpen}
-          onClose={() => setIsTransactionModalOpen(false)}
+        {/* 创建交易模态框 */}
+        <QuickFlowTransactionModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
           onSuccess={handleTransactionSuccess}
-          transaction={editingTransaction}
-          accounts={accounts}
-          categories={categories}
-          currencies={currencies}
-          tags={tags}
         />
+
+        {/* 编辑交易模态框 */}
+        {editingTransaction && editingTransaction.account && (
+          <SimpleFlowTransactionModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onSuccess={handleTransactionSuccess}
+            transaction={{
+              id: editingTransaction.id,
+              accountId: editingTransaction.account.id,
+              amount: editingTransaction.amount,
+              description: editingTransaction.description,
+              notes: editingTransaction.notes,
+              date: editingTransaction.date,
+              tagIds: editingTransaction.tags.map(t => t.tag.id)
+            }}
+            account={editingTransaction.account}
+            currencies={currencies}
+            tags={tags}
+          />
+        )}
 
         {/* 删除确认模态框 */}
         <ConfirmationModal

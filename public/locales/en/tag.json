@@ -26,5 +26,7 @@
   "tag.create.failed": "Creation failed",
   "tag.update.failed": "Update failed",
   "tag.operation.failed": "Operation failed",
-  "tag.created.and.added": "Tag created and added to current transaction"
+  "tag.created.and.added": "Tag created and added to current transaction",
+  "tag.label.optional": "Tags (Optional)",
+  "tag.create.new": "Create New Tag"
 }

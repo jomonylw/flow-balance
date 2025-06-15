@@ -481,7 +481,7 @@ export function validateTransactionForm(formData: any): ValidationResult {
 
   // 验证金额范围
   const amount = parseFloat(formData.amount)
-  if (amount > 1000000) {
+  if (amount > 10000000) {
     warnings.push('交易金额较大，请确认是否正确')
   }
 

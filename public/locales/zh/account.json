@@ -85,5 +85,6 @@
   "account.delete.item.type": "账户",
   "account.validation.name.required": "账户名称不能为空",
   "account.validation.name.too.long": "账户名称不能超过50个字符",
-  "account.added": "账户已添加"
+  "account.added": "账户已添加",
+  "account.title": "账户"
 }

@@ -15,7 +15,7 @@ interface QuickFlowTransactionModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
-  defaultType: 'INCOME' | 'EXPENSE'
+  defaultType?: 'INCOME' | 'EXPENSE' // 可选的默认交易类型
   defaultCategoryId?: string // 可选的预设分类ID
 }
 
@@ -23,7 +23,7 @@ export default function QuickFlowTransactionModal({
   isOpen,
   onClose,
   onSuccess,
-  defaultType,
+  defaultType = 'EXPENSE',
   defaultCategoryId
 }: QuickFlowTransactionModalProps) {
   const { t } = useLanguage()
@@ -41,6 +41,9 @@ export default function QuickFlowTransactionModal({
     tagIds: [] as string[]
   })
 
+  // 交易类型状态
+  const [transactionType, setTransactionType] = useState<'INCOME' | 'EXPENSE'>(defaultType)
+
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [showTagFormModal, setShowTagFormModal] = useState(false)
@@ -54,7 +57,7 @@ export default function QuickFlowTransactionModal({
   // 根据交易类型和可选的分类ID过滤账户
   const filteredAccounts = accounts.filter(account => {
     // 首先按交易类型过滤
-    if (account.category?.type !== defaultType) {
+    if (account.category?.type !== transactionType) {
       return false
     }
 
@@ -83,8 +86,15 @@ export default function QuickFlowTransactionModal({
         tagIds: []
       })
       setErrors({})
+      setTransactionType(defaultType) // 重置交易类型为默认值
     }
-  }, [isOpen])
+  }, [isOpen, defaultType])
+
+  // 当交易类型改变时，重置账户选择
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, accountId: '' }))
+    setErrors(prev => ({ ...prev, accountId: '' }))
+  }, [transactionType])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -111,14 +121,14 @@ export default function QuickFlowTransactionModal({
       tagIds: [...prev.tagIds, newTag.id]
     }))
     setShowTagFormModal(false)
-    showSuccess('创建成功', '标签已创建并添加到当前交易')
+    showSuccess(t('transaction.quick.tag.create.success'), t('transaction.quick.tag.added.success'))
   }
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
     if (!formData.accountId) {
-      newErrors.accountId = '请选择账户'
+      newErrors.accountId = t('transaction.quick.select.account.error')
     }
 
     if (!formData.amount) {
@@ -147,7 +157,7 @@ export default function QuickFlowTransactionModal({
     }
 
     if (!selectedAccount) {
-      setErrors({ general: '请选择有效的账户' })
+      setErrors({ general: t('transaction.quick.select.valid.account.error') })
       return
     }
 
@@ -159,7 +169,7 @@ export default function QuickFlowTransactionModal({
         accountId: selectedAccount.id,
         categoryId: selectedAccount.category.id, // 自动使用账户的分类
         currencyCode: accountCurrency, // 自动使用账户的货币
-        type: defaultType, // 使用传入的交易类型
+        type: transactionType, // 使用当前选择的交易类型
         amount: parseFloat(formData.amount),
         description: formData.description.trim(),
         notes: formData.notes.trim(),
@@ -183,15 +193,15 @@ export default function QuickFlowTransactionModal({
         onSuccess()
         onClose()
       } else {
-        const errorMessage = result.error || '创建交易失败'
+        const errorMessage = result.error || t('transaction.quick.create.failed')
         setErrors({ general: errorMessage })
-        showError('创建交易失败', errorMessage)
+        showError(t('transaction.quick.create.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Transaction form error:', error)
       const errorMessage = error instanceof Error ? error.message : t('error.network')
       setErrors({ general: errorMessage })
-      showError('创建交易失败', errorMessage)
+      showError(t('transaction.quick.create.failed'), errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -199,10 +209,10 @@ export default function QuickFlowTransactionModal({
 
   // 获取账户类型的显示信息
   const getAccountTypeInfo = () => {
-    const isIncome = defaultType === 'INCOME'
+    const isIncome = transactionType === 'INCOME'
     return {
       icon: isIncome ? '💰' : '💸',
-      label: isIncome ? '收入' : '支出',
+      label: isIncome ? t('transaction.quick.income') : t('transaction.quick.expense'),
       color: isIncome ? 'text-green-600' : 'text-red-600'
     }
   }
@@ -220,7 +230,7 @@ export default function QuickFlowTransactionModal({
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={`快速记录${accountTypeInfo.label}`}
+        title={t('transaction.quick.record.title', { type: accountTypeInfo.label })}
         size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -232,29 +242,61 @@ export default function QuickFlowTransactionModal({
             </div>
           )}
 
-          {/* 交易类型显示 */}
+          {/* 交易类型选择 */}
           <div className={`p-4 rounded-lg ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
-            <div className="flex items-center space-x-2">
-              <span className="text-lg">{accountTypeInfo.icon}</span>
-              <span className={`font-medium ${accountTypeInfo.color}`}>
-                {accountTypeInfo.label}交易
-              </span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">{accountTypeInfo.icon}</span>
+                <span className={`font-medium ${accountTypeInfo.color}`}>
+                  {t('transaction.quick.transaction', { type: accountTypeInfo.label })}
+                </span>
+              </div>
+
+              {/* 交易类型切换按钮 */}
+              <div className="flex rounded-md overflow-hidden border border-gray-300 dark:border-gray-600">
+                <button
+                  type="button"
+                  onClick={() => setTransactionType('EXPENSE')}
+                  className={`px-3 py-1 text-sm font-medium transition-colors ${
+                    transactionType === 'EXPENSE'
+                      ? 'bg-red-600 text-white'
+                      : resolvedTheme === 'dark'
+                      ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  💸 {t('transaction.quick.expense')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTransactionType('INCOME')}
+                  className={`px-3 py-1 text-sm font-medium transition-colors ${
+                    transactionType === 'INCOME'
+                      ? 'bg-green-600 text-white'
+                      : resolvedTheme === 'dark'
+                      ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  💰 {t('transaction.quick.income')}
+                </button>
+              </div>
             </div>
-            <p className={`text-sm mt-1 ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-              请选择{accountTypeInfo.label}账户并填写交易信息
+            <p className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              {t('transaction.quick.select.account.help', { type: accountTypeInfo.label })}
             </p>
           </div>
 
           {/* 账户选择 */}
           <SelectField
             name="accountId"
-            label={`${accountTypeInfo.label}账户`}
+            label={t('transaction.quick.account.label', { type: accountTypeInfo.label })}
             value={formData.accountId}
             onChange={handleChange}
             options={accountOptions}
             error={errors.accountId}
             required
-            help={`选择要记录${accountTypeInfo.label}的账户`}
+            help={t('transaction.quick.account.help', { type: accountTypeInfo.label })}
           />
 
           {/* 显示选中账户的货币信息 */}
@@ -265,14 +307,14 @@ export default function QuickFlowTransactionModal({
               <div className="flex items-center justify-between">
                 <div>
                   <div className={`text-sm ${resolvedTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>
-                    已选择账户：<span className="font-medium">{selectedAccount.name}</span>
+                    {t('transaction.quick.selected.account')}<span className="font-medium">{selectedAccount.name}</span>
                   </div>
                   <div className={`text-sm ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
-                    分类：{selectedAccount.category.name}
+                    {t('transaction.quick.category')}{selectedAccount.category.name}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className={`text-sm ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`}>货币</div>
+                  <div className={`text-sm ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`}>{t('transaction.quick.currency')}</div>
                   <div className={`font-medium ${resolvedTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>
                     {currencyInfo?.symbol} {currencyInfo?.name}
                   </div>
@@ -286,7 +328,7 @@ export default function QuickFlowTransactionModal({
             <InputField
               type="number"
               name="amount"
-              label={`${accountTypeInfo.label}金额`}
+              label={t('transaction.quick.amount.label', { type: accountTypeInfo.label })}
               value={formData.amount}
               onChange={handleChange}
               placeholder="0.00"
@@ -298,7 +340,7 @@ export default function QuickFlowTransactionModal({
             <InputField
               type="date"
               name="date"
-              label="交易日期"
+              label={t('transaction.quick.date.label')}
               value={formData.date}
               onChange={handleChange}
               error={errors.date}
@@ -309,10 +351,10 @@ export default function QuickFlowTransactionModal({
           {/* 描述 */}
           <InputField
             name="description"
-            label="交易描述"
+            label={t('transaction.quick.description.label')}
             value={formData.description}
             onChange={handleChange}
-            placeholder={`请输入${accountTypeInfo.label}描述...`}
+            placeholder={t('transaction.quick.description.placeholder', { type: accountTypeInfo.label })}
             error={errors.description}
             required
           />
@@ -320,7 +362,7 @@ export default function QuickFlowTransactionModal({
           {/* 标签选择 */}
           <div>
             <label className={`block text-sm font-medium mb-2 ${resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-              标签（可选）
+              {t('transaction.quick.tags.label')}
             </label>
             <div className="space-y-3">
               {/* 已选标签显示 */}
@@ -414,7 +456,7 @@ export default function QuickFlowTransactionModal({
                   <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  创建新标签
+                  {t('transaction.quick.tags.create')}
                 </button>
               </div>
             </div>
@@ -423,7 +465,7 @@ export default function QuickFlowTransactionModal({
           {/* 备注 */}
           <div>
             <label htmlFor="notes" className={`block text-sm font-medium mb-1 ${resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-              备注（可选）
+              {t('transaction.quick.notes.label')}
             </label>
             <textarea
               id="notes"
@@ -436,7 +478,7 @@ export default function QuickFlowTransactionModal({
                   ? 'bg-gray-800 border-gray-600 text-gray-100'
                   : 'bg-white border-gray-300 text-gray-900'
               }`}
-              placeholder="添加备注信息..."
+              placeholder={t('transaction.quick.notes.placeholder')}
             />
           </div>
 
@@ -451,11 +493,11 @@ export default function QuickFlowTransactionModal({
                   : 'text-gray-700 bg-white hover:bg-gray-50'
               }`}
             >
-              取消
+              {t('transaction.quick.cancel')}
             </button>
             <AuthButton
               type="submit"
-              label={`添加${accountTypeInfo.label}`}
+              label={t('transaction.quick.add', { type: accountTypeInfo.label })}
               isLoading={isLoading}
               disabled={isLoading}
             />

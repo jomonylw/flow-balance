@@ -7,6 +7,7 @@ import SelectField from '@/components/ui/SelectField'
 import AuthButton from '@/components/ui/AuthButton'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useToast } from '@/contexts/ToastContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { publishBalanceUpdate } from '@/utils/DataUpdateManager'
 
 interface Currency {
@@ -50,6 +51,7 @@ export default function BalanceUpdateModal({
 }: BalanceUpdateModalProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { resolvedTheme } = useTheme()
   const [formData, setFormData] = useState({
     newBalance: '',
     currencyCode: currencyCode,
@@ -135,18 +137,18 @@ export default function BalanceUpdateModal({
     const newErrors: Record<string, string> = {}
 
     if (!formData.newBalance.trim()) {
-      newErrors.newBalance = '请输入余额金额'
+      newErrors.newBalance = t('balance.update.enter.amount')
     } else if (isNaN(parseFloat(formData.newBalance))) {
-      newErrors.newBalance = '请输入有效的数字'
+      newErrors.newBalance = t('balance.update.valid.number')
     }
 
     // 更严格的币种验证
     if (!formData.currencyCode || formData.currencyCode.trim() === '') {
-      newErrors.currencyCode = '请选择币种'
+      newErrors.currencyCode = t('balance.update.select.currency')
     }
 
     if (!formData.updateDate) {
-      newErrors.updateDate = '请选择更新日期'
+      newErrors.updateDate = t('balance.update.select.date')
     }
 
     // 添加详细的调试信息
@@ -363,9 +365,6 @@ export default function BalanceUpdateModal({
     })
   }
 
-  const selectedCurrency = (currencies || []).find(c => c.code === formData.currencyCode)
-  const currencySymbol = selectedCurrency?.symbol || '$'
-
   // 当前余额显示的货币符号（基于传入的 currencyCode 参数）
   const currentBalanceCurrency = (currencies || []).find(c => c.code === currencyCode)
   const currentBalanceCurrencySymbol = currentBalanceCurrency?.symbol || '$'
@@ -399,26 +398,28 @@ export default function BalanceUpdateModal({
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {errors.general && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-            {errors.general}
+          <div className={`border border-red-200 rounded-md p-4 ${
+            resolvedTheme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'
+          }`}>
+            <div className="text-sm text-red-600">{errors.general}</div>
           </div>
         )}
 
         {/* 账户信息提示 */}
         <div className={`p-4 rounded-lg border ${
-          accountType === 'ASSET' 
-            ? 'bg-blue-50 border-blue-200' 
-            : 'bg-orange-50 border-orange-200'
+          accountType === 'ASSET'
+            ? (resolvedTheme === 'dark' ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200')
+            : (resolvedTheme === 'dark' ? 'bg-orange-900/20 border-orange-700' : 'bg-orange-50 border-orange-200')
         }`}>
           <div className="flex items-center">
             <div className={`w-3 h-3 rounded-full mr-3 ${
               accountType === 'ASSET' ? 'bg-blue-500' : 'bg-orange-500'
             }`}></div>
             <div>
-              <p className="font-medium text-gray-900">
+              <p className={`font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                 {accountType === 'ASSET' ? t('balance.update.modal.asset.account') : t('balance.update.modal.liability.account')} • {t('balance.update.modal.stock.data')}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                 {t('balance.update.modal.current.balance')}: {currentBalanceCurrencySymbol}{currentBalance.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({currencyCode})
               </p>
             </div>
@@ -435,15 +436,13 @@ export default function BalanceUpdateModal({
             options={currencyOptions}
             error={errors.currencyCode}
             disabled={!!account.currencyCode}
-            help={account.currencyCode ? `此账户限制使用 ${account.currency?.name} (${account.currencyCode})` : undefined}
+            help={account.currencyCode ? t('balance.update.currency.locked', {
+              currencyName: account.currency?.name || '',
+              currencyCode: account.currencyCode
+            }) : undefined}
             required
           />
-          {/* 调试信息显示 */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-2 text-xs text-gray-500">
-              调试: currencyCode="{formData.currencyCode}", options={currencyOptions.length}, disabled={!!account.currencyCode}
-            </div>
-          )}
+
         </div>
 
         {/* 新余额和更新日期 */}
@@ -475,7 +474,9 @@ export default function BalanceUpdateModal({
 
         {/* 备注 */}
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="notes" className={`block text-sm font-medium mb-1 ${
+            resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          }`}>
             {t('balance.update.modal.notes')}
           </label>
           <textarea
@@ -484,17 +485,27 @@ export default function BalanceUpdateModal({
             value={formData.notes}
             onChange={handleChange}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              resolvedTheme === 'dark'
+                ? 'bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-400'
+                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+            }`}
             placeholder={t('balance.update.modal.notes.placeholder')}
           />
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+        <div className={`flex justify-end space-x-3 pt-4 border-t ${
+          resolvedTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+        }`}>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className={`px-4 py-2 text-sm font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              resolvedTheme === 'dark'
+                ? 'text-gray-300 bg-gray-800 hover:bg-gray-700'
+                : 'text-gray-700 bg-white hover:bg-gray-50'
+            }`}
           >
             {t('balance.update.modal.cancel')}
           </button>

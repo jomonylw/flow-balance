@@ -38,7 +38,7 @@
   "dashboard.network.error.charts": "网络错误，无法获取图表数据",
   "dashboard.no.chart.data": "暂无图表数据",
   "dashboard.add.transactions.first": "请先添加一些交易记录",
-  "dashboard.monthly.net.income": "本月净收入",
+  "dashboard.monthly.net.income": "净收入",
   "dashboard.assets.minus.liabilities": "资产 - 负债",
   "dashboard.accounts.count": "{{count}} 个账户",
   "dashboard.transaction.records": "交易记录",

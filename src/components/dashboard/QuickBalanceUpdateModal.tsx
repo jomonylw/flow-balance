@@ -160,7 +160,7 @@ export default function QuickBalanceUpdateModal({
           balanceChange,
           newBalance: newBalance,
           updateDate: formData.updateDate,
-          notes: formData.notes || '余额更新'
+          notes: formData.notes || t('balance.update.default.notes')
         })
       })
 
