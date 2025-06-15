@@ -414,7 +414,7 @@ export default function StockAccountDetailView({
             currencySymbol={currencySymbol}
             showAccount={false}
             readOnly={false}
-            allowDeleteBalanceAdjustment={true}
+
             pagination={{
               ...pagination,
               onPageChange: handlePageChange

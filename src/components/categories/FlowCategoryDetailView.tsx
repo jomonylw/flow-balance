@@ -405,7 +405,7 @@ export default function FlowCategoryDetailView({
           {t('transaction.create')}
         </button>
       }
-      actionsTip={t('category.flow.add.tip')}
+      // actionsTip={t('category.flow.add.tip')}
     >
       {/* 分类摘要卡片 */}
       <div className="mb-8">

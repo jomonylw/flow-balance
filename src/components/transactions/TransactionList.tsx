@@ -15,7 +15,7 @@ interface TransactionListProps {
   currencySymbol: string
   showAccount?: boolean
   readOnly?: boolean
-  allowDeleteBalanceAdjustment?: boolean // 是否允许删除余额调整记录
+
   // 新增分页属性
   pagination?: {
     currentPage: number
@@ -38,7 +38,7 @@ export default function TransactionList({
   currencySymbol,
   showAccount = true,
   readOnly = false,
-  allowDeleteBalanceAdjustment = false,
+
   pagination,
   // headerTitle,
   // headerDescription,
@@ -50,7 +50,7 @@ export default function TransactionList({
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false)
   const [showSingleDeleteConfirm, setShowSingleDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
-  const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null)
+
 
   // 获取最新的标签颜色信息
   const getUpdatedTagColor = (tagId: string): string | undefined => {
@@ -58,29 +58,10 @@ export default function TransactionList({
     return userTag?.color
   }
 
-  // 判断是否为余额调整记录
-  const isBalanceAdjustment = (transaction: Transaction) => {
-    return transaction.type === 'BALANCE' ||
-           transaction.description.includes('余额更新') ||
-           transaction.description.includes('余额调整') ||
-           transaction.notes?.includes('余额更新') ||
-           transaction.notes?.includes('余额调整')
-  }
+
 
   const getTypeIcon = (transaction: Transaction) => {
-    const isAdjustment = isBalanceAdjustment(transaction)
     const type = transaction.type
-
-    if (isAdjustment) {
-      // 余额调整记录使用特殊图标
-      return (
-        <div className="h-8 w-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-          <svg className="h-4 w-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </div>
-      )
-    }
 
     switch (type) {
       case 'INCOME':
@@ -99,7 +80,6 @@ export default function TransactionList({
             </svg>
           </div>
         )
-
       case 'BALANCE':
         return (
           <div className="h-8 w-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
@@ -128,32 +108,11 @@ export default function TransactionList({
         return <span className="text-green-600 dark:text-green-400 font-medium">+{symbol}{amount}</span>
       case 'EXPENSE':
         return <span className="text-red-600 dark:text-red-400 font-medium">-{symbol}{amount}</span>
-
       case 'BALANCE':
-        // 余额调整：从备注中提取实际变化金额来显示正负号
-        const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
-        if (changeAmount !== null) {
-          const sign = changeAmount >= 0 ? '+' : ''
-          return <span className="text-purple-600 dark:text-purple-400 font-medium">{sign}{symbol}{Math.abs(changeAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        } else {
-          return <span className="text-purple-600 dark:text-purple-400 font-medium">{symbol}{amount}</span>
-        }
+        return <span className="text-purple-600 dark:text-purple-400 font-medium">{symbol}{amount}</span>
       default:
         return <span className="text-gray-600 dark:text-gray-400 font-medium">{symbol}{amount}</span>
     }
-  }
-
-  // 从交易备注中提取余额变化金额
-  const extractBalanceChangeFromNotes = (notes: string): number | null => {
-    if (!notes) return null
-
-    // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
-    const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
-    if (match && match[1]) {
-      return parseFloat(match[1])
-    }
-
-    return null
   }
 
   const formatDate = (dateString: string) => {
@@ -224,7 +183,6 @@ export default function TransactionList({
 
   // 处理单个删除
   const handleSingleDelete = (transaction: Transaction) => {
-    setDeletingTransaction(transaction)
     setDeletingTransactionId(transaction.id)
     setShowSingleDeleteConfirm(true)
   }
@@ -234,14 +192,12 @@ export default function TransactionList({
       onDelete(deletingTransactionId)
       setShowSingleDeleteConfirm(false)
       setDeletingTransactionId(null)
-      setDeletingTransaction(null)
     }
   }
 
   const handleCancelSingleDelete = () => {
     setShowSingleDeleteConfirm(false)
     setDeletingTransactionId(null)
-    setDeletingTransaction(null)
   }
 
   if (transactions.length === 0) {
@@ -347,11 +303,6 @@ export default function TransactionList({
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {transaction.description}
                         </p>
-                        {isBalanceAdjustment(transaction) && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
-                            余额调整
-                          </span>
-                        )}
                       </div>
                       <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         <div>{transaction.category.name}</div>
@@ -360,14 +311,10 @@ export default function TransactionList({
                             <span>{transaction.account.name} • </span>
                           )}
                           <span>{formatDate(transaction.date)}</span>
-                          {!isBalanceAdjustment(transaction) && (
-                            <>
-                              <span> • </span>
-                              <span className="text-blue-600 dark:text-blue-400">
-                                {transaction.type === 'INCOME' ? '收入' : '支出'}
-                              </span>
-                            </>
-                          )}
+                          <span> • </span>
+                          <span className="text-blue-600 dark:text-blue-400">
+                            {transaction.type === 'INCOME' ? '收入' : transaction.type === 'EXPENSE' ? '支出' : '余额'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -378,26 +325,23 @@ export default function TransactionList({
                       </div>
                       {!readOnly && (
                         <div className="flex items-center space-x-1">
-                          {/* 编辑按钮：所有记录都允许编辑 */}
+                          {/* 编辑按钮 */}
                           <button
                             onClick={() => onEdit(transaction)}
                             className="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 focus:outline-none touch-manipulation"
-                            title={isBalanceAdjustment(transaction) ? t('transaction.edit') : t('transaction.edit')}
+                            title={t('transaction.edit')}
                           >
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
 
-                          {/* 删除按钮：根据交易类型和设置决定是否显示 */}
+                          {/* 删除按钮 */}
                           {onDelete && (
-                            (isBalanceAdjustment(transaction) && allowDeleteBalanceAdjustment) ||
-                            (!isBalanceAdjustment(transaction))
-                          ) && (
                             <button
                               onClick={() => handleSingleDelete(transaction)}
                               className="p-1 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 focus:outline-none touch-manipulation"
-                              title={isBalanceAdjustment(transaction) ? t('transaction.delete.balance') : t('transaction.delete.transaction')}
+                              title={t('transaction.delete')}
                             >
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -437,12 +381,6 @@ export default function TransactionList({
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {transaction.description}
                       </p>
-                      {/* 交易类型标识 */}
-                      {isBalanceAdjustment(transaction) && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
-                          余额调整
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
                       <span>{transaction.category.name}</span>
@@ -454,15 +392,10 @@ export default function TransactionList({
                       )}
                       <span>•</span>
                       <span>{formatDate(transaction.date)}</span>
-                      {/* 交易类型说明 */}
-                      {!isBalanceAdjustment(transaction) && (
-                        <>
-                          <span>•</span>
-                          <span className="text-blue-600 dark:text-blue-400">
-                            {transaction.type === 'INCOME' ? '收入交易' : '支出交易'}
-                          </span>
-                        </>
-                      )}
+                      <span>•</span>
+                      <span className="text-blue-600 dark:text-blue-400">
+                        {transaction.type === 'INCOME' ? '收入交易' : transaction.type === 'EXPENSE' ? '支出交易' : '余额更新'}
+                      </span>
                     </div>
                   </div>
 
@@ -473,26 +406,23 @@ export default function TransactionList({
 
                     {!readOnly && (
                       <div className="flex items-center space-x-2">
-                        {/* 编辑按钮：所有记录都允许编辑 */}
+                        {/* 编辑按钮 */}
                         <button
                           onClick={() => onEdit(transaction)}
                           className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 focus:outline-none"
-                          title={isBalanceAdjustment(transaction) ? t('transaction.edit') : t('transaction.edit')}
+                          title={t('transaction.edit')}
                         >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
 
-                        {/* 删除按钮：根据交易类型和设置决定是否显示 */}
+                        {/* 删除按钮 */}
                         {onDelete && (
-                          (isBalanceAdjustment(transaction) && allowDeleteBalanceAdjustment) ||
-                          (!isBalanceAdjustment(transaction))
-                        ) && (
                           <button
                             onClick={() => handleSingleDelete(transaction)}
                             className="text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 focus:outline-none"
-                            title={isBalanceAdjustment(transaction) ? t('transaction.delete.balance') : t('transaction.delete.transaction')}
+                            title={t('transaction.delete')}
                           >
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -622,8 +552,8 @@ export default function TransactionList({
       {/* 单个删除确认模态框 */}
       <ConfirmationModal
         isOpen={showSingleDeleteConfirm}
-        title={deletingTransaction && isBalanceAdjustment(deletingTransaction) ? t('transaction.delete.balance.title') : t('transaction.delete.transaction.title')}
-        message={deletingTransaction && isBalanceAdjustment(deletingTransaction) ? t('transaction.delete.balance.message') : t('transaction.delete.transaction.message')}
+        title={t('transaction.delete.transaction.title')}
+        message={t('transaction.delete.transaction.message')}
         confirmLabel={t('common.confirm.delete')}
         cancelLabel={t('common.cancel')}
         onConfirm={handleConfirmSingleDelete}

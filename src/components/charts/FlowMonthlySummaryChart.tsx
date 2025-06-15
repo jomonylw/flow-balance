@@ -40,40 +40,55 @@ export default function FlowMonthlySummaryChart({
   const { resolvedTheme } = useTheme()
 
   const chartRef = useRef<HTMLDivElement>(null)
-  const chartInstance = useRef<echarts.ECharts | null>(null)
 
   useEffect(() => {
-    if (!chartRef.current || !monthlyData) {
+    if (!chartRef.current || isLoading || !monthlyData) {
       return
     }
 
-    // 初始化图表
-    if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current, resolvedTheme === 'dark' ? 'dark' : null)
-    }
+    let chart: echarts.ECharts | null = null
 
-    renderFlowChart()
+    try {
+      // 初始化图表
+      chart = echarts.init(chartRef.current, resolvedTheme === 'dark' ? 'dark' : null)
 
-    // 响应式处理
-    const handleResize = () => {
-      chartInstance.current?.resize()
-    }
+      // 渲染图表
+      renderChart(chart)
 
-    window.addEventListener('resize', handleResize)
+      // 响应式处理
+      const handleResize = () => {
+        if (chart && !chart.isDisposed()) {
+          chart.resize()
+        }
+      }
+      window.addEventListener('resize', handleResize)
 
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      if (chartInstance.current) {
-        chartInstance.current.dispose()
-        chartInstance.current = null
+      return () => {
+        window.removeEventListener('resize', handleResize)
+        if (chart && !chart.isDisposed()) {
+          chart.dispose()
+        }
+      }
+    } catch (error) {
+      console.error('Error with chart:', error)
+      if (chart && !chart.isDisposed()) {
+        chart.dispose()
       }
     }
-  }, [monthlyData, baseCurrency, resolvedTheme, isLoading])
 
-  const renderFlowChart = () => {
-    if (!monthlyData || !chartInstance.current || isLoading) {
-      return
-    }
+    function renderChart(chart: echarts.ECharts) {
+      if (!chart || chart.isDisposed()) {
+        return
+      }
+
+      if (!monthlyData || Object.keys(monthlyData).length === 0) {
+        try {
+          chart.clear()
+        } catch (error) {
+          console.warn('Error clearing chart:', error)
+        }
+        return
+      }
 
     const months = Object.keys(monthlyData).sort()
 
@@ -286,9 +301,16 @@ export default function FlowMonthlySummaryChart({
       series
     }
 
-    // 设置图表选项
-    chartInstance.current.setOption(option)
-  }
+      // 设置图表选项
+      try {
+        if (chart && !chart.isDisposed()) {
+          chart.setOption(option)
+        }
+      } catch (error) {
+        console.error('Error setting chart option:', error)
+      }
+    }
+  }, [monthlyData, baseCurrency, resolvedTheme, t, isLoading, title])
 
   if (isLoading) {
     return (
@@ -303,6 +325,7 @@ export default function FlowMonthlySummaryChart({
   return (
     <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
       <div
+        key={`${resolvedTheme}-${isLoading}`}
         ref={chartRef}
         style={{ width: '100%', height: `${height}px` }}
       />

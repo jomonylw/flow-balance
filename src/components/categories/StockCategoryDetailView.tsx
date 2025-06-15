@@ -371,7 +371,7 @@ export default function StockCategoryDetailView({
           {t('balance.update.button') || '更新余额'}
         </button>
       }
-      actionsTip={t('category.stock.update.tip') || '点击更新该分类下账户的余额'}
+      // actionsTip={t('category.stock.update.tip') || '点击更新该分类下账户的余额'}
     >
 
       {/* 分类摘要卡片 */}
@@ -522,7 +522,7 @@ export default function StockCategoryDetailView({
             currencySymbol={currencySymbol}
             showAccount={true}
             readOnly={false}
-            allowDeleteBalanceAdjustment={true}
+
             pagination={{
               ...pagination,
               onPageChange: handlePageChange
