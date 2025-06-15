@@ -153,7 +153,6 @@ export default function StockMonthlySummaryChart({
     const lineSeries = {
       name: t('chart.total.balance'),
       type: 'line' as const,
-      yAxisIndex: 1,
       smooth: true,
       data: totalBalanceData,
       lineStyle: {
@@ -252,42 +251,25 @@ export default function StockMonthlySummaryChart({
           color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
         }
       },
-      yAxis: [
-        {
-          type: 'value',
-          name: t('chart.account.balance'),
-          position: 'left',
-          axisLabel: {
-            formatter: function (value: number) {
-              if (Math.abs(value) >= 1000) {
-                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
-              }
-              return `${baseCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-            },
-            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
+      yAxis: {
+        type: 'value',
+        name: t('chart.account.balance'),
+        axisLabel: {
+          formatter: function (value: number) {
+            if (Math.abs(value) >= 1000) {
+              return `${baseCurrency.symbol}${(value / 1000).toLocaleString('en-US', {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1
+              })}k`
+            }
+            return `${baseCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
           },
-          nameTextStyle: {
-            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
-          }
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
         },
-        {
-          type: 'value',
-          name: t('chart.balance.trend'),
-          position: 'right',
-          axisLabel: {
-            formatter: function (value: number) {
-              if (Math.abs(value) >= 1000) {
-                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
-              }
-              return `${baseCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-            },
-            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
-          },
-          nameTextStyle: {
-            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
-          }
+        nameTextStyle: {
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
         }
-      ],
+      },
       series
     }
 

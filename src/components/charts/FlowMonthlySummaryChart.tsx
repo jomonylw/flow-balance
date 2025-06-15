@@ -163,7 +163,6 @@ export default function FlowMonthlySummaryChart({
     const lineSeries = {
       name: isIncomeCategory ? t('category.total.income') : t('category.total.expense'),
       type: 'line' as const,
-      yAxisIndex: 1,
       smooth: true,
       data: totalFlowData,
       lineStyle: {
@@ -267,23 +266,6 @@ export default function FlowMonthlySummaryChart({
           type: 'value',
           name: isIncomeCategory ? t('category.income') : t('category.expense'),
           position: 'left',
-          axisLabel: {
-            formatter: function (value: number) {
-              if (Math.abs(value) >= 1000) {
-                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
-              }
-              return `${baseCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-            },
-            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
-          },
-          nameTextStyle: {
-            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
-          }
-        },
-        {
-          type: 'value',
-          name: isIncomeCategory ? t('category.income') + t('chart.balance.trend') : t('category.expense') + t('chart.balance.trend'),
-          position: 'right',
           axisLabel: {
             formatter: function (value: number) {
               if (Math.abs(value) >= 1000) {
