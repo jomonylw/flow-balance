@@ -7,6 +7,7 @@ import SelectField from './SelectField'
 import TextAreaField from './TextAreaField'
 import AuthButton from './AuthButton'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import ColorPicker, { COLOR_OPTIONS } from './ColorPicker'
 
 interface Currency {
@@ -21,10 +22,20 @@ interface Category {
   type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
 }
 
+interface Account {
+  id: string
+  name: string
+  description?: string
+  color?: string
+  currencyCode: string
+  currency?: Currency
+  category: Category
+}
+
 interface AddAccountModalProps {
   isOpen: boolean
   onClose: () => void
-  onSuccess: (account: any) => void
+  onSuccess: (account: Account) => void
   category: Category
   currencies?: Currency[]
 }
@@ -39,6 +50,7 @@ export default function AddAccountModal({
   currencies = []
 }: AddAccountModalProps) {
   const { t } = useLanguage()
+  const { resolvedTheme } = useTheme()
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -76,15 +88,15 @@ export default function AddAccountModal({
     if (!formData.name.trim()) {
       newErrors.name = t('validation.required.field')
     } else if (formData.name.length > 50) {
-      newErrors.name = '账户名称不能超过50个字符'
+      newErrors.name = t('validation.account.name.max.length')
     }
 
     if (formData.description && formData.description.length > 200) {
-      newErrors.description = '账户描述不能超过200个字符'
+      newErrors.description = t('validation.account.description.max.length')
     }
 
     if (!formData.currencyCode) {
-      newErrors.currencyCode = '请选择账户货币'
+      newErrors.currencyCode = t('validation.account.currency.required')
     }
 
     setErrors(newErrors)
@@ -121,11 +133,11 @@ export default function AddAccountModal({
         onSuccess(result.data)
         onClose()
       } else {
-        setErrors({ general: result.error || '创建账户失败' })
+        setErrors({ general: result.error || t('account.create.error') })
       }
     } catch (error) {
       console.error('Error creating account:', error)
-      setErrors({ general: '网络错误，请稍后重试' })
+      setErrors({ general: t('common.network.error') })
     } finally {
       setIsLoading(false)
     }
@@ -169,27 +181,29 @@ export default function AddAccountModal({
   const typeInfo = getAccountTypeInfo()
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`添加${typeInfo.label}账户`} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('account.add.title', { type: typeInfo.label })} size="lg">
       <form onSubmit={handleSubmit} className="space-y-6">
         {errors.general && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
-            <div className="text-sm text-red-600">{errors.general}</div>
+          <div className={`border border-red-200 text-red-700 px-4 py-3 rounded ${
+            resolvedTheme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'
+          }`}>
+            <div className="text-sm">{errors.general}</div>
           </div>
         )}
 
         {/* 账户类型信息 */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className={`rounded-lg p-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
           <h3 className={`font-medium ${typeInfo.color} mb-2`}>
             {category.name} • {typeInfo.label}
           </h3>
-          <p className="text-sm text-gray-600">
+          <p className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
             {typeInfo.description}
           </p>
         </div>
 
         {/* 基本信息 */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">{t('account.settings.basic.info')}</h3>
+          <h3 className={`text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('account.settings.basic.info')}</h3>
 
           <InputField
             name="name"
@@ -214,7 +228,7 @@ export default function AddAccountModal({
 
         {/* 显示设置 */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">{t('account.settings.display.settings')}</h3>
+          <h3 className={`text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('account.settings.display.settings')}</h3>
 
           <ColorPicker
             selectedColor={formData.color}
@@ -225,7 +239,7 @@ export default function AddAccountModal({
         {/* 货币设置 */}
         {currencies.length > 0 && (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">{t('account.settings.currency.settings')}</h3>
+            <h3 className={`text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('account.settings.currency.settings')}</h3>
 
             <SelectField
               name="currencyCode"
@@ -244,17 +258,21 @@ export default function AddAccountModal({
         )}
 
         {/* 操作按钮 */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+        <div className={`flex justify-end space-x-3 pt-4 border-t ${resolvedTheme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            className={`px-4 py-2 text-sm font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              resolvedTheme === 'dark'
+                ? 'text-gray-300 bg-gray-800 hover:bg-gray-700 border-gray-600'
+                : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+            }`}
           >
             {t('common.cancel')}
           </button>
           <AuthButton
             type="submit"
-            label={isLoading ? '创建中...' : '创建账户'}
+            label={isLoading ? t('account.creating') : t('account.create')}
             isLoading={isLoading}
             disabled={!formData.name.trim() || isLoading}
             variant="primary"

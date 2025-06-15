@@ -215,7 +215,7 @@ export default function AccountSettingsModal({
               required
             >
               {!selectedCurrency && (
-                <option value="" disabled>请选择货币</option>
+                <option value="" disabled>{t('account.settings.currency.select')}</option>
               )}
               {currencies.map((currency) => (
                 <option key={currency.code} value={currency.code}>

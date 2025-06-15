@@ -6,6 +6,7 @@ import StockCategorySummaryCard from './StockCategorySummaryCard'
 import StockMonthlySummaryChart from '@/components/charts/StockMonthlySummaryChart'
 import CategorySummaryItem from './CategorySummaryItem'
 import QuickBalanceUpdateModal from '@/components/dashboard/QuickBalanceUpdateModal'
+import BalanceUpdateModal from '@/components/accounts/BalanceUpdateModal'
 import DetailPageLayout from '@/components/ui/DetailPageLayout'
 
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
@@ -82,6 +83,8 @@ export default function StockCategoryDetailView({
   const [accounts, setAccounts] = useState<any[]>([])
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(true)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
+  const [isEditBalanceModalOpen, setIsEditBalanceModalOpen] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<string | null>(null)
@@ -261,12 +264,9 @@ export default function StockCategoryDetailView({
   const handleEditTransaction = (transaction: Transaction) => {
     // 检查是否为余额调整记录
     if (transaction.type === 'BALANCE') {
-      // 跳转到对应的账户页面进行编辑
-      if (transaction.account?.id) {
-        window.location.href = `/accounts/${transaction.account.id}`
-      } else {
-        showError(t('common.error'), t('error.account.not.found'))
-      }
+      // 设置编辑状态并打开编辑模态框
+      setEditingTransaction(transaction)
+      setIsEditBalanceModalOpen(true)
     } else {
       showError(t('common.error'), t('error.stock.category.edit.only.balance'))
     }
@@ -328,6 +328,12 @@ export default function StockCategoryDetailView({
 
     fetchSummaryData()
     loadTransactions(pagination.currentPage)
+  }
+
+  // 处理编辑余额记录成功
+  const handleEditBalanceSuccess = () => {
+    // 重新获取汇总数据和交易记录
+    handleBalanceUpdateSuccess()
   }
 
   // 处理余额更新按钮点击
@@ -549,6 +555,23 @@ export default function StockCategoryDetailView({
         onSuccess={handleBalanceUpdateSuccess}
         accountType={category.type as 'ASSET' | 'LIABILITY'}
       />
+
+      {/* 编辑余额记录模态框 */}
+      {editingTransaction && editingTransaction.account && (
+        <BalanceUpdateModal
+          isOpen={isEditBalanceModalOpen}
+          onClose={() => {
+            setIsEditBalanceModalOpen(false)
+            setEditingTransaction(null)
+          }}
+          onSuccess={handleEditBalanceSuccess}
+          account={editingTransaction.account}
+          currencies={currencies}
+          currentBalance={0} // 编辑模式下不需要当前余额
+          currencyCode={editingTransaction.currency?.code || user.settings?.baseCurrency?.code || 'CNY'}
+          editingTransaction={editingTransaction}
+        />
+      )}
     </DetailPageLayout>
   )
 }

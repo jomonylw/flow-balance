@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, forwardRef, useImperativeHandle }
 import CategoryTreeItem from './CategoryTreeItem'
 import AccountTreeItem from './AccountTreeItem'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { useAllDataListener } from '@/hooks/useDataUpdateListener'
 
 interface Category {
@@ -61,6 +62,9 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
   onDataChange,
   onNavigate
 }, ref) => {
+  // 使用语言上下文
+  const { t } = useLanguage()
+
   // 使用UserDataContext获取基础数据
   const {
     categories,
@@ -366,8 +370,8 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
   if (userDataLoading || isLoadingBalances) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600">加载中...</span>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+        <span className="ml-2 text-gray-600 dark:text-gray-400">{t('common.loading')}</span>
       </div>
     )
   }
@@ -375,15 +379,15 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
   if (userDataError || balancesError) {
     return (
       <div className="text-center py-8">
-        <div className="text-red-600 mb-2">❌ {userDataError || balancesError}</div>
+        <div className="text-red-600 dark:text-red-400 mb-2">❌ {userDataError || balancesError}</div>
         <button
           onClick={() => {
             // 这里可以同时刷新基础数据和余额
             fetchBalances()
           }}
-          className="text-blue-600 hover:text-blue-800 text-sm"
+          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm transition-colors duration-200"
         >
-          重试
+          {t('common.retry')}
         </button>
       </div>
     )
@@ -391,8 +395,8 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
 
   if (!filteredData || filteredData.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        {searchQuery ? '未找到匹配的分类或账户' : '暂无数据'}
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+        {searchQuery ? t('sidebar.search.no.results') : t('common.no.data')}
       </div>
     )
   }

@@ -15,7 +15,8 @@ export async function GET() {
         userId: user.id
       },
       include: {
-        category: true
+        category: true,
+        currency: true
       },
       orderBy: {
         name: 'asc'

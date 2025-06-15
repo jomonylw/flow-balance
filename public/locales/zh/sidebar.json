@@ -4,5 +4,6 @@
   "sidebar.add.top.category": "添加顶级分类",
   "sidebar.updating": "更新中...",
   "sidebar.expand.categories": "展开分类",
-  "sidebar.collapse.categories": "收起分类"
+  "sidebar.collapse.categories": "收起分类",
+  "sidebar.search.no.results": "未找到匹配的分类或账户"
 }

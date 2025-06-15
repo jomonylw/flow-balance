@@ -101,17 +101,17 @@ export function validateAccountDataWithI18n(accounts: Account[], t: TranslationF
     })
 
     // 验证存量类账户的特殊规则
-    if (account.category.type === 'ASSET' || account.category.type === 'LIABILITY') {
-      const balanceAdjustments = account.transactions.filter(t =>
-        t.description.includes('余额更新') || t.description.includes('余额调整')
-      )
+    // if (account.category.type === 'ASSET' || account.category.type === 'LIABILITY') {
+    //   const balanceAdjustments = account.transactions.filter(t =>
+    //     t.description.includes('余额更新') || t.description.includes('余额调整')
+    //   )
 
-      if (balanceAdjustments.length === 0 && account.transactions.length > 0) {
-        suggestions.push(
-          t('validation.stock.account.suggestion', { accountName: account.name })
-        )
-      }
-    }
+    //   if (balanceAdjustments.length === 0 && account.transactions.length > 0) {
+    //     suggestions.push(
+    //       t('validation.stock.account.suggestion', { accountName: account.name })
+    //     )
+    //   }
+    // }
 
     // 验证流量类账户的特殊规则
     if (account.category.type === 'INCOME' || account.category.type === 'EXPENSE') {
@@ -197,17 +197,17 @@ export function validateAccountData(accounts: Account[]): ValidationResult {
     })
 
     // 验证存量类账户的特殊规则
-    if (account.category.type === 'ASSET' || account.category.type === 'LIABILITY') {
-      const balanceAdjustments = account.transactions.filter(t => 
-        t.description.includes('余额更新') || t.description.includes('余额调整')
-      )
+    // if (account.category.type === 'ASSET' || account.category.type === 'LIABILITY') {
+    //   const balanceAdjustments = account.transactions.filter(t => 
+    //     t.description.includes('余额更新') || t.description.includes('余额调整')
+    //   )
       
-      if (balanceAdjustments.length === 0 && account.transactions.length > 0) {
-        suggestions.push(
-          `存量类账户 "${account.name}" 建议使用"余额更新"功能而不是直接添加交易`
-        )
-      }
-    }
+    //   if (balanceAdjustments.length === 0 && account.transactions.length > 0) {
+    //     suggestions.push(
+    //       `存量类账户 "${account.name}" 建议使用"余额更新"功能而不是直接添加交易`
+    //     )
+    //   }
+    // }
 
     // 验证流量类账户的特殊规则
     if (account.category.type === 'INCOME' || account.category.type === 'EXPENSE') {

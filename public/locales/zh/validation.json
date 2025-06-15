@@ -2,5 +2,9 @@
   "validation.failed": "验证失败",
   "validation.account.type.mismatch": "账户 “{{accountName}}” ({{accountType}}) 中存在不匹配的交易类型: {{transactionType}}",
   "validation.stock.account.suggestion": "存量类账户 “{{accountName}}” 建议使用“余额更新”功能而不是直接添加交易",
-  "validation.optimization.suggestions": "优化建议"
+  "validation.optimization.suggestions": "优化建议",
+  "validation.required.field": "此字段为必填项",
+  "validation.account.name.max.length": "账户名称不能超过50个字符",
+  "validation.account.description.max.length": "账户描述不能超过200个字符",
+  "validation.account.currency.required": "请选择账户货币"
 }

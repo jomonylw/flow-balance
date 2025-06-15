@@ -35,10 +35,6 @@ export default function CategoryDetailView({
     return (
       <FlowCategoryDetailView
         category={category as any}
-        accounts={accounts as any}
-        categories={categories as any}
-        currencies={currencies}
-        tags={tags as any}
         user={user}
       />
     )

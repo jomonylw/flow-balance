@@ -11,12 +11,11 @@ import FlowMonthlySummaryChart from '@/components/charts/FlowMonthlySummaryChart
 import DetailPageLayout from '@/components/ui/DetailPageLayout'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useUserData } from '@/contexts/UserDataContext'
 import { useTransactionListener } from '@/hooks/useDataUpdateListener'
 import {
   Account,
   Category,
-  Currency,
-  Tag,
   Transaction,
   User
 } from '@/types/transaction'
@@ -81,23 +80,16 @@ interface EditingTransactionData {
 
 interface FlowCategoryDetailViewProps {
   category: Category
-  accounts: Account[]
-  categories: Category[]
-  currencies: Currency[]
-  tags: Tag[]
   user: User
 }
 
 export default function FlowCategoryDetailView({
   category,
-  accounts,
-  categories,
-  currencies,
-  tags,
   user
 }: FlowCategoryDetailViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { accounts, categories, currencies, tags } = useUserData()
   const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false)
   const [isQuickTransactionModalOpen, setIsQuickTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<EditingTransactionData | null>(null)
@@ -610,7 +602,6 @@ export default function FlowCategoryDetailView({
         onClose={() => setIsQuickTransactionModalOpen(false)}
         onSuccess={handleTransactionSuccess}
         defaultType={category.type as 'INCOME' | 'EXPENSE'}
-        defaultCategoryId={category.id}
       />
 
       {/* 简化交易表单模态框 - 用于编辑交易 */}

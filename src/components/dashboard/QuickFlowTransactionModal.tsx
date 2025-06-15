@@ -23,7 +23,7 @@ export default function QuickFlowTransactionModal({
   isOpen,
   onClose,
   onSuccess,
-  defaultType = 'EXPENSE',
+  defaultType,
   defaultCategoryId
 }: QuickFlowTransactionModalProps) {
   const { t } = useLanguage()
@@ -42,7 +42,10 @@ export default function QuickFlowTransactionModal({
   })
 
   // 交易类型状态
-  const [transactionType, setTransactionType] = useState<'INCOME' | 'EXPENSE'>(defaultType)
+  const [transactionType, setTransactionType] = useState<'INCOME' | 'EXPENSE'>(defaultType || 'EXPENSE')
+
+  // 判断是否显示交易类型切换按钮（当defaultType明确传入时隐藏）
+  const showTypeToggle = defaultType === undefined
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -71,7 +74,7 @@ export default function QuickFlowTransactionModal({
 
   // 获取选中账户的信息
   const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
-  const accountCurrency = selectedAccount?.currencyCode || getBaseCurrency()?.code || 'USD'
+  const accountCurrency = selectedAccount?.currencyCode || selectedAccount?.currency?.code || getBaseCurrency()?.code || 'USD'
   const currencyInfo = currencies.find(c => c.code === accountCurrency) || getBaseCurrency()
 
   // 初始化表单数据
@@ -86,7 +89,7 @@ export default function QuickFlowTransactionModal({
         tagIds: []
       })
       setErrors({})
-      setTransactionType(defaultType) // 重置交易类型为默认值
+      setTransactionType(defaultType || 'EXPENSE') // 重置交易类型为默认值
     }
   }, [isOpen, defaultType])
 
@@ -244,7 +247,7 @@ export default function QuickFlowTransactionModal({
 
           {/* 交易类型选择 */}
           <div className={`p-4 rounded-lg ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
-            <div className="flex items-center justify-between mb-3">
+            <div className={`flex items-center ${showTypeToggle ? 'justify-between' : 'justify-start'} mb-3`}>
               <div className="flex items-center space-x-2">
                 <span className="text-lg">{accountTypeInfo.icon}</span>
                 <span className={`font-medium ${accountTypeInfo.color}`}>
@@ -252,35 +255,37 @@ export default function QuickFlowTransactionModal({
                 </span>
               </div>
 
-              {/* 交易类型切换按钮 */}
-              <div className="flex rounded-md overflow-hidden border border-gray-300 dark:border-gray-600">
-                <button
-                  type="button"
-                  onClick={() => setTransactionType('EXPENSE')}
-                  className={`px-3 py-1 text-sm font-medium transition-colors ${
-                    transactionType === 'EXPENSE'
-                      ? 'bg-red-600 text-white'
-                      : resolvedTheme === 'dark'
-                      ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  💸 {t('transaction.quick.expense')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTransactionType('INCOME')}
-                  className={`px-3 py-1 text-sm font-medium transition-colors ${
-                    transactionType === 'INCOME'
-                      ? 'bg-green-600 text-white'
-                      : resolvedTheme === 'dark'
-                      ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  💰 {t('transaction.quick.income')}
-                </button>
-              </div>
+              {/* 交易类型切换按钮 - 仅在defaultType未明确指定时显示 */}
+              {showTypeToggle && (
+                <div className="flex rounded-md overflow-hidden border border-gray-300 dark:border-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => setTransactionType('EXPENSE')}
+                    className={`px-3 py-1 text-sm font-medium transition-colors ${
+                      transactionType === 'EXPENSE'
+                        ? 'bg-red-600 text-white'
+                        : resolvedTheme === 'dark'
+                        ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    💸 {t('transaction.quick.expense')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTransactionType('INCOME')}
+                    className={`px-3 py-1 text-sm font-medium transition-colors ${
+                      transactionType === 'INCOME'
+                        ? 'bg-green-600 text-white'
+                        : resolvedTheme === 'dark'
+                        ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    💰 {t('transaction.quick.income')}
+                  </button>
+                </div>
+              )}
             </div>
             <p className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
               {t('transaction.quick.select.account.help', { type: accountTypeInfo.label })}

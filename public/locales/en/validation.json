@@ -2,5 +2,9 @@
   "validation.failed": "Validation Failed",
   "validation.account.type.mismatch": "Account \"{{accountName}}\" ({{accountType}}) contains mismatched transaction type: {{transactionType}}",
   "validation.stock.account.suggestion": "Stock account \"{{accountName}}\" should use \"Update Balance\" function instead of adding transactions directly",
-  "validation.optimization.suggestions": "Optimization Suggestions"
+  "validation.optimization.suggestions": "Optimization Suggestions",
+  "validation.required.field": "This field is required",
+  "validation.account.name.max.length": "Account name cannot exceed 50 characters",
+  "validation.account.description.max.length": "Account description cannot exceed 200 characters",
+  "validation.account.currency.required": "Please select account currency"
 }

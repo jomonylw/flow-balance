@@ -66,5 +66,7 @@
   "delete.confirm.clear.and.delete": "Confirm Clear and Delete",
   "delete.confirm": "Confirm Delete",
   "delete.password.prompt": "Please enter password to confirm deletion:",
-  "delete.password.placeholder": "Enter password"
+  "delete.password.placeholder": "Enter password",
+  "common.network.error": "Network error, please try again later",
+  "common.no.data": "No data available"
 }

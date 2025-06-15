@@ -4,5 +4,6 @@
   "sidebar.add.top.category": "Add Top Category",
   "sidebar.updating": "Updating...",
   "sidebar.expand.categories": "Expand Categories",
-  "sidebar.collapse.categories": "Collapse Categories"
+  "sidebar.collapse.categories": "Collapse Categories",
+  "sidebar.search.no.results": "No matching categories or accounts found"
 }
