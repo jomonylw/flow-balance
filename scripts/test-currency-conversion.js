@@ -48,7 +48,10 @@ async function testCurrencyConversion() {
           }
         }
       },
-      orderBy: { date: 'desc' }
+      orderBy: [
+        { date: 'desc' },
+        { updatedAt: 'desc' }
+      ]
     })
 
     console.log(`\n💰 用户交易记录 (${transactions.length} 条):`)

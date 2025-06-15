@@ -33,7 +33,10 @@ async function validateDashboardValues() {
         category: true,
         transactions: {
           include: { currency: true },
-          orderBy: { date: 'desc' }
+          orderBy: [
+            { date: 'desc' },
+            { updatedAt: 'desc' }
+          ]
         }
       }
     })

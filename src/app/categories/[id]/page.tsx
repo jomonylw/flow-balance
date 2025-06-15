@@ -182,9 +182,10 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         }
       }
     },
-    orderBy: {
-      date: 'desc'
-    }
+    orderBy: [
+      { date: 'desc' },
+      { updatedAt: 'desc' }
+    ]
   })
 
   // 获取其他必要数据

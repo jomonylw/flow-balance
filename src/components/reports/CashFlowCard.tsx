@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Download, RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN, enUS } from 'date-fns/locale'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useUserData } from '@/contexts/UserDataContext'
 import WithTranslation from '@/components/ui/WithTranslation'
 
 // 个人现金流量表数据类型
@@ -40,6 +42,19 @@ interface AccountSummary {
 interface CategorySummary {
   categoryId: string
   categoryName: string
+  accounts: AccountSummary[]
+  totalByCurrency: Record<string, number>
+  totalInBaseCurrency?: number
+}
+
+// 扩展的分类接口，支持层级结构
+interface CategoryWithAccounts {
+  id: string
+  name: string
+  type: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  parentId?: string | null
+  order: number
+  children?: CategoryWithAccounts[]
   accounts: AccountSummary[]
   totalByCurrency: Record<string, number>
   totalInBaseCurrency?: number
@@ -79,6 +94,7 @@ interface PersonalCashFlowResponse {
 
 export default function CashFlowCard() {
   const { t, language } = useLanguage()
+  const { categories, accounts, getBaseCurrency } = useUserData()
   const [data, setData] = useState<PersonalCashFlowResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [startDate, setStartDate] = useState<Date>(() => {
@@ -93,6 +109,7 @@ export default function CashFlowCard() {
 
   // Get the appropriate locale for date formatting
   const dateLocale = language === 'zh' ? zhCN : enUS
+  const baseCurrency = getBaseCurrency() || { code: 'CNY', symbol: '¥', name: '人民币' }
 
   const fetchCashFlow = useCallback(async () => {
     setLoading(true)
@@ -114,6 +131,110 @@ export default function CashFlowCard() {
   useEffect(() => {
     fetchCashFlow()
   }, [fetchCashFlow])
+
+  // 构建分类树并汇总余额数据
+  const enrichedCategoryTree = useMemo(() => {
+    if (!data || !categories || !accounts) return null
+
+    const buildCategoryTree = (type: 'INCOME' | 'EXPENSE') => {
+      // 获取该类型的原始分类数据
+      const rawCategories = data.cashFlow[type.toLowerCase() as 'income' | 'expense'].categories
+
+      // 构建分类映射
+      const categoryMap = new Map<string, CategoryWithAccounts>()
+      const rootCategories: CategoryWithAccounts[] = []
+
+      // 初始化所有分类
+      categories
+        .filter(cat => cat.type === type)
+        .forEach(category => {
+          categoryMap.set(category.id, {
+            id: category.id,
+            name: category.name,
+            type: category.type,
+            parentId: category.parentId,
+            order: category.order,
+            children: [],
+            accounts: [],
+            totalByCurrency: {},
+            totalInBaseCurrency: 0
+          })
+        })
+
+      // 构建层级关系
+      categories
+        .filter(cat => cat.type === type)
+        .forEach(category => {
+          const categoryNode = categoryMap.get(category.id)
+          if (!categoryNode) return
+
+          if (category.parentId) {
+            const parent = categoryMap.get(category.parentId)
+            if (parent) {
+              parent.children!.push(categoryNode)
+            }
+          } else {
+            rootCategories.push(categoryNode)
+          }
+        })
+
+      // 填充账户数据和余额
+      Object.entries(rawCategories).forEach(([categoryId, categoryData]) => {
+        const categoryNode = categoryMap.get(categoryId)
+        if (categoryNode) {
+          categoryNode.accounts = categoryData.accounts
+          categoryNode.totalByCurrency = categoryData.totalByCurrency
+          categoryNode.totalInBaseCurrency = categoryData.totalInBaseCurrency
+        }
+      })
+
+      // 递归计算父分类的汇总余额
+      const calculateParentTotals = (category: CategoryWithAccounts) => {
+        // 先计算子分类
+        category.children?.forEach(calculateParentTotals)
+
+        // 汇总子分类的余额到父分类
+        category.children?.forEach(child => {
+          Object.entries(child.totalByCurrency).forEach(([currency, amount]) => {
+            category.totalByCurrency[currency] = (category.totalByCurrency[currency] || 0) + amount
+          })
+          category.totalInBaseCurrency = (category.totalInBaseCurrency || 0) + (child.totalInBaseCurrency || 0)
+        })
+
+        // 确保每个分类都有本币汇总金额（如果还没有的话）
+        if (category.totalInBaseCurrency === undefined || category.totalInBaseCurrency === 0) {
+          // 如果没有子分类的汇总，则计算自己账户的本币汇总
+          if (category.accounts.length > 0) {
+            category.totalInBaseCurrency = category.accounts.reduce((sum, account) => {
+              return sum + (account.totalAmountInBaseCurrency || 0)
+            }, 0)
+          } else {
+            category.totalInBaseCurrency = 0
+          }
+        }
+      }
+
+      rootCategories.forEach(calculateParentTotals)
+
+      // 排序
+      const sortCategories = (cats: CategoryWithAccounts[]) => {
+        cats.sort((a, b) => a.order - b.order)
+        cats.forEach(cat => {
+          if (cat.children) {
+            sortCategories(cat.children)
+          }
+        })
+      }
+
+      sortCategories(rootCategories)
+      return rootCategories
+    }
+
+    return {
+      income: buildCategoryTree('INCOME'),
+      expense: buildCategoryTree('EXPENSE')
+    }
+  }, [data, categories, accounts])
 
   const formatCurrency = (amount: number, currency: Currency) => {
     const locale = language === 'zh' ? 'zh-CN' : 'en-US'
@@ -159,6 +280,131 @@ export default function CashFlowCard() {
       'VND': '₫'
     }
     return symbolMap[currencyCode] || currencyCode
+  }
+
+  // 新的层级渲染函数
+  const renderHierarchicalCategories = (
+    categories: CategoryWithAccounts[],
+    isExpense: boolean = false,
+    level: number = 0
+  ) => {
+    return categories.map(category => (
+      <div key={category.id} className="mb-4">
+        {/* 分类标题和汇总 */}
+        <div
+          className="flex justify-between items-center mb-2"
+          style={{ paddingLeft: `${level * 16}px` }}
+        >
+          <div className="flex items-center">
+            <Link
+              href={`/categories/${category.id}`}
+              className="font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 hover:underline"
+            >
+              {category.name}
+            </Link>
+            {level === 0 && (
+              <span className="ml-2 text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                {t(`type.${category.type.toLowerCase()}`)}
+              </span>
+            )}
+          </div>
+
+          {/* 分类汇总金额 - 使用特殊样式显示本币汇总 */}
+          {category.totalInBaseCurrency !== undefined && category.totalInBaseCurrency !== 0 && (
+            <div className="text-right">
+              <span className={`inline-block px-2 py-1 rounded text-sm font-bold border ${
+                level === 0
+                  ? isExpense
+                    ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700'
+                    : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700'
+                  : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+              }`}>
+                {isExpense ? '-' : '+'}{baseCurrency.symbol}{Math.abs(category.totalInBaseCurrency).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* 如果有直接账户，显示账户详情 */}
+        {category.accounts.length > 0 && (
+          <div style={{ paddingLeft: `${(level + 1) * 16}px` }} className="mt-2">
+            {/* 按币种分组显示账户 */}
+            {Object.entries(category.totalByCurrency || {}).map(([currencyCode, total]) => {
+              const currencyAccounts = category.accounts.filter(account => account.currency?.code === currencyCode)
+              if (currencyAccounts.length === 0) return null
+
+              return (
+                <div key={currencyCode} className="mb-3">
+                  {/* 币种小计 */}
+                  <div className="flex justify-between items-start mb-2 py-1 px-0 bg-gray-50 dark:bg-gray-800 rounded">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400 flex-1 min-w-0 pr-2">
+                      {currencyCode}
+                    </span>
+                    <div className="text-right min-w-0 flex-shrink-0">
+                      <div className={`text-sm font-semibold whitespace-nowrap ${
+                        isExpense ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                      }`}>
+                        {isExpense ? '-' : '+'}{formatCurrencyWithCode(total, currencyCode)}
+                      </div>
+                      {currencyCode !== baseCurrency.code && (
+                        <div className="text-xs text-gray-400 whitespace-nowrap">
+                          ≈ {isExpense ? '-' : '+'}{baseCurrency.symbol}{currencyAccounts.reduce((sum, account) =>
+                            sum + (account.totalAmountInBaseCurrency || 0), 0
+                          ).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 显示该币种下的账户明细 */}
+                  <div className="ml-4 space-y-1">
+                    {currencyAccounts.map(account => (
+                      <div key={account.id} className="flex justify-between items-start text-sm py-1">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <span className="text-gray-600 dark:text-gray-400">• </span>
+                          <Link
+                            href={`/accounts/${account.id}`}
+                            className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 hover:underline"
+                          >
+                            {account.name}
+                          </Link>
+                        </div>
+                        <div className="text-right min-w-0 flex-shrink-0">
+                          <div className={`whitespace-nowrap ${
+                            isExpense ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                          }`}>
+                            {formatCurrency(account.totalAmount, account.currency)}
+                          </div>
+                          {account.totalAmountInBaseCurrency !== undefined &&
+                           account.currency.code !== baseCurrency.code && (
+                            <div className="text-xs text-gray-400 whitespace-nowrap">
+                              ≈ {baseCurrency.symbol}{Math.abs(account.totalAmountInBaseCurrency).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* 递归渲染子分类 */}
+        {category.children && category.children.length > 0 && (
+          <div className="mt-2">
+            {renderHierarchicalCategories(category.children, isExpense, level + 1)}
+          </div>
+        )}
+      </div>
+    ))
   }
 
   const renderCategorySection = (
@@ -266,7 +512,7 @@ export default function CashFlowCard() {
 
   return (
     <WithTranslation>
-      <Card>
+      <Card className='mt-4'>
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>{t('reports.cash.flow.title')}</CardTitle>
@@ -311,12 +557,18 @@ export default function CashFlowCard() {
                 {t('reports.cash.flow.income')}
               </h3>
 
-              {renderCategorySection(
-                '',
-                data.cashFlow.income.categories,
-                data.baseCurrency,
-                false
-              )}
+              <div className="mb-6">
+                {enrichedCategoryTree?.income && enrichedCategoryTree.income.length > 0 ? (
+                  renderHierarchicalCategories(enrichedCategoryTree.income, false)
+                ) : (
+                  renderCategorySection(
+                    '',
+                    data.cashFlow.income.categories,
+                    data.baseCurrency,
+                    false
+                  )
+                )}
+              </div>
 
               {/* Income Total */}
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-6">
@@ -370,12 +622,18 @@ export default function CashFlowCard() {
                 {t('reports.cash.flow.expense')}
               </h3>
 
-              {renderCategorySection(
-                '',
-                data.cashFlow.expense.categories,
-                data.baseCurrency,
-                true
-              )}
+              <div className="mb-6">
+                {enrichedCategoryTree?.expense && enrichedCategoryTree.expense.length > 0 ? (
+                  renderHierarchicalCategories(enrichedCategoryTree.expense, true)
+                ) : (
+                  renderCategorySection(
+                    '',
+                    data.cashFlow.expense.categories,
+                    data.baseCurrency,
+                    true
+                  )
+                )}
+              </div>
 
               {/* Expense Total */}
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-6">
@@ -452,7 +710,7 @@ export default function CashFlowCard() {
                       </div>
                       {currencyCode !== data.baseCurrency.code && Math.abs(netBaseCurrencyAmount) > 0.01 && (
                         <div className="text-xs text-gray-400">
-                          ≈ {netBaseCurrencyAmount >= 0 ? '+' : ''}{data.baseCurrency.symbol}{Math.abs(netBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ≈ {netBaseCurrencyAmount >= 0 ? '+' : '-'}{data.baseCurrency.symbol}{Math.abs(netBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       )}
                     </div>
@@ -556,7 +814,7 @@ export default function CashFlowCard() {
                         <div>{currencyTotal.netCashFlow >= 0 ? '+' : ''}{formatCurrency(currencyTotal.netCashFlow, currencyTotal.currency)}</div>
                         {currencyCode !== data.baseCurrency.code && Math.abs(netBaseCurrencyAmount) > 0.01 && (
                           <div className="text-xs text-gray-400">
-                            ≈ {netBaseCurrencyAmount >= 0 ? '+' : ''}{data.baseCurrency.symbol}{Math.abs(netBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ≈ {netBaseCurrencyAmount >= 0 ? '+' : '-'}{data.baseCurrency.symbol}{Math.abs(netBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
                         )}
                       </div>

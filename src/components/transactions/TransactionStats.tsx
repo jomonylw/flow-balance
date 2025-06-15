@@ -2,90 +2,56 @@
 
 import { useLanguage } from '@/contexts/LanguageContext'
 
-interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
-  amount: number
-  date: string
+interface TransactionStatsData {
+  totalIncome: number
+  totalExpense: number
+  totalNet: number
+  thisMonthIncome: number
+  thisMonthExpense: number
+  thisMonthNet: number
+  monthlyChange: number
+  incomeCount: number
+  expenseCount: number
+  totalCount: number
 }
 
 interface TransactionStatsProps {
-  transactions: Transaction[]
+  stats: TransactionStatsData | null
   currencySymbol: string
+  isLoading?: boolean
 }
 
 export default function TransactionStats({
-  transactions,
-  currencySymbol
+  stats,
+  currencySymbol,
+  isLoading = false
 }: TransactionStatsProps) {
   const { t } = useLanguage()
-  // 计算统计数据
-  const calculateStats = () => {
-    const now = new Date()
-    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    
-    let totalIncome = 0
-    let totalExpense = 0
-    let thisMonthIncome = 0
-    let thisMonthExpense = 0
-    let lastMonthIncome = 0
-    let lastMonthExpense = 0
-    let incomeCount = 0
-    let expenseCount = 0
-    let balanceAdjustmentCount = 0
 
-    transactions.forEach(transaction => {
-      const transactionDate = new Date(transaction.date)
-      const amount = parseFloat(String(transaction.amount)) || 0
-
-      if (transaction.type === 'INCOME') {
-        totalIncome += amount
-        incomeCount++
-        if (transactionDate >= thisMonth) {
-          thisMonthIncome += amount
-        } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
-          lastMonthIncome += amount
-        }
-      } else if (transaction.type === 'EXPENSE') {
-        totalExpense += amount
-        expenseCount++
-        if (transactionDate >= thisMonth) {
-          thisMonthExpense += amount
-        } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
-          lastMonthExpense += amount
-        }
-      } else if (transaction.type === 'BALANCE') {
-        // 余额调整不计入收支统计，只计数
-        balanceAdjustmentCount++
-      }
-    })
-
-    const totalNet = totalIncome - totalExpense
-    const thisMonthNet = thisMonthIncome - thisMonthExpense
-    const lastMonthNet = lastMonthIncome - lastMonthExpense
-    const monthlyChange = lastMonthNet !== 0 
-      ? ((thisMonthNet - lastMonthNet) / Math.abs(lastMonthNet)) * 100 
-      : 0
-
-    return {
-      totalIncome,
-      totalExpense,
-      totalNet,
-      thisMonthIncome,
-      thisMonthExpense,
-      thisMonthNet,
-      monthlyChange,
-      incomeCount,
-      expenseCount,
-      totalCount: transactions.length,
-      balanceAdjustmentCount
-    }
+  // 如果正在加载或没有数据，显示加载状态
+  if (isLoading || !stats) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="animate-pulse">
+              <div className="flex items-center">
+                <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                <div className="ml-5 w-0 flex-1">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-1"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
-  const stats = calculateStats()
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6">
       {/* 总收入 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="flex items-center">
@@ -171,7 +137,7 @@ export default function TransactionStats({
       </div>
 
       {/* 本月净额 */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="flex items-center">
           <div className="flex-shrink-0">
             <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
@@ -204,7 +170,7 @@ export default function TransactionStats({
             </dl>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }

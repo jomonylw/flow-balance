@@ -29,7 +29,10 @@ async function checkDatabaseData() {
         category: true,
         transactions: {
           include: { currency: true },
-          orderBy: { date: 'desc' }
+          orderBy: [
+            { date: 'desc' },
+            { updatedAt: 'desc' }
+          ]
         }
       }
     })
@@ -58,7 +61,10 @@ async function checkDatabaseData() {
         transactions: {
           where: { type: 'BALANCE' },
           include: { currency: true },
-          orderBy: { date: 'desc' },
+          orderBy: [
+            { date: 'desc' },
+            { updatedAt: 'desc' }
+          ],
           take: 1
         }
       }

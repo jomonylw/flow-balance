@@ -59,8 +59,48 @@ export default function TransactionListView({
     search: '',
     tagIds: []
   })
+  const [stats, setStats] = useState(null)
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
 
   const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
+
+  // 加载统计数据
+  const loadStats = useCallback(async () => {
+    setIsLoadingStats(true)
+    try {
+      const params = new URLSearchParams()
+
+      // 添加过滤条件
+      if (filters.accountId) params.append('accountId', filters.accountId)
+      if (filters.categoryId) params.append('categoryId', filters.categoryId)
+      if (filters.type) params.append('type', filters.type)
+      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom)
+      if (filters.dateTo) params.append('dateTo', filters.dateTo)
+      if (filters.search) params.append('search', filters.search)
+      if (filters.tagIds && filters.tagIds.length > 0) params.append('tagIds', filters.tagIds.join(','))
+
+      const response = await fetch(`/api/transactions/stats?${params}`)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      if (result.success) {
+        setStats(result.data)
+      } else {
+        console.error('Failed to load transaction stats:', result.error)
+        showError(t('error.load.transactions'), result.error || t('error.unknown'))
+      }
+    } catch (error) {
+      console.error('Error loading transaction stats:', error)
+      const errorMessage = error instanceof Error ? error.message : t('error.network')
+      showError(t('error.load.transactions'), errorMessage)
+    } finally {
+      setIsLoadingStats(false)
+    }
+  }, [filters, showError, t])
 
   // 加载交易数据
   const loadTransactions = useCallback(async () => {
@@ -108,7 +148,8 @@ export default function TransactionListView({
   // 初始加载和过滤条件变化时重新加载
   useEffect(() => {
     loadTransactions()
-  }, [loadTransactions])
+    loadStats()
+  }, [loadTransactions, loadStats])
 
   const handleAddTransaction = () => {
     setEditingTransaction(null)
@@ -127,6 +168,7 @@ export default function TransactionListView({
 
   const handleTransactionSuccess = () => {
     loadTransactions()
+    loadStats()
   }
 
   const handleFilterChange = (newFilters: Partial<Filters>) => {
@@ -156,6 +198,7 @@ export default function TransactionListView({
       if (result.success) {
         showSuccess(t('success.deleted'), t('transaction.record.deleted'))
         loadTransactions()
+        loadStats()
       } else {
         showError(t('common.delete.failed'), result.error || t('error.unknown'))
       }
@@ -200,8 +243,9 @@ export default function TransactionListView({
         {/* 统计卡片 */}
         <div className="mb-8">
           <TransactionStats
-            transactions={transactions}
+            stats={stats}
             currencySymbol={currencySymbol}
+            isLoading={isLoadingStats}
           />
         </div>
 

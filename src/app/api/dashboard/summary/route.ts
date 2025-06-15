@@ -122,7 +122,10 @@ export async function GET() {
         category: true,
         currency: true
       },
-      orderBy: { date: 'desc' },
+      orderBy: [
+        { date: 'desc' },
+        { updatedAt: 'desc' }
+      ],
       take: 10
     })
 

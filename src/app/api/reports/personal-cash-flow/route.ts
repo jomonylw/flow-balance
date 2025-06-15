@@ -52,7 +52,10 @@ export async function GET(request: NextRequest) {
         currency: true,
         category: true
       },
-      orderBy: { date: 'desc' }
+      orderBy: [
+        { date: 'desc' },
+        { updatedAt: 'desc' }
+      ]
     })
 
     // 按类别分组统计（类似资产负债表结构）

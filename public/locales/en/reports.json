@@ -76,6 +76,6 @@
   "reports.cash.flow.net.summary": "Net Cash Flow:",
   "reports.cash.flow.fetch.error": "Failed to fetch cash flow statement",
   "reports.cash.flow.base.currency.total": "Base Currency Total",
-  "reports.balance.sheet.base.currency.total": "Base Currency Total",
-  "reports.balance.sheet.no.data": "No data available"
+  "reports.cash.flow.financial.summary": "Income And Expenses Summary",
+  "reports.balance.sheet.base.currency.total": "Base Currency Total"
 }

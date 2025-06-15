@@ -68,7 +68,10 @@ export async function GET(request: NextRequest) {
           where: {
             type: AccountType.ASSET || AccountType.LIABILITY ? 'BALANCE' : undefined
           },
-          orderBy: { date: 'desc' },
+          orderBy: [
+            { date: 'desc' },
+            { updatedAt: 'desc' }
+          ],
           take: 1
         }
       }
@@ -116,7 +119,10 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: { date: 'desc' }
+      orderBy: [
+        { date: 'desc' },
+        { updatedAt: 'desc' }
+      ]
     })
 
     // 简化的历史回报率计算

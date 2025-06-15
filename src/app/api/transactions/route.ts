@@ -118,7 +118,10 @@ try {
             }
           }
         },
-        orderBy: { date: 'desc' },
+        orderBy: [
+          { date: 'desc' },
+          { updatedAt: 'desc' }
+        ],
         skip,
         take: limit
       }),

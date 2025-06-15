@@ -76,6 +76,6 @@
   "reports.cash.flow.net.summary": "净现金流:",
   "reports.cash.flow.fetch.error": "获取现金流量表失败",
   "reports.cash.flow.base.currency.total": "本位币汇总",
-  "reports.balance.sheet.base.currency.total": "本位币汇总",
-  "reports.balance.sheet.no.data": "暂无数据"
+  "reports.cash.flow.financial.summary": "收支摘要",
+  "reports.balance.sheet.base.currency.total": "本位币汇总"
 }

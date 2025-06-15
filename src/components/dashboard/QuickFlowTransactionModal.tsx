@@ -10,6 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { publishTransactionCreate } from '@/utils/DataUpdateManager'
 
 interface QuickFlowTransactionModalProps {
   isOpen: boolean
@@ -74,7 +75,7 @@ export default function QuickFlowTransactionModal({
 
   // 获取选中账户的信息
   const selectedAccount = accounts.find(acc => acc.id === formData.accountId)
-  const accountCurrency = selectedAccount?.currencyCode || selectedAccount?.currency?.code || getBaseCurrency()?.code || 'USD'
+  const accountCurrency = selectedAccount?.currencyCode || getBaseCurrency()?.code || 'USD'
   const currencyInfo = currencies.find(c => c.code === accountCurrency) || getBaseCurrency()
 
   // 初始化表单数据
@@ -118,7 +119,7 @@ export default function QuickFlowTransactionModal({
     }))
   }
 
-  const handleTagFormSuccess = (newTag: any) => {
+  const handleTagFormSuccess = (newTag: { id: string; name: string; color?: string }) => {
     setFormData(prev => ({
       ...prev,
       tagIds: [...prev.tagIds, newTag.id]
@@ -193,6 +194,14 @@ export default function QuickFlowTransactionModal({
       if (result.success) {
         const successMessage = t('transaction.modal.create.success')
         showSuccess(successMessage, `${formData.amount} ${currencyInfo?.symbol || accountCurrency}`)
+
+        // 发布交易创建事件
+        await publishTransactionCreate(selectedAccount.id, selectedAccount.category.id, {
+          transaction: result.transaction,
+          amount: parseFloat(formData.amount),
+          currencyCode: accountCurrency
+        })
+
         onSuccess()
         onClose()
       } else {

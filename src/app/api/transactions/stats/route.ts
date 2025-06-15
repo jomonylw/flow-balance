@@ -1,0 +1,228 @@
+import { NextRequest } from 'next/server'
+import { getCurrentUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
+import { TransactionType } from '@prisma/client'
+
+// 辅助函数：递归获取所有后代分类的ID
+async function getDescendantCategoryIds(categoryId: string): Promise<string[]> {
+  const children = await prisma.category.findMany({
+    where: { parentId: categoryId },
+    select: { id: true }
+  })
+
+  const descendantIds: string[] = []
+  for (const child of children) {
+    descendantIds.push(child.id)
+    const grandChildrenIds = await getDescendantCategoryIds(child.id)
+    descendantIds.push(...grandChildrenIds)
+  }
+  return descendantIds
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return unauthorizedResponse()
+    }
+
+    const { searchParams } = new URL(request.url)
+    const accountId = searchParams.get('accountId')
+    const categoryId = searchParams.get('categoryId')
+    const type = searchParams.get('type') as TransactionType | null
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
+    const search = searchParams.get('search')
+    const tagIds = searchParams.get('tagIds')?.split(',').filter(Boolean) || []
+
+    // 构建查询条件
+    const where: Record<string, unknown> = {
+      userId: user.id
+    }
+
+    if (accountId) {
+      where.accountId = accountId
+    }
+
+    if (categoryId) {
+      // 获取该分类及其所有后代分类的ID
+      const descendantIds = await getDescendantCategoryIds(categoryId)
+      const allCategoryIds = [categoryId, ...descendantIds]
+      where.categoryId = { in: allCategoryIds }
+    }
+
+    if (type) {
+      // 确保指定的类型是收入或支出
+      if (type === 'INCOME' || type === 'EXPENSE') {
+        where.type = type
+      } else {
+        // 如果指定了其他类型（如BALANCE），忽略该参数，使用默认筛选
+        where.type = {
+          in: ['INCOME', 'EXPENSE']
+        }
+      }
+    } else {
+      // 默认只处理收入和支出类型的交易
+      where.type = {
+        in: ['INCOME', 'EXPENSE']
+      }
+    }
+
+    if (dateFrom || dateTo) {
+      where.date = {} as Record<string, Date>
+      if (dateFrom) {
+        (where.date as Record<string, Date>).gte = new Date(dateFrom)
+      }
+      if (dateTo) {
+        (where.date as Record<string, Date>).lte = new Date(dateTo)
+      }
+    }
+
+    if (search) {
+      where.OR = [
+        {
+          description: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        },
+        {
+          notes: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        }
+      ]
+    }
+
+    if (tagIds.length > 0) {
+      where.tags = {
+        some: {
+          tagId: {
+            in: tagIds
+          }
+        }
+      }
+    }
+
+    // 获取用户的基础货币设置
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId: user.id },
+      include: { baseCurrency: true }
+    })
+
+    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
+
+    // 获取所有符合条件的交易用于统计
+    const transactions = await prisma.transaction.findMany({
+      where,
+      select: {
+        type: true,
+        amount: true,
+        date: true,
+        currencyCode: true
+      }
+    })
+
+    // 获取所有涉及的货币汇率
+    const currencyCodes = [...new Set(transactions.map(t => t.currencyCode))]
+    const exchangeRates = await prisma.exchangeRate.findMany({
+      where: {
+        userId: user.id,
+        fromCurrency: { in: currencyCodes },
+        toCurrency: baseCurrency.code
+      },
+      orderBy: { effectiveDate: 'desc' }
+    })
+
+    // 创建汇率映射
+    const rateMap = new Map<string, number>()
+    exchangeRates.forEach(rate => {
+      const key = `${rate.fromCurrency}-${rate.toCurrency}`
+      if (!rateMap.has(key)) {
+        rateMap.set(key, parseFloat(rate.rate.toString()))
+      }
+    })
+
+    // 货币转换函数
+    const convertToBaseCurrency = (amount: number, fromCurrency: string): number => {
+      if (fromCurrency === baseCurrency.code) {
+        return amount
+      }
+
+      const rateKey = `${fromCurrency}-${baseCurrency.code}`
+      const rate = rateMap.get(rateKey)
+
+      if (rate) {
+        return amount * rate
+      } else {
+        console.warn(`No exchange rate found for ${fromCurrency} to ${baseCurrency.code}, using original amount`)
+        return amount
+      }
+    }
+
+    // 计算统计数据
+    const now = new Date()
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    
+    let totalIncome = 0
+    let totalExpense = 0
+    let thisMonthIncome = 0
+    let thisMonthExpense = 0
+    let lastMonthIncome = 0
+    let lastMonthExpense = 0
+    let incomeCount = 0
+    let expenseCount = 0
+
+    transactions.forEach(transaction => {
+      const transactionDate = new Date(transaction.date)
+      const originalAmount = parseFloat(String(transaction.amount)) || 0
+      const amount = convertToBaseCurrency(originalAmount, transaction.currencyCode)
+
+      if (transaction.type === 'INCOME') {
+        totalIncome += amount
+        incomeCount++
+        if (transactionDate >= thisMonth) {
+          thisMonthIncome += amount
+        } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
+          lastMonthIncome += amount
+        }
+      } else if (transaction.type === 'EXPENSE') {
+        totalExpense += amount
+        expenseCount++
+        if (transactionDate >= thisMonth) {
+          thisMonthExpense += amount
+        } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
+          lastMonthExpense += amount
+        }
+      }
+    })
+
+    const totalNet = totalIncome - totalExpense
+    const thisMonthNet = thisMonthIncome - thisMonthExpense
+    const lastMonthNet = lastMonthIncome - lastMonthExpense
+    const monthlyChange = lastMonthNet !== 0 
+      ? ((thisMonthNet - lastMonthNet) / Math.abs(lastMonthNet)) * 100 
+      : 0
+
+    const stats = {
+      totalIncome,
+      totalExpense,
+      totalNet,
+      thisMonthIncome,
+      thisMonthExpense,
+      thisMonthNet,
+      monthlyChange,
+      incomeCount,
+      expenseCount,
+      totalCount: transactions.length
+    }
+
+    return successResponse(stats)
+  } catch (error) {
+    console.error('Get transaction stats error:', error)
+    return errorResponse('获取交易统计失败', 500)
+  }
+}

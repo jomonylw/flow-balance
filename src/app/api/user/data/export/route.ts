@@ -35,7 +35,10 @@ export async function GET() {
             include: { tag: true }
           }
         },
-        orderBy: { date: 'desc' }
+        orderBy: [
+          { date: 'desc' },
+          { updatedAt: 'desc' }
+        ]
       }),
       prisma.tag.findMany({
         where: { userId: user.id },

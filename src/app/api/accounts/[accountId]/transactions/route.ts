@@ -87,7 +87,10 @@ export async function GET(
             }
           }
         },
-        orderBy: { date: 'desc' },
+        orderBy: [
+          { date: 'desc' },
+          { updatedAt: 'desc' }
+        ],
         skip,
         take: limit
       }),
