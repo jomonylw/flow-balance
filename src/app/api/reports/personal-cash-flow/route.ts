@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
-import { AccountType } from '@prisma/client'
 import { convertMultipleCurrencies } from '@/lib/currency-conversion'
 
 /**
@@ -56,31 +55,69 @@ export async function GET(request: NextRequest) {
       orderBy: { date: 'desc' }
     })
 
-    // 按账户分组统计
-    const accountStats: Record<string, {
-      id: string
-      name: string
-      type: 'INCOME' | 'EXPENSE'
-      categoryName: string
-      currency: {
-        code: string
-        symbol: string
-        name: string
+    // 按类别分组统计（类似资产负债表结构）
+    const cashFlowByCategory = {
+      income: {
+        categories: {} as Record<string, {
+          categoryId: string
+          categoryName: string
+          accounts: Array<{
+            id: string
+            name: string
+            currency: {
+              code: string
+              symbol: string
+              name: string
+            }
+            totalAmount: number
+            totalAmountInBaseCurrency?: number
+            conversionRate?: number
+            conversionSuccess?: boolean
+            conversionError?: string
+            transactionCount: number
+            transactions: Array<{
+              id: string
+              amount: number
+              description: string
+              date: string
+              type: 'INCOME' | 'EXPENSE'
+            }>
+          }>
+          totalByCurrency: Record<string, number>
+          totalInBaseCurrency?: number
+        }>
+      },
+      expense: {
+        categories: {} as Record<string, {
+          categoryId: string
+          categoryName: string
+          accounts: Array<{
+            id: string
+            name: string
+            currency: {
+              code: string
+              symbol: string
+              name: string
+            }
+            totalAmount: number
+            totalAmountInBaseCurrency?: number
+            conversionRate?: number
+            conversionSuccess?: boolean
+            conversionError?: string
+            transactionCount: number
+            transactions: Array<{
+              id: string
+              amount: number
+              description: string
+              date: string
+              type: 'INCOME' | 'EXPENSE'
+            }>
+          }>
+          totalByCurrency: Record<string, number>
+          totalInBaseCurrency?: number
+        }>
       }
-      totalAmount: number
-      totalAmountInBaseCurrency?: number
-      conversionRate?: number
-      conversionSuccess?: boolean
-      conversionError?: string
-      transactionCount: number
-      transactions: Array<{
-        id: string
-        amount: number
-        description: string
-        date: string
-        type: 'INCOME' | 'EXPENSE'
-      }>
-    }> = {}
+    }
 
     // 按货币分组的总计
     const currencyTotals: Record<string, {
@@ -97,21 +134,36 @@ export async function GET(request: NextRequest) {
     // 处理交易数据
     for (const transaction of transactions) {
       const accountId = transaction.account.id
+      const categoryId = transaction.account.category.id
       const currencyCode = transaction.currencyCode
       const amount = typeof transaction.amount === 'number' ? transaction.amount : parseFloat(transaction.amount.toString())
+      const accountType = transaction.account.category.type as 'INCOME' | 'EXPENSE'
 
-      // 初始化账户统计
-      if (!accountStats[accountId]) {
-        accountStats[accountId] = {
+      // 确定是收入还是支出类别
+      const categoryGroup = accountType === 'INCOME' ? cashFlowByCategory.income : cashFlowByCategory.expense
+
+      // 初始化类别
+      if (!categoryGroup.categories[categoryId]) {
+        categoryGroup.categories[categoryId] = {
+          categoryId: categoryId,
+          categoryName: transaction.account.category.name,
+          accounts: [],
+          totalByCurrency: {}
+        }
+      }
+
+      // 查找或创建账户
+      let accountData = categoryGroup.categories[categoryId].accounts.find(acc => acc.id === accountId)
+      if (!accountData) {
+        accountData = {
           id: transaction.account.id,
           name: transaction.account.name,
-          type: transaction.account.category.type as 'INCOME' | 'EXPENSE',
-          categoryName: transaction.account.category.name,
           currency: transaction.currency,
           totalAmount: 0,
           transactionCount: 0,
           transactions: []
         }
+        categoryGroup.categories[categoryId].accounts.push(accountData)
       }
 
       // 初始化货币总计
@@ -124,10 +176,10 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // 累加金额
-      accountStats[accountId].totalAmount += amount
-      accountStats[accountId].transactionCount += 1
-      accountStats[accountId].transactions.push({
+      // 累加账户金额
+      accountData.totalAmount += amount
+      accountData.transactionCount += 1
+      accountData.transactions.push({
         id: transaction.id,
         amount: amount,
         description: transaction.description,
@@ -135,7 +187,13 @@ export async function GET(request: NextRequest) {
         type: transaction.type as 'INCOME' | 'EXPENSE'
       })
 
-      // 累加货币总计
+      // 累加类别货币总计
+      if (!categoryGroup.categories[categoryId].totalByCurrency[currencyCode]) {
+        categoryGroup.categories[categoryId].totalByCurrency[currencyCode] = 0
+      }
+      categoryGroup.categories[categoryId].totalByCurrency[currencyCode] += amount
+
+      // 累加全局货币总计
       if (transaction.type === 'INCOME') {
         currencyTotals[currencyCode].totalIncome += amount
       } else if (transaction.type === 'EXPENSE') {
@@ -149,13 +207,14 @@ export async function GET(request: NextRequest) {
         currencyTotals[currencyCode].totalIncome - currencyTotals[currencyCode].totalExpense
     }
 
-    // 按类型分组账户
-    const incomeAccounts = Object.values(accountStats).filter(account => account.type === 'INCOME')
-    const expenseAccounts = Object.values(accountStats).filter(account => account.type === 'EXPENSE')
+    // 对每个类别内的账户按总金额降序排序
+    Object.values(cashFlowByCategory.income.categories).forEach(category => {
+      category.accounts.sort((a, b) => b.totalAmount - a.totalAmount)
+    })
 
-    // 排序：按总金额降序
-    incomeAccounts.sort((a, b) => b.totalAmount - a.totalAmount)
-    expenseAccounts.sort((a, b) => b.totalAmount - a.totalAmount)
+    Object.values(cashFlowByCategory.expense.categories).forEach(category => {
+      category.accounts.sort((a, b) => b.totalAmount - a.totalAmount)
+    })
 
     // 货币转换到本位币 - 增强版本，包含账户级别的转换
     let baseCurrencyTotals = {
@@ -170,18 +229,38 @@ export async function GET(request: NextRequest) {
         amount: number;
         currency: string;
         accountId: string;
+        categoryId: string;
         type: 'INCOME' | 'EXPENSE';
       }> = []
 
-      Object.values(accountStats).forEach(account => {
-        if (Math.abs(account.totalAmount) > 0.01 && account.currency.code !== baseCurrency.code) {
-          accountAmountsToConvert.push({
-            amount: account.totalAmount,
-            currency: account.currency.code,
-            accountId: account.id,
-            type: account.type
-          })
-        }
+      // 收集收入类别的账户转换数据
+      Object.entries(cashFlowByCategory.income.categories).forEach(([categoryId, category]) => {
+        category.accounts.forEach(account => {
+          if (Math.abs(account.totalAmount) > 0.01 && account.currency.code !== baseCurrency.code) {
+            accountAmountsToConvert.push({
+              amount: account.totalAmount,
+              currency: account.currency.code,
+              accountId: account.id,
+              categoryId,
+              type: 'INCOME'
+            })
+          }
+        })
+      })
+
+      // 收集支出类别的账户转换数据
+      Object.entries(cashFlowByCategory.expense.categories).forEach(([categoryId, category]) => {
+        category.accounts.forEach(account => {
+          if (Math.abs(account.totalAmount) > 0.01 && account.currency.code !== baseCurrency.code) {
+            accountAmountsToConvert.push({
+              amount: account.totalAmount,
+              currency: account.currency.code,
+              accountId: account.id,
+              categoryId,
+              type: 'EXPENSE'
+            })
+          }
+        })
       })
 
       // 执行批量货币转换
@@ -196,7 +275,12 @@ export async function GET(request: NextRequest) {
         const conversionData = accountAmountsToConvert[index]
         const convertedAmount = result.success ? result.convertedAmount : result.originalAmount
 
-        const account = accountStats[conversionData.accountId]
+        // 根据类型找到对应的账户
+        const categoryGroup = conversionData.type === 'INCOME' ?
+          cashFlowByCategory.income : cashFlowByCategory.expense
+        const category = categoryGroup.categories[conversionData.categoryId]
+        const account = category.accounts.find(acc => acc.id === conversionData.accountId)
+
         if (account) {
           account.totalAmountInBaseCurrency = convertedAmount
           account.conversionRate = result.exchangeRate
@@ -206,22 +290,45 @@ export async function GET(request: NextRequest) {
       })
 
       // 为本位币账户设置转换信息
-      Object.values(accountStats).forEach(account => {
-        if (account.currency.code === baseCurrency.code) {
-          account.totalAmountInBaseCurrency = account.totalAmount
-          account.conversionRate = 1
-          account.conversionSuccess = true
-        }
+      Object.values(cashFlowByCategory.income.categories).forEach(category => {
+        category.accounts.forEach(account => {
+          if (account.currency.code === baseCurrency.code) {
+            account.totalAmountInBaseCurrency = account.totalAmount
+            account.conversionRate = 1
+            account.conversionSuccess = true
+          }
+        })
+      })
+
+      Object.values(cashFlowByCategory.expense.categories).forEach(category => {
+        category.accounts.forEach(account => {
+          if (account.currency.code === baseCurrency.code) {
+            account.totalAmountInBaseCurrency = account.totalAmount
+            account.conversionRate = 1
+            account.conversionSuccess = true
+          }
+        })
+      })
+
+      // 计算类别级别的本位币总计
+      Object.values(cashFlowByCategory.income.categories).forEach(category => {
+        category.totalInBaseCurrency = category.accounts.reduce((sum, account) =>
+          sum + (account.totalAmountInBaseCurrency || 0), 0
+        )
+      })
+
+      Object.values(cashFlowByCategory.expense.categories).forEach(category => {
+        category.totalInBaseCurrency = category.accounts.reduce((sum, account) =>
+          sum + (account.totalAmountInBaseCurrency || 0), 0
+        )
       })
 
       // 计算总计
-      baseCurrencyTotals.totalIncome = Object.values(accountStats)
-        .filter(account => account.type === 'INCOME')
-        .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
+      baseCurrencyTotals.totalIncome = Object.values(cashFlowByCategory.income.categories)
+        .reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
 
-      baseCurrencyTotals.totalExpense = Object.values(accountStats)
-        .filter(account => account.type === 'EXPENSE')
-        .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
+      baseCurrencyTotals.totalExpense = Object.values(cashFlowByCategory.expense.categories)
+        .reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
 
       baseCurrencyTotals.netCashFlow = baseCurrencyTotals.totalIncome - baseCurrencyTotals.totalExpense
 
@@ -244,10 +351,7 @@ export async function GET(request: NextRequest) {
         end: endDate
       },
       baseCurrency,
-      cashFlow: {
-        incomeAccounts,
-        expenseAccounts
-      },
+      cashFlow: cashFlowByCategory,
       summary: {
         currencyTotals,
         baseCurrencyTotals,
