@@ -29,7 +29,7 @@
 
 ### 3. 专业财务报表
 - **资产负债表** (`/api/reports/balance-sheet`) - 反映特定时点财务状况
-- **现金流量表** (`/api/reports/cash-flow`) - 反映特定期间现金流动
+- **个人现金流量表** (`/api/reports/personal-cash-flow`) - 反映特定期间现金流动
 
 ### 4. 前端组件
 - `BalanceSheetCard.tsx` - 资产负债表展示
@@ -79,7 +79,7 @@
 ### 新增文件
 - `src/lib/account-balance.ts` - 余额计算服务
 - `src/app/api/reports/balance-sheet/route.ts` - 资产负债表API
-- `src/app/api/reports/cash-flow/route.ts` - 现金流量表API
+- `src/app/api/reports/personal-cash-flow/route.ts` - 个人现金流量表API
 - `src/components/reports/BalanceSheetCard.tsx` - 资产负债表组件
 - `src/components/reports/CashFlowCard.tsx` - 现金流量表组件
 - `src/app/reports/page.tsx` - 报表页面
@@ -140,7 +140,7 @@ USD: $6068.51
 
 ### API正常工作
 - ✅ `/api/reports/balance-sheet` - 资产负债表API
-- ✅ `/api/reports/cash-flow` - 现金流量表API
+- ✅ `/api/reports/personal-cash-flow` - 个人现金流量表API
 - ✅ 数据格式正确，响应及时
 
 ## 🚀 使用指南

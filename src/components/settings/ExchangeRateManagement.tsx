@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import ExchangeRateForm from './ExchangeRateForm'
 import ExchangeRateList from './ExchangeRateList'
 
@@ -38,6 +39,7 @@ interface ExchangeRateManagementProps {
 }
 
 export default function ExchangeRateManagement({ currencies }: ExchangeRateManagementProps) {
+  const { t } = useLanguage()
   const { currencies: userCurrencies, getBaseCurrency } = useUserData()
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateData[]>([])
   const [missingRates, setMissingRates] = useState<MissingRateInfo[]>([])
@@ -71,7 +73,7 @@ export default function ExchangeRateManagement({ currencies }: ExchangeRateManag
       }
     } catch (error) {
       console.error('获取汇率数据失败:', error)
-      setError('获取汇率数据失败')
+      setError(t('error.fetch.failed'))
     } finally {
       setLoading(false)
     }
@@ -155,15 +157,15 @@ export default function ExchangeRateManagement({ currencies }: ExchangeRateManag
     return (
       <div className="space-y-6">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">汇率管理</h3>
-          <p className="text-sm text-gray-600">正在加载汇率数据...</p>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('exchange.rate.management')}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('exchange.rate.loading')}</p>
         </div>
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
           <div className="space-y-3">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-            <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
           </div>
         </div>
       </div>
@@ -173,48 +175,48 @@ export default function ExchangeRateManagement({ currencies }: ExchangeRateManag
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900">汇率管理</h3>
-        <p className="text-sm text-gray-600">
-          管理您的货币汇率设置，确保所有统计数据能正确转换为本位币
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('exchange.rate.management')}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          {t('exchange.rate.management.description')}
           {baseCurrency && (
-            <span className="ml-2 text-blue-600 font-medium">
-              (本位币: {baseCurrency.symbol} {baseCurrency.name})
+            <span className="ml-2 text-blue-600 dark:text-blue-400 font-medium">
+              ({t('exchange.rate.base.currency')}: {baseCurrency.symbol} {baseCurrency.name})
             </span>
           )}
         </p>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
 
       {/* 缺失汇率提醒 */}
       {missingRates.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
           <div className="flex items-start">
             <div className="flex-shrink-0">
               <span className="text-yellow-400 text-xl">⚠️</span>
             </div>
             <div className="ml-3 flex-1">
-              <h4 className="text-sm font-medium text-yellow-800">
-                需要设置汇率
+              <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                {t('exchange.rate.missing.title')}
               </h4>
-              <p className="text-sm text-yellow-700 mt-1">
-                您有 {missingRates.length} 个货币对需要设置汇率，以便正确计算统计数据。
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                {t('exchange.rate.missing.description', { count: missingRates.length })}
               </p>
               <div className="mt-3 space-y-2">
                 {missingRates.map((missing, index) => (
-                  <div key={index} className="flex items-center justify-between bg-white rounded px-3 py-2">
-                    <span className="text-sm text-gray-900">
+                  <div key={index} className="flex items-center justify-between bg-white dark:bg-gray-800 rounded px-3 py-2">
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
                       {missing.fromCurrencyInfo.symbol} {missing.fromCurrencyInfo.name} → {missing.toCurrencyInfo.symbol} {missing.toCurrencyInfo.name}
                     </span>
                     <button
                       onClick={() => handleAddMissingRate(missing)}
-                      className="text-sm bg-yellow-600 text-white px-3 py-1 rounded hover:bg-yellow-700"
+                      className="text-sm bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded transition-colors"
                     >
-                      设置汇率
+                      {t('exchange.rate.setup')}
                     </button>
                   </div>
                 ))}
@@ -226,14 +228,14 @@ export default function ExchangeRateManagement({ currencies }: ExchangeRateManag
 
       {/* 操作按钮 */}
       <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          已设置 {exchangeRates.length} 个汇率
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          {t('exchange.rate.count', { count: exchangeRates.length })}
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
         >
-          添加汇率
+          {t('exchange.rate.add')}
         </button>
       </div>
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Currency } from '@prisma/client'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface CurrencyWithStatus extends Currency {
   isSelected: boolean
@@ -18,6 +19,7 @@ interface CurrencyManagementProps {
 }
 
 export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyManagementProps) {
+  const { t } = useLanguage()
   const { currencies: userCurrencies, refreshCurrencies } = useUserData()
   const [allCurrencies, setAllCurrencies] = useState<CurrencyWithStatus[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -43,14 +45,14 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
       const allCurrenciesRes = await fetch('/api/currencies')
 
       if (!allCurrenciesRes.ok) {
-        throw new Error('获取数据失败')
+        throw new Error(t('error.fetch.failed'))
       }
 
       const allCurrenciesData = await allCurrenciesRes.json()
       setAllCurrencies(allCurrenciesData.data.currencies)
     } catch (error) {
       console.error('获取货币数据失败:', error)
-      setError('获取货币数据失败')
+      setError(t('error.fetch.failed'))
     } finally {
       setIsLoading(false)
     }
@@ -77,11 +79,11 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(data.error || '添加货币失败')
+        setError(data.error || t('currency.add.failed'))
       }
     } catch (error) {
       console.error('添加货币失败:', error)
-      setError('网络错误，请稍后重试')
+      setError(t('error.network'))
     }
   }
 
@@ -102,11 +104,11 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(data.error || '删除货币失败')
+        setError(data.error || t('currency.remove.failed'))
       }
     } catch (error) {
       console.error('删除货币失败:', error)
-      setError('网络错误，请稍后重试')
+      setError(t('error.network'))
     }
   }
 
@@ -131,11 +133,11 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(data.error || '更新货币设置失败')
+        setError(data.error || t('currency.update.failed'))
       }
     } catch (error) {
       console.error('更新货币设置失败:', error)
-      setError('网络错误，请稍后重试')
+      setError(t('error.network'))
     }
   }
 
@@ -145,7 +147,7 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
       setSuccessMessage('')
 
       if (!customCurrencyForm.code || !customCurrencyForm.name || !customCurrencyForm.symbol) {
-        setError('请填写完整的货币信息')
+        setError(t('currency.form.incomplete'))
         return
       }
 
@@ -167,11 +169,11 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(data.error || '创建自定义货币失败')
+        setError(data.error || t('currency.custom.create.failed'))
       }
     } catch (error) {
       console.error('创建自定义货币失败:', error)
-      setError('网络错误，请稍后重试')
+      setError(t('error.network'))
     }
   }
 
@@ -192,11 +194,11 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(data.error || '删除自定义货币失败')
+        setError(data.error || t('currency.custom.delete.failed'))
       }
     } catch (error) {
       console.error('删除自定义货币失败:', error)
-      setError('网络错误，请稍后重试')
+      setError(t('error.network'))
     }
   }
 
@@ -204,11 +206,11 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
     return (
       <div className="space-y-6">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">货币管理</h3>
-          <p className="text-sm text-gray-600">管理您可以使用的货币</p>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('currency.management')}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('currency.management.description')}</p>
         </div>
         <div className="text-center py-8">
-          <div className="text-gray-500">加载中...</div>
+          <div className="text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
         </div>
       </div>
     )
@@ -217,63 +219,63 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900">货币管理</h3>
-        <p className="text-sm text-gray-600">
-          管理您可以使用的货币。只有添加到可用列表的货币才能在账户、交易和汇率设置中使用。
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('currency.management')}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          {t('currency.management.description')}
         </p>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
 
       {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+        <div className="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
           {successMessage}
         </div>
       )}
 
       {/* 已选择的货币 */}
       <div>
-        <h4 className="text-md font-medium text-gray-900 mb-3">
-          已选择的货币 ({userCurrencies.length})
+        <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-3">
+          {t('currency.selected')} ({userCurrencies.length})
         </h4>
         {userCurrencies.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {userCurrencies.map((currency) => (
               <div
                 key={currency.code}
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-blue-50"
+                className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-blue-50 dark:bg-blue-900/20"
               >
                 <div className="flex items-center space-x-3">
                   <span className="text-lg">{currency.symbol}</span>
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium text-gray-900">{currency.code}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{currency.code}</span>
                       {currency.isCustom && (
-                        <span className="px-1 py-0.5 bg-green-100 text-green-800 text-xs rounded">
-                          自定义
+                        <span className="px-1 py-0.5 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded">
+                          {t('currency.custom')}
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-gray-600">{currency.name}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">{currency.name}</div>
                   </div>
                 </div>
                 <button
                   onClick={() => handleRemoveCurrency(currency.code)}
-                  className="text-red-600 hover:text-red-800 text-sm font-medium"
+                  className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium"
                 >
-                  移除
+                  {t('currency.remove')}
                 </button>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 border border-gray-200 rounded-lg bg-gray-50">
-            <div className="text-gray-500">还没有选择任何货币</div>
-            <div className="text-sm text-gray-400 mt-1">请从下方添加您需要使用的货币</div>
+          <div className="text-center py-8 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div className="text-gray-500 dark:text-gray-400">{t('currency.none.selected')}</div>
+            <div className="text-sm text-gray-400 dark:text-gray-500 mt-1">{t('currency.add.instruction')}</div>
           </div>
         )}
       </div>
@@ -281,23 +283,23 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
       {/* 可添加的货币 */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-md font-medium text-gray-900">可添加的货币</h4>
+          <h4 className="text-md font-medium text-gray-900 dark:text-gray-100">{t('currency.available')}</h4>
           <button
             onClick={() => setShowCustomForm(true)}
-            className="px-3 py-1 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
+            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors"
           >
-            + 创建自定义货币
+            + {t('currency.custom.create')}
           </button>
         </div>
 
         {/* 自定义货币表单 */}
         {showCustomForm && (
-          <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <h5 className="text-sm font-medium text-gray-900 mb-3">创建自定义货币</h5>
+          <div className="mb-6 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">{t('currency.custom.create')}</h5>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  货币代码 *
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('currency.code')} *
                 </label>
                 <input
                   type="text"
@@ -306,15 +308,15 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
                     ...prev,
                     code: e.target.value.toUpperCase()
                   }))}
-                  placeholder="如: BTC, USDT"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t('currency.code.placeholder')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   maxLength={10}
                 />
-                <p className="text-xs text-gray-500 mt-1">3-10个大写字母或数字</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('currency.code.help')}</p>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  货币名称 *
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('currency.name')} *
                 </label>
                 <input
                   type="text"
@@ -323,13 +325,13 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
                     ...prev,
                     name: e.target.value
                   }))}
-                  placeholder="如: Bitcoin, Tether"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t('currency.name.placeholder')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  货币符号 *
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('currency.symbol')} *
                 </label>
                 <input
                   type="text"
@@ -338,8 +340,8 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
                     ...prev,
                     symbol: e.target.value
                   }))}
-                  placeholder="如: ₿, ₮"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t('currency.symbol.placeholder')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   maxLength={5}
                 />
               </div>
@@ -347,18 +349,18 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
             <div className="flex space-x-2">
               <button
                 onClick={handleCreateCustomCurrency}
-                className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
               >
-                创建
+                {t('common.add')}
               </button>
               <button
                 onClick={() => {
                   setShowCustomForm(false)
                   setCustomCurrencyForm({ code: '', name: '', symbol: '' })
                 }}
-                className="px-3 py-1 bg-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-400"
+                className="px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
               >
-                取消
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -370,35 +372,35 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
             .map((currency) => (
               <div
                 key={currency.code}
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <span className="text-lg">{currency.symbol}</span>
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium text-gray-900">{currency.code}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{currency.code}</span>
                       {currency.isCustom && (
-                        <span className="px-1 py-0.5 bg-green-100 text-green-800 text-xs rounded">
-                          自定义
+                        <span className="px-1 py-0.5 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded">
+                          {t('currency.custom')}
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-gray-600">{currency.name}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">{currency.name}</div>
                   </div>
                 </div>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleAddCurrency(currency.code)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
                   >
-                    添加
+                    {t('currency.add')}
                   </button>
                   {currency.isCustom && (
                     <button
                       onClick={() => handleDeleteCustomCurrency(currency.code)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium"
                     >
-                      删除
+                      {t('common.delete')}
                     </button>
                   )}
                 </div>
@@ -408,14 +410,14 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
       </div>
 
       {/* 说明信息 */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h5 className="text-sm font-medium text-yellow-800 mb-2">重要提示</h5>
-        <ul className="text-sm text-yellow-700 space-y-1">
-          <li>• 您可以创建自定义货币（如加密货币、积分等）</li>
-          <li>• 自定义货币代码必须是3-10个大写字母或数字的组合</li>
-          <li>• 删除货币前，请确保没有相关的交易记录和汇率设置</li>
-          <li>• 本位币不能被删除，如需更换请先在偏好设置中修改本位币</li>
-          <li>• 建议至少保留一种主要货币（如 USD、EUR、CNY）</li>
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+        <h5 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">{t('currency.important.tips')}</h5>
+        <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+          <li>• {t('currency.tip.custom.create')}</li>
+          <li>• {t('currency.tip.code.format')}</li>
+          <li>• {t('currency.tip.delete.warning')}</li>
+          <li>• {t('currency.tip.base.currency')}</li>
+          <li>• {t('currency.tip.major.currency')}</li>
         </ul>
       </div>
     </div>

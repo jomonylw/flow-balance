@@ -191,12 +191,10 @@ export default function StockAccountTrendChart({
           color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
           formatter: function (value: number) {
             const currencySymbol = getCurrencySymbol(originalCurrency)
-            if (Math.abs(value) >= 10000) {
-              return `${currencySymbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
-            } else if (Math.abs(value) >= 1000) {
-              return `${currencySymbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
+            if (Math.abs(value) >= 1000) {
+              return `${currencySymbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
             }
-            return `${currencySymbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
+            return `${currencySymbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
           }
         },
         axisLine: {

@@ -107,7 +107,7 @@ export default function ChangePasswordForm() {
     <div className="space-y-6">
       {/* 消息提示 */}
       {message && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+        <div className="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
           <div className="flex items-center">
             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -118,7 +118,7 @@ export default function ChangePasswordForm() {
       )}
 
       {errors.general && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
           <div className="flex items-center">
             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -129,13 +129,13 @@ export default function ChangePasswordForm() {
       )}
 
       {/* 密码修改表单 */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
         <div className="mb-4">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
             <span className="mr-2">🔒</span>
             {t('password.change')}
           </h3>
-          <p className="text-sm text-gray-600 mt-1">{t('password.change.description')}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('password.change.description')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -173,11 +173,11 @@ export default function ChangePasswordForm() {
             required
           />
 
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
@@ -196,12 +196,12 @@ export default function ChangePasswordForm() {
       </div>
 
       {/* 安全提示 */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6">
-        <h4 className="text-sm font-medium text-yellow-800 mb-3 flex items-center">
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 sm:p-6">
+        <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-3 flex items-center">
           <span className="mr-2">⚠️</span>
           {t('password.security.tips')}
         </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-yellow-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-yellow-700 dark:text-yellow-300">
           <div className="flex items-start">
             <span className="mr-2">•</span>
             <span>{t('password.tip.length')}</span>
@@ -222,32 +222,32 @@ export default function ChangePasswordForm() {
       </div>
 
       {/* 其他安全选项 */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6">
-        <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
+        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
           <span className="mr-2">🛡️</span>
           {t('password.other.security.options')}
         </h4>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">{t('password.two.factor.auth')}</p>
-              <p className="text-xs text-gray-500">{t('password.two.factor.description')}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('password.two.factor.auth')}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('password.two.factor.description')}</p>
             </div>
             <button
               disabled
-              className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
+              className="bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
             >
               {t('password.coming.soon')}
             </button>
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">{t('password.login.history')}</p>
-              <p className="text-xs text-gray-500">{t('password.login.history.description')}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('password.login.history')}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('password.login.history.description')}</p>
             </div>
             <button
               disabled
-              className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
+              className="bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
             >
               {t('password.coming.soon')}
             </button>

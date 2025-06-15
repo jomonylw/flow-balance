@@ -213,15 +213,15 @@ export default function StockMonthlySummaryChart({
                 }; margin-right: 8px; border-radius: 50%;"></span>
                 <span style="margin-right: 8px;">${param?.seriesName ?? 'N/A'}:</span>
                 <span style="font-weight: bold; color: ${value >= 0 ? '#059669' : '#dc2626'};">
-                  ${baseCurrency.symbol}${Math.abs(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${value < 0 ? ' (负)' : ''}
+                  ${baseCurrency.symbol}${Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${value < 0 ? ` (${t('common.negative')})` : ''}
                 </span>
               </div>
             `
           })
 
           result += `<div style="border-top: 1px solid #ccc; margin-top: 8px; padding-top: 4px; font-weight: bold;">
-            总计: <span style="color: ${total >= 0 ? '#059669' : '#dc2626'};">
-              ${baseCurrency.symbol}${Math.abs(total).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${total < 0 ? ' (负)' : ''}
+            ${t('common.total')}: <span style="color: ${total >= 0 ? '#059669' : '#dc2626'};">
+              ${baseCurrency.symbol}${Math.abs(total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${total < 0 ? ` (${t('common.negative')})` : ''}
             </span>
           </div>`
 
@@ -259,12 +259,10 @@ export default function StockMonthlySummaryChart({
           position: 'left',
           axisLabel: {
             formatter: function (value: number) {
-              if (Math.abs(value) >= 10000) {
-                return `${baseCurrency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
-              } else if (Math.abs(value) >= 1000) {
-                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
+              if (Math.abs(value) >= 1000) {
+                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
               }
-              return `${baseCurrency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
+              return `${baseCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
             },
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
           },
@@ -278,12 +276,10 @@ export default function StockMonthlySummaryChart({
           position: 'right',
           axisLabel: {
             formatter: function (value: number) {
-              if (Math.abs(value) >= 10000) {
-                return `${baseCurrency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
-              } else if (Math.abs(value) >= 1000) {
-                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
+              if (Math.abs(value) >= 1000) {
+                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
               }
-              return `${baseCurrency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
+              return `${baseCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
             },
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
           },
@@ -310,7 +306,7 @@ export default function StockMonthlySummaryChart({
     return (
       <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex items-center justify-center" style={{ height: `${height}px` }}>
-          <div className="text-gray-500">正在加载图表...</div>
+          <div className="text-gray-500">{t('chart.loading')}</div>
         </div>
       </div>
     )

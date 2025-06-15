@@ -1,5 +1,6 @@
 {
   "chart.net.worth.trend": "净资产趋势",
+  "chart.monthly.cash.flow": "每月现金流",
   "chart.cash.flow": "现金流",
   "chart.income.expense": "收支对比",
   "chart.category.breakdown": "分类明细",
@@ -19,6 +20,7 @@
   "chart.range.all": "全部",
   "chart.daily": "每日",
   "chart.monthly": "每月",
+  "chart.amount": "金额",
   "chart.balance.amount": "余额金额",
   "chart.balance.amount.original.currency": "余额金额（原币种）",
   "chart.transaction.amount": "交易金额",
@@ -27,5 +29,11 @@
   "chart.no.transaction.data": "暂无交易数据",
   "chart.stock.account.trend.description": "显示账户余额的历史变化趋势",
   "chart.flow.account.trend.description": "显示账户收支交易的历史趋势",
-  "chart.coming.soon": "图表功能即将推出"
+  "chart.coming.soon": "图表功能即将推出",
+  "chart.series.net_worth": "净资产",
+  "chart.series.total_assets": "总资产",
+  "chart.series.total_liabilities": "总负债",
+  "chart.series.income": "收入",
+  "chart.series.expense": "支出",
+  "chart.series.net_cash_flow": "净现金流"
 }

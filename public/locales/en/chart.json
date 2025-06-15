@@ -1,5 +1,6 @@
 {
   "chart.net.worth.trend": "Net Worth Trend",
+  "chart.monthly.cash.flow": "Monthly Cash Flow",
   "chart.cash.flow": "Cash Flow",
   "chart.income.expense": "Income vs Expense",
   "chart.category.breakdown": "Category Breakdown",
@@ -19,6 +20,7 @@
   "chart.range.all": "All",
   "chart.daily": "Daily",
   "chart.monthly": "Monthly",
+  "chart.amount": "Amount",
   "chart.balance.amount": "Balance Amount",
   "chart.balance.amount.original.currency": "Balance Amount (Original Currency)",
   "chart.transaction.amount": "Transaction Amount",
@@ -27,5 +29,11 @@
   "chart.no.transaction.data": "No transaction data available",
   "chart.stock.account.trend.description": "Shows historical balance change trends for this account",
   "chart.flow.account.trend.description": "Shows historical transaction trends for this account",
-  "chart.coming.soon": "Chart feature coming soon"
+  "chart.coming.soon": "Chart feature coming soon",
+  "chart.series.net_worth": "Net Worth",
+  "chart.series.total_assets": "Total Assets",
+  "chart.series.total_liabilities": "Total Liabilities",
+  "chart.series.income": "Income",
+  "chart.series.expense": "Expense",
+  "chart.series.net_cash_flow": "Net Cash Flow"
 }

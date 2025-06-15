@@ -43,18 +43,18 @@
 ### 4. 智能统计面板
 创建了区分存量流量的统计组件：
 
-**文件**: `src/components/dashboard/SmartAccountSummary.tsx`
-- ✅ **存量数据**（资产、负债）：显示余额和净值
-- ✅ **流量数据**（收入、支出）：显示期间累计和现金流
-- ✅ 多时间段选择（近1月、近3月、近1年）
+**文件**: 财务报表系统
+- ✅ **存量数据**（资产、负债）：通过资产负债表显示余额和净值
+- ✅ **流量数据**（收入、支出）：通过现金流量表显示期间累计和现金流
+- ✅ 多时间段选择和详细分析
 - ✅ 实时数据获取和展示
 
 ### 5. Dashboard 集成
 更新了仪表板页面：
 
 **文件**: `src/components/dashboard/DashboardContent.tsx`
-- ✅ 集成智能统计面板
 - ✅ 使用新的余额计算逻辑
+- ✅ 简化的仪表板显示
 - ✅ 功能状态更新，突出新功能
 
 ## 📊 核心功能特性
@@ -93,8 +93,7 @@ enum AccountType {
 
 ### 新增文件
 1. `src/components/ui/CategorySettingsModal.tsx` - 分类设置模态框
-2. `src/components/dashboard/SmartAccountSummary.tsx` - 智能统计面板
-3. `scripts/test-category-settings.ts` - 功能测试脚本
+2. `scripts/test-category-settings.ts` - 功能测试脚本
 
 ### 修改文件
 1. `src/components/layout/CategoryTreeItem.tsx` - 集成设置功能

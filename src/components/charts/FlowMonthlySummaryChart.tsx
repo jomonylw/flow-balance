@@ -33,7 +33,7 @@ interface FlowMonthlySummaryChartProps {
 export default function FlowMonthlySummaryChart({
   monthlyData,
   baseCurrency,
-  title = '月度收支汇总',
+  title,
   height = 400
 }: FlowMonthlySummaryChartProps) {
   const { t, isLoading } = useLanguage()
@@ -208,15 +208,15 @@ export default function FlowMonthlySummaryChart({
                 }; margin-right: 8px; border-radius: 50%;"></span>
                 <span style="margin-right: 8px;">${param?.seriesName ?? 'N/A'}:</span>
                 <span style="font-weight: bold; color: ${isIncomeCategory ? '#059669' : '#dc2626'};">
-                  ${baseCurrency.symbol}${Math.abs(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${baseCurrency.symbol}${Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             `
           })
 
           result += `<div style="border-top: 1px solid #ccc; margin-top: 8px; padding-top: 4px; font-weight: bold;">
-            ${isIncomeCategory ? '总收入' : '总支出'}: <span style="color: ${isIncomeCategory ? '#059669' : '#dc2626'};">
-              ${baseCurrency.symbol}${Math.abs(total).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ${isIncomeCategory ? t('category.total.income') : t('category.total.expense')}: <span style="color: ${isIncomeCategory ? '#059669' : '#dc2626'};">
+              ${baseCurrency.symbol}${Math.abs(total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>`
 
@@ -254,12 +254,10 @@ export default function FlowMonthlySummaryChart({
           position: 'left',
           axisLabel: {
             formatter: function (value: number) {
-              if (Math.abs(value) >= 10000) {
-                return `${baseCurrency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
-              } else if (Math.abs(value) >= 1000) {
-                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
+              if (Math.abs(value) >= 1000) {
+                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
               }
-              return `${baseCurrency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
+              return `${baseCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
             },
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
           },
@@ -273,12 +271,10 @@ export default function FlowMonthlySummaryChart({
           position: 'right',
           axisLabel: {
             formatter: function (value: number) {
-              if (Math.abs(value) >= 10000) {
-                return `${baseCurrency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
-              } else if (Math.abs(value) >= 1000) {
-                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
+              if (Math.abs(value) >= 1000) {
+                return `${baseCurrency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
               }
-              return `${baseCurrency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
+              return `${baseCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
             },
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
           },
@@ -298,7 +294,7 @@ export default function FlowMonthlySummaryChart({
     return (
       <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex items-center justify-center" style={{ height: `${height}px` }}>
-          <div className="text-gray-500">正在加载图表...</div>
+          <div className="text-gray-500">{t('chart.loading')}</div>
         </div>
       </div>
     )

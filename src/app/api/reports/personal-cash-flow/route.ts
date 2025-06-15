@@ -68,6 +68,10 @@ export async function GET(request: NextRequest) {
         name: string
       }
       totalAmount: number
+      totalAmountInBaseCurrency?: number
+      conversionRate?: number
+      conversionSuccess?: boolean
+      conversionError?: string
       transactionCount: number
       transactions: Array<{
         id: string
@@ -153,7 +157,7 @@ export async function GET(request: NextRequest) {
     incomeAccounts.sort((a, b) => b.totalAmount - a.totalAmount)
     expenseAccounts.sort((a, b) => b.totalAmount - a.totalAmount)
 
-    // 货币转换到本位币
+    // 货币转换到本位币 - 增强版本，包含账户级别的转换
     let baseCurrencyTotals = {
       totalIncome: 0,
       totalExpense: 0,
@@ -161,35 +165,63 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      // 准备转换数据
-      const incomeAmounts = Object.entries(currencyTotals)
-        .filter(([_, total]) => total.totalIncome > 0)
-        .map(([currencyCode, total]) => ({
-          amount: total.totalIncome,
-          currency: currencyCode
-        }))
+      // 收集所有需要转换的账户金额
+      const accountAmountsToConvert: Array<{
+        amount: number;
+        currency: string;
+        accountId: string;
+        type: 'INCOME' | 'EXPENSE';
+      }> = []
 
-      const expenseAmounts = Object.entries(currencyTotals)
-        .filter(([_, total]) => total.totalExpense > 0)
-        .map(([currencyCode, total]) => ({
-          amount: total.totalExpense,
-          currency: currencyCode
-        }))
+      Object.values(accountStats).forEach(account => {
+        if (Math.abs(account.totalAmount) > 0.01 && account.currency.code !== baseCurrency.code) {
+          accountAmountsToConvert.push({
+            amount: account.totalAmount,
+            currency: account.currency.code,
+            accountId: account.id,
+            type: account.type
+          })
+        }
+      })
 
-      // 执行货币转换
-      const [incomeConversions, expenseConversions] = await Promise.all([
-        convertMultipleCurrencies(user.id, incomeAmounts, baseCurrency.code),
-        convertMultipleCurrencies(user.id, expenseAmounts, baseCurrency.code)
-      ])
-
-      // 计算本位币总计
-      baseCurrencyTotals.totalIncome = incomeConversions.reduce((sum, result) =>
-        sum + (result.success ? result.convertedAmount : result.originalAmount), 0
+      // 执行批量货币转换
+      const accountConversions = await convertMultipleCurrencies(
+        user.id,
+        accountAmountsToConvert.map(item => ({ amount: item.amount, currency: item.currency })),
+        baseCurrency.code
       )
 
-      baseCurrencyTotals.totalExpense = expenseConversions.reduce((sum, result) =>
-        sum + (result.success ? result.convertedAmount : result.originalAmount), 0
-      )
+      // 应用转换结果到账户
+      accountConversions.forEach((result, index) => {
+        const conversionData = accountAmountsToConvert[index]
+        const convertedAmount = result.success ? result.convertedAmount : result.originalAmount
+
+        const account = accountStats[conversionData.accountId]
+        if (account) {
+          account.totalAmountInBaseCurrency = convertedAmount
+          account.conversionRate = result.exchangeRate
+          account.conversionSuccess = result.success
+          account.conversionError = result.error
+        }
+      })
+
+      // 为本位币账户设置转换信息
+      Object.values(accountStats).forEach(account => {
+        if (account.currency.code === baseCurrency.code) {
+          account.totalAmountInBaseCurrency = account.totalAmount
+          account.conversionRate = 1
+          account.conversionSuccess = true
+        }
+      })
+
+      // 计算总计
+      baseCurrencyTotals.totalIncome = Object.values(accountStats)
+        .filter(account => account.type === 'INCOME')
+        .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
+
+      baseCurrencyTotals.totalExpense = Object.values(accountStats)
+        .filter(account => account.type === 'EXPENSE')
+        .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
 
       baseCurrencyTotals.netCashFlow = baseCurrencyTotals.totalIncome - baseCurrencyTotals.totalExpense
 

@@ -31,6 +31,10 @@ interface AccountSummary {
   categoryName: string
   currency: Currency
   totalAmount: number
+  totalAmountInBaseCurrency?: number
+  conversionRate?: number
+  conversionSuccess?: boolean
+  conversionError?: string
   transactionCount: number
   transactions: Transaction[]
 }
@@ -109,68 +113,130 @@ export default function CashFlowCard() {
     })}`
   }
 
-  const renderAccountSection = (
-    title: string,
-    accounts: AccountSummary[],
-    titleColor: string
-  ) => (
-    <div className="mb-6">
-      <h4 className={`font-semibold text-lg mb-4 ${titleColor} dark:opacity-90`}>{title}</h4>
+  const formatCurrencyWithCode = (amount: number, currencyCode: string) => {
+    const locale = language === 'zh' ? 'zh-CN' : 'en-US'
+    const symbolMap: Record<string, string> = {
+      'CNY': '¥',
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'HKD': 'HK$',
+      'TWD': 'NT$',
+      'SGD': 'S$',
+      'AUD': 'A$',
+      'CAD': 'C$',
+      'CHF': 'CHF',
+      'SEK': 'kr',
+      'NOK': 'kr',
+      'DKK': 'kr',
+      'RUB': '₽',
+      'INR': '₹',
+      'KRW': '₩',
+      'THB': '฿',
+      'MYR': 'RM',
+      'IDR': 'Rp',
+      'PHP': '₱',
+      'VND': '₫'
+    }
+    const symbol = symbolMap[currencyCode] || currencyCode
+    return `${symbol}${amount.toLocaleString(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`
+  }
 
-      {accounts.length === 0 ? (
+  // 按币种分组账户的辅助函数
+  const groupAccountsByCurrency = (accounts: AccountSummary[]) => {
+    const grouped: Record<string, {
+      currency: Currency
+      accounts: AccountSummary[]
+      totalAmount: number
+      totalAmountInBaseCurrency: number
+    }> = {}
+
+    accounts.forEach(account => {
+      const currencyCode = account.currency.code
+      if (!grouped[currencyCode]) {
+        grouped[currencyCode] = {
+          currency: account.currency,
+          accounts: [],
+          totalAmount: 0,
+          totalAmountInBaseCurrency: 0
+        }
+      }
+      grouped[currencyCode].accounts.push(account)
+      grouped[currencyCode].totalAmount += account.totalAmount
+      grouped[currencyCode].totalAmountInBaseCurrency += account.totalAmountInBaseCurrency || 0
+    })
+
+    return grouped
+  }
+
+  // 渲染账户分组的函数，类似于 BalanceSheetCard 的 renderCategorySection
+  const renderAccountSection = (
+    accounts: AccountSummary[],
+    baseCurrency: Currency,
+    isExpense: boolean = false
+  ) => {
+    if (!accounts || accounts.length === 0) {
+      return (
         <div className="text-center py-4 text-gray-500 dark:text-gray-400">
           {t('reports.cash.flow.no.data')}
         </div>
-      ) : (
-        <div className="space-y-4">
-          {accounts.map(account => (
-            <div key={account.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h5 className="font-medium text-gray-900 dark:text-gray-100">{account.name}</h5>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{account.categoryName}</p>
-                </div>
-                <div className="text-right">
-                  <div className={`font-semibold ${account.type === 'INCOME' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {formatCurrency(account.totalAmount, account.currency)}
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {account.transactionCount} {language === 'zh' ? '笔交易' : 'transactions'}
-                  </div>
-                </div>
-              </div>
+      )
+    }
 
-              {/* 显示最近的几笔交易 */}
-              {account.transactions.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-600">
-                  <div className="space-y-1">
-                    {account.transactions.slice(0, 3).map(transaction => (
-                      <div key={transaction.id} className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400 truncate flex-1 mr-2">
-                          {transaction.description}
-                        </span>
-                        <span className="text-gray-500 dark:text-gray-400 text-xs mr-2">
-                          {format(new Date(transaction.date), language === 'zh' ? 'MM/dd' : 'MM/dd')}
-                        </span>
-                        <span className={`font-medium ${account.type === 'INCOME' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {formatCurrency(transaction.amount, account.currency)}
-                        </span>
-                      </div>
-                    ))}
-                    {account.transactions.length > 3 && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400 text-center pt-1">
-                        {language === 'zh' ? `还有 ${account.transactions.length - 3} 笔交易...` : `${account.transactions.length - 3} more transactions...`}
-                      </div>
+    const groupedAccounts = groupAccountsByCurrency(accounts)
+
+    return (
+      <div className="space-y-4">
+        {Object.entries(groupedAccounts).map(([currencyCode, group]) => (
+          <div key={currencyCode} className="mb-3">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-medium text-gray-600 dark:text-gray-400">{currencyCode}</span>
+              <div className="flex flex-col items-end">
+                <span className={`font-semibold ${isExpense ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                  {isExpense ? '-' : '+'}{formatCurrencyWithCode(group.totalAmount, currencyCode)}
+                </span>
+                {group.totalAmountInBaseCurrency !== undefined &&
+                 currencyCode !== baseCurrency.code && (
+                  <span className="text-xs text-gray-400">
+                    ≈ {isExpense ? '-' : '+'}{baseCurrency.symbol}{Math.abs(group.totalAmountInBaseCurrency).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* 显示该币种下的账户 */}
+            <div className="ml-4 space-y-1">
+              {group.accounts.map(account => (
+                <div key={account.id} className="flex justify-between text-sm">
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">{account.name}</span>
+                    <div className="text-xs text-gray-500 dark:text-gray-500">{account.categoryName}</div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className={`${isExpense ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                      {formatCurrency(account.totalAmount, account.currency)}
+                    </span>
+                    {account.totalAmountInBaseCurrency !== undefined &&
+                     account.currency.code !== baseCurrency.code && (
+                      <span className="text-xs text-gray-400">
+                        ≈ {baseCurrency.symbol}{Math.abs(account.totalAmountInBaseCurrency).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
                     )}
                   </div>
                 </div>
-              )}
+              ))}
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+
 
   if (!data) {
     return (
@@ -240,48 +306,162 @@ export default function CashFlowCard() {
           </p>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            {/* Income Accounts */}
-            {renderAccountSection(
-              t('reports.cash.flow.income'),
-              data.cashFlow.incomeAccounts,
-              'text-green-600 dark:text-green-400'
-            )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Income Accounts Section */}
+            <div>
+              <h3 className="text-xl font-bold mb-4 text-green-600 dark:text-green-400">
+                {t('reports.cash.flow.income')}
+              </h3>
 
-            {/* Expense Accounts */}
-            {renderAccountSection(
-              t('reports.cash.flow.expense'),
-              data.cashFlow.expenseAccounts,
-              'text-red-600 dark:text-red-400'
-            )}
+              {renderAccountSection(data.cashFlow.incomeAccounts, data.baseCurrency, false)}
 
-            {/* Net Cash Flow for the Period */}
-            <div className="border-t-2 border-gray-200 dark:border-gray-700 pt-4">
-              <div className="flex justify-between font-bold text-lg">
-                <span className="text-gray-900 dark:text-gray-100">{t('reports.cash.flow.net.cash.flow')}</span>
-                <div>
-                  {Object.entries(data.summary.currencyTotals).map(([currencyCode, currencyTotal]) => (
-                    <div key={currencyCode} className={currencyTotal.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                      {currencyTotal.netCashFlow >= 0 ? '+' : ''}{formatCurrency(currencyTotal.netCashFlow, currencyTotal.currency)}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Income Total */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-6">
+                <div className="flex justify-between font-bold text-lg">
+                  <span className="text-gray-900 dark:text-gray-100">{t('reports.cash.flow.total.income')}</span>
+                  <div>
+                    {Object.entries(data.summary.currencyTotals)
+                      .filter(([, currencyTotal]) => currencyTotal.totalIncome > 0)
+                      .map(([currencyCode, currencyTotal]) => {
+                      // 计算该币种的收入本币折算金额
+                      const incomeBaseCurrencyAmount = data.cashFlow.incomeAccounts
+                        .filter(account => account.currency.code === currencyCode)
+                        .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
 
-              {/* Base Currency Summary */}
-              {data.summary.baseCurrencyTotals && (
-                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-600">
-                  <div className="flex justify-between font-semibold text-base">
-                    <span className="text-gray-700 dark:text-gray-300">
-                      {t('reports.cash.flow.base.currency.total')} ({data.baseCurrency.code})
-                    </span>
-                    <div className={data.summary.baseCurrencyTotals.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                      {data.summary.baseCurrencyTotals.netCashFlow >= 0 ? '+' : ''}{formatCurrency(data.summary.baseCurrencyTotals.netCashFlow, data.baseCurrency)}
-                    </div>
+                      return (
+                        <div key={currencyCode} className="flex flex-col items-end">
+                          <div className="text-green-600 dark:text-green-400">
+                            +{formatCurrency(currencyTotal.totalIncome, currencyTotal.currency)}
+                          </div>
+                          {currencyCode !== data.baseCurrency.code && incomeBaseCurrencyAmount > 0 && (
+                            <div className="text-xs text-gray-400">
+                              ≈ +{data.baseCurrency.symbol}{Math.abs(incomeBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
-              )}
+
+                {/* Base Currency Total Income */}
+                {data.summary.baseCurrencyTotals && (
+                  <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-600">
+                    <div className="flex justify-between font-semibold text-base">
+                      <span className="text-gray-700 dark:text-gray-300">
+                        {t('reports.cash.flow.base.currency.total')} ({data.baseCurrency.code})
+                      </span>
+                      <div className="text-green-600 dark:text-green-400">
+                        +{formatCurrency(data.summary.baseCurrencyTotals.totalIncome, data.baseCurrency)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Expense Accounts Section */}
+            <div>
+              <h3 className="text-xl font-bold mb-4 text-red-600 dark:text-red-400">
+                {t('reports.cash.flow.expense')}
+              </h3>
+
+              {renderAccountSection(data.cashFlow.expenseAccounts, data.baseCurrency, true)}
+
+              {/* Expense Total */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-6">
+                <div className="flex justify-between font-bold text-lg">
+                  <span className="text-gray-900 dark:text-gray-100">{t('reports.cash.flow.total.expense')}</span>
+                  <div>
+                    {Object.entries(data.summary.currencyTotals)
+                      .filter(([, currencyTotal]) => currencyTotal.totalExpense > 0)
+                      .map(([currencyCode, currencyTotal]) => {
+                      // 计算该币种的支出本币折算金额
+                      const expenseBaseCurrencyAmount = data.cashFlow.expenseAccounts
+                        .filter(account => account.currency.code === currencyCode)
+                        .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
+
+                      return (
+                        <div key={currencyCode} className="flex flex-col items-end">
+                          <div className="text-red-600 dark:text-red-400">
+                            -{formatCurrency(currencyTotal.totalExpense, currencyTotal.currency)}
+                          </div>
+                          {currencyCode !== data.baseCurrency.code && expenseBaseCurrencyAmount > 0 && (
+                            <div className="text-xs text-gray-400">
+                              ≈ -{data.baseCurrency.symbol}{Math.abs(expenseBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Base Currency Total Expense */}
+                {data.summary.baseCurrencyTotals && (
+                  <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-600">
+                    <div className="flex justify-between font-semibold text-base">
+                      <span className="text-gray-700 dark:text-gray-300">
+                        {t('reports.cash.flow.base.currency.total')} ({data.baseCurrency.code})
+                      </span>
+                      <div className="text-red-600 dark:text-red-400">
+                        -{formatCurrency(data.summary.baseCurrencyTotals.totalExpense, data.baseCurrency)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Net Cash Flow for the Period */}
+          <div className="mt-8 border-t-2 border-gray-200 dark:border-gray-700 pt-4">
+            <div className="flex justify-between font-bold text-lg">
+              <span className="text-gray-900 dark:text-gray-100">{t('reports.cash.flow.net.cash.flow')}</span>
+              <div>
+                {Object.entries(data.summary.currencyTotals)
+                  .filter(([, currencyTotal]) => Math.abs(currencyTotal.netCashFlow) > 0.01)
+                  .map(([currencyCode, currencyTotal]) => {
+                  // 计算该币种的本币折算金额
+                  const incomeBaseCurrencyAmount = data.cashFlow.incomeAccounts
+                    .filter(account => account.currency.code === currencyCode)
+                    .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
+
+                  const expenseBaseCurrencyAmount = data.cashFlow.expenseAccounts
+                    .filter(account => account.currency.code === currencyCode)
+                    .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
+
+                  const netBaseCurrencyAmount = incomeBaseCurrencyAmount - expenseBaseCurrencyAmount
+
+                  return (
+                    <div key={currencyCode} className="flex flex-col items-end">
+                      <div className={currencyTotal.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                        {currencyTotal.netCashFlow >= 0 ? '+' : ''}{formatCurrency(currencyTotal.netCashFlow, currencyTotal.currency)}
+                      </div>
+                      {currencyCode !== data.baseCurrency.code && Math.abs(netBaseCurrencyAmount) > 0.01 && (
+                        <div className="text-xs text-gray-400">
+                          ≈ {netBaseCurrencyAmount >= 0 ? '+' : ''}{data.baseCurrency.symbol}{Math.abs(netBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Base Currency Summary */}
+            {data.summary.baseCurrencyTotals && (
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-600">
+                <div className="flex justify-between font-semibold text-base">
+                  <span className="text-gray-700 dark:text-gray-300">
+                    {t('reports.cash.flow.base.currency.total')} ({data.baseCurrency.code})
+                  </span>
+                  <div className={data.summary.baseCurrencyTotals.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                    {data.summary.baseCurrencyTotals.netCashFlow >= 0 ? '+' : ''}{formatCurrency(data.summary.baseCurrencyTotals.netCashFlow, data.baseCurrency)}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Summary Information */}
@@ -293,31 +473,79 @@ export default function CashFlowCard() {
               <div>
                 <span className="text-gray-600 dark:text-gray-400">{t('reports.cash.flow.total.income')}</span>
                 <div className="font-semibold">
-                  {Object.entries(data.summary.currencyTotals).map(([currencyCode, currencyTotal]) => (
-                    <div key={currencyCode} className="text-green-600 dark:text-green-400">
-                      +{formatCurrency(currencyTotal.totalIncome, currencyTotal.currency)}
-                    </div>
-                  ))}
+                  {Object.entries(data.summary.currencyTotals)
+                    .filter(([, currencyTotal]) => currencyTotal.totalIncome > 0)
+                    .map(([currencyCode, currencyTotal]) => {
+                    // 计算该币种的收入本币折算金额
+                    const incomeBaseCurrencyAmount = data.cashFlow.incomeAccounts
+                      .filter(account => account.currency.code === currencyCode)
+                      .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
+
+                    return (
+                      <div key={currencyCode} className="text-green-600 dark:text-green-400">
+                        <div>+{formatCurrency(currencyTotal.totalIncome, currencyTotal.currency)}</div>
+                        {currencyCode !== data.baseCurrency.code && incomeBaseCurrencyAmount > 0 && (
+                          <div className="text-xs text-gray-400">
+                            ≈ +{data.baseCurrency.symbol}{Math.abs(incomeBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
               <div>
                 <span className="text-gray-600 dark:text-gray-400">{t('reports.cash.flow.total.expense')}</span>
                 <div className="font-semibold">
-                  {Object.entries(data.summary.currencyTotals).map(([currencyCode, currencyTotal]) => (
-                    <div key={currencyCode} className="text-red-600 dark:text-red-400">
-                      -{formatCurrency(currencyTotal.totalExpense, currencyTotal.currency)}
-                    </div>
-                  ))}
+                  {Object.entries(data.summary.currencyTotals)
+                    .filter(([, currencyTotal]) => currencyTotal.totalExpense > 0)
+                    .map(([currencyCode, currencyTotal]) => {
+                    // 计算该币种的支出本币折算金额
+                    const expenseBaseCurrencyAmount = data.cashFlow.expenseAccounts
+                      .filter(account => account.currency.code === currencyCode)
+                      .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
+
+                    return (
+                      <div key={currencyCode} className="text-red-600 dark:text-red-400">
+                        <div>-{formatCurrency(currencyTotal.totalExpense, currencyTotal.currency)}</div>
+                        {currencyCode !== data.baseCurrency.code && expenseBaseCurrencyAmount > 0 && (
+                          <div className="text-xs text-gray-400">
+                            ≈ -{data.baseCurrency.symbol}{Math.abs(expenseBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
               <div>
                 <span className="text-gray-600 dark:text-gray-400">{t('reports.cash.flow.net.summary')}</span>
                 <div className="font-semibold">
-                  {Object.entries(data.summary.currencyTotals).map(([currencyCode, currencyTotal]) => (
-                    <div key={currencyCode} className={currencyTotal.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                      {currencyTotal.netCashFlow >= 0 ? '+' : ''}{formatCurrency(currencyTotal.netCashFlow, currencyTotal.currency)}
-                    </div>
-                  ))}
+                  {Object.entries(data.summary.currencyTotals)
+                    .filter(([, currencyTotal]) => Math.abs(currencyTotal.netCashFlow) > 0.01)
+                    .map(([currencyCode, currencyTotal]) => {
+                    // 计算该币种的净现金流本币折算金额
+                    const incomeBaseCurrencyAmount = data.cashFlow.incomeAccounts
+                      .filter(account => account.currency.code === currencyCode)
+                      .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
+
+                    const expenseBaseCurrencyAmount = data.cashFlow.expenseAccounts
+                      .filter(account => account.currency.code === currencyCode)
+                      .reduce((sum, account) => sum + (account.totalAmountInBaseCurrency || 0), 0)
+
+                    const netBaseCurrencyAmount = incomeBaseCurrencyAmount - expenseBaseCurrencyAmount
+
+                    return (
+                      <div key={currencyCode} className={currencyTotal.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                        <div>{currencyTotal.netCashFlow >= 0 ? '+' : ''}{formatCurrency(currencyTotal.netCashFlow, currencyTotal.currency)}</div>
+                        {currencyCode !== data.baseCurrency.code && Math.abs(netBaseCurrencyAmount) > 0.01 && (
+                          <div className="text-xs text-gray-400">
+                            ≈ {netBaseCurrencyAmount >= 0 ? '+' : ''}{data.baseCurrency.symbol}{Math.abs(netBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>

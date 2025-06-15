@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { User, UserSettings, Currency } from '@prisma/client'
 import { useIsMobile } from '@/hooks/useResponsive'
+import PageContainer from '@/components/ui/PageContainer'
 import ProfileSettingsForm from './ProfileSettingsForm'
 import ChangePasswordForm from './ChangePasswordForm'
 import PreferencesForm from './PreferencesForm'
@@ -11,28 +12,14 @@ import CurrencyManagement from './CurrencyManagement'
 import DataManagementSection from './DataManagementSection'
 import ExchangeRateManagement from './ExchangeRateManagement'
 import TagManagement from './TagManagement'
+import SettingsNavigation, { TabType, SettingGroup } from './SettingsNavigation'
+import SettingsContent from './SettingsContent'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 interface UserSettingsPageProps {
   user: User
   userSettings: (UserSettings & { baseCurrency: Currency | null }) | null
   currencies: Currency[]
-}
-
-type TabType = 'profile' | 'security' | 'preferences' | 'currencies' | 'exchange-rates' | 'tags' | 'data'
-
-interface SettingGroup {
-  id: string
-  title: string
-  description: string
-  icon: string
-  items: {
-    id: TabType
-    label: string
-    description: string
-    icon: string
-    status?: 'complete' | 'incomplete' | 'warning'
-  }[]
 }
 
 export default function UserSettingsPage({
@@ -135,202 +122,90 @@ export default function UserSettingsPage({
     }
   }
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'complete':
-        return 'text-green-600 bg-green-100'
-      case 'warning':
-        return 'text-yellow-600 bg-yellow-100'
-      case 'incomplete':
-        return 'text-red-600 bg-red-100'
-      default:
-        return 'text-gray-600 bg-gray-100'
-    }
-  }
-
-  const getStatusIcon = (status?: string) => {
-    switch (status) {
-      case 'complete':
-        return '✓'
-      case 'warning':
-        return '⚠'
-      case 'incomplete':
-        return '!'
-      default:
-        return ''
-    }
-  }
-
   // 移动端卡片式布局
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="p-4">
-          {/* 页面标题 */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">{t('settings.page.title')}</h1>
-            <p className="text-sm text-gray-600 mt-1">{t('settings.page.description')}</p>
-          </div>
-
-          {/* 设置分组卡片 */}
-          <div className="space-y-4">
-            {settingGroups.map((group) => (
-              <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
-                {/* 设置项目列表 */}
-                <div className="divide-y divide-gray-200">
-                  {group.items.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                        activeTab === item.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-base">{item.icon}</span>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                            <p className="text-xs text-gray-500">{item.description}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {item.status && (
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                              {getStatusIcon(item.status)}
-                            </span>
-                          )}
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
+      <PageContainer
+        title={t('settings.page.title')}
+        subtitle={t('settings.page.description')}
+        className="min-h-screen bg-gray-50 dark:bg-gray-900"
+      >
+        {/* 设置分组卡片 */}
+        <div className="space-y-4">
+          {settingGroups.map((group) => (
+            <div key={group.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              {/* 设置项目列表 */}
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {group.items.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                      activeTab === item.id ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500 dark:border-blue-400' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-base">{item.icon}</span>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.label}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{item.description}</p>
                         </div>
                       </div>
-                    </button>
-                  ))}
-                </div>
+                      <div className="flex items-center space-x-2">
+                        {item.status && (
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                            item.status === 'complete' ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/20' :
+                            item.status === 'warning' ? 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/20' :
+                            item.status === 'incomplete' ? 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/20' :
+                            'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800'
+                          }`}>
+                            {item.status === 'complete' ? '✓' : item.status === 'warning' ? '⚠' : item.status === 'incomplete' ? '!' : ''}
+                          </span>
+                        )}
+                        <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
-
-          {/* 当前选中的设置内容 */}
-          <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            {renderTabContent()}
-          </div>
+            </div>
+          ))}
         </div>
-      </div>
+
+        {/* 当前选中的设置内容 */}
+        <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          {renderTabContent()}
+        </div>
+      </PageContainer>
     )
   }
 
   // 桌面端两栏布局
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{t('settings.page.title')}</h1>
-        <p className="text-base text-gray-600 mt-2">{t('settings.page.description')}</p>
-      </div>
-
+    <PageContainer
+      title={t('settings.page.title')}
+      subtitle={t('settings.page.description')}
+    >
       {/* 桌面端两栏布局 */}
       <div className="flex gap-8">
         {/* 左侧导航栏 */}
-        <div className="w-80 flex-shrink-0">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            {settingGroups.map((group) => (
-              <div key={group.id} className="border-b border-gray-200 last:border-b-0">
-                {/* 设置项目列表 */}
-                <div className="divide-y divide-gray-100">
-                  {group.items.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                        activeTab === item.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-base">{item.icon}</span>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                            <p className="text-xs text-gray-500">{item.description}</p>
-                          </div>
-                        </div>
-                        {item.status && (
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                            {getStatusIcon(item.status)}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* 快捷操作卡片 */}
-          <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">{t('settings.quick.actions')}</h4>
-            <div className="space-y-2">
-              <button
-                onClick={() => setActiveTab('preferences')}
-                className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-              >
-                ⚙️ {t('settings.system.preferences')}
-              </button>
-              <button
-                onClick={() => setActiveTab('currencies')}
-                className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-              >
-                💰 {t('settings.currency.management')}
-              </button>
-              <button
-                onClick={() => setActiveTab('security')}
-                className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-              >
-                🔒 {t('password.change')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <SettingsNavigation
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          settingGroups={settingGroups}
+        />
 
         {/* 右侧内容区域 */}
-        <div className="flex-1 min-w-0">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            {/* 内容标题栏 */}
-            <div className="px-6 py-4 border-b border-gray-200">
-              {(() => {
-                const currentItem = settingGroups
-                  .flatMap(group => group.items)
-                  .find(item => item.id === activeTab)
-
-                return currentItem ? (
-                  <div className="flex items-center space-x-3">
-                    <span className="text-xl">{currentItem.icon}</span>
-                    <div>
-                      <h2 className="text-lg font-medium text-gray-900">{currentItem.label}</h2>
-                      <p className="text-sm text-gray-500">{currentItem.description}</p>
-                    </div>
-                    {currentItem.status && (
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(currentItem.status)}`}>
-                        {getStatusIcon(currentItem.status)} {
-                          currentItem.status === 'complete' ? t('settings.status.complete') :
-                          currentItem.status === 'warning' ? t('settings.status.warning') :
-                          currentItem.status === 'incomplete' ? t('settings.status.incomplete') : ''
-                        }
-                      </span>
-                    )}
-                  </div>
-                ) : null
-              })()}
-            </div>
-
-            {/* 内容区域 */}
-            <div className="p-6">
-              {renderTabContent()}
-            </div>
-          </div>
-        </div>
+        <SettingsContent
+          activeTab={activeTab}
+          settingGroups={settingGroups}
+        >
+          {renderTabContent()}
+        </SettingsContent>
       </div>
-    </div>
+    </PageContainer>
   )
 }

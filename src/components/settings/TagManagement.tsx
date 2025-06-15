@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import Modal from '@/components/ui/Modal'
 import InputField from '@/components/ui/InputField'
 import AuthButton from '@/components/ui/AuthButton'
@@ -23,6 +24,7 @@ interface TagFormData {
 }
 
 export default function TagManagement() {
+  const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const { tags, isLoading, refreshTags, updateTag, addTag, removeTag } = useUserData()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -69,7 +71,7 @@ export default function TagManagement() {
     e.preventDefault()
     
     if (!formData.name.trim()) {
-      showError('验证失败', '标签名称不能为空')
+      showError(t('validation.failed'), t('tag.name.required'))
       return
     }
 
@@ -94,8 +96,8 @@ export default function TagManagement() {
 
       if (result.success) {
         showSuccess(
-          editingTag ? '更新成功' : '创建成功',
-          editingTag ? '标签已更新' : '标签已创建'
+          editingTag ? t('success.updated') : t('success.created'),
+          editingTag ? t('tag.updated') : t('tag.created')
         )
         setIsModalOpen(false)
 
@@ -107,13 +109,13 @@ export default function TagManagement() {
         }
       } else {
         showError(
-          editingTag ? '更新失败' : '创建失败',
-          result.error || '操作失败'
+          editingTag ? t('error.update.failed') : t('error.create.failed'),
+          result.error || t('error.operation.failed')
         )
       }
     } catch (error) {
       console.error('Error saving tag:', error)
-      showError('操作失败', '网络错误，请稍后重试')
+      showError(t('error.operation.failed'), t('error.network'))
     } finally {
       setIsSubmitting(false)
     }
@@ -130,15 +132,15 @@ export default function TagManagement() {
       const result = await response.json()
 
       if (result.success) {
-        showSuccess('删除成功', '标签已删除')
+        showSuccess(t('success.deleted'), t('tag.deleted'))
         // 更新 UserDataContext 中的数据
         removeTag(deletingTag.id)
       } else {
-        showError('删除失败', result.error || '删除标签失败')
+        showError(t('error.delete.failed'), result.error || t('tag.delete.failed'))
       }
     } catch (error) {
       console.error('Error deleting tag:', error)
-      showError('删除失败', '网络错误，请稍后重试')
+      showError(t('error.delete.failed'), t('error.network'))
     } finally {
       setShowDeleteConfirm(false)
       setDeletingTag(null)
@@ -149,7 +151,7 @@ export default function TagManagement() {
     return (
       <div className="p-8 text-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="mt-2 text-gray-500">加载中...</p>
+        <p className="mt-2 text-gray-500 dark:text-gray-400">{t('common.loading')}</p>
       </div>
     )
   }
@@ -159,55 +161,55 @@ export default function TagManagement() {
       {/* 页面标题和操作 */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-medium text-gray-900">标签管理</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            管理您的交易标签，用于更好地分类和筛选交易记录
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('tag.management')}</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {t('tag.management.description')}
           </p>
         </div>
         <button
           onClick={handleAddTag}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
         >
           <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
-          添加标签
+          {t('tag.add')}
         </button>
       </div>
 
       {/* 标签列表 */}
       {tags.length > 0 ? (
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
+        <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md border border-gray-200 dark:border-gray-700">
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
             {tags.map((tag) => (
               <li key={tag.id}>
-                <div className="px-4 py-4 flex items-center justify-between hover:bg-gray-50">
+                <div className="px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <div className="flex items-center space-x-3">
                     {/* 标签颜色指示器 */}
                     <div
-                      className="w-4 h-4 rounded-full border border-gray-300"
+                      className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600"
                       style={{ backgroundColor: tag.color || '#6B7280' }}
                     />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{tag.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {tag._count?.transactions || 0} 笔交易使用
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{tag.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {t('tag.usage.count', { count: tag._count?.transactions || 0 })}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleEditTag(tag)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
                     >
-                      编辑
+                      {t('common.edit')}
                     </button>
                     <button
                       onClick={() => handleDeleteTag(tag)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={Boolean(tag._count?.transactions && tag._count.transactions > 0)}
                     >
-                      删除
+                      {t('common.delete')}
                     </button>
                   </div>
                 </div>
@@ -216,21 +218,21 @@ export default function TagManagement() {
           </ul>
         </div>
       ) : (
-        <div className="text-center py-12 border border-gray-200 rounded-lg bg-gray-50">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="text-center py-12 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
+          <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">还没有标签</h3>
-          <p className="mt-1 text-sm text-gray-500">开始创建您的第一个标签来分类交易记录</p>
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{t('tag.empty.title')}</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('tag.empty.description')}</p>
           <div className="mt-6">
             <button
               onClick={handleAddTag}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              添加标签
+              {t('tag.add')}
             </button>
           </div>
         </div>
@@ -240,22 +242,22 @@ export default function TagManagement() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingTag ? '编辑标签' : '添加标签'}
+        title={editingTag ? t('tag.edit') : t('tag.add')}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <InputField
             name="name"
-            label="标签名称"
+            label={t('tag.name')}
             value={formData.name}
             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="请输入标签名称"
+            placeholder={t('tag.name.placeholder')}
             required
           />
 
           {/* 颜色选择 */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              标签颜色
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('tag.color')}
             </label>
             <div className="flex flex-wrap gap-2">
               {colorOptions.map((color) => (
@@ -263,8 +265,8 @@ export default function TagManagement() {
                   key={color}
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, color }))}
-                  className={`w-8 h-8 rounded-full border-2 ${
-                    formData.color === color ? 'border-gray-900' : 'border-gray-300'
+                  className={`w-8 h-8 rounded-full border-2 transition-colors ${
+                    formData.color === color ? 'border-gray-900 dark:border-gray-100' : 'border-gray-300 dark:border-gray-600'
                   }`}
                   style={{ backgroundColor: color }}
                 />
@@ -272,12 +274,12 @@ export default function TagManagement() {
             </div>
             {formData.color && (
               <div className="flex items-center space-x-2 mt-2">
-                <span className="text-sm text-gray-500">已选择:</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('tag.color.selected')}:</span>
                 <div
-                  className="w-4 h-4 rounded-full border border-gray-300"
+                  className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600"
                   style={{ backgroundColor: formData.color }}
                 />
-                <span className="text-sm text-gray-700">{formData.color}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{formData.color}</span>
               </div>
             )}
           </div>
@@ -286,13 +288,13 @@ export default function TagManagement() {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
-              取消
+              {t('common.cancel')}
             </button>
             <AuthButton
               type="submit"
-              label={editingTag ? '更新标签' : '创建标签'}
+              label={editingTag ? t('tag.update') : t('tag.create')}
               isLoading={isSubmitting}
             />
           </div>
@@ -302,18 +304,21 @@ export default function TagManagement() {
       {/* 删除确认模态框 */}
       <ConfirmationModal
         isOpen={showDeleteConfirm}
-        title="删除标签"
+        title={t('tag.delete.title')}
         message={
           deletingTag?._count?.transactions && deletingTag._count.transactions > 0
-            ? `标签"${deletingTag?.name}"正在被 ${deletingTag._count.transactions} 笔交易使用，无法删除。请先移除相关交易中的此标签。`
-            : `确定要删除标签"${deletingTag?.name}"吗？此操作不可撤销。`
+            ? t('tag.delete.in.use.message', {
+                name: deletingTag?.name,
+                count: deletingTag._count.transactions
+              })
+            : t('tag.delete.confirm.message', { name: deletingTag?.name || '' })
         }
         confirmLabel={
           deletingTag?._count?.transactions && deletingTag._count.transactions > 0
-            ? '知道了'
-            : '确认删除'
+            ? t('common.ok')
+            : t('tag.delete.confirm')
         }
-        cancelLabel="取消"
+        cancelLabel={t('common.cancel')}
         onConfirm={
           deletingTag?._count?.transactions && deletingTag._count.transactions > 0
             ? () => {

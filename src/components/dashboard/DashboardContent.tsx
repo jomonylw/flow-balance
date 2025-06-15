@@ -5,11 +5,10 @@ import QuickFlowTransactionModal from './QuickFlowTransactionModal'
 import QuickBalanceUpdateModal from '@/components/dashboard/QuickBalanceUpdateModal'
 import NetWorthChart from './NetWorthChart'
 import CashFlowChart from './CashFlowChart'
-import SmartAccountSummary from './SmartAccountSummary'
 import ExchangeRateAlert from './ExchangeRateAlert'
 import PageContainer from '../ui/PageContainer'
 import TranslationLoader from '../ui/TranslationLoader'
-import { calculateAccountBalance } from '@/lib/account-balance'
+
 import { validateAccountDataWithI18n, validateChartData } from '@/lib/data-validation'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -40,22 +39,7 @@ interface Account {
   }>
 }
 
-interface Category {
-  id: string
-  name: string
-}
 
-interface Currency {
-  code: string
-  name: string
-  symbol: string
-}
-
-interface Tag {
-  id: string
-  name: string
-  color?: string
-}
 
 interface Stats {
   accountCount: number
@@ -67,20 +51,12 @@ interface DashboardContentProps {
   user: User
   stats: Stats
   accounts: Account[]
-  categories: Category[]
-  currencies: Currency[]
-  tags: Tag[]
-  baseCurrency: Currency
 }
 
 export default function DashboardContent({
   user,
   stats,
-  accounts,
-  categories,
-  currencies,
-  tags,
-  baseCurrency
+  accounts
 }: DashboardContentProps) {
   const { t } = useLanguage()
   const { resolvedTheme } = useTheme()
@@ -216,42 +192,7 @@ export default function DashboardContent({
     }
   }, [accounts, t])
 
-  // 计算账户余额
-  const accountsWithBalances = accounts.map(account => {
-    const accountData = {
-      id: account.id,
-      name: account.name,
-      category: {
-        name: account.category.name,
-        type: account.category.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-      },
-      transactions: (account.transactions || []).map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
-        amount: t.amount, // amount已经是number类型了
-        currency: t.currency
-      }))
-    }
 
-    const balances = calculateAccountBalance(accountData)
-
-    // 转换为原有格式
-    const balancesRecord: Record<string, number> = {}
-    Object.values(balances).forEach(balance => {
-      balancesRecord[balance.currencyCode] = balance.amount
-    })
-
-    return {
-      id: account.id,
-      name: account.name,
-      currencyCode: account.currencyCode, // 保留账户的货币代码
-      category: {
-        id: account.category.id || account.id, // 使用账户 ID 作为分类 ID 的占位符
-        name: account.category.name,
-        type: account.category.type
-      },
-      balances: balancesRecord
-    }
-  })
 
   return (
     <TranslationLoader
@@ -278,62 +219,6 @@ export default function DashboardContent({
       {/* 汇率设置提醒 */}
       <ExchangeRateAlert className="mb-4 sm:mb-6" />
 
-      {/* 数据质量评分 */}
-      {validationResult && validationResult.score !== undefined && (
-        <div className="mb-4 sm:mb-6">
-          <div className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('dashboard.data.quality.score')}</h3>
-              <div className="flex items-center">
-                <div className={`text-2xl font-bold ${
-                  validationResult.score >= 90 ? 'text-green-600' :
-                  validationResult.score >= 70 ? 'text-yellow-600' :
-                  'text-red-600'
-                }`}>
-                  {validationResult.score}
-                </div>
-                <span className={`ml-1 ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>/100</span>
-              </div>
-            </div>
-
-            <div className={`w-full rounded-full h-2 mb-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>
-              <div
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  validationResult.score >= 90 ? 'bg-green-500' :
-                  validationResult.score >= 70 ? 'bg-yellow-500' :
-                  'bg-red-500'
-                }`}
-                style={{ width: `${validationResult.score}%` }}
-              ></div>
-            </div>
-
-            {validationResult.details && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
-                <div className="text-center">
-                  <div className={`text-base sm:text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{validationResult.details.accountsChecked}</div>
-                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.accounts.checked')}</div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-base sm:text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{validationResult.details.transactionsChecked}</div>
-                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.transactions.checked')}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-base sm:text-lg font-semibold text-red-600">{validationResult.details.categoriesWithoutType}</div>
-                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.categories.without.type')}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-base sm:text-lg font-semibold text-red-600">{validationResult.details.invalidTransactions}</div>
-                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.invalid.transactions')}</div>
-                </div>
-                <div className="text-center col-span-2 sm:col-span-1">
-                  <div className="text-base sm:text-lg font-semibold text-yellow-600">{validationResult.details.businessLogicViolations}</div>
-                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.business.logic.violations')}</div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* 数据验证提示 */}
       {validationResult && (!validationResult.isValid || validationResult.warnings.length > 0) && (
@@ -429,11 +314,11 @@ export default function DashboardContent({
         ) : summaryData ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* 总资产 */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-700">{t('dashboard.total.assets.card')}</p>
-                  <p className="text-2xl font-bold text-blue-900">
+                  <p className={`text-sm font-medium ${resolvedTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>{t('dashboard.total.assets.card')}</p>
+                  <p className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-blue-100' : 'text-blue-900'}`}>
                     {summaryData.totalAssets ? (
                       <>
                         {summaryData.totalAssets.currency.symbol}
@@ -446,11 +331,11 @@ export default function DashboardContent({
                       </>
                     )}
                   </p>
-                  <p className="text-xs text-blue-600 mt-1">
+                  <p className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
                     {summaryData.totalAssets ? summaryData.totalAssets.accountCount : 0} {t('dashboard.accounts.count', { count: summaryData.totalAssets ? summaryData.totalAssets.accountCount : 0 }).replace(/\d+\s*/, '')}
                   </p>
                 </div>
-                <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${resolvedTheme === 'dark' ? 'bg-blue-800' : 'bg-blue-100'}`}>
                   <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                   </svg>
@@ -459,11 +344,11 @@ export default function DashboardContent({
             </div>
 
             {/* 总负债 */}
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200'}`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-red-700">{t('dashboard.total.liabilities.card')}</p>
-                  <p className="text-2xl font-bold text-red-900">
+                  <p className={`text-sm font-medium ${resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-700'}`}>{t('dashboard.total.liabilities.card')}</p>
+                  <p className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900'}`}>
                     {summaryData.totalLiabilities ? (
                       <>
                         {summaryData.totalLiabilities.currency.symbol}
@@ -476,11 +361,11 @@ export default function DashboardContent({
                       </>
                     )}
                   </p>
-                  <p className="text-xs text-red-600 mt-1">
+                  <p className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
                     {summaryData.totalLiabilities ? summaryData.totalLiabilities.accountCount : 0} {t('dashboard.accounts.count', { count: summaryData.totalLiabilities ? summaryData.totalLiabilities.accountCount : 0 }).replace(/\d+\s*/, '')}
                   </p>
                 </div>
-                <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${resolvedTheme === 'dark' ? 'bg-red-800' : 'bg-red-100'}`}>
                   <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
@@ -489,20 +374,40 @@ export default function DashboardContent({
             </div>
 
             {/* 净资产 */}
-            <div className={`${summaryData.netWorth.amount >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-6`}>
+            <div className={`border rounded-lg p-6 ${
+              summaryData.netWorth.amount >= 0
+                ? (resolvedTheme === 'dark' ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200')
+                : (resolvedTheme === 'dark' ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200')
+            }`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm font-medium ${summaryData.netWorth.amount >= 0 ? 'text-green-700' : 'text-red-700'}`}>{t('dashboard.net.worth.card')}</p>
-                  <p className={`text-2xl font-bold ${summaryData.netWorth.amount >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                  <p className={`text-sm font-medium ${
+                    summaryData.netWorth.amount >= 0
+                      ? (resolvedTheme === 'dark' ? 'text-green-300' : 'text-green-700')
+                      : (resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-700')
+                  }`}>{t('dashboard.net.worth.card')}</p>
+                  <p className={`text-2xl font-bold ${
+                    summaryData.netWorth.amount >= 0
+                      ? (resolvedTheme === 'dark' ? 'text-green-100' : 'text-green-900')
+                      : (resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900')
+                  }`}>
                     {summaryData.netWorth.amount >= 0 ? '+' : '-'}
                     {summaryData.netWorth.currency.symbol}
                     {Math.abs(summaryData.netWorth.amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <p className={`text-xs mt-1 ${summaryData.netWorth.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`text-xs mt-1 ${
+                    summaryData.netWorth.amount >= 0
+                      ? (resolvedTheme === 'dark' ? 'text-green-400' : 'text-green-600')
+                      : (resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600')
+                  }`}>
                     {t('dashboard.assets.minus.liabilities')}
                   </p>
                 </div>
-                <div className={`h-8 w-8 ${summaryData.netWorth.amount >= 0 ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center`}>
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                  summaryData.netWorth.amount >= 0
+                    ? (resolvedTheme === 'dark' ? 'bg-green-800' : 'bg-green-100')
+                    : (resolvedTheme === 'dark' ? 'bg-red-800' : 'bg-red-100')
+                }`}>
                   <svg className={`h-5 w-5 ${summaryData.netWorth.amount >= 0 ? 'text-green-600' : 'text-red-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                   </svg>
@@ -511,20 +416,24 @@ export default function DashboardContent({
             </div>
 
             {/* 本月现金流 */}
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+            <div className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-purple-900/20 border-purple-700' : 'bg-purple-50 border-purple-200'}`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-700">{t('dashboard.monthly.net.income')}</p>
-                  <p className={`text-2xl font-bold ${summaryData.recentActivity.summaryInBaseCurrency.net >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                  <p className={`text-sm font-medium ${resolvedTheme === 'dark' ? 'text-purple-300' : 'text-purple-700'}`}>{t('dashboard.monthly.net.income')}</p>
+                  <p className={`text-2xl font-bold ${
+                    summaryData.recentActivity.summaryInBaseCurrency.net >= 0
+                      ? (resolvedTheme === 'dark' ? 'text-green-100' : 'text-green-900')
+                      : (resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900')
+                  }`}>
                     {summaryData.recentActivity.summaryInBaseCurrency.net >= 0 ? '+' : ''}
                     {summaryData.recentActivity.baseCurrency.symbol}
                     {Math.abs(summaryData.recentActivity.summaryInBaseCurrency.net).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <p className="text-xs text-purple-600 mt-1">
+                  <p className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>
                     {summaryData.recentActivity.period}
                   </p>
                 </div>
-                <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${resolvedTheme === 'dark' ? 'bg-purple-800' : 'bg-purple-100'}`}>
                   <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
@@ -532,15 +441,15 @@ export default function DashboardContent({
               </div>
               <div className="mt-3 space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-green-600">{t('dashboard.income.label')}</span>
-                  <span className="text-green-800 font-medium">
+                  <span className={`${resolvedTheme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>{t('dashboard.income.label')}</span>
+                  <span className={`font-medium ${resolvedTheme === 'dark' ? 'text-green-300' : 'text-green-800'}`}>
                     +{summaryData.recentActivity.baseCurrency.symbol}
                     {summaryData.recentActivity.summaryInBaseCurrency.income.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-red-600">{t('dashboard.expense.label')}</span>
-                  <span className="text-red-800 font-medium">
+                  <span className={`${resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>{t('dashboard.expense.label')}</span>
+                  <span className={`font-medium ${resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-800'}`}>
                     -{summaryData.recentActivity.baseCurrency.symbol}
                     {summaryData.recentActivity.summaryInBaseCurrency.expense.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
@@ -549,10 +458,15 @@ export default function DashboardContent({
             </div>
           </div>
         ) : (
-          <SmartAccountSummary
-            accounts={accountsWithBalances}
-            baseCurrency={baseCurrency}
-          />
+          <div className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className={`text-center ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <svg className={`mx-auto h-12 w-12 ${resolvedTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <p className="mt-2">{t('dashboard.no.summary.data')}</p>
+              <p className="text-sm">{t('dashboard.add.accounts.transactions.first')}</p>
+            </div>
+          </div>
         )}
       </div>
 
@@ -636,7 +550,11 @@ export default function DashboardContent({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <button
             onClick={() => handleQuickTransaction('INCOME')}
-            className="flex items-center justify-center px-4 py-3 border border-green-200 rounded-md text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors touch-manipulation"
+            className={`flex items-center justify-center px-4 py-3 border rounded-md text-sm font-medium transition-colors touch-manipulation ${
+              resolvedTheme === 'dark'
+                ? 'border-green-700 text-green-300 bg-green-900/20 hover:bg-green-900/30'
+                : 'border-green-200 text-green-700 bg-green-50 hover:bg-green-100'
+            }`}
           >
             <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -645,7 +563,11 @@ export default function DashboardContent({
           </button>
           <button
             onClick={() => handleQuickTransaction('EXPENSE')}
-            className="flex items-center justify-center px-4 py-3 border border-red-200 rounded-md text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 transition-colors touch-manipulation"
+            className={`flex items-center justify-center px-4 py-3 border rounded-md text-sm font-medium transition-colors touch-manipulation ${
+              resolvedTheme === 'dark'
+                ? 'border-red-700 text-red-300 bg-red-900/20 hover:bg-red-900/30'
+                : 'border-red-200 text-red-700 bg-red-50 hover:bg-red-100'
+            }`}
           >
             <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
@@ -654,7 +576,11 @@ export default function DashboardContent({
           </button>
           <button
             onClick={handleQuickBalanceUpdate}
-            className="flex items-center justify-center px-4 py-3 border border-blue-200 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors touch-manipulation"
+            className={`flex items-center justify-center px-4 py-3 border rounded-md text-sm font-medium transition-colors touch-manipulation ${
+              resolvedTheme === 'dark'
+                ? 'border-blue-700 text-blue-300 bg-blue-900/20 hover:bg-blue-900/30'
+                : 'border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100'
+            }`}
           >
             <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -709,6 +635,64 @@ export default function DashboardContent({
             </div>
           </div>
         )}
+
+              {/* 数据质量评分 */}
+      {validationResult && validationResult.score !== undefined && (
+        <div className="mb-4 sm:mb-6">
+          <div className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('dashboard.data.quality.score')}</h3>
+              <div className="flex items-center">
+                <div className={`text-2xl font-bold ${
+                  validationResult.score >= 90 ? 'text-green-600' :
+                  validationResult.score >= 70 ? 'text-yellow-600' :
+                  'text-red-600'
+                }`}>
+                  {validationResult.score}
+                </div>
+                <span className={`ml-1 ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>/100</span>
+              </div>
+            </div>
+
+            <div className={`w-full rounded-full h-2 mb-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>
+              <div
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  validationResult.score >= 90 ? 'bg-green-500' :
+                  validationResult.score >= 70 ? 'bg-yellow-500' :
+                  'bg-red-500'
+                }`}
+                style={{ width: `${validationResult.score}%` }}
+              ></div>
+            </div>
+
+            {validationResult.details && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
+                <div className="text-center">
+                  <div className={`text-base sm:text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{validationResult.details.accountsChecked}</div>
+                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.accounts.checked')}</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-base sm:text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{validationResult.details.transactionsChecked}</div>
+                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.transactions.checked')}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-base sm:text-lg font-semibold text-red-600">{validationResult.details.categoriesWithoutType}</div>
+                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.categories.without.type')}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-base sm:text-lg font-semibold text-red-600">{validationResult.details.invalidTransactions}</div>
+                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.invalid.transactions')}</div>
+                </div>
+                <div className="text-center col-span-2 sm:col-span-1">
+                  <div className="text-base sm:text-lg font-semibold text-yellow-600">{validationResult.details.businessLogicViolations}</div>
+                  <div className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('dashboard.business.logic.violations')}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       </div>
 
 

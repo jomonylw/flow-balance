@@ -200,27 +200,26 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 准备图表数据
+    // 准备图表数据 - 移除硬编码文本，让前端组件处理国际化
     const netWorthChartData = {
-      title: '净资产变化趋势',
-      xAxis: monthlyData.map(d => d.monthName),
+      xAxis: monthlyData.map(d => d.month), // 使用标准格式 YYYY-MM
       series: [
         {
-          name: '净资产',
+          name: 'net_worth', // 使用键名，前端翻译
           type: 'line',
           data: monthlyData.map(d => d.netWorth),
           smooth: true,
           itemStyle: { color: '#3b82f6' }
         },
         {
-          name: '总资产',
+          name: 'total_assets', // 使用键名，前端翻译
           type: 'line',
           data: monthlyData.map(d => d.totalAssets),
           smooth: true,
           itemStyle: { color: '#10b981' }
         },
         {
-          name: '总负债',
+          name: 'total_liabilities', // 使用键名，前端翻译
           type: 'line',
           data: monthlyData.map(d => d.totalLiabilities),
           smooth: true,
@@ -230,23 +229,22 @@ export async function GET(request: NextRequest) {
     }
 
     const cashFlowChartData = {
-      title: '每月现金流',
-      xAxis: monthlyData.map(d => d.monthName),
+      xAxis: monthlyData.map(d => d.month), // 使用标准格式 YYYY-MM
       series: [
         {
-          name: '收入',
+          name: 'income', // 使用键名，前端翻译
           type: 'bar',
           data: monthlyData.map(d => d.monthlyIncome),
           itemStyle: { color: '#10b981' }
         },
         {
-          name: '支出',
+          name: 'expense', // 使用键名，前端翻译
           type: 'bar',
           data: monthlyData.map(d => -d.monthlyExpense), // 负值显示
           itemStyle: { color: '#ef4444' }
         },
         {
-          name: '净现金流',
+          name: 'net_cash_flow', // 使用键名，前端翻译
           type: 'line',
           data: monthlyData.map(d => d.netCashFlow),
           smooth: true,

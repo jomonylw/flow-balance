@@ -21,6 +21,10 @@ interface AccountInfo {
   category: string
   balance: number
   currency: Currency
+  balanceInBaseCurrency?: number
+  conversionRate?: number
+  conversionSuccess?: boolean
+  conversionError?: string
 }
 
 interface BalanceSheetData {
@@ -29,6 +33,7 @@ interface BalanceSheetData {
       categoryName: string
       accounts: AccountInfo[]
       totalByCurrency: Record<string, number>
+      totalInBaseCurrency?: number
     }>
     totalByCurrency: Record<string, number>
   }
@@ -37,6 +42,7 @@ interface BalanceSheetData {
       categoryName: string
       accounts: AccountInfo[]
       totalByCurrency: Record<string, number>
+      totalInBaseCurrency?: number
     }>
     totalByCurrency: Record<string, number>
   }
@@ -139,7 +145,9 @@ export default function BalanceSheetCard() {
       categoryName: string
       accounts: AccountInfo[]
       totalByCurrency: Record<string, number>
-    }>
+      totalInBaseCurrency?: number
+    }>,
+    baseCurrency: Currency
   ) => {
     if (!categories || Object.keys(categories).length === 0) {
       return (
@@ -166,9 +174,17 @@ export default function BalanceSheetCard() {
               <div key={currencyCode} className="mb-3">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium text-gray-600 dark:text-gray-400">{currencyCode}</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">
-                    {formatCurrencyWithCode(total, currencyCode)}
-                  </span>
+                  <div className="flex flex-col items-end">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      {formatCurrencyWithCode(total, currencyCode)}
+                    </span>
+                    {category.totalInBaseCurrency !== undefined &&
+                     currencyCode !== baseCurrency.code && (
+                      <span className="text-xs text-gray-400">
+                        ≈ {baseCurrency.symbol}{Math.abs(category.totalInBaseCurrency).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* 显示该币种下的账户 */}
@@ -178,9 +194,17 @@ export default function BalanceSheetCard() {
                     .map(account => (
                       <div key={account.id} className="flex justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">{account.name}</span>
-                        <span className="text-gray-900 dark:text-gray-100">
-                          {formatCurrency(account.balance, account.currency)}
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-gray-900 dark:text-gray-100">
+                            {formatCurrency(account.balance, account.currency)}
+                          </span>
+                          {account.balanceInBaseCurrency !== undefined &&
+                           account.currency.code !== baseCurrency.code && (
+                            <span className="text-xs text-gray-400">
+                              ≈ {baseCurrency.symbol}{Math.abs(account.balanceInBaseCurrency).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
                 </div>
@@ -261,18 +285,37 @@ export default function BalanceSheetCard() {
 
               {renderCategorySection(
                 '',
-                data.balanceSheet.assets.categories
+                data.balanceSheet.assets.categories,
+                data.baseCurrency
               )}
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
                 <div className="flex justify-between font-bold text-lg">
                   <span className="text-gray-900 dark:text-gray-100">{t('reports.balance.sheet.total.assets')}</span>
                   <div>
-                    {Object.entries(data.balanceSheet.assets.totalByCurrency || {}).map(([currencyCode, total]) => (
-                      <div key={currencyCode} className="text-gray-900 dark:text-gray-100">
-                        {formatCurrencyWithCode(total, currencyCode)}
-                      </div>
-                    ))}
+                    {Object.entries(data.balanceSheet.assets.totalByCurrency || {}).map(([currencyCode, total]) => {
+                      // 计算该币种的本币折算金额
+                      const baseCurrencyAmount = Object.values(data.balanceSheet.assets.categories)
+                        .reduce((sum, category) => {
+                          const categoryTotal = category.accounts
+                            .filter(account => account.currency.code === currencyCode)
+                            .reduce((accSum, account) => accSum + (account.balanceInBaseCurrency || 0), 0)
+                          return sum + categoryTotal
+                        }, 0)
+
+                      return (
+                        <div key={currencyCode} className="flex flex-col items-end">
+                          <div className="text-gray-900 dark:text-gray-100">
+                            {formatCurrencyWithCode(total, currencyCode)}
+                          </div>
+                          {currencyCode !== data.baseCurrency.code && baseCurrencyAmount > 0 && (
+                            <div className="text-xs text-gray-400">
+                              ≈ {data.baseCurrency.symbol}{Math.abs(baseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -300,18 +343,37 @@ export default function BalanceSheetCard() {
 
               {renderCategorySection(
                 '',
-                data.balanceSheet.liabilities.categories
+                data.balanceSheet.liabilities.categories,
+                data.baseCurrency
               )}
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mb-6">
                 <div className="flex justify-between font-bold">
                   <span className="text-gray-900 dark:text-gray-100">{t('reports.balance.sheet.total.liabilities')}</span>
                   <div>
-                    {Object.entries(data.balanceSheet.liabilities.totalByCurrency || {}).map(([currencyCode, total]) => (
-                      <div key={currencyCode} className="text-red-600 dark:text-red-400">
-                        {formatCurrencyWithCode(total, currencyCode)}
-                      </div>
-                    ))}
+                    {Object.entries(data.balanceSheet.liabilities.totalByCurrency || {}).map(([currencyCode, total]) => {
+                      // 计算该币种的本币折算金额
+                      const baseCurrencyAmount = Object.values(data.balanceSheet.liabilities.categories)
+                        .reduce((sum, category) => {
+                          const categoryTotal = category.accounts
+                            .filter(account => account.currency.code === currencyCode)
+                            .reduce((accSum, account) => accSum + (account.balanceInBaseCurrency || 0), 0)
+                          return sum + categoryTotal
+                        }, 0)
+
+                      return (
+                        <div key={currencyCode} className="flex flex-col items-end">
+                          <div className="text-red-600 dark:text-red-400">
+                            {formatCurrencyWithCode(total, currencyCode)}
+                          </div>
+                          {currencyCode !== data.baseCurrency.code && baseCurrencyAmount > 0 && (
+                            <div className="text-xs text-gray-400">
+                              ≈ {data.baseCurrency.symbol}{Math.abs(baseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -337,11 +399,39 @@ export default function BalanceSheetCard() {
                 <div className="flex justify-between font-bold text-lg">
                   <span className="text-gray-900 dark:text-gray-100">{t('reports.balance.sheet.net.assets')}</span>
                   <div>
-                    {Object.entries(data.balanceSheet.equity || {}).map(([currencyCode, equity]) => (
-                      <div key={currencyCode} className={equity >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                        {formatCurrencyWithCode(equity, currencyCode)}
-                      </div>
-                    ))}
+                    {Object.entries(data.balanceSheet.equity || {}).map(([currencyCode, equity]) => {
+                      // 计算该币种的净资产本币折算金额
+                      const assetBaseCurrencyAmount = Object.values(data.balanceSheet.assets.categories)
+                        .reduce((sum, category) => {
+                          const categoryTotal = category.accounts
+                            .filter(account => account.currency.code === currencyCode)
+                            .reduce((accSum, account) => accSum + (account.balanceInBaseCurrency || 0), 0)
+                          return sum + categoryTotal
+                        }, 0)
+
+                      const liabilityBaseCurrencyAmount = Object.values(data.balanceSheet.liabilities.categories)
+                        .reduce((sum, category) => {
+                          const categoryTotal = category.accounts
+                            .filter(account => account.currency.code === currencyCode)
+                            .reduce((accSum, account) => accSum + (account.balanceInBaseCurrency || 0), 0)
+                          return sum + categoryTotal
+                        }, 0)
+
+                      const netBaseCurrencyAmount = assetBaseCurrencyAmount - liabilityBaseCurrencyAmount
+
+                      return (
+                        <div key={currencyCode} className="flex flex-col items-end">
+                          <div className={equity >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                            {formatCurrencyWithCode(equity, currencyCode)}
+                          </div>
+                          {currencyCode !== data.baseCurrency.code && Math.abs(netBaseCurrencyAmount) > 0.01 && (
+                            <div className="text-xs text-gray-400">
+                              ≈ {data.baseCurrency.symbol}{Math.abs(netBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -371,31 +461,89 @@ export default function BalanceSheetCard() {
               <div>
                 <span className="text-gray-600 dark:text-gray-400">{t('reports.balance.sheet.total.assets.summary')}</span>
                 <div className="font-semibold text-gray-900 dark:text-gray-100">
-                  {Object.entries(data.summary.totalAssets).map(([currencyCode, total]) => (
-                    <div key={currencyCode}>
-                      {formatCurrencyWithCode(total, currencyCode)}
-                    </div>
-                  ))}
+                  {Object.entries(data.summary.totalAssets).map(([currencyCode, total]) => {
+                    // 计算该币种的本币折算金额
+                    const baseCurrencyAmount = Object.values(data.balanceSheet.assets.categories)
+                      .reduce((sum, category) => {
+                        const categoryTotal = category.accounts
+                          .filter(account => account.currency.code === currencyCode)
+                          .reduce((accSum, account) => accSum + (account.balanceInBaseCurrency || 0), 0)
+                        return sum + categoryTotal
+                      }, 0)
+
+                    return (
+                      <div key={currencyCode}>
+                        <div>{formatCurrencyWithCode(total, currencyCode)}</div>
+                        {currencyCode !== data.baseCurrency.code && baseCurrencyAmount > 0 && (
+                          <div className="text-xs text-gray-400">
+                            ≈ {data.baseCurrency.symbol}{Math.abs(baseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
               <div>
                 <span className="text-gray-600 dark:text-gray-400">{t('reports.balance.sheet.total.liabilities.summary')}</span>
                 <div className="font-semibold text-red-600 dark:text-red-400">
-                  {Object.entries(data.summary.totalLiabilities).map(([currencyCode, total]) => (
-                    <div key={currencyCode}>
-                      {formatCurrencyWithCode(total, currencyCode)}
-                    </div>
-                  ))}
+                  {Object.entries(data.summary.totalLiabilities).map(([currencyCode, total]) => {
+                    // 计算该币种的本币折算金额
+                    const baseCurrencyAmount = Object.values(data.balanceSheet.liabilities.categories)
+                      .reduce((sum, category) => {
+                        const categoryTotal = category.accounts
+                          .filter(account => account.currency.code === currencyCode)
+                          .reduce((accSum, account) => accSum + (account.balanceInBaseCurrency || 0), 0)
+                        return sum + categoryTotal
+                      }, 0)
+
+                    return (
+                      <div key={currencyCode}>
+                        <div>{formatCurrencyWithCode(total, currencyCode)}</div>
+                        {currencyCode !== data.baseCurrency.code && baseCurrencyAmount > 0 && (
+                          <div className="text-xs text-gray-400">
+                            ≈ {data.baseCurrency.symbol}{Math.abs(baseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
               <div>
                 <span className="text-gray-600 dark:text-gray-400">{t('reports.balance.sheet.net.worth.summary')}</span>
                 <div className="font-semibold">
-                  {Object.entries(data.summary.netWorth).map(([currencyCode, netWorth]) => (
-                    <div key={currencyCode} className={netWorth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                      {formatCurrencyWithCode(netWorth, currencyCode)}
-                    </div>
-                  ))}
+                  {Object.entries(data.summary.netWorth).map(([currencyCode, netWorth]) => {
+                    // 计算该币种的净资产本币折算金额
+                    const assetBaseCurrencyAmount = Object.values(data.balanceSheet.assets.categories)
+                      .reduce((sum, category) => {
+                        const categoryTotal = category.accounts
+                          .filter(account => account.currency.code === currencyCode)
+                          .reduce((accSum, account) => accSum + (account.balanceInBaseCurrency || 0), 0)
+                        return sum + categoryTotal
+                      }, 0)
+
+                    const liabilityBaseCurrencyAmount = Object.values(data.balanceSheet.liabilities.categories)
+                      .reduce((sum, category) => {
+                        const categoryTotal = category.accounts
+                          .filter(account => account.currency.code === currencyCode)
+                          .reduce((accSum, account) => accSum + (account.balanceInBaseCurrency || 0), 0)
+                        return sum + categoryTotal
+                      }, 0)
+
+                    const netBaseCurrencyAmount = assetBaseCurrencyAmount - liabilityBaseCurrencyAmount
+
+                    return (
+                      <div key={currencyCode} className={netWorth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                        <div>{formatCurrencyWithCode(netWorth, currencyCode)}</div>
+                        {currencyCode !== data.baseCurrency.code && Math.abs(netBaseCurrencyAmount) > 0.01 && (
+                          <div className="text-xs text-gray-400">
+                            ≈ {data.baseCurrency.symbol}{Math.abs(netBaseCurrencyAmount).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>

@@ -8,7 +8,7 @@ export default async function DashboardView() {
   if (!user) return null
 
   // 获取必要的数据
-  const [accountCount, transactionCount, categoryCount, accounts, categories, currencies, tags, userSettings] = await Promise.all([
+  const [accountCount, transactionCount, categoryCount, accounts] = await Promise.all([
     prisma.account.count({ where: { userId: user.id } }),
     prisma.transaction.count({ where: { userId: user.id } }),
     prisma.category.count({ where: { userId: user.id } }),
@@ -23,26 +23,8 @@ export default async function DashboardView() {
         }
       },
       orderBy: { name: 'asc' }
-    }),
-    prisma.category.findMany({
-      where: { userId: user.id },
-      orderBy: { name: 'asc' }
-    }),
-    prisma.currency.findMany({
-      orderBy: { code: 'asc' }
-    }),
-    prisma.tag.findMany({
-      where: { userId: user.id },
-      orderBy: { name: 'asc' }
-    }),
-    prisma.userSettings.findUnique({
-      where: { userId: user.id },
-      include: { baseCurrency: true }
     })
   ])
-
-  // 获取基础货币
-  const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
 
   // 使用序列化函数转换所有Decimal类型为普通数字
   const serializedAccounts = serializeAccounts(accounts)
@@ -56,13 +38,6 @@ export default async function DashboardView() {
         categoryCount
       }}
       accounts={serializedAccounts}
-      categories={categories}
-      currencies={currencies}
-      tags={tags.map(tag => ({
-        ...tag,
-        color: tag.color || undefined
-      }))}
-      baseCurrency={baseCurrency}
     />
   )
 }

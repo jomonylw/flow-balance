@@ -37,7 +37,9 @@ export default function SidebarSearchBox({ value, onChange }: SidebarSearchBoxPr
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
         <svg
           className={`h-4 w-4 transition-colors duration-200 ${
-            isFocused ? 'text-blue-500' : 'text-gray-400'
+            isFocused
+              ? 'text-blue-500 dark:text-blue-400'
+              : 'text-gray-400 dark:text-gray-500'
           }`}
           fill="none"
           stroke="currentColor"
@@ -57,12 +59,13 @@ export default function SidebarSearchBox({ value, onChange }: SidebarSearchBoxPr
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={`
-          block w-full pl-10 pr-10 py-2.5 text-sm
-          border rounded-xl leading-5 bg-white placeholder-gray-500
+          block w-full pl-10 pr-10 py-2.5 text-sm text-gray-900 dark:text-gray-100
+          border rounded-xl leading-5 bg-white dark:bg-gray-800
+          placeholder-gray-500 dark:placeholder-gray-400
           transition-all duration-200 ease-in-out
           ${isFocused
-            ? 'border-blue-500 ring-2 ring-blue-100 shadow-md placeholder-gray-400'
-            : 'border-gray-300 hover:border-gray-400 shadow-sm'
+            ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-100 dark:ring-blue-900/50 shadow-md placeholder-gray-400 dark:placeholder-gray-500'
+            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 shadow-sm'
           }
           focus:outline-none
         `}
@@ -73,7 +76,7 @@ export default function SidebarSearchBox({ value, onChange }: SidebarSearchBoxPr
         <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
           <button
             onClick={handleClear}
-            className="text-gray-400 hover:text-gray-600 focus:outline-none transition-colors duration-200 p-1 rounded-md hover:bg-gray-100"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors duration-200 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

@@ -1034,7 +1034,7 @@ GET    /api/exchange-rates/missing # 检查缺失汇率
 GET    /api/dashboard/summary  # 仪表板汇总数据
 GET    /api/dashboard/charts   # 仪表板图表数据
 GET    /api/reports/balance-sheet # 资产负债表
-GET    /api/reports/cash-flow  # 现金流量表
+GET    /api/reports/personal-cash-flow # 个人现金流量表
 ```
 
 #### 3.2.8 用户设置

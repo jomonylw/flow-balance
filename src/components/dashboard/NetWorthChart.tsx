@@ -9,10 +9,9 @@ import { getChartHeight } from '@/lib/responsive'
 
 interface NetWorthChartProps {
   data: {
-    title: string
-    xAxis: string[]
+    xAxis: string[] // 标准格式 YYYY-MM
     series: Array<{
-      name: string
+      name: string // 系列键名，需要翻译
       type: string
       data: number[]
       smooth?: boolean
@@ -74,13 +73,14 @@ export default function NetWorthChart({ data, currency, loading = false, error }
       }
 
     const option = {
+      backgroundColor: 'transparent',
       title: {
-        text: data.title,
+        text: t('chart.net.worth.trend'),
         left: 'center',
         textStyle: {
           fontSize: isMobile ? 14 : 16,
           fontWeight: 'bold',
-          color: '#374151'
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
         }
       },
       tooltip: {
@@ -88,7 +88,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
         axisPointer: {
           type: 'cross',
           label: {
-            backgroundColor: '#6a7985'
+            backgroundColor: resolvedTheme === 'dark' ? '#4b5563' : '#6a7985'
           }
         },
         confine: true, // 限制在图表区域内
@@ -107,10 +107,10 @@ export default function NetWorthChart({ data, currency, loading = false, error }
         }
       },
       legend: {
-        data: data.series.map(s => s.name),
+        data: data.series.map(s => t(`chart.series.${s.name}`)),
         top: isMobile ? 25 : 30,
         textStyle: {
-          color: '#374151',
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
           fontSize: isMobile ? 10 : 12
         },
         itemWidth: isMobile ? 15 : 25,
@@ -128,46 +128,47 @@ export default function NetWorthChart({ data, currency, loading = false, error }
         boundaryGap: false,
         data: data.xAxis,
         axisLabel: {
-          color: '#6b7280',
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
           rotate: isMobile ? 45 : 0,
           fontSize: isMobile ? 10 : 12,
-          interval: isMobile ? 'auto' : 0
+          interval: isMobile ? 'auto' : 0,
+          formatter: function (value: string) {
+            // 将 YYYY-MM 格式转换为 YYYY/MM
+            return value.replace('-', '/')
+          }
         },
         axisLine: {
           lineStyle: {
-            color: '#e5e7eb'
+            color: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb'
           }
         }
       },
       yAxis: {
         type: 'value',
         axisLabel: {
-          color: '#6b7280',
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
           fontSize: isMobile ? 10 : 12,
           formatter: function(value: number) {
-            if (Math.abs(value) >= 10000) {
-              return isMobile ?
-                `${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万` :
-                `${currency.symbol}${(value / 10000).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}万`
+            if (Math.abs(value) >= 1000) {
+              return `${currency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
             }
-            return isMobile ?
-              `${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}` :
-              `${currency.symbol}${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
+            return `${currency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
           }
         },
         axisLine: {
           lineStyle: {
-            color: '#e5e7eb'
+            color: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb'
           }
         },
         splitLine: {
           lineStyle: {
-            color: '#f3f4f6'
+            color: resolvedTheme === 'dark' ? '#374151' : '#f3f4f6'
           }
         }
       },
       series: data.series.map(series => ({
         ...series,
+        name: t(`chart.series.${series.name}`), // 翻译系列名称
         symbol: 'circle',
         symbolSize: 6,
         lineStyle: {
@@ -195,7 +196,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
       console.error('图表渲染错误:', error)
       setChartError(error instanceof Error ? error.message : '图表渲染失败')
     }
-  }, [data, currency, loading, resolvedTheme, isMobile, chartHeight])
+  }, [data, currency, loading, resolvedTheme, isMobile, chartHeight, t])
 
   useEffect(() => {
     return () => {
@@ -213,7 +214,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
         <div className="flex items-center justify-center h-[300px] sm:h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className={`text-sm sm:text-base ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>正在加载图表数据...</p>
+            <p className={`text-sm sm:text-base ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('chart.loading')}</p>
           </div>
         </div>
       </div>
@@ -231,7 +232,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className={`text-lg font-medium mb-2 ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>图表加载失败</h3>
+            <h3 className={`text-lg font-medium mb-2 ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('error.chart.load.failed')}</h3>
             <p className={`text-sm mb-4 ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{error || chartError}</p>
             <button
               onClick={() => {
@@ -243,7 +244,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
-              重新加载
+              {t('common.refresh')}
             </button>
           </div>
         </div>
@@ -273,7 +274,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
   return (
     <div className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
       <div className="mb-4">
-        <h3 className={`text-base sm:text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{data.title}</h3>
+        <h3 className={`text-base sm:text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>{t('chart.net.worth.trend')}</h3>
         <p className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{t('chart.net.worth.trend.description')}</p>
       </div>
       <div

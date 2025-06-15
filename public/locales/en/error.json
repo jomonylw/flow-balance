@@ -10,5 +10,6 @@
   "error.batch.delete.failed": "Batch deletion failed",
   "error.load.transactions": "Failed to load transaction data",
   "error.account.not.found": "Cannot find corresponding account information",
+  "error.chart.load.failed": "Chart loading failed",
   "error.stock.category.edit.only.balance": "Stock categories can only edit balance adjustment records"
 }

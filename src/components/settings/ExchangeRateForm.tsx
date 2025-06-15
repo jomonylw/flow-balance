@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import InputField from '@/components/ui/InputField'
 import SelectField from '@/components/ui/SelectField'
 
@@ -40,6 +41,7 @@ export default function ExchangeRateForm({
   onRateCreated,
   onClose
 }: ExchangeRateFormProps) {
+  const { t } = useLanguage()
   const [formData, setFormData] = useState({
     fromCurrency: '',
     toCurrency: baseCurrency?.code || '',
@@ -96,18 +98,18 @@ export default function ExchangeRateForm({
     try {
       // 验证表单数据
       if (!formData.fromCurrency || !formData.toCurrency || !formData.rate || !formData.effectiveDate) {
-        setError('请填写所有必填字段')
+        setError(t('exchange.rate.form.incomplete'))
         return
       }
 
       const rateValue = parseFloat(formData.rate)
       if (isNaN(rateValue) || rateValue <= 0) {
-        setError('汇率必须是大于0的数字')
+        setError(t('exchange.rate.invalid.rate'))
         return
       }
 
       if (formData.fromCurrency === formData.toCurrency) {
-        setError('源货币和目标货币不能相同')
+        setError(t('exchange.rate.same.currency'))
         return
       }
 
@@ -145,11 +147,11 @@ export default function ExchangeRateForm({
       if (response.ok) {
         onRateCreated(data.data)
       } else {
-        setError(data.error || '操作失败')
+        setError(data.error || t('error.operation.failed'))
       }
     } catch (error) {
       console.error('提交汇率失败:', error)
-      setError('网络错误，请稍后重试')
+      setError(t('error.network'))
     } finally {
       setIsLoading(false)
     }
@@ -172,16 +174,16 @@ export default function ExchangeRateForm({
   )
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+    <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
-        <h4 className="text-lg font-medium text-gray-900">
-          {editingRate ? '编辑汇率' : '添加汇率'}
+        <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+          {editingRate ? t('exchange.rate.edit') : t('exchange.rate.add')}
         </h4>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600"
+          className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
         >
-          <span className="sr-only">关闭</span>
+          <span className="sr-only">{t('common.close')}</span>
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -189,7 +191,7 @@ export default function ExchangeRateForm({
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg mb-4">
           {error}
         </div>
       )}
@@ -198,22 +200,22 @@ export default function ExchangeRateForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SelectField
             name="fromCurrency"
-            label="源货币"
+            label={t('exchange.rate.from.currency')}
             value={formData.fromCurrency}
             onChange={handleSelectChange}
             options={fromCurrencyOptions}
             required
-            help="要转换的原始货币"
+            help={t('exchange.rate.from.currency.help')}
           />
 
           <SelectField
             name="toCurrency"
-            label="目标货币"
+            label={t('exchange.rate.to.currency')}
             value={formData.toCurrency}
             onChange={handleSelectChange}
             options={toCurrencyOptions}
             required
-            help="转换后的目标货币"
+            help={t('exchange.rate.to.currency.help')}
           />
         </div>
 
@@ -221,37 +223,36 @@ export default function ExchangeRateForm({
           <InputField
             type="number"
             name="rate"
-            label="汇率"
-            placeholder="例如: 7.2"
+            label={t('exchange.rate.rate')}
+            placeholder={t('exchange.rate.rate.placeholder')}
             value={formData.rate}
             onChange={handleInputChange}
             required
             step="0.000001"
-
-            help="1单位源货币 = ? 单位目标货币"
+            help={t('exchange.rate.rate.help')}
           />
 
           <InputField
             type="date"
             name="effectiveDate"
-            label="生效日期"
+            label={t('exchange.rate.effective.date')}
             value={formData.effectiveDate}
             onChange={handleInputChange}
             required
-            help="汇率开始生效的日期"
+            help={t('exchange.rate.effective.date.help')}
           />
         </div>
 
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            备注
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('exchange.rate.notes')}
           </label>
           <textarea
             id="notes"
             name="notes"
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            placeholder="可选的备注信息..."
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder={t('exchange.rate.notes.placeholder')}
             value={formData.notes}
             onChange={handleInputChange}
           />
@@ -261,16 +262,16 @@ export default function ExchangeRateForm({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
-            取消
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isLoading ? '保存中...' : (editingRate ? '更新汇率' : '添加汇率')}
+            {isLoading ? t('common.saving') : (editingRate ? t('exchange.rate.update') : t('exchange.rate.add'))}
           </button>
         </div>
       </form>

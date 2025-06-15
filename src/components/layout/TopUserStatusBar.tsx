@@ -119,9 +119,9 @@ export default function TopUserStatusBar({
                 <div className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-32">
                   {user.email}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                {/* <div className="text-xs text-gray-500 dark:text-gray-400">
                   在线
-                </div>
+                </div> */}
               </div>
 
               {/* 下拉箭头 */}

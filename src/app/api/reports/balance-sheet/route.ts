@@ -53,16 +53,36 @@ export async function GET(request: NextRequest) {
       assets: {
         categories: {} as Record<string, {
           categoryName: string
-          accounts: any[]
+          accounts: Array<{
+            id: string
+            name: string
+            balance: number
+            currency: { code: string; symbol: string; name: string }
+            balanceInBaseCurrency?: number
+            conversionRate?: number
+            conversionSuccess?: boolean
+            conversionError?: string
+          }>
           totalByCurrency: Record<string, number>
+          totalInBaseCurrency?: number
         }>,
         totalByCurrency: {} as Record<string, number>
       },
       liabilities: {
         categories: {} as Record<string, {
           categoryName: string
-          accounts: any[]
+          accounts: Array<{
+            id: string
+            name: string
+            balance: number
+            currency: { code: string; symbol: string; name: string }
+            balanceInBaseCurrency?: number
+            conversionRate?: number
+            conversionSuccess?: boolean
+            conversionError?: string
+          }>
           totalByCurrency: Record<string, number>
+          totalInBaseCurrency?: number
         }>,
         totalByCurrency: {} as Record<string, number>
       },
@@ -75,13 +95,15 @@ export async function GET(request: NextRequest) {
         return
       }
 
-      // 序列化账户数据，将 Decimal 转换为 number
+      // 序列化账户数据，将 Decimal 转换为 number，并映射交易类型
       const serializedAccount = {
         ...account,
         transactions: account.transactions.map(transaction => ({
           ...transaction,
           amount: parseFloat(transaction.amount.toString()),
-          date: transaction.date.toISOString()
+          date: transaction.date.toISOString(),
+          // 交易类型已经是正确的格式
+          type: transaction.type as 'INCOME' | 'EXPENSE' | 'BALANCE'
         }))
       }
 
@@ -169,7 +191,7 @@ export async function GET(request: NextRequest) {
       balanceSheet.equity[currencyCode] = totalAssets - totalLiabilities
     })
 
-    // 货币转换到本位币
+    // 货币转换到本位币 - 增强版本，包含账户和类别级别的转换
     let baseCurrencyTotals = {
       totalAssets: 0,
       totalLiabilities: 0,
@@ -177,35 +199,121 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      // 准备转换数据
-      const assetAmounts = Object.entries(balanceSheet.assets.totalByCurrency)
-        .filter(([_, amount]) => Math.abs(amount) > 0.01)
-        .map(([currencyCode, amount]) => ({
-          amount: Math.abs(amount),
-          currency: currencyCode
-        }))
+      // 收集所有需要转换的金额（包括账户级别）
+      const allAmountsToConvert: Array<{
+        amount: number;
+        currency: string;
+        type: 'asset' | 'liability';
+        categoryId: string;
+        accountId: string;
+      }> = []
 
-      const liabilityAmounts = Object.entries(balanceSheet.liabilities.totalByCurrency)
-        .filter(([_, amount]) => Math.abs(amount) > 0.01)
-        .map(([currencyCode, amount]) => ({
-          amount: Math.abs(amount),
-          currency: currencyCode
-        }))
+      // 收集资产账户的转换数据
+      Object.entries(balanceSheet.assets.categories).forEach(([categoryId, category]) => {
+        category.accounts.forEach(account => {
+          if (Math.abs(account.balance) > 0.01 && account.currency.code !== baseCurrency.code) {
+            allAmountsToConvert.push({
+              amount: Math.abs(account.balance),
+              currency: account.currency.code,
+              type: 'asset',
+              categoryId,
+              accountId: account.id
+            })
+          }
+        })
+      })
 
-      // 执行货币转换
-      const [assetConversions, liabilityConversions] = await Promise.all([
-        convertMultipleCurrencies(user.id, assetAmounts, baseCurrency.code, targetDate),
-        convertMultipleCurrencies(user.id, liabilityAmounts, baseCurrency.code, targetDate)
-      ])
+      // 收集负债账户的转换数据
+      Object.entries(balanceSheet.liabilities.categories).forEach(([categoryId, category]) => {
+        category.accounts.forEach(account => {
+          if (Math.abs(account.balance) > 0.01 && account.currency.code !== baseCurrency.code) {
+            allAmountsToConvert.push({
+              amount: Math.abs(account.balance),
+              currency: account.currency.code,
+              type: 'liability',
+              categoryId,
+              accountId: account.id
+            })
+          }
+        })
+      })
 
-      // 计算本位币总计
-      baseCurrencyTotals.totalAssets = assetConversions.reduce((sum, result) =>
-        sum + (result.success ? result.convertedAmount : result.originalAmount), 0
+      // 执行批量货币转换
+      const conversionResults = await convertMultipleCurrencies(
+        user.id,
+        allAmountsToConvert.map(item => ({ amount: item.amount, currency: item.currency })),
+        baseCurrency.code,
+        targetDate
       )
 
-      baseCurrencyTotals.totalLiabilities = liabilityConversions.reduce((sum, result) =>
-        sum + (result.success ? result.convertedAmount : result.originalAmount), 0
-      )
+      // 应用转换结果到账户
+      conversionResults.forEach((result, index) => {
+        const conversionData = allAmountsToConvert[index]
+        const convertedAmount = result.success ? result.convertedAmount : result.originalAmount
+
+        if (conversionData.type === 'asset') {
+          // 找到对应的资产账户并添加转换信息
+          const category = balanceSheet.assets.categories[conversionData.categoryId]
+          const account = category.accounts.find(acc => acc.id === conversionData.accountId)
+          if (account) {
+            account.balanceInBaseCurrency = convertedAmount
+            account.conversionRate = result.exchangeRate
+            account.conversionSuccess = result.success
+            account.conversionError = result.error
+          }
+        } else {
+          // 找到对应的负债账户并添加转换信息
+          const category = balanceSheet.liabilities.categories[conversionData.categoryId]
+          const account = category.accounts.find(acc => acc.id === conversionData.accountId)
+          if (account) {
+            account.balanceInBaseCurrency = convertedAmount
+            account.conversionRate = result.exchangeRate
+            account.conversionSuccess = result.success
+            account.conversionError = result.error
+          }
+        }
+      })
+
+      // 为本位币账户设置转换信息
+      Object.values(balanceSheet.assets.categories).forEach(category => {
+        category.accounts.forEach(account => {
+          if (account.currency.code === baseCurrency.code) {
+            account.balanceInBaseCurrency = Math.abs(account.balance)
+            account.conversionRate = 1
+            account.conversionSuccess = true
+          }
+        })
+      })
+
+      Object.values(balanceSheet.liabilities.categories).forEach(category => {
+        category.accounts.forEach(account => {
+          if (account.currency.code === baseCurrency.code) {
+            account.balanceInBaseCurrency = Math.abs(account.balance)
+            account.conversionRate = 1
+            account.conversionSuccess = true
+          }
+        })
+      })
+
+      // 计算类别级别的本位币总计
+      Object.values(balanceSheet.assets.categories).forEach(category => {
+        category.totalInBaseCurrency = category.accounts.reduce((sum, account) =>
+          sum + (account.balanceInBaseCurrency || 0), 0
+        )
+      })
+
+      Object.values(balanceSheet.liabilities.categories).forEach(category => {
+        category.totalInBaseCurrency = category.accounts.reduce((sum, account) =>
+          sum + (account.balanceInBaseCurrency || 0), 0
+        )
+      })
+
+      // 计算总计
+      baseCurrencyTotals.totalAssets = Object.values(balanceSheet.assets.categories)
+        .reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
+
+      baseCurrencyTotals.totalLiabilities = Object.values(balanceSheet.liabilities.categories)
+        .reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
 
       baseCurrencyTotals.netWorth = baseCurrencyTotals.totalAssets - baseCurrencyTotals.totalLiabilities
 

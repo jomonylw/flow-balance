@@ -86,7 +86,7 @@ model Category {
 └── 净资产 = 总资产 - 总负债
 ```
 
-#### 现金流量表 (`/api/reports/cash-flow`)
+#### 现金流量表 (`/api/reports/personal-cash-flow`)
 
 **目的**：反映特定时期内的现金流动情况（流量概念）
 
@@ -187,7 +187,7 @@ model Category {
 ### API 端点
 
 1. `GET /api/reports/balance-sheet` - 获取资产负债表
-2. `GET /api/reports/cash-flow` - 获取现金流量表
+2. `GET /api/reports/personal-cash-flow` - 获取个人现金流量表
 3. `GET /api/dashboard/summary` - 更新的仪表板摘要（包含验证信息）
 
 ### 核心服务

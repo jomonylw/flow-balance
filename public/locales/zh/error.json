@@ -116,5 +116,6 @@
   "error.brute.force.detected": "检测到暴力破解",
   "error.sql.injection.detected": "检测到SQL注入",
   "error.xss.detected": "检测到XSS攻击",
-  "error.csrf.detected": "检测到CSRF攻击"
+  "error.csrf.detected": "检测到CSRF攻击",
+  "error.chart.load.failed": "图表加载失败"
 }
