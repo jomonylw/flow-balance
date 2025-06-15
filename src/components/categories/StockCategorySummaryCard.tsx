@@ -13,7 +13,7 @@ interface Category {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: number
   date: string
   currency: {
@@ -156,7 +156,7 @@ export default function StockCategorySummaryCard({
       const transactions = category.transactions || []
 
       transactions.forEach((transaction: Transaction) => {
-        if (transaction.type === 'BALANCE_ADJUSTMENT') {
+        if (transaction.type === 'BALANCE') {
           const amount = parseFloat(transaction.amount.toString())
           if (transaction.currency?.code === baseCurrency?.code) {
             currentNetValue += amount

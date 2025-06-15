@@ -60,7 +60,7 @@ export default function TransactionList({
 
   // 判断是否为余额调整记录
   const isBalanceAdjustment = (transaction: Transaction) => {
-    return transaction.type === 'BALANCE_ADJUSTMENT' ||
+    return transaction.type === 'BALANCE' ||
            transaction.description.includes('余额更新') ||
            transaction.description.includes('余额调整') ||
            transaction.notes?.includes('余额更新') ||
@@ -100,7 +100,7 @@ export default function TransactionList({
           </div>
         )
 
-      case 'BALANCE_ADJUSTMENT':
+      case 'BALANCE':
         return (
           <div className="h-8 w-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
             <svg className="h-4 w-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,7 +129,7 @@ export default function TransactionList({
       case 'EXPENSE':
         return <span className="text-red-600 dark:text-red-400 font-medium">-{symbol}{amount}</span>
 
-      case 'BALANCE_ADJUSTMENT':
+      case 'BALANCE':
         // 余额调整：从备注中提取实际变化金额来显示正负号
         const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
         if (changeAmount !== null) {

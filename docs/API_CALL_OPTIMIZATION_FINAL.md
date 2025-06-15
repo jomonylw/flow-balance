@@ -182,7 +182,7 @@ if (transactionCount > 0) {
   if (isStockAccount) {
     // 区分余额调整记录和普通交易记录
     const balanceAdjustmentCount = await prisma.transaction.count({
-      where: { accountId: accountId, type: 'BALANCE_ADJUSTMENT' }
+      where: { accountId: accountId, type: 'BALANCE' }
     })
     const otherTransactionCount = transactionCount - balanceAdjustmentCount
     

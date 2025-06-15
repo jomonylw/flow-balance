@@ -191,7 +191,7 @@ model Transaction {
   currency     Currency          @relation(fields: [currencyCode], references: [code])
   tags         TransactionTag[]  // 多对多关系
 
-  // 注意：由于Prisma不支持条件唯一约束，我们在应用层实现每天每账户只能有一笔BALANCE_ADJUSTMENT记录的逻辑
+  // 注意：由于Prisma不支持条件唯一约束，我们在应用层实现每天每账户只能有一笔BALANCE记录的逻辑
   @@map("transactions")
 }
 
@@ -199,7 +199,7 @@ model Transaction {
 enum TransactionType {
   INCOME             // 收入
   EXPENSE            // 支出
-  BALANCE_ADJUSTMENT // 余额调整（仅用于存量类账户）
+  BALANCE            // 余额调整（仅用于存量类账户）
 
   @@map("transaction_types")
 }

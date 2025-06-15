@@ -24,7 +24,7 @@ export interface Tag {
 
 export interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: number
   description: string
   notes?: string

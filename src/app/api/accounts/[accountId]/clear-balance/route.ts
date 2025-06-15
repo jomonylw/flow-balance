@@ -40,7 +40,7 @@ export async function DELETE(
       where: {
         accountId: accountId,
         type: {
-          not: 'BALANCE_ADJUSTMENT'
+          not: 'BALANCE'
         }
       }
     })
@@ -53,7 +53,7 @@ export async function DELETE(
     const deletedCount = await prisma.transaction.deleteMany({
       where: {
         accountId: accountId,
-        type: 'BALANCE_ADJUSTMENT'
+        type: 'BALANCE'
       }
     })
 

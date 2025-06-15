@@ -389,7 +389,7 @@ persional-balance-sheet/
   - 增加负债账户余额
   - 记录支出类账户流量
 
-- **余额调整（BALANCE_ADJUSTMENT）**：
+- **余额调整（BALANCE）**：
   - 仅用于存量类账户
   - 调整账户余额到准确值
   - 自动计算调整金额
@@ -929,7 +929,7 @@ enum AccountType {
 enum TransactionType {
   INCOME             // 收入
   EXPENSE            // 支出
-  BALANCE_ADJUSTMENT // 余额调整
+  BALANCE            // 余额调整
 }
 ```
 

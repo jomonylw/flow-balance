@@ -76,7 +76,7 @@ async function testDashboardCalculations() {
             type: account.category?.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
           },
           transactions: account.transactions.map(t => ({
-            type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+            type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
             amount: parseFloat(t.amount.toString()),
             date: t.date.toISOString(),
             currency: t.currency
@@ -115,7 +115,7 @@ async function testDashboardCalculations() {
             type: account.category?.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
           },
           transactions: account.transactions.map(t => ({
-            type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+            type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
             amount: parseFloat(t.amount.toString()),
             date: t.date.toISOString(),
             currency: t.currency
@@ -148,7 +148,7 @@ async function testDashboardCalculations() {
         type: account.category?.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
       },
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
         currency: t.currency

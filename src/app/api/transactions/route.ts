@@ -48,7 +48,7 @@ try {
   // 根据参数决定是否排除余额调整类型的交易
   if (excludeBalanceAdjustment) {
     where.type = {
-      not: 'BALANCE_ADJUSTMENT'
+      not: 'BALANCE'
     }
   }
 
@@ -60,10 +60,10 @@ try {
   }
   if (type) {
     if (excludeBalanceAdjustment) {
-      // 如果排除余额调整记录，需要同时排除BALANCE_ADJUSTMENT
+      // 如果排除余额调整记录，需要同时排除BALANCE
       where.type = {
         equals: type,
-        not: 'BALANCE_ADJUSTMENT'
+        not: 'BALANCE'
       }
     } else {
       // 如果不排除余额调整记录，直接按类型过滤
@@ -248,10 +248,10 @@ export async function POST(request: NextRequest) {
         return errorResponse('支出类账户只能记录支出交易，请选择正确的交易类型', 400)
       }
 
-      // 禁止在普通交易中使用BALANCE_ADJUSTMENT类型
-      if (type === 'BALANCE_ADJUSTMENT') {
-        console.error('Validation failed: BALANCE_ADJUSTMENT type in regular transaction')
-        return errorResponse('BALANCE_ADJUSTMENT类型只能通过余额更新功能使用', 400)
+      // 禁止在普通交易中使用BALANCE类型
+      if (type === 'BALANCE') {
+        console.error('Validation failed: BALANCE type in regular transaction')
+        return errorResponse('BALANCE类型只能通过余额更新功能使用', 400)
       }
     }
 

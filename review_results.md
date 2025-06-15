@@ -303,7 +303,7 @@ const handleConversionError = (error: ConversionResult) => {
 ```typescript
 // 收入交易：正确累计收入金额
 // 支出交易：正确累计支出金额
-// 余额调整：正确处理BALANCE_ADJUSTMENT类型
+// 余额调整：正确处理BALANCE类型
 ```
 
 **多币种转换验证**:

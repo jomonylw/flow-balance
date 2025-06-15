@@ -44,7 +44,7 @@ const paginatedTransactions = enablePagination ? transactions.slice(startIndex, 
 ```typescript
 // StockCategoryDetailView.tsx
 const handleEditTransaction = (transaction: any) => {
-  if (transaction.type === 'BALANCE_ADJUSTMENT') {
+  if (transaction.type === 'BALANCE') {
     // 跳转到对应的账户页面进行编辑
     if (transaction.account?.id) {
       window.location.href = `/accounts/${transaction.account.id}`

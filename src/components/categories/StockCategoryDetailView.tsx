@@ -260,7 +260,7 @@ export default function StockCategoryDetailView({
   // 处理编辑余额记录
   const handleEditTransaction = (transaction: Transaction) => {
     // 检查是否为余额调整记录
-    if (transaction.type === 'BALANCE_ADJUSTMENT') {
+    if (transaction.type === 'BALANCE') {
       // 跳转到对应的账户页面进行编辑
       if (transaction.account?.id) {
         window.location.href = `/accounts/${transaction.account.id}`

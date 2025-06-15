@@ -40,7 +40,7 @@ interface Account {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: number
   date: string
   currency: {
@@ -88,7 +88,7 @@ export default function SmartCategorySummaryCard({
 
       // 根据分类类型和交易类型计算净值变化
       let netValueChange = 0
-      if (transaction.type === 'BALANCE_ADJUSTMENT') {
+      if (transaction.type === 'BALANCE') {
         // 余额调整：从备注中提取实际变化金额
         const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
         netValueChange = changeAmount || amount
@@ -311,7 +311,7 @@ export default function SmartCategorySummaryCard({
           (accountType === 'EXPENSE' && transaction.type === 'EXPENSE')
 
         // 检查是否有不应该存在的余额调整交易
-        if (transaction.type === 'BALANCE_ADJUSTMENT') {
+        if (transaction.type === 'BALANCE') {
           console.warn(`流量类账户 ${account.name} 不应该有余额调整交易`)
           return
         }

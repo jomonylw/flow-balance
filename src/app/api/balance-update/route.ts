@@ -82,12 +82,12 @@ export async function POST(request: NextRequest) {
     const startOfDay = new Date(updateDateObj.getFullYear(), updateDateObj.getMonth(), updateDateObj.getDate())
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1)
 
-    // 检查当天是否已有BALANCE_ADJUSTMENT记录
+    // 检查当天是否已有BALANCE记录
     const existingTransaction = await prisma.transaction.findFirst({
       where: {
         userId: user.id,
         accountId,
-        type: 'BALANCE_ADJUSTMENT',
+        type: 'BALANCE',
         date: {
           gte: startOfDay,
           lte: endOfDay
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       accountId,
       categoryId: account.categoryId,
       currencyCode,
-      type: 'BALANCE_ADJUSTMENT' as const,
+      type: 'BALANCE' as const,
       amount: newBalanceAmount, // 存储目标余额，而不是变化金额
       description: `余额更新 - ${account.name}`,
       notes: notes || `余额更新：${currency.symbol}${newBalanceAmount.toFixed(2)}。变化金额：${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)}`,
@@ -262,12 +262,12 @@ export async function GET(request: NextRequest) {
       new Date(a.date).getTime() - new Date(b.date).getTime()
     )
 
-    // 对于存量类账户，需要特殊处理BALANCE_ADJUSTMENT
+    // 对于存量类账户，需要特殊处理BALANCE
     const isStockAccount = account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
     let cumulativeBalance = 0
 
     if (isStockAccount) {
-      // 存量类账户：找到最新的BALANCE_ADJUSTMENT作为基准
+      // 存量类账户：找到最新的BALANCE作为基准
       let latestBalanceAdjustment: (Transaction & {
         currency: any;
         category: any;
@@ -275,7 +275,7 @@ export async function GET(request: NextRequest) {
       let latestBalanceDate = new Date(0)
 
       sortedTransactions.forEach(transaction => {
-        if (transaction.type === 'BALANCE_ADJUSTMENT') {
+        if (transaction.type === 'BALANCE') {
           const transactionDate = new Date(transaction.date)
           if (transactionDate > latestBalanceDate) {
             latestBalanceAdjustment = transaction
@@ -304,7 +304,7 @@ export async function GET(request: NextRequest) {
 
         // 处理余额调整之后的其他交易
         sortedTransactions.forEach(transaction => {
-          if (transaction.type === 'BALANCE_ADJUSTMENT' ||
+          if (transaction.type === 'BALANCE' ||
               new Date(transaction.date) <= latestBalanceDate) {
             return // 跳过余额调整记录和之前的交易
           }

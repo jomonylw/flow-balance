@@ -269,7 +269,7 @@ export default function FlowCategoryDetailView({
       accountId: transaction.account.id,
       categoryId: transaction.category.id,
       currencyCode: transaction.currency.code,
-      type: transaction.type === 'BALANCE_ADJUSTMENT' ? 'EXPENSE' : transaction.type,
+      type: transaction.type === 'BALANCE' ? 'EXPENSE' : transaction.type,
       amount: transaction.amount,
       description: transaction.description,
       notes: transaction.notes,

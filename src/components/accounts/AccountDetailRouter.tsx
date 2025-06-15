@@ -33,7 +33,7 @@ interface Tag {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE'
   amount: number
   description: string
   notes?: string

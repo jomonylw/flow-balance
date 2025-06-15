@@ -21,7 +21,7 @@ function extractBalanceChangeFromNotes(notes: string): number | null {
 }
 
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: number
   date: string
   notes?: string
@@ -132,7 +132,7 @@ export default function SmartCategoryChart({
         
         dayTransactions.forEach(transaction => {
           const amount = transaction.amount
-          if (transaction.type === 'BALANCE_ADJUSTMENT') {
+          if (transaction.type === 'BALANCE') {
             // 余额调整：从备注中提取实际变化金额
             const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
             cumulativeBalance += changeAmount || amount
@@ -159,7 +159,7 @@ export default function SmartCategoryChart({
         
         monthTransactions.forEach(transaction => {
           const amount = transaction.amount
-          if (transaction.type === 'BALANCE_ADJUSTMENT') {
+          if (transaction.type === 'BALANCE') {
             // 余额调整：从备注中提取实际变化金额
             const changeAmount = extractBalanceChangeFromNotes(transaction.notes || '')
             cumulativeBalance += changeAmount || amount
@@ -207,7 +207,7 @@ export default function SmartCategoryChart({
 
     // 过滤相关交易（流量类账户不应该有余额调整）
     const relevantTransactions = transactions.filter(t => {
-      if (t.type === 'BALANCE_ADJUSTMENT') {
+      if (t.type === 'BALANCE') {
         console.warn(`流量类分类 ${category.name} 不应该有余额调整交易`)
         return false
       }

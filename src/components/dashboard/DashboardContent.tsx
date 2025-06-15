@@ -30,7 +30,7 @@ interface Account {
     type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   }
   transactions?: Array<{
-    type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
+    type: 'INCOME' | 'EXPENSE' | 'BALANCE'
     amount: number
     currency: {
       code: string
@@ -197,7 +197,7 @@ export default function DashboardContent({
       },
       transactions: (account.transactions || []).map((t, index) => ({
         id: `${account.id}-${index}`, // 生成假的交易 ID
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
         amount: t.amount,
         date: new Date().toISOString(), // 使用当前日期作为占位符
         description: '交易记录', // 使用默认描述
@@ -226,7 +226,7 @@ export default function DashboardContent({
         type: account.category.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
       },
       transactions: (account.transactions || []).map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
         amount: t.amount, // amount已经是number类型了
         currency: t.currency
       }))

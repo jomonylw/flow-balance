@@ -167,7 +167,7 @@ async function generateStockAccountTrend(
   // 计算初始余额
   for (const transaction of initialTransactions) {
     const amount = parseFloat(transaction.amount.toString())
-    if (transaction.type === 'BALANCE_ADJUSTMENT') {
+    if (transaction.type === 'BALANCE') {
       // 从备注中提取余额变化
       const balanceChange = extractBalanceChangeFromNotes(transaction.notes)
       if (balanceChange !== null) {
@@ -198,7 +198,7 @@ async function generateStockAccountTrend(
     // 计算该时间段的余额变化
     for (const transaction of intervalTransactions) {
       const amount = parseFloat(transaction.amount.toString())
-      if (transaction.type === 'BALANCE_ADJUSTMENT') {
+      if (transaction.type === 'BALANCE') {
         const balanceChange = extractBalanceChangeFromNotes(transaction.notes)
         if (balanceChange !== null) {
           runningBalance += balanceChange

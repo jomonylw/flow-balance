@@ -404,7 +404,7 @@ POST /api/balance-update
   "data": {
     "transaction": {
       "id": "transaction_id",
-      "type": "BALANCE_ADJUSTMENT",
+      "type": "BALANCE",
       "amount": 500.00,
       "description": "余额调整说明"
     },

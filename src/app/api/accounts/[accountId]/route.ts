@@ -186,7 +186,7 @@ export async function DELETE(
         const balanceAdjustmentCount = await prisma.transaction.count({
           where: {
             accountId: accountId,
-            type: 'BALANCE_ADJUSTMENT'
+            type: 'BALANCE'
           }
         })
 

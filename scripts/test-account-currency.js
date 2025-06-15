@@ -102,7 +102,7 @@ async function testAccountCurrencyFeature() {
         accountId: newAccount.id,
         categoryId: category.id,
         currencyCode: testCurrency.code,
-        type: 'BALANCE_ADJUSTMENT',
+        type: 'BALANCE',
         amount: 1000,
         description: '测试余额调整',
         date: new Date()
@@ -138,7 +138,7 @@ async function testAccountCurrencyFeature() {
             accountId: newAccount.id,
             categoryId: category.id,
             currencyCode: otherCurrency.currency.code, // 使用不同货币
-            type: 'BALANCE_ADJUSTMENT',
+            type: 'BALANCE',
             amount: 500,
             description: '测试货币不一致',
             date: new Date()

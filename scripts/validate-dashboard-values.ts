@@ -64,7 +64,7 @@ async function validateDashboardValues() {
           type: account.category?.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
         },
         transactions: account.transactions.map(t => ({
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
           amount: parseFloat(t.amount.toString()),
           date: t.date.toISOString(),
           currency: t.currency
@@ -88,8 +88,8 @@ async function validateDashboardValues() {
       })
 
       // 显示计算逻辑
-      const balanceAdjustments = account.transactions.filter(t => t.type === 'BALANCE_ADJUSTMENT')
-      const otherTransactions = account.transactions.filter(t => t.type !== 'BALANCE_ADJUSTMENT')
+      const balanceAdjustments = account.transactions.filter(t => t.type === 'BALANCE')
+      const otherTransactions = account.transactions.filter(t => t.type !== 'BALANCE')
       
       console.log(`     计算逻辑: 存量类账户`)
       if (balanceAdjustments.length > 0) {
@@ -113,7 +113,7 @@ async function validateDashboardValues() {
           type: account.category?.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
         },
         transactions: account.transactions.map(t => ({
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
           amount: parseFloat(t.amount.toString()),
           date: t.date.toISOString(),
           currency: t.currency
@@ -143,7 +143,7 @@ async function validateDashboardValues() {
           type: account.category?.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
         },
         transactions: account.transactions.map(t => ({
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
           amount: parseFloat(t.amount.toString()),
           date: t.date.toISOString(),
           currency: t.currency
@@ -173,7 +173,7 @@ async function validateDashboardValues() {
           type: account.category?.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
         },
         transactions: account.transactions.map(t => ({
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
           amount: parseFloat(t.amount.toString()),
           date: t.date.toISOString(),
           currency: t.currency

@@ -11,7 +11,7 @@ interface Category {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: number
   date: string
   currency: {

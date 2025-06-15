@@ -43,7 +43,7 @@ async function testDashboardAPI() {
       name: account.name,
       category: account.category,
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
         currency: t.currency
@@ -138,7 +138,7 @@ async function testDashboardAPI() {
     
     // 检查流量类账户是否有余额调整交易
     const flowAccountsWithBalanceAdjustment = flowAccounts.filter(account =>
-      account.transactions.some(t => t.type === 'BALANCE_ADJUSTMENT')
+      account.transactions.some(t => t.type === 'BALANCE')
     )
     
     if (flowAccountsWithBalanceAdjustment.length > 0) {
@@ -152,7 +152,7 @@ async function testDashboardAPI() {
 
     // 检查存量类账户是否缺少余额调整
     const stockAccountsWithoutBalanceAdjustment = stockAccounts.filter(account =>
-      !account.transactions.some(t => t.type === 'BALANCE_ADJUSTMENT')
+      !account.transactions.some(t => t.type === 'BALANCE')
     )
     
     if (stockAccountsWithoutBalanceAdjustment.length > 0) {

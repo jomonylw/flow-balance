@@ -85,7 +85,7 @@ async function calculateMonthlyHistoricalBalances(
   userId: string
 ): Promise<Record<string, MonthlyBalance>> {
   const monthlyBalances: Record<string, Record<string, number>> = {}
-  const balanceAdjustments = account.transactions.filter(t => t.type === 'BALANCE_ADJUSTMENT')
+  const balanceAdjustments = account.transactions.filter(t => t.type === 'BALANCE')
 
   if (balanceAdjustments.length === 0) {
     return {}
@@ -219,7 +219,7 @@ export async function getStockCategorySummary(
     include: {
       currency: true,
       transactions: {
-        where: { type: 'BALANCE_ADJUSTMENT' },
+        where: { type: 'BALANCE' },
         include: { currency: true },
         orderBy: { date: 'asc' }
       }

@@ -31,7 +31,7 @@ interface TransactionTag {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: number // 已序列化的数字
   description: string
   date: Date
@@ -77,7 +77,7 @@ export default function RecentTransactionsList({
             </svg>
           </div>
         )
-      case 'BALANCE_ADJUSTMENT':
+      case 'BALANCE':
         return (
           <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
             <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,7 +105,7 @@ export default function RecentTransactionsList({
         return <span className="text-green-600 font-medium">+{symbol}{amount}</span>
       case 'EXPENSE':
         return <span className="text-red-600 font-medium">-{symbol}{amount}</span>
-      case 'BALANCE_ADJUSTMENT':
+      case 'BALANCE':
         return <span className="text-purple-600 font-medium">{symbol}{amount}</span>
       default:
         return <span className="text-gray-600 font-medium">{symbol}{amount}</span>

@@ -10,7 +10,7 @@ interface Category {
 }
 
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE'
   amount: number
   date: string
   notes?: string
@@ -66,7 +66,7 @@ export default function StockAccountSummaryCard({
 
         // 基于最新的交易数据计算当前余额
         const latestBalanceTransaction = newTransactions
-          .filter((t: Transaction) => t.type === 'BALANCE_ADJUSTMENT')
+          .filter((t: Transaction) => t.type === 'BALANCE')
           .sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
 
         if (latestBalanceTransaction) {
@@ -134,7 +134,7 @@ export default function StockAccountSummaryCard({
     const thisMonthChanges = transactions
       .filter(t => new Date(t.date) >= thisMonth)
       .reduce((sum, t) => {
-        if (t.type === 'BALANCE_ADJUSTMENT') {
+        if (t.type === 'BALANCE') {
           // 从备注中提取实际的变化金额（包含正负号）
           const changeAmount = extractBalanceChangeFromNotes(t.notes || '')
           if (changeAmount !== null) {
@@ -161,7 +161,7 @@ export default function StockAccountSummaryCard({
     const thisYearChanges = transactions
       .filter(t => new Date(t.date) >= thisYear)
       .reduce((sum, t) => {
-        if (t.type === 'BALANCE_ADJUSTMENT') {
+        if (t.type === 'BALANCE') {
           // 从备注中提取实际的变化金额（包含正负号）
           const changeAmount = extractBalanceChangeFromNotes(t.notes || '')
           if (changeAmount !== null) {

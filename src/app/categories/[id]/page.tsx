@@ -12,7 +12,7 @@ interface CategoryPageProps {
 
 type PrismaTransaction = {
   id: string;
-  type: "INCOME" | "EXPENSE" | "BALANCE_ADJUSTMENT";
+  type: "INCOME" | "EXPENSE" | "BALANCE";
   amount: Decimal;
   description: string;
   notes: string | null;

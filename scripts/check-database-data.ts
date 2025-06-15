@@ -56,7 +56,7 @@ async function checkDatabaseData() {
       include: {
         category: true,
         transactions: {
-          where: { type: 'BALANCE_ADJUSTMENT' },
+          where: { type: 'BALANCE' },
           include: { currency: true },
           orderBy: { date: 'desc' },
           take: 1

@@ -10,7 +10,7 @@ interface Category {
 }
 
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE'
   amount: number
   date: string
 }

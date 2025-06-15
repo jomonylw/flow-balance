@@ -142,14 +142,14 @@ export async function PUT(
       // 存量类账户（资产/负债）严格禁止编辑为普通交易
       if (accountType === 'ASSET' || accountType === 'LIABILITY') {
         // 检查原交易是否为余额调整类型
-        if (existingTransaction.type !== 'BALANCE_ADJUSTMENT') {
+        if (existingTransaction.type !== 'BALANCE') {
           return errorResponse(
             `存量类账户"${account.name}"不能编辑普通交易记录。请使用"更新余额"功能来管理${accountType === 'ASSET' ? '资产' : '负债'}账户的余额变化。`,
             400
           )
         }
         // 如果是余额调整交易，也不允许通过普通交易API编辑
-        if (type !== 'BALANCE_ADJUSTMENT') {
+        if (type !== 'BALANCE') {
           return errorResponse('余额调整记录不能通过普通交易编辑功能修改', 400)
         }
       }
@@ -163,9 +163,9 @@ export async function PUT(
         return errorResponse('支出类账户只能记录支出交易，请选择正确的交易类型', 400)
       }
 
-      // 禁止在普通交易中使用BALANCE_ADJUSTMENT类型
-      if (type === 'BALANCE_ADJUSTMENT' && (accountType === 'INCOME' || accountType === 'EXPENSE')) {
-        return errorResponse('BALANCE_ADJUSTMENT类型只能用于存量类账户', 400)
+      // 禁止在普通交易中使用BALANCE类型
+      if (type === 'BALANCE' && (accountType === 'INCOME' || accountType === 'EXPENSE')) {
+        return errorResponse('BALANCE类型只能用于存量类账户', 400)
       }
     }
 

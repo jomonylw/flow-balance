@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE'
   amount: number
   date: string
 }

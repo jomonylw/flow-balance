@@ -3,7 +3,7 @@
 import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: number
   date: string
 }
@@ -54,7 +54,7 @@ export default function TransactionStats({
         } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
           lastMonthExpense += amount
         }
-      } else if (transaction.type === 'BALANCE_ADJUSTMENT') {
+      } else if (transaction.type === 'BALANCE') {
         // 余额调整不计入收支统计，只计数
         balanceAdjustmentCount++
       }

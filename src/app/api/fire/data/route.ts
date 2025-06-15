@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         category: true,
         transactions: {
           where: {
-            type: AccountType.ASSET || AccountType.LIABILITY ? 'BALANCE_ADJUSTMENT' : undefined
+            type: AccountType.ASSET || AccountType.LIABILITY ? 'BALANCE' : undefined
           },
           orderBy: { date: 'desc' },
           take: 1

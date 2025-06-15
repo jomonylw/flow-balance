@@ -94,7 +94,7 @@ async function testCurrencyFix() {
           accountId: testAccount.id,
           categoryId: category.id,
           currencyCode: testCurrency.code, // 使用正确货币
-          type: 'BALANCE_ADJUSTMENT',
+          type: 'BALANCE',
           amount: 1000,
           description: '测试余额更新 - 正确货币',
           date: new Date()
@@ -118,7 +118,7 @@ async function testCurrencyFix() {
             accountId: testAccount.id,
             categoryId: category.id,
             currencyCode: otherCurrency.currency.code, // 使用错误货币
-            type: 'BALANCE_ADJUSTMENT',
+            type: 'BALANCE',
             amount: 500,
             description: '测试余额更新 - 错误货币',
             date: new Date()

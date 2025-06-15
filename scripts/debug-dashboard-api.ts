@@ -74,7 +74,7 @@ async function debugDashboardAPI() {
       name: account.name,
       category: account.category,
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE_ADJUSTMENT',
+        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
         currency: t.currency
@@ -95,12 +95,23 @@ async function debugDashboardAPI() {
     // 检查存量类账户的余额计算
     console.log(`\n💰 存量类账户余额计算:`)
     const { calculateAccountBalance } = await import('../src/lib/account-balance')
-    
+
     let hasStockBalances = false
     for (const account of stockAccounts) {
-      const balances = calculateAccountBalance(account)
+      // 转换账户数据格式以匹配类型
+      const accountForCalculation = {
+        ...account,
+        transactions: account.transactions.map(t => ({
+          ...t,
+          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          amount: parseFloat(t.amount.toString()),
+          date: typeof t.date === 'string' ? t.date : (t.date as Date).toISOString()
+        }))
+      }
+
+      const balances = calculateAccountBalance(accountForCalculation)
       const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
-      
+
       if (hasBalance) {
         hasStockBalances = true
         console.log(`  ✓ ${account.name}: 有余额`)
@@ -126,13 +137,24 @@ async function debugDashboardAPI() {
 
     let hasFlowBalances = false
     for (const account of flowAccounts) {
-      const balances = calculateAccountBalance(account, {
+      // 转换账户数据格式以匹配类型
+      const accountForCalculation = {
+        ...account,
+        transactions: account.transactions.map(t => ({
+          ...t,
+          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          amount: parseFloat(t.amount.toString()),
+          date: typeof t.date === 'string' ? t.date : (t.date as Date).toISOString()
+        }))
+      }
+
+      const balances = calculateAccountBalance(accountForCalculation, {
         periodStart,
         periodEnd,
         usePeriodCalculation: true
       })
       const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
-      
+
       if (hasBalance) {
         hasFlowBalances = true
         console.log(`  ✓ ${account.name}: 有余额`)
@@ -154,7 +176,18 @@ async function debugDashboardAPI() {
     
     // 添加存量类账户
     for (const account of stockAccounts) {
-      const balances = calculateAccountBalance(account)
+      // 转换账户数据格式以匹配类型
+      const accountForCalculation = {
+        ...account,
+        transactions: account.transactions.map(t => ({
+          ...t,
+          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          amount: parseFloat(t.amount.toString()),
+          date: typeof t.date === 'string' ? t.date : (t.date as Date).toISOString()
+        }))
+      }
+
+      const balances = calculateAccountBalance(accountForCalculation)
       const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
       if (hasBalance) {
         const balancesRecord: Record<string, number> = {}
@@ -172,7 +205,18 @@ async function debugDashboardAPI() {
 
     // 添加流量类账户
     for (const account of flowAccounts) {
-      const balances = calculateAccountBalance(account, {
+      // 转换账户数据格式以匹配类型
+      const accountForCalculation = {
+        ...account,
+        transactions: account.transactions.map(t => ({
+          ...t,
+          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          amount: parseFloat(t.amount.toString()),
+          date: typeof t.date === 'string' ? t.date : (t.date as Date).toISOString()
+        }))
+      }
+
+      const balances = calculateAccountBalance(accountForCalculation, {
         periodStart,
         periodEnd,
         usePeriodCalculation: true
