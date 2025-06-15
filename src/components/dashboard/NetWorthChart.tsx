@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import * as echarts from 'echarts'
-import { useIsMobile, useResponsive } from '@/hooks/useResponsive'
+import { useIsMobile } from '@/hooks/useResponsive'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { getChartHeight } from '@/lib/responsive'
@@ -72,6 +72,8 @@ export default function NetWorthChart({ data, currency, loading = false, error }
         chartInstance.current = echarts.init(chartRef.current, resolvedTheme === 'dark' ? 'dark' : null)
       }
 
+    const hasBarChart = data.series.some(s => s.name === 'total_assets' || s.name === 'total_liabilities');
+
     const option = {
       backgroundColor: 'transparent',
       title: {
@@ -92,12 +94,18 @@ export default function NetWorthChart({ data, currency, loading = false, error }
           }
         },
         confine: true, // 限制在图表区域内
-        formatter: function(params: any) {
-          let result = `<div style="font-weight: bold; margin-bottom: 5px;">${params[0].axisValue}</div>`
-          params.forEach((param: any) => {
-            const value = param.value >= 0 ?
-              `${currency.symbol}${param.value.toLocaleString()}` :
-              `-${currency.symbol}${Math.abs(param.value).toLocaleString()}`
+        formatter: function (params: Array<{ value: number; name: string; seriesName: string; color: string }>) {
+          if (!params || params.length === 0) {
+            return ''
+          }
+          let result = `<div style="font-weight: bold; margin-bottom: 5px;">${params[0].name}</div>`
+          params.forEach(param => {
+            const numericValue = param.value as number
+            if (typeof numericValue !== 'number' || isNaN(numericValue)) return
+
+            const value = numericValue >= 0 ?
+              `${currency.symbol}${numericValue.toLocaleString()}` :
+              `-${currency.symbol}${Math.abs(numericValue).toLocaleString()}`
             result += `<div style="margin: 2px 0;">
               <span style="display: inline-block; width: 10px; height: 10px; background-color: ${param.color}; border-radius: 50%; margin-right: 5px;"></span>
               ${param.seriesName}: ${value}
@@ -125,7 +133,7 @@ export default function NetWorthChart({ data, currency, loading = false, error }
       },
       xAxis: {
         type: 'category',
-        boundaryGap: false,
+        boundaryGap: hasBarChart,
         data: data.xAxis,
         axisLabel: {
           color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
@@ -166,18 +174,36 @@ export default function NetWorthChart({ data, currency, loading = false, error }
           }
         }
       },
-      series: data.series.map(series => ({
-        ...series,
-        name: t(`chart.series.${series.name}`), // 翻译系列名称
-        symbol: 'circle',
-        symbolSize: 6,
-        lineStyle: {
-          width: 2
-        },
-        areaStyle: series.type === 'line' ? {
-          opacity: 0.1
-        } : undefined
-      }))
+      series: data.series.map(s => {
+        const isBar = s.name === 'total_assets' || s.name === 'total_liabilities';
+        const type = isBar ? 'bar' : 'line';
+
+        const seriesData = s.name === 'total_liabilities'
+          ? s.data.map(value => -value)
+          : s.data;
+
+        if (type === 'line') {
+          return {
+            ...s,
+            data: seriesData,
+            name: t(`chart.series.${s.name}`),
+            type: 'line',
+            symbol: 'circle',
+            symbolSize: 6,
+            lineStyle: {
+              width: 2
+            }
+          };
+        } else { // bar
+          return {
+            ...s,
+            data: seriesData,
+            name: t(`chart.series.${s.name}`),
+            type: 'bar',
+            stack: 'balance', // 堆叠显示
+          };
+        }
+      })
     }
 
       chartInstance.current.setOption(option, true) // true表示不合并，完全替换

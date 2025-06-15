@@ -78,5 +78,12 @@
   "account.average.monthly": "月均",
   "account.year.total": "今年累计",
   "account.type.income.category": "收入类",
-  "account.type.expense.category": "支出类"
+  "account.type.expense.category": "支出类",
+  "account.rename.title": "重命名账户",
+  "account.rename.placeholder": "请输入新的账户名称",
+  "account.delete.title": "删除账户",
+  "account.delete.item.type": "账户",
+  "account.validation.name.required": "账户名称不能为空",
+  "account.validation.name.too.long": "账户名称不能超过50个字符",
+  "account.added": "账户已添加"
 }

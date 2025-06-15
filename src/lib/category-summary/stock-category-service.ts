@@ -15,7 +15,9 @@ import {
   getAllCategoryIds,
   extractBalanceChangeFromNotes
 } from './utils'
-import { Decimal } from '@prisma/client/runtime/library'
+import { Decimal } from '@prisma/client/runtime/library';
+import type { Account, Currency, Transaction } from '@prisma/client';
+import { TransactionType } from '@prisma/client';
 
 // #region 新增的类型定义
 /**
@@ -79,13 +81,16 @@ type BalanceAdjustmentTransaction = {
  * @returns 按月份 (YYYY-MM) 组织的余额数据
  */
 async function calculateMonthlyHistoricalBalances(
-  account: { id: string; transactions: BalanceAdjustmentTransaction[] },
+  account: (Account & {
+    currency: Currency | null;
+    transactions: (Transaction & { currency: Currency })[];
+  }),
   allMonths: string[],
   baseCurrency: BaseCurrency,
   userId: string
 ): Promise<Record<string, MonthlyBalance>> {
   const monthlyBalances: Record<string, Record<string, number>> = {}
-  const balanceAdjustments = account.transactions.filter(t => t.type === 'BALANCE')
+  const balanceAdjustments = account.transactions.filter(t => t.type === TransactionType.BALANCE)
 
   if (balanceAdjustments.length === 0) {
     return {}
@@ -219,7 +224,7 @@ export async function getStockCategorySummary(
     include: {
       currency: true,
       transactions: {
-        where: { type: 'BALANCE' },
+        where: { type: TransactionType.BALANCE },
         include: { currency: true },
         orderBy: { date: 'asc' }
       }

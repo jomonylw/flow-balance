@@ -1,6 +1,7 @@
 'use client'
 
 import Modal from './Modal'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface ConfirmationModalProps {
   isOpen: boolean
@@ -20,8 +21,8 @@ export default function ConfirmationModal({
   isOpen,
   title,
   message,
-  confirmLabel = '确认',
-  cancelLabel = '取消',
+  confirmLabel,
+  cancelLabel,
   confirmButtonClass,
   onConfirm,
   onCancel,
@@ -29,6 +30,7 @@ export default function ConfirmationModal({
   variant = 'danger',
   icon
 }: ConfirmationModalProps) {
+  const { t } = useLanguage()
   // 根据变体设置默认样式
   const getDefaultButtonClass = () => {
     switch (variant) {
@@ -96,14 +98,14 @@ export default function ConfirmationModal({
             onClick={onCancel}
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus:ring-gray-500 dark:focus:ring-gray-400"
           >
-            {cancelLabel}
+            {cancelLabel || t('common.cancel')}
           </button>
           <button
             type="button"
             onClick={onConfirm}
             className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${buttonClass}`}
           >
-            {confirmLabel}
+            {confirmLabel || t('common.confirm')}
           </button>
         </div>
       </div>

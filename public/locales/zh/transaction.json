@@ -96,5 +96,12 @@
   "transaction.filter.no.tags": "暂无标签",
   "transaction.filter.basic": "基础筛选",
   "transaction.filter.date.range": "日期范围",
-  "transaction.filter.quick.date": "快速日期选择"
+  "transaction.filter.quick.date": "快速日期选择",
+  "transaction.form.description": "请填写交易详细信息",
+  "transaction.description.placeholder": "请输入交易描述",
+  "transaction.notes": "备注",
+  "transaction.notes.placeholder": "可选的备注信息",
+  "transaction.update": "更新交易",
+  "transaction.create.failed": "创建交易失败",
+  "transaction.update.failed": "更新交易失败"
 }

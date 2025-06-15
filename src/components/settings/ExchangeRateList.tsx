@@ -59,7 +59,7 @@ export default function ExchangeRateList({
         showError(t('error.delete.failed'), data.error || t('error.unknown'))
       }
     } catch (error) {
-      console.error('删除汇率失败:', error)
+      console.error('Failed to delete exchange rate:', error)
       showError(t('error.delete.failed'), t('error.network'))
     } finally {
       setDeletingId(null)

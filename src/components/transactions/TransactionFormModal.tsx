@@ -299,7 +299,7 @@ export default function TransactionFormModal({
 
   const handleCreateTag = async () => {
     if (!newTagName.trim()) {
-      showError('验证失败', '标签名称不能为空')
+      showError(t('error.validation'), t('tag.name.required'))
       return
     }
 
@@ -327,13 +327,13 @@ export default function TransactionFormModal({
         }))
         setNewTagName('')
         setShowNewTagForm(false)
-        showSuccess('创建成功', '标签已创建并添加到当前交易')
+        showSuccess(t('success.created'), t('tag.created.and.added'))
       } else {
-        showError('创建失败', result.error || '创建标签失败')
+        showError(t('error.create.failed'), result.error || t('tag.create.failed'))
       }
     } catch (error) {
       console.error('Error creating tag:', error)
-      showError('创建失败', '网络错误，请稍后重试')
+      showError(t('error.create.failed'), t('error.network'))
     } finally {
       setIsCreatingTag(false)
     }
@@ -483,8 +483,8 @@ export default function TransactionFormModal({
       if (!contentType || !contentType.includes('application/json')) {
         const textResponse = await response.text()
         console.error('Non-JSON response:', textResponse)
-        setErrors({ general: `服务器响应格式错误 (${response.status}): ${textResponse}` })
-        showError(transaction ? '更新交易失败' : '创建交易失败', `服务器响应格式错误: ${textResponse}`)
+        setErrors({ general: `${t('error.server.response.format')} (${response.status}): ${textResponse}` })
+        showError(transaction ? t('transaction.update.failed') : t('transaction.create.failed'), `${t('error.server.response.format')}: ${textResponse}`)
         return
       }
 
@@ -496,8 +496,8 @@ export default function TransactionFormModal({
         console.error('JSON parsing error:', parseError)
         const textResponse = await response.text()
         console.error('Raw response text:', textResponse)
-        setErrors({ general: '服务器响应解析失败' })
-        showError(transaction ? '更新交易失败' : '创建交易失败', '服务器响应解析失败')
+        setErrors({ general: t('error.server.response.parse') })
+        showError(transaction ? t('transaction.update.failed') : t('transaction.create.failed'), t('error.server.response.parse'))
         return
       }
 
@@ -509,14 +509,14 @@ export default function TransactionFormModal({
         onClose()
       } else {
         // 处理API错误响应 - 增强错误信息提取
-        let errorMessage = transaction ? '更新交易失败' : '创建交易失败'
+        let errorMessage = transaction ? t('transaction.update.failed') : t('transaction.create.failed')
 
         if (result.error) {
           errorMessage = result.error
         } else if (result.message) {
           errorMessage = result.message
         } else if (response.status >= 400) {
-          errorMessage = `请求失败 (${response.status})`
+          errorMessage = `${t('error.request.failed')} (${response.status})`
         }
 
         // 添加更详细的调试信息
@@ -532,7 +532,7 @@ export default function TransactionFormModal({
         })
 
         setErrors({ general: errorMessage })
-        showError(transaction ? '更新交易失败' : '创建交易失败', errorMessage)
+        showError(transaction ? t('transaction.update.failed') : t('transaction.create.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Transaction form error:', error)
@@ -543,16 +543,16 @@ export default function TransactionFormModal({
 
       let errorMessage: string
       if (error instanceof SyntaxError) {
-        errorMessage = '服务器响应解析失败'
+        errorMessage = t('error.server.response.parse')
       } else if (error instanceof TypeError) {
-        errorMessage = '请求处理错误'
+        errorMessage = t('error.request.process')
       } else if (error instanceof Error) {
         errorMessage = error.message || t('error.network')
       } else {
         errorMessage = t('error.network')
       }
       setErrors({ general: errorMessage })
-      showError(transaction ? '更新交易失败' : '创建交易失败', errorMessage)
+      showError(transaction ? t('transaction.update.failed') : t('transaction.create.failed'), errorMessage)
     } finally {
       setIsLoading(false)
     }

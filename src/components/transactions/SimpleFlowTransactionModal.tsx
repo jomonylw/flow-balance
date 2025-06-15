@@ -153,7 +153,7 @@ export default function SimpleFlowTransactionModal({
       tagIds: [...prev.tagIds, newTag.id]
     }))
     setShowTagFormModal(false)
-    showSuccess('创建成功', '标签已创建并添加到当前交易')
+    showSuccess(t('success.created'), t('tag.created.and.added'))
   }
 
   const validateForm = () => {
@@ -239,15 +239,15 @@ export default function SimpleFlowTransactionModal({
         onSuccess()
         onClose()
       } else {
-        const errorMessage = result.error || (transaction ? '更新交易失败' : '创建交易失败')
+        const errorMessage = result.error || (transaction ? t('transaction.update.failed') : t('transaction.create.failed'))
         setErrors({ general: errorMessage })
-        showError(transaction ? '更新交易失败' : '创建交易失败', errorMessage)
+        showError(transaction ? t('transaction.update.failed') : t('transaction.create.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Transaction form error:', error)
       const errorMessage = error instanceof Error ? error.message : t('error.network')
       setErrors({ general: errorMessage })
-      showError(transaction ? '更新交易失败' : '创建交易失败', errorMessage)
+      showError(transaction ? t('transaction.update.failed') : t('transaction.create.failed'), errorMessage)
     } finally {
       setIsLoading(false)
     }

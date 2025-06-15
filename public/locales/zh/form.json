@@ -13,5 +13,10 @@
   "form.transaction.description": "交易描述",
   "form.transaction.notes": "交易备注",
   "form.balance.amount": "余额金额",
-  "form.balance.date": "余额日期"
+  "form.balance.date": "余额日期",
+  "form.select.account": "请选择账户",
+  "form.select.category": "请选择分类",
+  "form.validation.errors.title": "请修正以下错误",
+  "form.validation.warnings.title": "注意事项",
+  "form.validation.suggestions.title": "建议"
 }

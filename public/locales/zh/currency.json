@@ -1,4 +1,5 @@
 {
+  "currency.currency": "货币",
   "currency.management": "货币管理",
   "currency.management.description": "管理您可以使用的货币。只有添加到可用列表的货币才能在账户、交易和汇率设置中使用。",
   "currency.selected": "已选择的货币",

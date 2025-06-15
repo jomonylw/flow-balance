@@ -96,5 +96,12 @@
   "transaction.filter.no.tags": "No tags available",
   "transaction.filter.basic": "Basic Filters",
   "transaction.filter.date.range": "Date Range",
-  "transaction.filter.quick.date": "Quick Date Selection"
+  "transaction.filter.quick.date": "Quick Date Selection",
+  "transaction.form.description": "Please fill in transaction details",
+  "transaction.description.placeholder": "Please enter transaction description",
+  "transaction.notes": "Notes",
+  "transaction.notes.placeholder": "Optional notes",
+  "transaction.update": "Update Transaction",
+  "transaction.create.failed": "Transaction creation failed",
+  "transaction.update.failed": "Transaction update failed"
 }

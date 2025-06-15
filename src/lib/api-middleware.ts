@@ -60,8 +60,8 @@ export function withApiHandler(handler: ApiHandler) {
       } else if (error instanceof ForbiddenError) {
         return errorResponse(error.message, 403)
       } else {
-        console.error('API处理器未捕获错误:', error)
-        return errorResponse('服务器内部错误', 500)
+        console.error('API handler uncaught error:', error)
+        return errorResponse('Internal server error', 500)
       }
     }
   }
@@ -242,7 +242,7 @@ function logApiError(
     timestamp: new Date().toISOString()
   }
   
-  console.error('API错误:', errorData)
+  console.error('API Error:', errorData)
   
   // 在生产环境中，这里应该发送到错误监控服务
   if (process.env.NODE_ENV === 'production') {
@@ -292,20 +292,20 @@ export async function withDatabaseOperation<T>(
   try {
     return await operation()
   } catch (error) {
-    console.error(`数据库操作失败 [${operationName}]:`, error)
+    console.error(`Database operation failed [${operationName}]:`, error)
     
     // 根据错误类型返回不同的错误
     if (error instanceof Error) {
       if (error.message.includes('Unique constraint')) {
-        throw new ValidationError('数据已存在，请检查重复项')
+        throw new ValidationError('Data already exists, please check for duplicates')
       } else if (error.message.includes('Foreign key constraint')) {
-        throw new ValidationError('关联数据不存在')
+        throw new ValidationError('Related data does not exist')
       } else if (error.message.includes('Not found')) {
-        throw new NotFoundError('请求的数据不存在')
+        throw new NotFoundError('Requested data not found')
       }
     }
-    
-    throw new Error('数据库操作失败')
+
+    throw new Error('Database operation failed')
   }
 }
 

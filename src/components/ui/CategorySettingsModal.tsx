@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Category {
   id: string
@@ -19,19 +20,13 @@ interface CategorySettingsModalProps {
   onSave: (updatedCategory: Partial<Category>) => void
 }
 
-const ACCOUNT_TYPES = [
-  { value: 'ASSET', label: '资产类', description: '现金、银行存款、投资、房产等（存量数据）', color: 'text-blue-600' },
-  { value: 'LIABILITY', label: '负债类', description: '信用卡、贷款、应付款等（存量数据）', color: 'text-red-600' },
-  { value: 'INCOME', label: '收入类', description: '工资、投资收益、其他收入等（流量数据）', color: 'text-green-600' },
-  { value: 'EXPENSE', label: '支出类', description: '生活费、娱乐、交通等（流量数据）', color: 'text-orange-600' }
-] as const
-
 export default function CategorySettingsModal({
   isOpen,
   category,
   onClose,
   onSave
 }: CategorySettingsModalProps) {
+  const { t } = useLanguage()
   const [selectedType, setSelectedType] = useState<string>(category.type || '')
   const [description, setDescription] = useState('')
   const [order, setOrder] = useState(category.order || 0)
@@ -39,6 +34,13 @@ export default function CategorySettingsModal({
 
   // 使用UserDataContext获取分类数据，避免API调用
   const { categories } = useUserData()
+
+  const ACCOUNT_TYPES = [
+    { value: 'ASSET', label: t('category.type.asset'), description: t('category.settings.asset.description'), color: 'text-blue-600 dark:text-blue-400' },
+    { value: 'LIABILITY', label: t('category.type.liability'), description: t('category.settings.liability.description'), color: 'text-red-600 dark:text-red-400' },
+    { value: 'INCOME', label: t('category.type.income'), description: t('category.settings.income.description'), color: 'text-green-600 dark:text-green-400' },
+    { value: 'EXPENSE', label: t('category.type.expense'), description: t('category.settings.expense.description'), color: 'text-orange-600 dark:text-orange-400' }
+  ] as const
 
   // 是否为顶级分类
   const isTopLevel = !category.parentId
@@ -82,41 +84,41 @@ export default function CategorySettingsModal({
   const inheritedTypeInfo = inheritedType ? getTypeInfo(inheritedType) : null
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="分类设置">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('category.settings')}>
       <div className="space-y-6">
         {/* 基本信息 */}
         <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4">基本信息</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{t('category.settings.basic.info')}</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                分类名称
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('category.name')}
               </label>
-              <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
+              <div className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md">
                 {category.name}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                分类层级
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('category.settings.level')}
               </label>
-              <div className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
-                {isTopLevel ? '顶级分类' : '子分类'}
+              <div className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md">
+                {isTopLevel ? t('category.settings.top.level') : t('category.subcategory')}
               </div>
             </div>
 
             <div>
-              <label htmlFor="order" className="block text-sm font-medium text-gray-700 mb-1">
-                排序顺序
+              <label htmlFor="order" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('category.settings.sort.order')}
               </label>
               <input
                 type="number"
                 id="order"
                 value={order}
                 onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="数字越小排序越靠前"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                placeholder={t('category.settings.sort.placeholder')}
               />
             </div>
           </div>
@@ -124,14 +126,14 @@ export default function CategorySettingsModal({
 
         {/* 账户类型设置 */}
         <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4">账户类型</h3>
-          
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{t('category.type')}</h3>
+
           {isTopLevel ? (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                作为顶级分类，您可以设置此分类的账户类型。所有子分类将自动继承此类型。
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t('category.settings.top.level.description')}
               </p>
-              
+
               <div className="space-y-3">
                 {ACCOUNT_TYPES.map((type) => (
                   <label key={type.value} className="flex items-start space-x-3 cursor-pointer">
@@ -141,13 +143,13 @@ export default function CategorySettingsModal({
                       value={type.value}
                       checked={selectedType === type.value}
                       onChange={(e) => setSelectedType(e.target.value)}
-                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      className="mt-1 h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                     />
                     <div className="flex-1">
                       <div className={`font-medium ${type.color}`}>
                         {type.label}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         {type.description}
                       </div>
                     </div>
@@ -156,25 +158,25 @@ export default function CategorySettingsModal({
               </div>
 
               {selectedType && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">统计方法说明</h4>
-                  <div className="text-sm text-blue-800">
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">{t('category.settings.statistics.method')}</h4>
+                  <div className="text-sm text-blue-800 dark:text-blue-400">
                     {selectedType === 'ASSET' || selectedType === 'LIABILITY' ? (
                       <div>
-                        <p><strong>存量数据统计：</strong></p>
+                        <p><strong>{t('category.settings.stock.statistics')}：</strong></p>
                         <ul className="list-disc list-inside mt-1 space-y-1">
-                          <li>显示截止到特定时间点的余额</li>
-                          <li>计算净资产（资产-负债）</li>
-                          <li>适用于资产负债表分析</li>
+                          <li>{t('category.settings.stock.balance.point')}</li>
+                          <li>{t('category.settings.stock.net.worth')}</li>
+                          <li>{t('category.settings.stock.balance.sheet')}</li>
                         </ul>
                       </div>
                     ) : (
                       <div>
-                        <p><strong>流量数据统计：</strong></p>
+                        <p><strong>{t('category.settings.flow.statistics')}：</strong></p>
                         <ul className="list-disc list-inside mt-1 space-y-1">
-                          <li>显示特定时间段内的累计金额</li>
-                          <li>分析收支趋势和现金流</li>
-                          <li>适用于现金流量表分析</li>
+                          <li>{t('category.settings.flow.period.amount')}</li>
+                          <li>{t('category.settings.flow.trend.analysis')}</li>
+                          <li>{t('category.settings.flow.cash.flow.statement')}</li>
                         </ul>
                       </div>
                     )}
@@ -184,26 +186,26 @@ export default function CategorySettingsModal({
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                作为子分类，此分类的账户类型由父分类决定，无法单独设置。
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t('category.settings.subcategory.description')}
               </p>
-              
+
               {inheritedTypeInfo ? (
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-500">继承的账户类型：</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('category.settings.inherited.type')}：</span>
                     <span className={`font-medium ${inheritedTypeInfo.color}`}>
                       {inheritedTypeInfo.label}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-500 mt-1">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {inheritedTypeInfo.description}
                   </div>
                 </div>
               ) : (
-                <div className="p-4 bg-yellow-50 rounded-lg">
-                  <div className="text-sm text-yellow-800">
-                    ⚠️ 父分类尚未设置账户类型，建议先设置父分类的账户类型。
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <div className="text-sm text-yellow-800 dark:text-yellow-400">
+                    ⚠️ {t('category.settings.parent.type.warning')}
                   </div>
                 </div>
               )}
@@ -212,21 +214,21 @@ export default function CategorySettingsModal({
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           >
-            取消
+            {t('common.cancel')}
           </button>
           <button
             type="button"
             onClick={handleSave}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? '保存中...' : '保存设置'}
+            {isLoading ? t('category.settings.saving') : t('category.settings.save')}
           </button>
         </div>
       </div>

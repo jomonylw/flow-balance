@@ -5,6 +5,7 @@ import Modal from './Modal'
 import InputField from './InputField'
 import SelectField from './SelectField'
 import AuthButton from './AuthButton'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface TopCategoryModalProps {
   isOpen: boolean
@@ -12,24 +13,25 @@ interface TopCategoryModalProps {
   onSave: (data: { name: string; type: string }) => Promise<void>
 }
 
-// 账户类型选项
-const ACCOUNT_TYPE_OPTIONS = [
-  { value: '', label: '请选择账户类型' },
-  { value: 'ASSET', label: '资产类 - 存量概念（如：现金、银行存款、投资等）' },
-  { value: 'LIABILITY', label: '负债类 - 存量概念（如：信用卡、贷款、应付款等）' },
-  { value: 'INCOME', label: '收入类 - 流量概念（如：工资、奖金、投资收益等）' },
-  { value: 'EXPENSE', label: '支出类 - 流量概念（如：餐饮、交通、购物等）' }
-]
-
 export default function TopCategoryModal({
   isOpen,
   onClose,
   onSave
 }: TopCategoryModalProps) {
+  const { t } = useLanguage()
   const [name, setName] = useState('')
   const [type, setType] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<{ name?: string; type?: string }>({})
+
+  // 账户类型选项
+  const ACCOUNT_TYPE_OPTIONS = [
+    { value: '', label: t('category.type.select.placeholder') },
+    { value: 'ASSET', label: t('category.type.asset.description') },
+    { value: 'LIABILITY', label: t('category.type.liability.description') },
+    { value: 'INCOME', label: t('category.type.income.description') },
+    { value: 'EXPENSE', label: t('category.type.expense.description') }
+  ]
 
   useEffect(() => {
     if (isOpen) {
@@ -43,13 +45,13 @@ export default function TopCategoryModal({
     const newErrors: { name?: string; type?: string } = {}
 
     if (!name.trim()) {
-      newErrors.name = '分类名称不能为空'
+      newErrors.name = t('category.name.required')
     } else if (name.length > 50) {
-      newErrors.name = '分类名称不能超过50个字符'
+      newErrors.name = t('category.name.too.long')
     }
 
     if (!type) {
-      newErrors.type = '请选择账户类型'
+      newErrors.type = t('category.type.required')
     }
 
     setErrors(newErrors)
@@ -79,39 +81,59 @@ export default function TopCategoryModal({
     switch (selectedType) {
       case 'ASSET':
         return {
-          title: '资产类分类',
-          description: '存量概念 - 记录您拥有的资产的当前价值',
-          color: 'text-green-700',
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200',
-          features: ['余额管理', '资产统计', '净资产计算', '价值变动追踪']
+          title: t('category.type.asset.title'),
+          description: t('category.type.asset.detail'),
+          color: 'text-green-700 dark:text-green-400',
+          bgColor: 'bg-green-50 dark:bg-green-900/20',
+          borderColor: 'border-green-200 dark:border-green-700',
+          features: [
+            t('category.type.asset.feature.balance'),
+            t('category.type.asset.feature.statistics'),
+            t('category.type.asset.feature.networth'),
+            t('category.type.asset.feature.tracking')
+          ]
         }
       case 'LIABILITY':
         return {
-          title: '负债类分类',
-          description: '存量概念 - 记录您需要偿还的债务的当前余额',
-          color: 'text-red-700',
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
-          features: ['债务管理', '负债统计', '净资产计算', '还款计划追踪']
+          title: t('category.type.liability.title'),
+          description: t('category.type.liability.detail'),
+          color: 'text-red-700 dark:text-red-400',
+          bgColor: 'bg-red-50 dark:bg-red-900/20',
+          borderColor: 'border-red-200 dark:border-red-700',
+          features: [
+            t('category.type.liability.feature.management'),
+            t('category.type.liability.feature.statistics'),
+            t('category.type.liability.feature.networth'),
+            t('category.type.liability.feature.repayment')
+          ]
         }
       case 'INCOME':
         return {
-          title: '收入类分类',
-          description: '流量概念 - 记录您的各种收入来源和金额',
-          color: 'text-blue-700',
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
-          features: ['收入记录', '现金流统计', '收入趋势分析', '预算对比']
+          title: t('category.type.income.title'),
+          description: t('category.type.income.detail'),
+          color: 'text-blue-700 dark:text-blue-400',
+          bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+          borderColor: 'border-blue-200 dark:border-blue-700',
+          features: [
+            t('category.type.income.feature.record'),
+            t('category.type.income.feature.cashflow'),
+            t('category.type.income.feature.trend'),
+            t('category.type.income.feature.budget')
+          ]
         }
       case 'EXPENSE':
         return {
-          title: '支出类分类',
-          description: '流量概念 - 记录您的各种支出和消费',
-          color: 'text-orange-700',
-          bgColor: 'bg-orange-50',
-          borderColor: 'border-orange-200',
-          features: ['支出记录', '现金流统计', '支出趋势分析', '预算控制']
+          title: t('category.type.expense.title'),
+          description: t('category.type.expense.detail'),
+          color: 'text-orange-700 dark:text-orange-400',
+          bgColor: 'bg-orange-50 dark:bg-orange-900/20',
+          borderColor: 'border-orange-200 dark:border-orange-700',
+          features: [
+            t('category.type.expense.feature.record'),
+            t('category.type.expense.feature.cashflow'),
+            t('category.type.expense.feature.trend'),
+            t('category.type.expense.feature.control')
+          ]
         }
       default:
         return null
@@ -121,16 +143,15 @@ export default function TopCategoryModal({
   const typeInfo = getTypeDescription(type)
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="添加顶级分类" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('category.top.add')} size="lg">
       <div className="space-y-6">
         {/* 说明文字 */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">
-            💡 什么是顶级分类？
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
+            💡 {t('category.top.what.title')}
           </h3>
-          <p className="text-sm text-blue-700">
-            顶级分类是财务管理的基础框架，用于区分不同性质的财务数据。每个顶级分类都有特定的账户类型，
-            决定了其下属账户的功能和统计方式。
+          <p className="text-sm text-blue-700 dark:text-blue-400">
+            {t('category.top.what.description')}
           </p>
         </div>
 
@@ -138,7 +159,7 @@ export default function TopCategoryModal({
         <div className="space-y-4">
           <InputField
             name="name"
-            label="分类名称"
+            label={t('category.name')}
             value={name}
             onChange={(e) => {
               setName(e.target.value)
@@ -147,13 +168,13 @@ export default function TopCategoryModal({
               }
             }}
             error={errors.name}
-            placeholder="请输入分类名称，如：现金资产、固定支出等"
+            placeholder={t('category.name.placeholder')}
             required
           />
 
           <SelectField
             name="type"
-            label="账户类型"
+            label={t('category.type')}
             value={type}
             onChange={(e) => {
               setType(e.target.value)
@@ -180,7 +201,7 @@ export default function TopCategoryModal({
               {typeInfo.features.map((feature, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-200"
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
                 >
                   {feature}
                 </span>
@@ -191,37 +212,37 @@ export default function TopCategoryModal({
 
         {/* 示例 */}
         {type && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">
-              📝 常见示例
+          <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+              📝 {t('category.examples.title')}
             </h4>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               {type === 'ASSET' && (
                 <ul className="list-disc list-inside space-y-1">
-                  <li>现金资产：现金、银行存款、支付宝、微信钱包</li>
-                  <li>投资资产：股票、基金、债券、理财产品</li>
-                  <li>固定资产：房产、车辆、设备、家具</li>
+                  <li>{t('category.examples.asset.cash')}</li>
+                  <li>{t('category.examples.asset.investment')}</li>
+                  <li>{t('category.examples.asset.fixed')}</li>
                 </ul>
               )}
               {type === 'LIABILITY' && (
                 <ul className="list-disc list-inside space-y-1">
-                  <li>信用负债：信用卡、花呗、白条</li>
-                  <li>贷款负债：房贷、车贷、消费贷</li>
-                  <li>其他负债：应付款、借款</li>
+                  <li>{t('category.examples.liability.credit')}</li>
+                  <li>{t('category.examples.liability.loan')}</li>
+                  <li>{t('category.examples.liability.other')}</li>
                 </ul>
               )}
               {type === 'INCOME' && (
                 <ul className="list-disc list-inside space-y-1">
-                  <li>工作收入：工资、奖金、提成、津贴</li>
-                  <li>投资收入：股息、利息、租金收入</li>
-                  <li>其他收入：兼职、副业、礼金</li>
+                  <li>{t('category.examples.income.work')}</li>
+                  <li>{t('category.examples.income.investment')}</li>
+                  <li>{t('category.examples.income.other')}</li>
                 </ul>
               )}
               {type === 'EXPENSE' && (
                 <ul className="list-disc list-inside space-y-1">
-                  <li>生活支出：餐饮、交通、购物、娱乐</li>
-                  <li>固定支出：房租、水电、保险、通讯</li>
-                  <li>其他支出：医疗、教育、旅行、礼品</li>
+                  <li>{t('category.examples.expense.living')}</li>
+                  <li>{t('category.examples.expense.fixed')}</li>
+                  <li>{t('category.examples.expense.other')}</li>
                 </ul>
               )}
             </div>
@@ -229,16 +250,16 @@ export default function TopCategoryModal({
         )}
 
         {/* 操作按钮 */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
           >
-            取消
+            {t('common.cancel')}
           </button>
           <AuthButton
-            label={isLoading ? '创建中...' : '创建分类'}
+            label={isLoading ? t('category.creating') : t('category.create')}
             onClick={handleSave}
             isLoading={isLoading}
             disabled={!name.trim() || !type}

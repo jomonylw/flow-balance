@@ -9,5 +9,6 @@
   "nav.logout": "Logout",
   "nav.profile": "Profile",
   "nav.help": "Help",
-  "nav.about": "About"
+  "nav.about": "About",
+  "nav.menu.open": "Open Menu"
 }

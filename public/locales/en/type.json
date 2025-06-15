@@ -3,6 +3,7 @@
   "type.liability": "Liability",
   "type.income": "Income",
   "type.expense": "Expense",
+  "type.transfer": "Transfer",
   "type.stock": "Stock Account",
   "type.flow": "Flow Account",
   "type.asset.account": "Asset Account",

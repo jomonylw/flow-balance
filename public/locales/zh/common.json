@@ -16,6 +16,7 @@
   "common.next": "下一步",
   "common.previous": "上一步",
   "common.submit": "提交",
+  "common.submitting": "提交中...",
   "common.reset": "重置",
   "common.clear": "清除",
   "common.clear.all": "清除所有筛选",
@@ -50,5 +51,15 @@
   "common.theme.light.short": "明亮",
   "common.theme.dark.short": "深色",
   "common.theme.system.short": "自动",
-  "common.theme.select": "选择主题"
+  "common.theme.select": "选择主题",
+  "common.app.subtitle": "个人财务管理",
+  "input.dialog.required": "请输入内容",
+  "delete.confirm.message": "确定要删除{{itemType}}「{{itemName}}」吗？",
+  "delete.confirm.warning": "此操作不可撤销，请谨慎操作。",
+  "delete.clear.related.data": "清空相关数据",
+  "delete.clear.and.delete.warning": "将先清空相关数据，然后删除{{itemType}}。此操作不可撤销。",
+  "delete.confirm.clear.and.delete": "确认清空并删除",
+  "delete.confirm": "确认删除",
+  "delete.password.prompt": "请输入密码确认删除：",
+  "delete.password.placeholder": "请输入密码"
 }

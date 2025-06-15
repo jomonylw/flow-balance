@@ -1,6 +1,7 @@
 'use client'
 
 import BaseContextMenu, { MenuItem } from './BaseContextMenu'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Account {
   id: string
@@ -22,13 +23,13 @@ interface AccountContextMenuProps {
 }
 
 // 辅助函数：获取账户类型标签
-function getAccountTypeLabel(type?: string): string {
+function getAccountTypeLabel(t: (key: string) => string, type?: string): string {
   switch (type) {
-    case 'ASSET': return '资产'
-    case 'LIABILITY': return '负债'
-    case 'INCOME': return '收入'
-    case 'EXPENSE': return '支出'
-    default: return '账户'
+    case 'ASSET': return t('menu.type.asset')
+    case 'LIABILITY': return t('menu.type.liability')
+    case 'INCOME': return t('menu.type.income')
+    case 'EXPENSE': return t('menu.type.expense')
+    default: return t('menu.type.account')
   }
 }
 
@@ -49,6 +50,8 @@ export default function AccountContextMenu({
   onAction,
   account
 }: AccountContextMenuProps) {
+  const { t } = useLanguage()
+
   // 根据账户类型确定菜单项
   const accountType = account.category?.type
   const isStockAccount = accountType === 'ASSET' || accountType === 'LIABILITY'
@@ -56,9 +59,9 @@ export default function AccountContextMenu({
 
   const menuItems: (MenuItem | 'divider')[] = [
     {
-      label: '查看详情',
+      label: t('menu.account.view.details'),
       action: 'view-details',
-      description: '查看账户详细信息和历史记录',
+      description: t('menu.account.view.details.description'),
       icon: (
         <svg className="h-4 w-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -68,10 +71,10 @@ export default function AccountContextMenu({
     },
     // 根据账户类型显示不同的操作
     ...(isStockAccount ? [{
-      label: '更新余额',
+      label: t('menu.account.update.balance'),
       action: 'update-balance',
-      description: `调整${getAccountTypeLabel(accountType)}账户余额`,
-      badge: '存量',
+      description: t('menu.account.update.balance.description', { type: getAccountTypeLabel(t, accountType) }),
+      badge: t('menu.badge.stock'),
       badgeColor: (accountType === 'ASSET' ? 'blue' : 'yellow') as 'blue' | 'green' | 'red' | 'yellow' | 'gray',
       icon: (
         <svg className="h-4 w-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,10 +84,10 @@ export default function AccountContextMenu({
       className: getAccountTypeColor(accountType)
     }] : []),
     ...(isFlowAccount ? [{
-      label: '添加交易',
+      label: t('menu.account.add.transaction'),
       action: 'add-transaction',
-      description: `记录${getAccountTypeLabel(accountType)}交易`,
-      badge: '流量',
+      description: t('menu.account.add.transaction.description', { type: getAccountTypeLabel(t, accountType) }),
+      badge: t('menu.badge.flow'),
       badgeColor: (accountType === 'INCOME' ? 'green' : 'red') as 'blue' | 'green' | 'red' | 'yellow' | 'gray',
       icon: (
         <svg className="h-4 w-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,9 +98,9 @@ export default function AccountContextMenu({
     }] : []),
     'divider',
     {
-      label: '重命名账户',
+      label: t('menu.account.rename'),
       action: 'rename',
-      description: '修改账户名称和描述',
+      description: t('menu.account.rename.description'),
       icon: (
         <svg className="h-4 w-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -105,9 +108,9 @@ export default function AccountContextMenu({
       )
     },
     {
-      label: '移动分类',
+      label: t('menu.account.move'),
       action: 'move',
-      description: '将账户移动到其他分类',
+      description: t('menu.account.move.description'),
       icon: (
         <svg className="h-4 w-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
@@ -115,9 +118,9 @@ export default function AccountContextMenu({
       )
     },
     {
-      label: '账户设置',
+      label: t('menu.account.settings'),
       action: 'settings',
-      description: '配置账户属性和权限',
+      description: t('menu.account.settings.description'),
       icon: (
         <svg className="h-4 w-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -127,9 +130,9 @@ export default function AccountContextMenu({
     },
     'divider',
     {
-      label: '删除账户',
+      label: t('menu.account.delete'),
       action: 'delete',
-      description: '永久删除此账户及其数据',
+      description: t('menu.account.delete.description'),
       icon: (
         <svg className="h-4 w-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -145,7 +148,7 @@ export default function AccountContextMenu({
       onClose={onClose}
       onAction={onAction}
       menuItems={menuItems}
-      title={`${account.name} • ${getAccountTypeLabel(accountType)}`}
+      title={`${account.name} • ${getAccountTypeLabel(t, accountType)}`}
       width="lg"
     />
   )

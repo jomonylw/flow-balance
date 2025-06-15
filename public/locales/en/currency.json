@@ -1,4 +1,5 @@
 {
+  "currency.currency": "Currency",
   "currency.management": "Currency Management",
   "currency.management.description": "Manage the currencies you can use. Only currencies added to the available list can be used in accounts, transactions, and exchange rate settings.",
   "currency.selected": "Selected Currencies",

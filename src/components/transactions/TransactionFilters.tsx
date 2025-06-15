@@ -1,27 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useUserData } from '@/contexts/UserDataContext'
-
-interface Account {
-  id: string
-  name: string
-  category: {
-    name: string
-  }
-}
-
-interface Category {
-  id: string
-  name: string
-}
-
-interface Tag {
-  id: string
-  name: string
-  color?: string
-}
 
 interface Filters {
   accountId: string
@@ -54,6 +34,14 @@ export default function TransactionFilters({
   const flowCategories = categories.filter(category =>
     category.type === 'INCOME' || category.type === 'EXPENSE'
   )
+
+  // 日期格式化函数，避免时区问题
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
 
 
 
@@ -233,7 +221,7 @@ export default function TransactionFilters({
           <button
             onClick={() => {
               const today = new Date()
-              const todayStr = today.toISOString().split('T')[0]
+              const todayStr = formatDate(today)
               onFilterChange({ dateFrom: todayStr, dateTo: todayStr })
             }}
             className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
@@ -243,11 +231,16 @@ export default function TransactionFilters({
           <button
             onClick={() => {
               const today = new Date()
-              const thisWeekStart = new Date(today.setDate(today.getDate() - today.getDay()))
-              const thisWeekEnd = new Date(today.setDate(today.getDate() - today.getDay() + 6))
+              // 本周第一天（周日）
+              const thisWeekStart = new Date(today)
+              thisWeekStart.setDate(today.getDate() - today.getDay())
+              // 本周最后一天（周六）
+              const thisWeekEnd = new Date(today)
+              thisWeekEnd.setDate(today.getDate() - today.getDay() + 6)
+
               onFilterChange({
-                dateFrom: thisWeekStart.toISOString().split('T')[0],
-                dateTo: thisWeekEnd.toISOString().split('T')[0]
+                dateFrom: formatDate(thisWeekStart),
+                dateTo: formatDate(thisWeekEnd)
               })
             }}
             className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
@@ -257,11 +250,14 @@ export default function TransactionFilters({
           <button
             onClick={() => {
               const today = new Date()
+              // 当月第一天
               const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+              // 当月最后一天
               const thisMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+
               onFilterChange({
-                dateFrom: thisMonthStart.toISOString().split('T')[0],
-                dateTo: thisMonthEnd.toISOString().split('T')[0]
+                dateFrom: formatDate(thisMonthStart),
+                dateTo: formatDate(thisMonthEnd)
               })
             }}
             className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
@@ -273,9 +269,10 @@ export default function TransactionFilters({
               const today = new Date()
               const thisYearStart = new Date(today.getFullYear(), 0, 1)
               const thisYearEnd = new Date(today.getFullYear(), 11, 31)
+
               onFilterChange({
-                dateFrom: thisYearStart.toISOString().split('T')[0],
-                dateTo: thisYearEnd.toISOString().split('T')[0]
+                dateFrom: formatDate(thisYearStart),
+                dateTo: formatDate(thisYearEnd)
               })
             }}
             className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"

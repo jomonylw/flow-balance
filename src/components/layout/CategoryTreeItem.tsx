@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
 import CategoryContextMenu from './CategoryContextMenu'
@@ -12,6 +11,7 @@ import CategorySelector from '@/components/ui/CategorySelector'
 import CategorySettingsModal from '@/components/ui/CategorySettingsModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { publishCategoryCreate, publishCategoryDelete, publishAccountCreate } from '@/utils/DataUpdateManager'
 
 interface Account {
@@ -65,6 +65,7 @@ export default function CategoryTreeItem({
   baseCurrency: propBaseCurrency
 }: CategoryTreeItemProps) {
   const { showSuccess, showError } = useToast()
+  const { t } = useLanguage()
   const pathname = usePathname()
   const router = useRouter()
 
@@ -121,6 +122,39 @@ export default function CategoryTreeItem({
     }
   }
 
+  // 获取分类类型标签的颜色和样式
+  const getTypeTagStyle = () => {
+    const categoryType = category.type
+    if (categoryType === 'LIABILITY' || categoryType === 'EXPENSE') {
+      return {
+        backgroundColor: '#dc2626', // red-600
+        textColor: '#ffffff',
+      }
+    } else {
+      return {
+        backgroundColor: '#16a34a', // green-600
+        textColor: '#ffffff'
+      }
+    }
+  }
+
+  // 获取分类类型的国际化文本
+  const getTypeLabel = () => {
+    const categoryType = category.type
+    switch (categoryType) {
+      case 'ASSET':
+        return t('type.asset')
+      case 'LIABILITY':
+        return t('type.liability')
+      case 'INCOME':
+        return t('type.income')
+      case 'EXPENSE':
+        return t('type.expense')
+      default:
+        return ''
+    }
+  }
+
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
     setShowContextMenu(true)
@@ -168,15 +202,15 @@ export default function CategoryTreeItem({
 
       if (response.ok) {
         setShowRenameDialog(false)
-        showSuccess('重命名成功', `分类已重命名`)
+        showSuccess(t('success.updated'), t('category.renamed'))
         onDataChange({ type: 'category', silent: true })
       } else {
         const error = await response.json()
-        showError('重命名失败', error.message || '未知错误')
+        showError(t('error.update.failed'), error.message || t('error.unknown'))
       }
     } catch (error) {
       console.error('Error renaming category:', error)
-      showError('重命名失败', '网络错误，请稍后重试')
+      showError(t('error.update.failed'), t('error.network'))
     }
   }
 
@@ -188,7 +222,7 @@ export default function CategoryTreeItem({
 
       if (response.ok) {
         setShowDeleteConfirm(false)
-        showSuccess('删除成功', `分类"${category.name}"已删除`)
+        showSuccess(t('success.deleted'), t('category.deleted', { name: category.name }))
 
         // 发布分类删除事件
         await publishCategoryDelete(category.id, {
@@ -200,11 +234,11 @@ export default function CategoryTreeItem({
         onDataChange({ type: 'category', silent: false })
       } else {
         const error = await response.json()
-        showError('删除失败', error.message || '未知错误')
+        showError(t('error.delete.failed'), error.message || t('error.unknown'))
       }
     } catch (error) {
       console.error('Error deleting category:', error)
-      showError('删除失败', '网络错误，请稍后重试')
+      showError(t('error.delete.failed'), t('error.network'))
     }
   }
 
@@ -223,15 +257,15 @@ export default function CategoryTreeItem({
 
       if (response.ok) {
         setShowCategorySelector(false)
-        showSuccess('移动成功', `分类已移动`)
+        showSuccess(t('success.updated'), t('category.moved'))
         onDataChange({ type: 'category', silent: true })
       } else {
         const error = await response.json()
-        showError('移动失败', error.message || '未知错误')
+        showError(t('error.update.failed'), error.message || t('error.unknown'))
       }
     } catch (error) {
       console.error('Error moving category:', error)
-      showError('移动失败', '网络错误，请稍后重试')
+      showError(t('error.update.failed'), t('error.network'))
     }
   }
 
@@ -251,7 +285,7 @@ export default function CategoryTreeItem({
       if (response.ok) {
         const result = await response.json()
         setShowAddSubcategoryDialog(false)
-        showSuccess('添加成功', '子分类已添加')
+        showSuccess(t('success.created'), t('category.subcategory.added'))
 
         // 发布分类创建事件
         await publishCategoryCreate(category.id, {
@@ -263,18 +297,18 @@ export default function CategoryTreeItem({
         onDataChange({ type: 'category', silent: false })
       } else {
         const error = await response.json()
-        showError('添加失败', error.message || '添加子分类失败')
+        showError(t('error.create.failed'), error.message || t('category.add.subcategory.failed'))
       }
     } catch (error) {
       console.error('Error adding subcategory:', error)
-      showError('添加失败', '网络错误，请稍后重试')
+      showError(t('error.create.failed'), t('error.network'))
     }
   }
 
-  const handleAddAccount = async (account: any) => {
+  const handleAddAccount = async (account: Account) => {
     try {
       setShowAddAccountDialog(false)
-      showSuccess('添加成功', '账户已添加')
+      showSuccess(t('success.created'), t('account.added'))
 
       // 发布账户创建事件
       await publishAccountCreate(category.id, {
@@ -285,7 +319,7 @@ export default function CategoryTreeItem({
       onDataChange({ type: 'account', silent: true })
     } catch (error) {
       console.error('Error adding account:', error)
-      showError('添加失败', '网络错误，请稍后重试')
+      showError(t('error.create.failed'), t('error.network'))
     }
   }
 
@@ -305,15 +339,15 @@ export default function CategoryTreeItem({
 
       if (response.ok) {
         setShowSettingsModal(false)
-        showSuccess('保存成功', '分类设置已保存')
+        showSuccess(t('success.saved'), t('category.settings.saved'))
         onDataChange({ type: 'category', silent: true })
       } else {
         const error = await response.json()
-        showError('保存失败', error.message || '保存设置失败')
+        showError(t('error.save.failed'), error.message || t('category.settings.save.failed'))
       }
     } catch (error) {
       console.error('Error saving category settings:', error)
-      showError('保存失败', '网络错误，请稍后重试')
+      showError(t('error.save.failed'), t('error.network'))
     }
   }
 
@@ -372,16 +406,33 @@ export default function CategoryTreeItem({
 
         {/* 分类名称和余额 */}
         <div className="flex-1 py-3 min-w-0">
-          <div
-            className={`
-              text-sm font-semibold truncate transition-colors duration-200
-              ${isActive
-                ? 'text-blue-700 dark:text-blue-300'
-                : 'text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-gray-100'
-              }
-            `}
-          >
-            {category.name}
+          <div className="flex items-center gap-2">
+            <div
+              className={`
+                text-sm font-semibold truncate transition-colors duration-200
+                ${isActive
+                  ? 'text-blue-700 dark:text-blue-300'
+                  : 'text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-gray-100'
+                }
+              `}
+            >
+              {category.name}
+            </div>
+            {/* 顶层分类类型标签 */}
+            {level === 0 && category.type && (
+              <span
+                className="inline-flex items-center justify-center px-1 py-px rounded-md text-[10px] font-semibold border shadow-sm transition-all duration-200 hover:shadow-md flex-shrink-0 opacity-80 hover:opacity-100 hover:scale-105"
+                style={{
+                  backgroundColor: getTypeTagStyle().backgroundColor,
+                  borderColor: getTypeTagStyle().backgroundColor,
+                  color: getTypeTagStyle().textColor,
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+                }}
+                title={`分类类型: ${getTypeLabel()}`}
+              >
+                {getTypeLabel()}
+              </span>
+            )}
           </div>
           <div className={`text-xs mt-1.5 font-semibold transition-colors duration-200 ${getAmountColor()}`}>
             {currencySymbol}{Math.abs(balance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -415,14 +466,14 @@ export default function CategoryTreeItem({
       {/* 重命名对话框 */}
       <InputDialog
         isOpen={showRenameDialog}
-        title="重命名分类"
-        placeholder="请输入新的分类名称"
+        title={t('category.rename.title')}
+        placeholder={t('category.rename.placeholder')}
         initialValue={category.name}
         onSubmit={handleRename}
         onCancel={() => setShowRenameDialog(false)}
         validation={(value) => {
-          if (!value.trim()) return '分类名称不能为空'
-          if (value.length > 50) return '分类名称不能超过50个字符'
+          if (!value.trim()) return t('category.validation.name.required')
+          if (value.length > 50) return t('category.validation.name.too.long')
           return null
         }}
       />
@@ -430,10 +481,10 @@ export default function CategoryTreeItem({
       {/* 删除确认对话框 */}
       <ConfirmationModal
         isOpen={showDeleteConfirm}
-        title="删除分类"
-        message={`确定要删除分类"${category.name}"吗？此操作不可撤销。`}
-        confirmLabel="删除"
-        cancelLabel="取消"
+        title={t('category.delete.title')}
+        message={t('category.delete.message', { name: category.name })}
+        confirmLabel={t('category.delete.confirm')}
+        cancelLabel={t('category.delete.cancel')}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
         variant="danger"
@@ -442,7 +493,7 @@ export default function CategoryTreeItem({
       {/* 分类选择器 */}
       <CategorySelector
         isOpen={showCategorySelector}
-        title="移动分类到其他分类"
+        title={t('category.move.title')}
         currentCategoryId={category.parentId || ''}
         excludeCategoryId={category.id}
         onSelect={handleMoveToCategory}
@@ -452,13 +503,13 @@ export default function CategoryTreeItem({
       {/* 添加子分类对话框 */}
       <InputDialog
         isOpen={showAddSubcategoryDialog}
-        title="添加子分类"
-        placeholder="请输入子分类名称"
+        title={t('category.add.subcategory.title')}
+        placeholder={t('category.add.subcategory.placeholder')}
         onSubmit={handleAddSubcategory}
         onCancel={() => setShowAddSubcategoryDialog(false)}
         validation={(value) => {
-          if (!value.trim()) return '分类名称不能为空'
-          if (value.length > 50) return '分类名称不能超过50个字符'
+          if (!value.trim()) return t('category.validation.name.required')
+          if (value.length > 50) return t('category.validation.name.too.long')
           return null
         }}
       />

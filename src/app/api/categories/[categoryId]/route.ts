@@ -74,6 +74,11 @@ export async function PUT(
 
     // 如果要更改父分类，验证新父分类是否属于当前用户且不是自己或自己的子分类
     if (parentId && parentId !== existingCategory.parentId) {
+      // 检查是否是顶层分类（顶层分类不允许移动）
+      if (!existingCategory.parentId) {
+        return errorResponse('顶层分类不允许移动', 400)
+      }
+
       if (parentId === categoryId) {
         return errorResponse('分类不能设置自己为父分类', 400)
       }
@@ -93,6 +98,15 @@ export async function PUT(
       const isDescendant = await checkIfDescendant(categoryId, parentId)
       if (isDescendant) {
         return errorResponse('不能将分类移动到其子分类下', 400)
+      }
+
+      // 获取当前分类的根分类类型
+      const currentRootCategory = await getRootCategory(existingCategory.id)
+      const targetRootCategory = await getRootCategory(parentId)
+
+      // 验证只能在同类型分类范围内移动
+      if (currentRootCategory?.type !== targetRootCategory?.type) {
+        return errorResponse('子分类只能在同类型的分类范围内移动', 400)
       }
     }
 
@@ -214,6 +228,25 @@ async function checkIfDescendant(categoryId: string, potentialAncestorId: string
   }
 
   return false
+}
+
+// 辅助函数：获取根分类
+async function getRootCategory(categoryId: string): Promise<any> {
+  const category = await prisma.category.findUnique({
+    where: { id: categoryId }
+  })
+
+  if (!category) {
+    return null
+  }
+
+  // 如果没有父分类，说明自己就是根分类
+  if (!category.parentId) {
+    return category
+  }
+
+  // 递归查找根分类
+  return getRootCategory(category.parentId)
 }
 
 // 辅助函数：递归更新所有子分类的账户类型

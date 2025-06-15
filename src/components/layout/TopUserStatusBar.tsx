@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/contexts/LanguageContext'
 import UserMenuDropdown from './UserMenuDropdown'
 import LanguageToggle from './LanguageToggle'
 import ThemeToggle from './ThemeToggle'
@@ -31,6 +32,7 @@ export default function TopUserStatusBar({
 }: TopUserStatusBarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const router = useRouter()
+  const { t } = useLanguage()
 
   const handleLogout = async () => {
     try {
@@ -57,7 +59,7 @@ export default function TopUserStatusBar({
             <button
               onClick={onMenuClick}
               className="mr-3 p-2.5 rounded-xl text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50 dark:hover:from-gray-800 dark:hover:to-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden transition-all duration-200"
-              aria-label="打开菜单"
+              aria-label={t('nav.menu.open')}
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -75,7 +77,7 @@ export default function TopUserStatusBar({
               <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
                 Flow Balance
               </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400 -mt-0.5">个人财务管理</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 -mt-0.5">{t('common.app.subtitle')}</p>
             </div>
             <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100 sm:hidden">Flow Balance</h1>
           </div>

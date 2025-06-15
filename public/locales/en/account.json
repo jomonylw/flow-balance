@@ -78,5 +78,12 @@
   "account.average.monthly": "Monthly Avg",
   "account.year.total": "Year Total",
   "account.type.income.category": "Income",
-  "account.type.expense.category": "Expense"
+  "account.type.expense.category": "Expense",
+  "account.rename.title": "Rename Account",
+  "account.rename.placeholder": "Enter new account name",
+  "account.delete.title": "Delete Account",
+  "account.delete.item.type": "Account",
+  "account.validation.name.required": "Account name is required",
+  "account.validation.name.too.long": "Account name cannot exceed 50 characters",
+  "account.added": "Account added"
 }

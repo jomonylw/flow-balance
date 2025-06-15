@@ -20,5 +20,11 @@
   "tag.delete.confirm": "Confirm Delete",
   "tag.delete.confirm.message": "Are you sure you want to delete tag \"{{name}}\"? This action cannot be undone.",
   "tag.delete.in.use.message": "Tag \"{{name}}\" is being used by {{count}} transactions and cannot be deleted. Please remove this tag from related transactions first.",
-  "tag.delete.failed": "Failed to delete tag"
+  "tag.delete.failed": "Failed to delete tag",
+  "tag.create.success": "Created successfully",
+  "tag.update.success": "Updated successfully",
+  "tag.create.failed": "Creation failed",
+  "tag.update.failed": "Update failed",
+  "tag.operation.failed": "Operation failed",
+  "tag.created.and.added": "Tag created and added to current transaction"
 }

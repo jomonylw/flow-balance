@@ -7,6 +7,7 @@ import SelectField from './SelectField'
 import TextAreaField from './TextAreaField'
 import AuthButton from './AuthButton'
 import { useLanguage } from '@/contexts/LanguageContext'
+import ColorPicker, { COLOR_OPTIONS } from './ColorPicker'
 
 interface Currency {
   code: string
@@ -28,20 +29,7 @@ interface AddAccountModalProps {
   currencies?: Currency[]
 }
 
-const COLOR_OPTIONS = [
-  { value: '#3B82F6', label: '蓝色' },
-  { value: '#10B981', label: '绿色' },
-  { value: '#F59E0B', label: '橙色' },
-  { value: '#EF4444', label: '红色' },
-  { value: '#8B5CF6', label: '紫色' },
-  { value: '#06B6D4', label: '青色' },
-  { value: '#84CC16', label: '柠檬绿' },
-  { value: '#F97316', label: '橘色' },
-  { value: '#EC4899', label: '粉色' },
-  { value: '#6B7280', label: '灰色' },
-  { value: '#14B8A6', label: '蓝绿色' },
-  { value: '#F43F5E', label: '玫瑰红' }
-]
+
 
 export default function AddAccountModal({
   isOpen,
@@ -228,41 +216,10 @@ export default function AddAccountModal({
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900">{t('account.settings.display.settings')}</h3>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              {t('account.settings.account.color')}
-            </label>
-            <p className="text-sm text-gray-500 mb-4">
-              {t('account.settings.color.help')}
-            </p>
-            
-            <div className="grid grid-cols-6 gap-3">
-              {COLOR_OPTIONS.map((color) => (
-                <button
-                  key={color.value}
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, color: color.value }))}
-                  className={`
-                    relative w-12 h-12 rounded-lg border-2 transition-all
-                    ${formData.color === color.value 
-                      ? 'border-gray-900 ring-2 ring-gray-900 ring-offset-2' 
-                      : 'border-gray-200 hover:border-gray-300'
-                    }
-                  `}
-                  style={{ backgroundColor: color.value }}
-                  title={color.label}
-                >
-                  {formData.color === color.value && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
+          <ColorPicker
+            selectedColor={formData.color}
+            onColorChange={(color) => setFormData(prev => ({ ...prev, color }))}
+          />
         </div>
 
         {/* 货币设置 */}

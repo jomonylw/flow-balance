@@ -55,11 +55,19 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
             backgroundColor: resolvedTheme === 'dark' ? '#4b5563' : '#6a7985'
           }
         },
-        formatter: function(params: any) {
+        formatter: function(params: {
+          axisValue: string;
+          seriesName: string;
+          value: number;
+          color: string;
+        }[]) {
+          if (!params || params.length === 0) {
+            return ''
+          }
           let result = `<div style="font-weight: bold; margin-bottom: 5px;">${params[0].axisValue}</div>`
-          params.forEach((param: any) => {
-            const value = Math.abs(param.value)
-            const formattedValue = `${currency.symbol}${value.toLocaleString()}`
+          params.forEach((param) => {
+            const value = param.value
+            const formattedValue = `${value < 0 ? '-' : ''}${currency.symbol}${Math.abs(value).toLocaleString()}`
             result += `<div style="margin: 2px 0;">
               <span style="display: inline-block; width: 10px; height: 10px; background-color: ${param.color}; border-radius: 50%; margin-right: 5px;"></span>
               ${param.seriesName}: ${formattedValue}
@@ -132,42 +140,19 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
               color: resolvedTheme === 'dark' ? '#374151' : '#f3f4f6'
             }
           }
-        },
-        {
-          type: 'value',
-          name: t('dashboard.net.cash.flow'),
-          position: 'right',
-          axisLabel: {
-            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
-            formatter: function(value: number) {
-              if (Math.abs(value) >= 1000) {
-                return `${currency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
-              }
-              return `${currency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-            }
-          },
-          nameTextStyle: {
-            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000'
-          },
-          axisLine: {
-            lineStyle: {
-              color: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb'
-            }
-          },
-          splitLine: {
-            show: false
-          }
         }
       ],
       series: data.series.map(series => {
         const baseSeries = {
           ...series,
-          name: t(`chart.series.${series.name}`) // 翻译系列名称
+          name: t(`chart.series.${series.name}`), // 翻译系列名称
+          yAxisIndex: 0
         }
 
         if (series.type === 'bar') {
           return {
             ...baseSeries,
+            stack: 'cashflow',
             barWidth: '60%',
             itemStyle: {
               ...series.itemStyle,

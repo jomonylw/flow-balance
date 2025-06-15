@@ -67,30 +67,52 @@ export default function BaseContextMenu({
       const viewportHeight = window.innerHeight
 
       let left = triggerRect.right + 8 // 默认显示在右侧，8px间距
-      let top = triggerRect.top
+      const top = triggerRect.top
 
       // 如果右侧空间不够，显示在左侧
       if (left + menuWidth > viewportWidth - 20) {
         left = triggerRect.left - menuWidth - 8
       }
 
-      // 新增：确保菜单不会在左侧屏幕外
+      // 确保菜单不会在左侧屏幕外
       if (left < 20) {
         left = 20
       }
 
-      // 确保不超出视口顶部和底部
-      if (top < 20) {
-        top = 20
-      } else if (top + 400 > viewportHeight - 20) { // 假设菜单最大高度约400px
-        top = Math.max(20, viewportHeight - 420)
-      }
-
+      // 先设置初始位置，然后在下一帧检查高度
       setMenuStyle({
         position: 'fixed',
         left: `${left}px`,
         top: `${top}px`,
         zIndex: 9999
+      })
+
+      // 使用 requestAnimationFrame 确保菜单已渲染后再调整位置
+      requestAnimationFrame(() => {
+        if (menuRef.current) {
+          const menuHeight = menuRef.current.offsetHeight
+          let adjustedTop = top
+
+          // 确保不超出视口顶部和底部
+          if (adjustedTop < 20) {
+            adjustedTop = 20
+          } else if (adjustedTop + menuHeight > viewportHeight - 20) {
+            // 如果菜单底部会超出视窗，则向上调整位置
+            adjustedTop = Math.max(20, viewportHeight - menuHeight - 20)
+          }
+
+          // 如果位置需要调整，更新样式
+          if (adjustedTop !== top || menuHeight > viewportHeight - 40) {
+            setMenuStyle({
+              position: 'fixed',
+              left: `${left}px`,
+              top: `${adjustedTop}px`,
+              zIndex: 9999,
+              maxHeight: menuHeight > viewportHeight - 40 ? `${viewportHeight - 40}px` : undefined,
+              overflowY: menuHeight > viewportHeight - 40 ? 'auto' : 'visible'
+            })
+          }
+        }
       })
     }
   }, [isOpen, width])

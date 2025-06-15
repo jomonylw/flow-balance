@@ -5,6 +5,7 @@ import Modal from '@/components/ui/Modal'
 import InputField from '@/components/ui/InputField'
 import AuthButton from '@/components/ui/AuthButton'
 import { useToast } from '@/contexts/ToastContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Tag {
   id: string
@@ -30,6 +31,7 @@ export default function TagFormModal({
   onSuccess,
   editingTag
 }: TagFormModalProps) {
+  const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const [formData, setFormData] = useState<TagFormData>({ name: '', color: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -94,22 +96,22 @@ export default function TagFormModal({
 
       if (result.success) {
         showSuccess(
-          editingTag ? '更新成功' : '创建成功',
-          editingTag ? '标签已更新' : '标签已创建'
+          editingTag ? t('tag.update.success') : t('tag.create.success'),
+          editingTag ? t('tag.updated') : t('tag.created')
         )
         onSuccess(result.data)
         onClose()
       } else {
         showError(
-          editingTag ? '更新失败' : '创建失败',
-          result.error || '操作失败'
+          editingTag ? t('tag.update.failed') : t('tag.create.failed'),
+          result.error || t('tag.operation.failed')
         )
       }
     } catch (error) {
       console.error('Error saving tag:', error)
       showError(
-        editingTag ? '更新失败' : '创建失败',
-        '网络错误，请稍后重试'
+        editingTag ? t('tag.update.failed') : t('tag.create.failed'),
+        t('error.network')
       )
     } finally {
       setIsSubmitting(false)
@@ -120,22 +122,22 @@ export default function TagFormModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={editingTag ? '编辑标签' : '添加标签'}
+      title={editingTag ? t('tag.edit') : t('tag.add')}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <InputField
           name="name"
-          label="标签名称"
+          label={t('tag.name')}
           value={formData.name}
           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-          placeholder="请输入标签名称"
+          placeholder={t('tag.name.placeholder')}
           required
         />
 
         {/* 颜色选择 */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            标签颜色
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {t('tag.color')}
           </label>
           <div className="flex flex-wrap gap-2">
             {colorOptions.map((color) => (
@@ -144,7 +146,7 @@ export default function TagFormModal({
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, color }))}
                 className={`w-8 h-8 rounded-full border-2 transition-all ${
-                  formData.color === color ? 'border-gray-900 ring-2 ring-gray-900 ring-offset-1' : 'border-gray-300 hover:border-gray-400'
+                  formData.color === color ? 'border-gray-900 dark:border-gray-100 ring-2 ring-gray-900 dark:ring-gray-100 ring-offset-1' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
                 style={{ backgroundColor: color }}
                 title={color}
@@ -153,12 +155,12 @@ export default function TagFormModal({
           </div>
           {formData.color && (
             <div className="flex items-center space-x-2 mt-2">
-              <span className="text-sm text-gray-500">已选择:</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{t('tag.color.selected')}:</span>
               <div
-                className="w-4 h-4 rounded-full border border-gray-300"
+                className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600"
                 style={{ backgroundColor: formData.color }}
               />
-              <span className="text-sm text-gray-700">{formData.color}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{formData.color}</span>
             </div>
           )}
         </div>
@@ -167,13 +169,13 @@ export default function TagFormModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           >
-            取消
+            {t('common.cancel')}
           </button>
           <AuthButton
             type="submit"
-            label={editingTag ? '更新标签' : '创建标签'}
+            label={editingTag ? t('tag.update') : t('tag.create')}
             isLoading={isSubmitting}
           />
         </div>

@@ -9,5 +9,6 @@
   "nav.logout": "退出登录",
   "nav.profile": "个人资料",
   "nav.help": "帮助",
-  "nav.about": "关于"
+  "nav.about": "关于",
+  "nav.menu.open": "打开菜单"
 }

@@ -47,6 +47,7 @@ export default function LanguageToggle({ className = '' }: LanguageToggleProps) 
       <button
         className={`
           p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50
+          dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800
           transition-all duration-200 group relative
           ${className}
         `}
@@ -69,6 +70,7 @@ export default function LanguageToggle({ className = '' }: LanguageToggleProps) 
       onClick={toggleLanguage}
       className={`
         p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50
+        dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800
         transition-all duration-200 group relative
         ${className}
       `}
@@ -82,7 +84,7 @@ export default function LanguageToggle({ className = '' }: LanguageToggleProps) 
       </div>
 
       {/* 悬停提示 */}
-      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-200 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
         {getLanguageLabel(language === 'zh' ? 'en' : 'zh')}
       </div>
     </button>

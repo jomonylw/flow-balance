@@ -13,5 +13,10 @@
   "form.transaction.description": "Transaction Description",
   "form.transaction.notes": "Transaction Notes",
   "form.balance.amount": "Balance Amount",
-  "form.balance.date": "Balance Date"
+  "form.balance.date": "Balance Date",
+  "form.select.account": "Please select account",
+  "form.select.category": "Please select category",
+  "form.validation.errors.title": "Please correct the following errors",
+  "form.validation.warnings.title": "Attention",
+  "form.validation.suggestions.title": "Suggestions"
 }

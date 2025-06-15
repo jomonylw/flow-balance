@@ -1,6 +1,7 @@
 'use client'
 
 import BaseContextMenu, { MenuItem } from './BaseContextMenu'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface Category {
   id: string
@@ -17,13 +18,13 @@ interface CategoryContextMenuProps {
 }
 
 // 辅助函数：获取账户类型标签
-function getAccountTypeLabel(type?: string): string {
+function getAccountTypeLabel(t: (key: string) => string, type?: string): string {
   switch (type) {
-    case 'ASSET': return '资产'
-    case 'LIABILITY': return '负债'
-    case 'INCOME': return '收入'
-    case 'EXPENSE': return '支出'
-    default: return '分类'
+    case 'ASSET': return t('menu.type.asset')
+    case 'LIABILITY': return t('menu.type.liability')
+    case 'INCOME': return t('menu.type.income')
+    case 'EXPENSE': return t('menu.type.expense')
+    default: return t('menu.type.category')
   }
 }
 
@@ -39,9 +40,15 @@ function getCategoryTypeColor(type?: string): string {
 }
 
 // 辅助函数：获取数据类型标签
-function getDataTypeLabel(type?: string): string {
+function getDataTypeLabel(t: (key: string) => string, type?: string): string {
   const isStockCategory = type === 'ASSET' || type === 'LIABILITY'
-  return isStockCategory ? '存量数据' : '流量数据'
+  return isStockCategory ? t('menu.data.type.stock') : t('menu.data.type.flow')
+}
+
+// 辅助函数：获取数据类型描述
+function getDataTypeDescription(t: (key: string) => string, type?: string): string {
+  const isStockCategory = type === 'ASSET' || type === 'LIABILITY'
+  return isStockCategory ? t('menu.data.type.stock.description') : t('menu.data.type.flow.description')
 }
 
 export default function CategoryContextMenu({
@@ -50,16 +57,19 @@ export default function CategoryContextMenu({
   onAction,
   category
 }: CategoryContextMenuProps) {
+  const { t } = useLanguage()
+
   // 根据分类类型确定菜单项
   const categoryType = category.type
   const isStockCategory = categoryType === 'ASSET' || categoryType === 'LIABILITY'
   const isFlowCategory = categoryType === 'INCOME' || categoryType === 'EXPENSE'
 
+  // 构建菜单项，顶层分类不显示移动选项
   const menuItems: (MenuItem | 'divider')[] = [
     {
-      label: '添加子分类',
+      label: t('menu.category.add.subcategory'),
       action: 'add-subcategory',
-      description: '在此分类下创建新的子分类',
+      description: t('menu.category.add.subcategory.description'),
       icon: (
         <svg className="h-4 w-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -67,10 +77,10 @@ export default function CategoryContextMenu({
       )
     },
     {
-      label: `添加${getAccountTypeLabel(categoryType)}账户`,
+      label: t('menu.category.add.account', { type: getAccountTypeLabel(t, categoryType) }),
       action: 'add-account',
-      description: `在此分类下创建新的${getAccountTypeLabel(categoryType)}账户`,
-      badge: categoryType ? getDataTypeLabel(categoryType) : undefined,
+      description: t('menu.category.add.account.description', { type: getAccountTypeLabel(t, categoryType) }),
+      badge: categoryType ? getDataTypeLabel(t, categoryType) : undefined,
       badgeColor: isStockCategory ? (categoryType === 'ASSET' ? 'blue' : 'yellow') : (categoryType === 'INCOME' ? 'green' : 'red'),
       icon: (
         <svg className="h-4 w-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,29 +91,30 @@ export default function CategoryContextMenu({
     },
     'divider',
     {
-      label: '重命名分类',
+      label: t('menu.category.rename'),
       action: 'rename',
-      description: '修改分类名称',
+      description: t('menu.category.rename.description'),
       icon: (
         <svg className="h-4 w-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
       )
     },
-    {
-      label: '移动分类',
+    // 只有子分类才显示移动选项
+    ...(category.parentId ? [{
+      label: t('menu.category.move'),
       action: 'move',
-      description: '将分类移动到其他位置',
+      description: t('menu.category.move.description'),
       icon: (
         <svg className="h-4 w-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
         </svg>
       )
-    },
+    }] : []),
     {
-      label: '分类设置',
+      label: t('menu.category.settings'),
       action: 'settings',
-      description: '配置分类属性和权限',
+      description: t('menu.category.settings.description'),
       icon: (
         <svg className="h-4 w-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -113,10 +124,13 @@ export default function CategoryContextMenu({
     },
     // 添加分类类型特定的信息项
     ...(categoryType ? [{
-      label: `${getAccountTypeLabel(categoryType)}分类`,
+      label: `${getAccountTypeLabel(t, categoryType)}${t('menu.type.category')}`,
       action: 'info',
-      description: `${getDataTypeLabel(categoryType)} • ${isStockCategory ? '记录资产负债状态' : '记录收支流水'}`,
-      badge: getDataTypeLabel(categoryType),
+      description: t('menu.category.info.description', {
+        dataType: getDataTypeLabel(t, categoryType),
+        description: getDataTypeDescription(t, categoryType)
+      }),
+      badge: getDataTypeLabel(t, categoryType),
       badgeColor: (isStockCategory ? 'blue' : 'green') as 'blue' | 'green' | 'red' | 'yellow' | 'gray',
       icon: (
         <svg className="h-4 w-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,9 +142,9 @@ export default function CategoryContextMenu({
     }] : []),
     'divider',
     {
-      label: '删除分类',
+      label: t('menu.category.delete'),
       action: 'delete',
-      description: '永久删除此分类及其子项',
+      description: t('menu.category.delete.description'),
       icon: (
         <svg className="h-4 w-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -146,7 +160,7 @@ export default function CategoryContextMenu({
       onClose={onClose}
       onAction={onAction}
       menuItems={menuItems}
-      title={`${category.name} • ${getAccountTypeLabel(categoryType)}`}
+      title={`${category.name} • ${getAccountTypeLabel(t, categoryType)}`}
       width="lg"
     />
   )

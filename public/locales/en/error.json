@@ -11,5 +11,13 @@
   "error.load.transactions": "Failed to load transaction data",
   "error.account.not.found": "Cannot find corresponding account information",
   "error.chart.load.failed": "Chart loading failed",
-  "error.stock.category.edit.only.balance": "Stock categories can only edit balance adjustment records"
+  "error.stock.category.edit.only.balance": "Stock categories can only edit balance adjustment records",
+  "error.create.failed": "Creation failed",
+  "error.update.failed": "Update failed",
+  "error.delete.failed": "Deletion failed",
+  "error.save.failed": "Save failed",
+  "error.server.response.format": "Server response format error",
+  "error.server.response.parse": "Server response parsing failed",
+  "error.request.failed": "Request failed",
+  "error.request.process": "Request processing error"
 }

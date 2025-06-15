@@ -16,6 +16,7 @@
   "common.next": "Next",
   "common.previous": "Previous",
   "common.submit": "Submit",
+  "common.submitting": "Submitting...",
   "common.reset": "Reset",
   "common.clear": "Clear",
   "common.clear.all": "Clear All Filters",
@@ -50,5 +51,15 @@
   "common.theme.light.short": "Light",
   "common.theme.dark.short": "Dark",
   "common.theme.system.short": "Auto",
-  "common.theme.select": "Select Theme"
+  "common.theme.select": "Select Theme",
+  "common.app.subtitle": "Personal Finance Management",
+  "input.dialog.required": "Please enter content",
+  "delete.confirm.message": "Are you sure you want to delete {{itemType}} \"{{itemName}}\"?",
+  "delete.confirm.warning": "This action cannot be undone. Please proceed with caution.",
+  "delete.clear.related.data": "Clear Related Data",
+  "delete.clear.and.delete.warning": "Related data will be cleared first, then {{itemType}} will be deleted. This action cannot be undone.",
+  "delete.confirm.clear.and.delete": "Confirm Clear and Delete",
+  "delete.confirm": "Confirm Delete",
+  "delete.password.prompt": "Please enter password to confirm deletion:",
+  "delete.password.placeholder": "Enter password"
 }

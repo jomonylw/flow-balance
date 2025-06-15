@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { validateTransactionForm } from '@/lib/data-validation'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Account {
   id: string
@@ -52,6 +54,8 @@ export default function EnhancedTransactionForm({
   defaultValues,
   isLoading = false
 }: EnhancedTransactionFormProps) {
+  const { t } = useLanguage()
+  const { resolvedTheme } = useTheme()
   const [formData, setFormData] = useState({
     accountId: '',
     categoryId: '',
@@ -114,7 +118,7 @@ export default function EnhancedTransactionForm({
     try {
       await onSubmit(formData)
     } catch (error) {
-      console.error('提交交易失败:', error)
+      console.error('Transaction submission failed:', error)
     } finally {
       setIsSubmitting(false)
     }
@@ -134,13 +138,13 @@ export default function EnhancedTransactionForm({
   })
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">
-          {defaultValues ? '编辑交易' : '添加交易'}
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          {defaultValues ? t('transaction.edit') : t('transaction.create')}
         </h2>
-        <p className="text-sm text-gray-600 mt-1">
-          请填写交易详细信息
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          {t('transaction.form.description')}
         </p>
       </div>
 
@@ -148,7 +152,7 @@ export default function EnhancedTransactionForm({
       {validation && (
         <div className="mb-6">
           {validation.errors.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4 mb-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,8 +160,8 @@ export default function EnhancedTransactionForm({
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">请修正以下错误</h3>
-                  <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
+                  <h3 className="text-sm font-medium text-red-800 dark:text-red-200">{t('form.validation.errors.title')}</h3>
+                  <ul className="mt-2 text-sm text-red-700 dark:text-red-300 list-disc list-inside">
                     {validation.errors.map((error: string, index: number) => (
                       <li key={index}>{error}</li>
                     ))}
@@ -168,7 +172,7 @@ export default function EnhancedTransactionForm({
           )}
 
           {validation.warnings.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-4 mb-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,8 +180,8 @@ export default function EnhancedTransactionForm({
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-yellow-800">注意事项</h3>
-                  <ul className="mt-2 text-sm text-yellow-700 list-disc list-inside">
+                  <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">{t('form.validation.warnings.title')}</h3>
+                  <ul className="mt-2 text-sm text-yellow-700 dark:text-yellow-300 list-disc list-inside">
                     {validation.warnings.map((warning: string, index: number) => (
                       <li key={index}>{warning}</li>
                     ))}
@@ -188,7 +192,7 @@ export default function EnhancedTransactionForm({
           )}
 
           {validation.score < 80 && validation.suggestions.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4 mb-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,8 +200,8 @@ export default function EnhancedTransactionForm({
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">建议</h3>
-                  <ul className="mt-2 text-sm text-blue-700 list-disc list-inside">
+                  <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">{t('form.validation.suggestions.title')}</h3>
+                  <ul className="mt-2 text-sm text-blue-700 dark:text-blue-300 list-disc list-inside">
                     {validation.suggestions.map((suggestion: string, index: number) => (
                       <li key={index}>{suggestion}</li>
                     ))}
@@ -213,17 +217,17 @@ export default function EnhancedTransactionForm({
         {/* 账户和分类选择 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              账户 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('transaction.account')} <span className="text-red-500">*</span>
             </label>
             <select
               name="accountId"
               value={formData.accountId}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             >
-              <option value="">请选择账户</option>
+              <option value="">{t('form.select.account')}</option>
               {accounts.map(account => (
                 <option key={account.id} value={account.id}>
                   {account.name} ({account.category.name})
@@ -233,17 +237,17 @@ export default function EnhancedTransactionForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              分类 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('transaction.category')} <span className="text-red-500">*</span>
             </label>
             <select
               name="categoryId"
               value={formData.categoryId}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             >
-              <option value="">请选择分类</option>
+              <option value="">{t('form.select.category')}</option>
               {relevantCategories.map(category => (
                 <option key={category.id} value={category.id}>
                   {category.name} {category.type && `(${category.type})`}
@@ -256,25 +260,25 @@ export default function EnhancedTransactionForm({
         {/* 交易类型和金额 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              交易类型 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('transaction.type')} <span className="text-red-500">*</span>
             </label>
             <select
               name="type"
               value={formData.type}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             >
-              <option value="INCOME">收入</option>
-              <option value="EXPENSE">支出</option>
-              <option value="TRANSFER">转账</option>
+              <option value="INCOME">{t('type.income')}</option>
+              <option value="EXPENSE">{t('type.expense')}</option>
+              <option value="TRANSFER">{t('type.transfer')}</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              金额 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('transaction.amount')} <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -284,20 +288,20 @@ export default function EnhancedTransactionForm({
               step="0.01"
               min="0"
               placeholder="0.00"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              币种 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('currency.currency')} <span className="text-red-500">*</span>
             </label>
             <select
               name="currencyCode"
               value={formData.currencyCode}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             >
               {currencies.map(currency => (
@@ -312,30 +316,30 @@ export default function EnhancedTransactionForm({
         {/* 描述和日期 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              描述 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('transaction.description')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              placeholder="请输入交易描述"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              placeholder={t('transaction.description.placeholder')}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              日期 <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('transaction.date')} <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
               name="date"
               value={formData.date}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             />
           </div>
@@ -343,41 +347,41 @@ export default function EnhancedTransactionForm({
 
         {/* 备注 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            备注
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t('transaction.notes')}
           </label>
           <textarea
             name="notes"
             value={formData.notes}
             onChange={handleInputChange}
             rows={3}
-            placeholder="可选的备注信息"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            placeholder={t('transaction.notes.placeholder')}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
           />
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            取消
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
             disabled={!validation?.isValid || isSubmitting || isLoading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                提交中...
+                {t('common.submitting')}
               </div>
             ) : (
-              defaultValues ? '更新交易' : '添加交易'
+              defaultValues ? t('transaction.update') : t('transaction.create')
             )}
           </button>
         </div>

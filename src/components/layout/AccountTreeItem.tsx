@@ -11,6 +11,7 @@ import BalanceUpdateModal from '@/components/accounts/BalanceUpdateModal'
 import SimpleFlowTransactionModal from '@/components/transactions/SimpleFlowTransactionModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { publishAccountDelete } from '@/utils/DataUpdateManager'
 import CurrencyTag from '@/components/ui/CurrencyTag'
 
@@ -66,6 +67,7 @@ export default function AccountTreeItem({
   baseCurrency: propBaseCurrency
 }: AccountTreeItemProps) {
   const { showSuccess, showError } = useToast()
+  const { t } = useLanguage()
   const pathname = usePathname()
   const router = useRouter()
 
@@ -374,14 +376,14 @@ export default function AccountTreeItem({
       {/* 重命名对话框 */}
       <InputDialog
         isOpen={showRenameDialog}
-        title="重命名账户"
-        placeholder="请输入新的账户名称"
+        title={t('account.rename.title')}
+        placeholder={t('account.rename.placeholder')}
         initialValue={account.name}
         onSubmit={handleRename}
         onCancel={() => setShowRenameDialog(false)}
         validation={(value) => {
-          if (!value.trim()) return '账户名称不能为空'
-          if (value.length > 50) return '账户名称不能超过50个字符'
+          if (!value.trim()) return t('account.validation.name.required')
+          if (value.length > 50) return t('account.validation.name.too.long')
           return null
         }}
       />
@@ -389,9 +391,9 @@ export default function AccountTreeItem({
       {/* 删除确认对话框 */}
       <DeleteConfirmModal
         isOpen={showDeleteConfirm}
-        title="删除账户"
+        title={t('account.delete.title')}
         itemName={account.name}
-        itemType="账户"
+        itemType={t('account.delete.item.type')}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
         hasRelatedData={account.category?.type === 'ASSET' || account.category?.type === 'LIABILITY'}
