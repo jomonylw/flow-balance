@@ -36,74 +36,85 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const tagIds = searchParams.get('tagIds')?.split(',').filter(Boolean) || []
 
-    // 构建查询条件
-    const where: Record<string, unknown> = {
-      userId: user.id
-    }
+    // 构建基础查询条件
+    const baseConditions: Record<string, unknown>[] = [
+      { userId: user.id }
+    ]
 
     if (accountId) {
-      where.accountId = accountId
+      baseConditions.push({ accountId })
     }
 
     if (categoryId) {
       // 获取该分类及其所有后代分类的ID
       const descendantIds = await getDescendantCategoryIds(categoryId)
       const allCategoryIds = [categoryId, ...descendantIds]
-      where.categoryId = { in: allCategoryIds }
+      baseConditions.push({ categoryId: { in: allCategoryIds } })
     }
 
     if (type) {
       // 确保指定的类型是收入或支出
       if (type === 'INCOME' || type === 'EXPENSE') {
-        where.type = type
+        baseConditions.push({ type })
       } else {
         // 如果指定了其他类型（如BALANCE），忽略该参数，使用默认筛选
-        where.type = {
-          in: ['INCOME', 'EXPENSE']
-        }
+        baseConditions.push({ type: { in: ['INCOME', 'EXPENSE'] } })
       }
     } else {
       // 默认只处理收入和支出类型的交易
-      where.type = {
-        in: ['INCOME', 'EXPENSE']
-      }
+      baseConditions.push({ type: { in: ['INCOME', 'EXPENSE'] } })
     }
 
     if (dateFrom || dateTo) {
-      where.date = {} as Record<string, Date>
+      const dateCondition: Record<string, Date> = {}
       if (dateFrom) {
-        (where.date as Record<string, Date>).gte = new Date(dateFrom)
+        dateCondition.gte = new Date(dateFrom)
       }
       if (dateTo) {
-        (where.date as Record<string, Date>).lte = new Date(dateTo)
+        dateCondition.lte = new Date(dateTo)
       }
-    }
-
-    if (search) {
-      where.OR = [
-        {
-          description: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        },
-        {
-          notes: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        }
-      ]
+      baseConditions.push({ date: dateCondition })
     }
 
     if (tagIds.length > 0) {
-      where.tags = {
-        some: {
-          tagId: {
-            in: tagIds
+      baseConditions.push({
+        tags: {
+          some: {
+            tagId: {
+              in: tagIds
+            }
           }
         }
-      }
+      })
+    }
+
+    // 构建最终查询条件
+    let where: Record<string, unknown>
+
+    if (search) {
+      // 当有搜索条件时，需要将搜索条件与其他条件正确组合
+      const allConditions = [
+        ...baseConditions,
+        {
+          OR: [
+            {
+              description: {
+                contains: search
+              }
+            },
+            {
+              notes: {
+                contains: search
+              }
+            }
+          ]
+        }
+      ]
+
+      where = allConditions.length === 1 ? allConditions[0] : { AND: allConditions }
+    } else {
+      // 没有搜索条件时，直接使用条件
+      where = baseConditions.length === 1 ? baseConditions[0] : { AND: baseConditions }
     }
 
     // 获取用户的基础货币设置

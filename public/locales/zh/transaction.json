@@ -83,6 +83,7 @@
   "transaction.delete.batch.success": "成功删除 {{count}} 条记录",
   "transaction.delete.batch.partial.error": "删除了 {{failed}}/{{total}} 条记录失败，部分删除未成功",
   "transaction.search.placeholder": "搜索描述或备注...",
+  "transaction.search.searching": "搜索中...",
   "transaction.stats.total.income": "总收入",
   "transaction.stats.total.expense": "总支出",
   "transaction.stats.net.flow": "净收支",

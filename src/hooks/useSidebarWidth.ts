@@ -96,11 +96,17 @@ export function useSidebarScrollPosition() {
       if (savedScrollTop) {
         const scrollTop = parseInt(savedScrollTop, 10)
         if (!isNaN(scrollTop)) {
-          // 使用requestAnimationFrame确保DOM已渲染
+          // 使用多重 requestAnimationFrame 确保DOM完全渲染
           requestAnimationFrame(() => {
-            if (scrollContainerRef.current) {
-              scrollContainerRef.current.scrollTop = scrollTop
-            }
+            requestAnimationFrame(() => {
+              if (scrollContainerRef.current) {
+                // 平滑滚动到目标位置
+                scrollContainerRef.current.scrollTo({
+                  top: scrollTop,
+                  behavior: 'auto' // 使用 auto 避免动画延迟
+                })
+              }
+            })
           })
         }
       }

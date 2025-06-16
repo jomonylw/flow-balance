@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import AccountContextMenu from './AccountContextMenu'
 import DeleteConfirmModal from '@/components/ui/DeleteConfirmModal'
 import CategorySelector from '@/components/ui/CategorySelector'
@@ -11,6 +11,7 @@ import SimpleFlowTransactionModal from '@/components/transactions/SimpleFlowTran
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useOptimizedNavigation } from '@/hooks/useOptimizedNavigation'
 import { publishAccountDelete, publishAccountUpdate } from '@/utils/DataUpdateManager'
 import CurrencyTag from '@/components/ui/CurrencyTag'
 
@@ -68,7 +69,7 @@ export default function AccountTreeItem({
   const { showSuccess, showError } = useToast()
   const { t } = useLanguage()
   const pathname = usePathname()
-  const router = useRouter()
+  const { navigateTo } = useOptimizedNavigation()
 
   // 使用UserDataContext获取数据
   const {
@@ -124,7 +125,7 @@ export default function AccountTreeItem({
 
     switch (action) {
       case 'view-details':
-        router.push(`/accounts/${account.id}`)
+        navigateTo(`/accounts/${account.id}`)
         onNavigate?.()
         break
       case 'add-transaction':
@@ -300,9 +301,18 @@ export default function AccountTreeItem({
           }
         `}
         style={{ paddingLeft: `${level * 16 + 20}px` }}
-        onClick={() => {
-          router.push(`/accounts/${account.id}`)
-          onNavigate?.()
+        onClick={(e) => {
+          e.preventDefault()
+          // 添加轻微的过渡效果，减少视觉跳跃
+          const target = e.currentTarget
+          target.style.transform = 'scale(0.98)'
+          target.style.transition = 'transform 0.1s ease-out'
+
+          setTimeout(() => {
+            target.style.transform = ''
+            navigateTo(`/accounts/${account.id}`)
+            onNavigate?.()
+          }, 50)
         }}
       >
 

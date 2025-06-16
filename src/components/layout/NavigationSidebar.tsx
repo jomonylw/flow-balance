@@ -47,6 +47,15 @@ export default function NavigationSidebar({
     restoreScrollPosition
   } = useSidebarScrollPosition()
 
+  // 路由变化时恢复滚动位置
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      restoreScrollPosition()
+    }, 100) // 延迟恢复，确保内容已渲染
+
+    return () => clearTimeout(timer)
+  }, [restoreScrollPosition])
+
   // 稳定的组件key，防止路由变化时重新挂载
   const stableKey = useStableComponentKey('navigation-sidebar')
 
@@ -222,7 +231,7 @@ export default function NavigationSidebar({
       {/* 侧边栏内容 */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-visible"
+        className="flex-1 overflow-y-auto overflow-x-visible sidebar-container"
         onScroll={handleScroll}
       >
         <div className="p-4 space-y-4">

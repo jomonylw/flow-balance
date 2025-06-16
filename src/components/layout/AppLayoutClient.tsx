@@ -68,8 +68,10 @@ export default function AppLayoutClient({ children, user }: AppLayoutClientProps
           )}
 
           {/* 右侧主内容 */}
-          <main className="flex-1 overflow-y-auto bg-white dark:bg-gray-800">
-            {children}
+          <main className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 transition-opacity duration-150 ease-in-out main-content">
+            <div className="min-h-full route-transition">
+              {children}
+            </div>
           </main>
         </div>
       </div>

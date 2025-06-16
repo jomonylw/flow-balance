@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useDataUpdateListener } from '@/hooks/useDataUpdateListener'
+import { calculateAccountBalance } from '@/lib/account-balance'
  
 interface Category {
   name: string
@@ -14,6 +15,11 @@ interface Transaction {
   amount: number
   date: string
   notes?: string
+  currency: {
+    code: string
+    symbol: string
+    name: string
+  }
 }
 
 interface Account {
@@ -59,7 +65,8 @@ export default function StockAccountSummaryCard({
           type: t.type,
           amount: parseFloat(t.amount.toString()),
           date: t.date,
-          notes: t.notes
+          notes: t.notes,
+          currency: t.currency
         }))
         console.log(`[StockAccountSummaryCard] Setting ${newTransactions.length} transactions`)
         setTransactions(newTransactions)
@@ -107,79 +114,68 @@ export default function StockAccountSummaryCard({
     }
   }, [account.id])
 
-  // 从交易备注中提取余额变化金额
-  const extractBalanceChangeFromNotes = (notes: string): number | null => {
-    if (!notes) return null
-    // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
-    const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
-    if (match && match[1]) {
-      return parseFloat(match[1])
-    }
-    return null
-  }
+
 
   // 存量类账户统计（资产/负债）
   const calculateStockStats = () => {
     console.log(`[StockAccountSummaryCard] Calculating stats with currentBalance: ${currentBalance}, transactions: ${transactions.length}`)
 
     const now = new Date()
-    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const thisYear = new Date(now.getFullYear(), 0, 1)
+
+    // 计算关键时间点
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999) // 上月最后一天
+    const yearStart = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999) // 去年最后一天（即今年开始前）
 
     // 使用本地状态的当前余额
     const accountCurrentBalance = currentBalance
     console.log(`[StockAccountSummaryCard] Using accountCurrentBalance: ${accountCurrentBalance}`)
 
-    // 计算本月的所有余额变化
-    const thisMonthChanges = transactions
-      .filter(t => new Date(t.date) >= thisMonth)
-      .reduce((sum, t) => {
-        if (t.type === 'BALANCE') {
-          // 从备注中提取实际的变化金额（包含正负号）
-          const changeAmount = extractBalanceChangeFromNotes(t.notes || '')
-          if (changeAmount !== null) {
-            return sum + changeAmount
-          }
-          // 如果无法提取，使用amount作为正值（不推荐，但作为兜底）
-          console.warn('无法从备注中提取余额变化金额，使用amount作为正值:', t)
-          return sum + t.amount
-        }
-        // 对于存量账户，一般不应该有INCOME/EXPENSE交易
-        // 但如果有，按照账户类型处理
-        if (accountType === 'ASSET') {
-          return sum + (t.type === 'INCOME' ? t.amount : -t.amount)
-        } else if (accountType === 'LIABILITY') {
-          return sum + (t.type === 'EXPENSE' ? t.amount : -t.amount)
-        }
-        return sum
-      }, 0)
+    // 构造账户对象用于计算历史余额
+    const accountForCalculation = {
+      id: account.id,
+      name: account.name,
+      category: {
+        name: account.category.name,
+        type: account.category.type
+      },
+      transactions: transactions
+    }
 
-    const lastMonthBalance = accountCurrentBalance - thisMonthChanges
-    console.log(`[StockAccountSummaryCard] thisMonthChanges: ${thisMonthChanges}, lastMonthBalance: ${lastMonthBalance}`)
+    // 计算上月末余额
+    let lastMonthBalance = 0
+    try {
+      const lastMonthBalances = calculateAccountBalance(accountForCalculation, {
+        asOfDate: lastMonthEnd,
+        validateData: false
+      })
 
-    // 计算今年的所有余额变化
-    const thisYearChanges = transactions
-      .filter(t => new Date(t.date) >= thisYear)
-      .reduce((sum, t) => {
-        if (t.type === 'BALANCE') {
-          // 从备注中提取实际的变化金额（包含正负号）
-          const changeAmount = extractBalanceChangeFromNotes(t.notes || '')
-          if (changeAmount !== null) {
-            return sum + changeAmount
-          }
-          // 如果无法提取，使用amount作为正值（不推荐，但作为兜底）
-          return sum + t.amount
-        }
-        if (accountType === 'ASSET') {
-          return sum + (t.type === 'INCOME' ? t.amount : -t.amount)
-        } else if (accountType === 'LIABILITY') {
-          return sum + (t.type === 'EXPENSE' ? t.amount : -t.amount)
-        }
-        return sum
-      }, 0)
+      // 获取主要币种的余额（通常是第一个币种）
+      const balanceEntries = Object.values(lastMonthBalances)
+      if (balanceEntries.length > 0) {
+        lastMonthBalance = balanceEntries[0].amount
+      }
+      console.log(`[StockAccountSummaryCard] lastMonthBalance: ${lastMonthBalance}`)
+    } catch (error) {
+      console.error('[StockAccountSummaryCard] Error calculating last month balance:', error)
+    }
 
-    const yearStartBalance = accountCurrentBalance - thisYearChanges
-    console.log(`[StockAccountSummaryCard] thisYearChanges: ${thisYearChanges}, yearStartBalance: ${yearStartBalance}`)
+    // 计算年初余额
+    let yearStartBalance = 0
+    try {
+      const yearStartBalances = calculateAccountBalance(accountForCalculation, {
+        asOfDate: yearStart,
+        validateData: false
+      })
+
+      // 获取主要币种的余额（通常是第一个币种）
+      const balanceEntries = Object.values(yearStartBalances)
+      if (balanceEntries.length > 0) {
+        yearStartBalance = balanceEntries[0].amount
+      }
+      console.log(`[StockAccountSummaryCard] yearStartBalance: ${yearStartBalance}`)
+    } catch (error) {
+      console.error('[StockAccountSummaryCard] Error calculating year start balance:', error)
+    }
 
     // 计算变化百分比
     const monthlyChange = lastMonthBalance !== 0 ?
@@ -260,8 +256,12 @@ export default function StockAccountSummaryCard({
           }`}>
             {stockStats.monthlyChange >= 0 ? '+' : ''}{stockStats.monthlyChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {currencySymbol}{Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className={`text-xs mt-1 ${
+            stockStats.currentBalance - stockStats.lastMonthBalance >= 0
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-red-600 dark:text-red-400'
+          }`}>
+            {stockStats.currentBalance - stockStats.lastMonthBalance >= 0 ? '+' : '-'}{currencySymbol}{Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
 

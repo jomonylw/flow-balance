@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 
 /**
@@ -61,7 +61,7 @@ export function useSmoothTransition() {
       // 添加过渡效果，减少视觉抖动
       transitionRef.current.style.transition = 'opacity 0.15s ease-in-out'
       transitionRef.current.style.opacity = '0.95'
-      
+
       const timer = setTimeout(() => {
         if (transitionRef.current) {
           transitionRef.current.style.opacity = '1'
@@ -74,5 +74,36 @@ export function useSmoothTransition() {
 
   return {
     transitionRef
+  }
+}
+
+/**
+ * 页面内容平滑过渡 Hook
+ * 用于减少路由变化时的页面闪烁
+ */
+export function usePageTransition() {
+  const pathname = usePathname()
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const previousPathnameRef = useRef<string | undefined>(undefined)
+
+  useEffect(() => {
+    // 检测路由变化
+    if (previousPathnameRef.current && previousPathnameRef.current !== pathname) {
+      setIsTransitioning(true)
+
+      // 短暂的过渡效果
+      const timer = setTimeout(() => {
+        setIsTransitioning(false)
+      }, 100)
+
+      return () => clearTimeout(timer)
+    }
+
+    previousPathnameRef.current = pathname
+  }, [pathname])
+
+  return {
+    isTransitioning,
+    transitionClass: isTransitioning ? 'opacity-95' : 'opacity-100'
   }
 }

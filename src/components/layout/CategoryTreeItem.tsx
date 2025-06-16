@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 import CategoryContextMenu from './CategoryContextMenu'
 import InputDialog from '@/components/ui/InputDialog'
@@ -12,6 +12,7 @@ import CategorySettingsModal from '@/components/ui/CategorySettingsModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useSidebarNavigation } from '@/hooks/useOptimizedNavigation'
 import { publishCategoryCreate, publishCategoryDelete, publishAccountCreate, publishCategoryUpdate } from '@/utils/DataUpdateManager'
 
 interface Account {
@@ -67,7 +68,7 @@ export default function CategoryTreeItem({
   const { showSuccess, showError } = useToast()
   const { t } = useLanguage()
   const pathname = usePathname()
-  const router = useRouter()
+  const { navigateToCategory } = useSidebarNavigation()
 
   // 使用UserDataContext获取数据
   const { currencies, getBaseCurrency, updateCategory } = useUserData()
@@ -361,8 +362,8 @@ export default function CategoryTreeItem({
           }
         `}
         style={{ paddingLeft: `${level * 16 + 12}px` }}
-        onClick={() => {
-          router.push(`/categories/${category.id}`)
+        onClick={(e) => {
+          navigateToCategory(e, category.id)
         }}
       >
 

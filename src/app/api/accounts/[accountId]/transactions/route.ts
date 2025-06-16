@@ -36,41 +36,54 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
 
-    // 构建查询条件
-    const where: Record<string, unknown> = {
-      userId: user.id,
-      accountId: accountId
-    }
+    // 构建基础查询条件
+    const baseConditions: Record<string, unknown>[] = [
+      { userId: user.id },
+      { accountId: accountId }
+    ]
 
     if (type) {
-      where.type = type
+      baseConditions.push({ type })
     }
 
     if (dateFrom || dateTo) {
-      where.date = {} as Record<string, Date>
+      const dateCondition: Record<string, Date> = {}
       if (dateFrom) {
-        (where.date as Record<string, Date>).gte = new Date(dateFrom)
+        dateCondition.gte = new Date(dateFrom)
       }
       if (dateTo) {
-        (where.date as Record<string, Date>).lte = new Date(dateTo)
+        dateCondition.lte = new Date(dateTo)
       }
+      baseConditions.push({ date: dateCondition })
     }
 
+    // 构建最终查询条件
+    let where: Record<string, unknown>
+
     if (search) {
-      where.OR = [
+      // 当有搜索条件时，需要将搜索条件与其他条件正确组合
+      const allConditions = [
+        ...baseConditions,
         {
-          description: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        },
-        {
-          notes: {
-            contains: search,
-            mode: 'insensitive'
-          }
+          OR: [
+            {
+              description: {
+                contains: search
+              }
+            },
+            {
+              notes: {
+                contains: search
+              }
+            }
+          ]
         }
       ]
+
+      where = allConditions.length === 1 ? allConditions[0] : { AND: allConditions }
+    } else {
+      // 没有搜索条件时，直接使用条件
+      where = baseConditions.length === 1 ? baseConditions[0] : { AND: baseConditions }
     }
 
     // 获取交易列表

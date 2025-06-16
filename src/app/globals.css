@@ -83,6 +83,10 @@ body {
   touch-action: manipulation;
   /* 强制过渡效果 */
   transition: background-color 0.2s ease, color 0.2s ease;
+  /* 优化渲染性能，减少重绘 */
+  will-change: auto;
+  /* 启用硬件加速 */
+  transform: translateZ(0);
 }
 
 /* 确保html元素也应用主题 */
@@ -137,6 +141,41 @@ html {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
   }
+}
+
+/* 路由过渡优化 */
+.route-transition {
+  transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+
+.route-transition-enter {
+  opacity: 0.95;
+  transform: translateY(2px);
+}
+
+.route-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 侧边栏优化 */
+.sidebar-container {
+  /* 启用硬件加速 */
+  transform: translateZ(0);
+  /* 优化滚动性能 */
+  will-change: scroll-position;
+  /* 减少重绘 */
+  contain: layout style paint;
+}
+
+/* 主内容区域优化 */
+.main-content {
+  /* 启用硬件加速 */
+  transform: translateZ(0);
+  /* 优化渲染性能 */
+  will-change: auto;
+  /* 减少重绘 */
+  contain: layout style;
 }
 
 /* 隐藏滚动条工具类 */

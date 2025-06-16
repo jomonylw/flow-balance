@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useUserData } from '@/contexts/UserDataContext'
 
@@ -24,6 +25,35 @@ export default function TransactionFilters({
 }: TransactionFiltersProps) {
   const { t } = useLanguage()
   const { accounts, categories, tags } = useUserData()
+
+  // 搜索输入的本地状态，用于防抖
+  const [searchInput, setSearchInput] = useState(filters.search)
+  const [isSearchPending, setIsSearchPending] = useState(false)
+
+  // 防抖效果：当搜索输入变化时，延迟500ms后更新过滤器
+  useEffect(() => {
+    // 如果搜索输入与当前过滤器不同，设置为待处理状态
+    if (searchInput !== filters.search) {
+      setIsSearchPending(true)
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (searchInput !== filters.search) {
+        onFilterChange({ search: searchInput })
+      }
+      setIsSearchPending(false)
+    }, 500) // 500ms 防抖延迟
+
+    return () => {
+      clearTimeout(timeoutId)
+      setIsSearchPending(false)
+    }
+  }, [searchInput, onFilterChange, filters.search])
+
+  // 当外部过滤器的搜索值变化时，同步到本地状态
+  useEffect(() => {
+    setSearchInput(filters.search)
+  }, [filters.search])
 
   // 筛选出收入类和支出类账户
   const flowAccounts = accounts.filter(account =>
@@ -50,6 +80,11 @@ export default function TransactionFilters({
     onFilterChange({ [name]: value })
   }
 
+  // 搜索输入的处理函数
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchInput(e.target.value)
+  }
+
   const handleTagToggle = (tagId: string) => {
     const currentTagIds = filters.tagIds || []
     const newTagIds = currentTagIds.includes(tagId)
@@ -60,6 +95,7 @@ export default function TransactionFilters({
   }
 
   const handleClearFilters = () => {
+    setSearchInput('') // 清除本地搜索状态
     onFilterChange({
       accountId: '',
       categoryId: '',
@@ -95,23 +131,7 @@ export default function TransactionFilters({
         <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2">
           {t('transaction.filter.basic')}
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* 搜索 */}
-          <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('transaction.search')}
-            </label>
-            <input
-              type="text"
-              id="search"
-              name="search"
-              value={filters.search}
-              onChange={handleInputChange}
-              placeholder={t('transaction.search.placeholder')}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* 交易类型 */}
           <div>
             <label htmlFor="type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -127,6 +147,27 @@ export default function TransactionFilters({
               <option value="">{t('type.all')}</option>
               <option value="INCOME">{t('type.income')}</option>
               <option value="EXPENSE">{t('type.expense')}</option>
+            </select>
+          </div>
+
+          {/* 分类 - 仅显示收入类和支出类分类 */}
+          <div>
+            <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t('transaction.category')}
+            </label>
+            <select
+              id="categoryId"
+              name="categoryId"
+              value={filters.categoryId}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            >
+              <option value="">{t('category.all')}</option>
+              {flowCategories.map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -150,26 +191,34 @@ export default function TransactionFilters({
               ))}
             </select>
           </div>
-
-          {/* 分类 - 仅显示收入类和支出类分类 */}
+        </div>
+        <div className="pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* 搜索 */}
           <div>
-            <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('transaction.category')}
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t('transaction.search')}
+              {isSearchPending && (
+                <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
+                  {t('transaction.search.searching')}
+                </span>
+              )}
             </label>
-            <select
-              id="categoryId"
-              name="categoryId"
-              value={filters.categoryId}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            >
-              <option value="">{t('category.all')}</option>
-              {flowCategories.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <input
+                type="text"
+                id="search"
+                name="search"
+                value={searchInput}
+                onChange={handleSearchChange}
+                placeholder={t('transaction.search.placeholder')}
+                className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+              {isSearchPending && (
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

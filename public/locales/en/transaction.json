@@ -83,6 +83,7 @@
   "transaction.delete.batch.success": "Successfully deleted {{count}} records",
   "transaction.delete.batch.partial.error": "Failed to delete {{failed}}/{{total}} records, partial deletion unsuccessful",
   "transaction.search.placeholder": "Search description or notes...",
+  "transaction.search.searching": "Searching...",
   "transaction.stats.total.income": "Total Income",
   "transaction.stats.total.expense": "Total Expense",
   "transaction.stats.net.flow": "Net Flow",

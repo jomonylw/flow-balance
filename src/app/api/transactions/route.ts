@@ -40,66 +40,88 @@ try {
   const limit = parseInt(searchParams.get('limit') || '20')
   const skip = (page - 1) * limit
 
-  // 构建查询条件
-  const where: Record<string, unknown> = {
-    userId: user.id
-  }
+  // 构建基础查询条件
+  const baseConditions: Record<string, unknown>[] = [
+    { userId: user.id }
+  ]
 
   // 根据参数决定是否排除余额调整类型的交易
   if (excludeBalanceAdjustment) {
-    where.type = {
-      not: 'BALANCE'
-    }
+    baseConditions.push({ type: { not: 'BALANCE' } })
   }
 
-  if (accountId) where.accountId = accountId
+  if (accountId) {
+    baseConditions.push({ accountId })
+  }
+
   if (categoryId) {
     const descendantIds = await getDescendantCategoryIds(categoryId)
     const allCategoryIds = [categoryId, ...descendantIds]
-    where.categoryId = { in: allCategoryIds }
+    baseConditions.push({ categoryId: { in: allCategoryIds } })
   }
+
   if (type) {
     if (excludeBalanceAdjustment) {
       // 如果排除余额调整记录，需要同时排除BALANCE
-      where.type = {
-        equals: type,
-        not: 'BALANCE'
-      }
+      baseConditions.push({
+        type: {
+          equals: type,
+          not: 'BALANCE'
+        }
+      })
     } else {
       // 如果不排除余额调整记录，直接按类型过滤
-      where.type = type
+      baseConditions.push({ type })
     }
   }
 
   // 日期范围过滤
   if (dateFrom || dateTo) {
-      where.date = {} as Record<string, Date>
-      if (dateFrom) (where.date as Record<string, Date>).gte = new Date(dateFrom)
-      if (dateTo) {
-        const endDate = new Date(dateTo)
-        endDate.setHours(23, 59, 59, 999) // 包含整天
-        ;(where.date as Record<string, Date>).lte = endDate
-      }
+    const dateCondition: Record<string, Date> = {}
+    if (dateFrom) {
+      dateCondition.gte = new Date(dateFrom)
     }
-
-    // 搜索过滤
-    if (search) {
-      where.OR = [
-        { description: { contains: search, mode: 'insensitive' } },
-        { notes: { contains: search, mode: 'insensitive' } }
-      ]
+    if (dateTo) {
+      const endDate = new Date(dateTo)
+      endDate.setHours(23, 59, 59, 999) // 包含整天
+      dateCondition.lte = endDate
     }
+    baseConditions.push({ date: dateCondition })
+  }
 
-    // 标签筛选
-    if (tagIds.length > 0) {
-      where.tags = {
+  // 标签筛选
+  if (tagIds.length > 0) {
+    baseConditions.push({
+      tags: {
         some: {
           tagId: {
             in: tagIds
           }
         }
       }
-    }
+    })
+  }
+
+  // 构建最终查询条件
+  let where: Record<string, unknown>
+
+  if (search) {
+    // 当有搜索条件时，需要将搜索条件与其他条件正确组合
+    const allConditions = [
+      ...baseConditions,
+      {
+        OR: [
+          { description: { contains: search } },
+          { notes: { contains: search } }
+        ]
+      }
+    ]
+
+    where = allConditions.length === 1 ? allConditions[0] : { AND: allConditions }
+  } else {
+    // 没有搜索条件时，直接使用条件
+    where = baseConditions.length === 1 ? baseConditions[0] : { AND: baseConditions }
+  }
 
     const [transactions, total] = await Promise.all([
       prisma.transaction.findMany({
