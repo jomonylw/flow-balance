@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import ColorManager from '@/lib/colorManager'
 
 import { TrendDataPoint } from '@/types/transaction'
 
@@ -223,11 +224,15 @@ export default function FlowAccountTrendChart({
           yAxisIndex: 0,
           data: amounts,
           itemStyle: {
-            color: account.type === 'INCOME' ? '#10b981' : '#ef4444'
+            color: account.type === 'INCOME'
+              ? ColorManager.getDefaultColors().INCOME
+              : ColorManager.getDefaultColors().EXPENSE
           },
           emphasis: {
             itemStyle: {
-              color: account.type === 'INCOME' ? '#059669' : '#dc2626'
+              color: account.type === 'INCOME'
+                ? ColorManager.adjustColorAlpha(ColorManager.getDefaultColors().INCOME, 0.8)
+                : ColorManager.adjustColorAlpha(ColorManager.getDefaultColors().EXPENSE, 0.8)
             }
           }
         },
@@ -238,17 +243,17 @@ export default function FlowAccountTrendChart({
           smooth: true,
           data: cumulativeAmounts,
           lineStyle: {
-            color: '#3b82f6',
+            color: ColorManager.getDefaultColors().ASSET,
             width: 3
           },
           itemStyle: {
-            color: '#3b82f6'
+            color: ColorManager.getDefaultColors().ASSET
           },
           symbol: 'circle',
           symbolSize: 6,
           emphasis: {
             itemStyle: {
-              borderColor: '#3b82f6',
+              borderColor: ColorManager.getDefaultColors().ASSET,
               borderWidth: 2
             }
           }

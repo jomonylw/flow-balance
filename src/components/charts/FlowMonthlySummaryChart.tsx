@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import ColorManager from '@/lib/colorManager'
 
 interface MonthlyData {
   [monthKey: string]: {
@@ -111,7 +112,12 @@ export default function FlowMonthlySummaryChart({
     })
 
     const categoryNames = Array.from(allCategories)
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316']
+
+    // 使用ColorManager生成颜色
+    const categoryColors = ColorManager.generateChartColors(
+      categoryNames.map(name => ({ name })),
+      () => null // 分类暂时没有自定义颜色，使用默认颜色序列
+    )
 
     // 判断是收入类还是支出类（基于第一个月的数据）
     let isIncomeCategory = true
@@ -145,7 +151,7 @@ export default function FlowMonthlySummaryChart({
         stack: 'total',
         data,
         itemStyle: {
-          color: colors[index % colors.length]
+          color: categoryColors[index]
         }
       }
     })
@@ -160,17 +166,22 @@ export default function FlowMonthlySummaryChart({
       return 0
     })
 
+    // 获取线图颜色
+    const lineColor = isIncomeCategory
+      ? ColorManager.getDefaultColors().INCOME
+      : ColorManager.getDefaultColors().EXPENSE
+
     const lineSeries = {
       name: isIncomeCategory ? t('category.total.income') : t('category.total.expense'),
       type: 'line' as const,
       smooth: true,
       data: totalFlowData,
       lineStyle: {
-        color: isIncomeCategory ? '#10b981' : '#ef4444',
+        color: lineColor,
         width: 3
       },
       itemStyle: {
-        color: isIncomeCategory ? '#10b981' : '#ef4444'
+        color: lineColor
       },
       symbol: 'circle',
       symbolSize: 6

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import ColorManager from '@/lib/colorManager'
 
 interface StockMonthlyData {
   [monthKey: string]: {
@@ -118,10 +119,9 @@ export default function StockMonthlySummaryChart({
     })
 
     const accountNames = Array.from(allAccounts)
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316']
 
     // 为每个账户准备柱状图数据
-    const barSeries = accountNames.map((accountName, index) => {
+    const barSeries = accountNames.map((accountName) => {
       const data = months.map(month => {
         const monthData = filteredData[month]
         const currencyData = monthData[baseCurrency.code]
@@ -132,13 +132,19 @@ export default function StockMonthlySummaryChart({
         return 0
       })
 
+      // 使用默认颜色序列为账户生成颜色
+      const accountColor = ColorManager.generateChartColors(
+        [{ name: accountName }],
+        () => null // 这里的账户数据没有颜色信息，使用默认颜色序列
+      )[0]
+
       return {
         name: accountName,
         type: 'bar' as const,
         stack: 'total',
         data,
         itemStyle: {
-          color: colors[index % colors.length]
+          color: accountColor
         }
       }
     })
@@ -156,11 +162,11 @@ export default function StockMonthlySummaryChart({
       smooth: true,
       data: totalBalanceData,
       lineStyle: {
-        color: '#ef4444',
+        color: ColorManager.getDefaultColors().ASSET,
         width: 3
       },
       itemStyle: {
-        color: '#ef4444'
+        color: ColorManager.getDefaultColors().ASSET
       },
       symbol: 'circle',
       symbolSize: 6

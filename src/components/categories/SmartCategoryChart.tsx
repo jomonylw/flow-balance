@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
+import ColorManager from '@/lib/colorManager'
 
 /**
  * 从交易备注中提取余额变化金额
@@ -293,7 +294,9 @@ export default function SmartCategoryChart({
         data: data.balances,
         smooth: true,
         lineStyle: {
-          color: accountType === 'ASSET' ? '#3B82F6' : '#F59E0B',
+          color: accountType === 'ASSET'
+            ? ColorManager.getDefaultColors().ASSET
+            : ColorManager.getDefaultColors().LIABILITY,
           width: 3
         },
         areaStyle: {
@@ -361,7 +364,9 @@ export default function SmartCategoryChart({
         type: 'bar',
         data: data.amounts,
         itemStyle: {
-          color: accountType === 'INCOME' ? '#10B981' : '#EF4444'
+          color: accountType === 'INCOME'
+            ? ColorManager.getDefaultColors().INCOME
+            : ColorManager.getDefaultColors().EXPENSE
         }
       }],
       grid: {

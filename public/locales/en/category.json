@@ -154,5 +154,15 @@
   "category.moved": "Category moved",
   "category.subcategory.added": "Subcategory added",
   "category.settings.saved": "Category settings saved",
-  "category.settings.save.failed": "Failed to save settings"
+  "category.settings.save.failed": "Failed to save settings",
+  "category.type.change.error": "Cannot change category type",
+  "category.type.change.error.message": "This category contains accounts or transaction data, cannot safely change type",
+  "category.type.change.checking": "Checking type change safety...",
+  "category.type.change.safe": "Type can be changed safely",
+  "category.type.change.warning": "Type change has risks",
+  "category.type.change.danger": "Cannot change type",
+  "category.type.change.accounts.count": "This category has {{count}} accounts",
+  "category.type.change.transactions.count": "Related accounts have {{count}} transaction records",
+  "category.type.change.balance.records.count": "Contains {{count}} balance adjustment records",
+  "category.type.change.risk.description": "Changing account type will cause existing transaction data to mismatch with the new type, which may cause data inconsistency. It is recommended to clean up related data before changing the type."
 }

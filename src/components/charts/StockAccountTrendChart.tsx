@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import ColorManager from '@/lib/colorManager'
 
 import { TrendDataPoint } from '@/types/transaction'
 
@@ -215,11 +216,11 @@ export default function StockAccountTrendChart({
           smooth: true,
           data: balances,
           lineStyle: {
-            color: '#3b82f6',
+            color: ColorManager.getDefaultColors().ASSET,
             width: 3
           },
           itemStyle: {
-            color: '#3b82f6'
+            color: ColorManager.getDefaultColors().ASSET
           },
           areaStyle: {
             color: {
@@ -238,7 +239,7 @@ export default function StockAccountTrendChart({
           symbolSize: 6,
           emphasis: {
             itemStyle: {
-              borderColor: '#3b82f6',
+              borderColor: ColorManager.getDefaultColors().ASSET,
               borderWidth: 2
             }
           }

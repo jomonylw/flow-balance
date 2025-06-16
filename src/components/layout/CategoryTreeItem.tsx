@@ -12,7 +12,7 @@ import CategorySettingsModal from '@/components/ui/CategorySettingsModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { publishCategoryCreate, publishCategoryDelete, publishAccountCreate } from '@/utils/DataUpdateManager'
+import { publishCategoryCreate, publishCategoryDelete, publishAccountCreate, publishCategoryUpdate } from '@/utils/DataUpdateManager'
 
 interface Account {
   id: string
@@ -44,10 +44,6 @@ interface CategoryTreeItemProps {
   isExpanded: boolean
   hasChildren: boolean
   onToggle: () => void
-  onDataChange: (options?: {
-    type?: 'category' | 'account' | 'full'
-    silent?: boolean
-  }) => void
   baseCurrency?: {
     code: string
     symbol: string
@@ -61,7 +57,6 @@ export default function CategoryTreeItem({
   isExpanded,
   hasChildren,
   onToggle,
-  onDataChange,
   baseCurrency: propBaseCurrency
 }: CategoryTreeItemProps) {
   const { showSuccess, showError } = useToast()
@@ -70,14 +65,13 @@ export default function CategoryTreeItem({
   const router = useRouter()
 
   // 使用UserDataContext获取数据
-  const { currencies, getBaseCurrency } = useUserData()
+  const { currencies, getBaseCurrency, updateCategory } = useUserData()
 
   // 使用传入的基础货币或从Context获取
   const baseCurrency = propBaseCurrency || getBaseCurrency() || { symbol: '¥', code: 'CNY' }
 
   // 模态框状态
   const [showContextMenu, setShowContextMenu] = useState(false)
-  const [showRenameDialog, setShowRenameDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(false)
   const [showAddSubcategoryDialog, setShowAddSubcategoryDialog] = useState(false)
@@ -170,9 +164,6 @@ export default function CategoryTreeItem({
       case 'add-account':
         setShowAddAccountDialog(true)
         break
-      case 'rename':
-        setShowRenameDialog(true)
-        break
       case 'move':
         setShowCategorySelector(true)
         break
@@ -187,32 +178,7 @@ export default function CategoryTreeItem({
     }
   }
 
-  const handleRename = async (newName: string) => {
-    try {
-      const response = await fetch(`/api/categories/${category.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: newName,
-          parentId: category.parentId
-        }),
-      })
 
-      if (response.ok) {
-        setShowRenameDialog(false)
-        showSuccess(t('success.updated'), t('category.renamed'))
-        onDataChange({ type: 'category', silent: true })
-      } else {
-        const error = await response.json()
-        showError(t('error.update.failed'), error.message || t('error.unknown'))
-      }
-    } catch (error) {
-      console.error('Error renaming category:', error)
-      showError(t('error.update.failed'), t('error.network'))
-    }
-  }
 
   const handleDelete = async () => {
     try {
@@ -230,8 +196,7 @@ export default function CategoryTreeItem({
           parentId: category.parentId
         })
 
-        // 通知树状结构刷新
-        onDataChange({ type: 'category', silent: false })
+        // 分类删除事件已发布，树会自动更新
       } else {
         const error = await response.json()
         showError(t('error.delete.failed'), error.message || t('error.unknown'))
@@ -258,7 +223,10 @@ export default function CategoryTreeItem({
       if (response.ok) {
         setShowCategorySelector(false)
         showSuccess(t('success.updated'), t('category.moved'))
-        onDataChange({ type: 'category', silent: true })
+        await publishCategoryUpdate(category.id, {
+          updatedCategory: { ...category, parentId: newParentId },
+          originalParentId: category.parentId
+        })
       } else {
         const error = await response.json()
         showError(t('error.update.failed'), error.message || t('error.unknown'))
@@ -293,8 +261,7 @@ export default function CategoryTreeItem({
           parentCategory: category
         })
 
-        // 通知树状结构刷新
-        onDataChange({ type: 'category', silent: false })
+        // 分类创建事件已发布，树会自动更新
       } else {
         const error = await response.json()
         showError(t('error.create.failed'), error.message || t('category.add.subcategory.failed'))
@@ -316,7 +283,7 @@ export default function CategoryTreeItem({
         category: category
       })
 
-      onDataChange({ type: 'account', silent: true })
+      // 账户创建事件已发布，树会自动更新
     } catch (error) {
       console.error('Error adding account:', error)
       showError(t('error.create.failed'), t('error.network'))
@@ -340,7 +307,18 @@ export default function CategoryTreeItem({
       if (response.ok) {
         setShowSettingsModal(false)
         showSuccess(t('success.saved'), t('category.settings.saved'))
-        onDataChange({ type: 'category', silent: true })
+
+        // 更新UserDataContext中的分类数据
+        const updatedCategory = await response.json()
+        if (updatedCategory.data) {
+          updateCategory(updatedCategory.data)
+        }
+
+        // 发布分类更新事件
+        await publishCategoryUpdate(category.id, {
+          updatedCategory: updatedCategory.data,
+          originalCategory: category
+        })
       } else {
         const error = await response.json()
         showError(t('error.save.failed'), error.message || t('category.settings.save.failed'))
@@ -463,20 +441,7 @@ export default function CategoryTreeItem({
         category={category}
       />
 
-      {/* 重命名对话框 */}
-      <InputDialog
-        isOpen={showRenameDialog}
-        title={t('category.rename.title')}
-        placeholder={t('category.rename.placeholder')}
-        initialValue={category.name}
-        onSubmit={handleRename}
-        onCancel={() => setShowRenameDialog(false)}
-        validation={(value) => {
-          if (!value.trim()) return t('category.validation.name.required')
-          if (value.length > 50) return t('category.validation.name.too.long')
-          return null
-        }}
-      />
+
 
       {/* 删除确认对话框 */}
       <ConfirmationModal

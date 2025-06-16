@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Modal from './Modal'
 import { useUserData } from '@/contexts/UserDataContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useToast } from '@/contexts/ToastContext'
 
 interface Category {
   id: string
@@ -20,6 +21,22 @@ interface CategorySettingsModalProps {
   onSave: (updatedCategory: Partial<Category>) => void
 }
 
+interface TypeChangeCheck {
+  canChangeType: boolean
+  hasAccounts: boolean
+  hasTransactions: boolean
+  accountCount: number
+  transactionCount: number
+  accounts: Array<{
+    id: string
+    name: string
+    currencyCode: string
+    category: { name: string }
+  }>
+  transactionStats: Record<string, number>
+  riskLevel: 'safe' | 'warning' | 'danger'
+}
+
 export default function CategorySettingsModal({
   isOpen,
   category,
@@ -27,10 +44,14 @@ export default function CategorySettingsModal({
   onSave
 }: CategorySettingsModalProps) {
   const { t } = useLanguage()
+  const { showError, showSuccess } = useToast()
+  const [name, setName] = useState(category.name)
   const [selectedType, setSelectedType] = useState<string>(category.type || '')
   const [description, setDescription] = useState('')
   const [order, setOrder] = useState(category.order || 0)
   const [isLoading, setIsLoading] = useState(false)
+  const [typeChangeCheck, setTypeChangeCheck] = useState<TypeChangeCheck | null>(null)
+  const [isCheckingType, setIsCheckingType] = useState(false)
 
   // 使用UserDataContext获取分类数据，避免API调用
   const { categories } = useUserData()
@@ -50,22 +71,87 @@ export default function CategorySettingsModal({
     ? categories.find(cat => cat.id === category.parentId) || null
     : null
 
+  useEffect(() => {
+    if (isOpen) {
+      setName(category.name)
+      setSelectedType(category.type || '')
+      setOrder(category.order || 0)
+      setTypeChangeCheck(null)
+    }
+  }, [isOpen, category])
+
+  // 检查类型变更的安全性
+  const checkTypeChange = async () => {
+    if (!isTopLevel || !category.type) return
+
+    setIsCheckingType(true)
+    try {
+      const response = await fetch(`/api/categories/${category.id}/check-type-change`)
+      if (response.ok) {
+        const result = await response.json()
+        setTypeChangeCheck(result.data)
+      } else {
+        console.error('Failed to check type change safety')
+      }
+    } catch (error) {
+      console.error('Error checking type change:', error)
+    } finally {
+      setIsCheckingType(false)
+    }
+  }
+
+  // 当用户尝试更改类型时进行检查
+  const handleTypeChange = async (newType: string) => {
+    if (isTopLevel && category.type && newType !== category.type) {
+      await checkTypeChange()
+    }
+    setSelectedType(newType)
+  }
+
   const handleSave = async () => {
+    // 验证名称
+    if (!name.trim()) {
+      showError(t('category.validation.name.required'))
+      return
+    }
+
     setIsLoading(true)
     try {
       const updates: Partial<Category> = {
+        name: name.trim(),
         order
       }
 
       // 只有顶级分类可以设置账户类型
       if (isTopLevel && selectedType) {
+        // 检查类型变更的安全性
+        if (category.type && selectedType !== category.type) {
+          if (!typeChangeCheck) {
+            // 如果还没有检查过，先进行检查
+            await checkTypeChange()
+            return // 等待用户确认
+          }
+
+          if (!typeChangeCheck.canChangeType) {
+            // 如果不能安全变更，显示错误提示并阻止保存
+            showError(
+              t('category.type.change.error'),
+              t('category.type.change.error.message')
+            )
+            return
+          }
+        }
+
         updates.type = selectedType as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
       }
 
       await onSave(updates)
+      // 成功消息由父组件处理
       onClose()
     } catch (error) {
       console.error('Error saving category settings:', error)
+      const errorMessage = error instanceof Error ? error.message : t('category.settings.save.failed')
+      showError(t('category.settings.save.failed'), errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -91,12 +177,18 @@ export default function CategorySettingsModal({
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{t('category.settings.basic.info')}</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="categoryName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t('category.name')}
               </label>
-              <div className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md">
-                {category.name}
-              </div>
+              <input
+                type="text"
+                id="categoryName"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                placeholder={t('category.name.placeholder')}
+                required
+              />
             </div>
 
             <div>
@@ -142,7 +234,7 @@ export default function CategorySettingsModal({
                       name="accountType"
                       value={type.value}
                       checked={selectedType === type.value}
-                      onChange={(e) => setSelectedType(e.target.value)}
+                      onChange={(e) => handleTypeChange(e.target.value)}
                       className="mt-1 h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                     />
                     <div className="flex-1">
@@ -156,6 +248,62 @@ export default function CategorySettingsModal({
                   </label>
                 ))}
               </div>
+
+              {/* 类型变更安全检查结果 */}
+              {isCheckingType && (
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span className="text-sm text-blue-800 dark:text-blue-400">{t('category.type.change.checking')}</span>
+                  </div>
+                </div>
+              )}
+
+              {typeChangeCheck && category.type && selectedType !== category.type && (
+                <div className={`mt-4 p-4 rounded-lg ${
+                  typeChangeCheck.riskLevel === 'safe'
+                    ? 'bg-green-50 dark:bg-green-900/20'
+                    : typeChangeCheck.riskLevel === 'warning'
+                    ? 'bg-yellow-50 dark:bg-yellow-900/20'
+                    : 'bg-red-50 dark:bg-red-900/20'
+                }`}>
+                  <div className={`font-medium mb-2 ${
+                    typeChangeCheck.riskLevel === 'safe'
+                      ? 'text-green-800 dark:text-green-300'
+                      : typeChangeCheck.riskLevel === 'warning'
+                      ? 'text-yellow-800 dark:text-yellow-300'
+                      : 'text-red-800 dark:text-red-300'
+                  }`}>
+                    {typeChangeCheck.riskLevel === 'safe' && `✅ ${t('category.type.change.safe')}`}
+                    {typeChangeCheck.riskLevel === 'warning' && `⚠️ ${t('category.type.change.warning')}`}
+                    {typeChangeCheck.riskLevel === 'danger' && `🚫 ${t('category.type.change.danger')}`}
+                  </div>
+
+                  <div className={`text-sm space-y-2 ${
+                    typeChangeCheck.riskLevel === 'safe'
+                      ? 'text-green-700 dark:text-green-400'
+                      : typeChangeCheck.riskLevel === 'warning'
+                      ? 'text-yellow-700 dark:text-yellow-400'
+                      : 'text-red-700 dark:text-red-400'
+                  }`}>
+                    {typeChangeCheck.hasAccounts && (
+                      <p>• {t('category.type.change.accounts.count', { count: typeChangeCheck.accountCount })}</p>
+                    )}
+                    {typeChangeCheck.hasTransactions && (
+                      <p>• {t('category.type.change.transactions.count', { count: typeChangeCheck.transactionCount })}</p>
+                    )}
+                    {typeChangeCheck.transactionStats.BALANCE > 0 && (
+                      <p>• {t('category.type.change.balance.records.count', { count: typeChangeCheck.transactionStats.BALANCE })}</p>
+                    )}
+
+                    {!typeChangeCheck.canChangeType && (
+                      <p className="font-medium mt-2">
+                        {t('category.type.change.risk.description')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {selectedType && (
                 <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">

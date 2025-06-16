@@ -51,7 +51,7 @@ export default function AppLayoutClient({ children, user }: AppLayoutClientProps
         <div className="flex-1 flex overflow-hidden">
           {/* 桌面端左侧导航栏 */}
           <div className={`${isMobile ? 'hidden' : 'block'} flex-shrink-0`}>
-            <NavigationSidebar />
+            <NavigationSidebar key="desktop-sidebar-stable" />
           </div>
 
           {/* 移动端侧边栏遮罩 */}

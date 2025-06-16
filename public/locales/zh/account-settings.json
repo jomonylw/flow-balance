@@ -15,5 +15,6 @@
   "account.settings.currency.info": "如果账户已有交易，则无法更改货币。这确保了数据的一致性。",
   "account.settings.currency.selected": "已选择货币",
   "account.settings.saving": "保存中...",
-  "account.settings.save": "保存设置"
+  "account.settings.save": "保存设置",
+  "account.settings.saved": "账户设置已保存"
 }

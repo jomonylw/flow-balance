@@ -8,6 +8,7 @@ import Modal from '@/components/ui/Modal'
 import InputField from '@/components/ui/InputField'
 import AuthButton from '@/components/ui/AuthButton'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
+import ColorPicker from '@/components/ui/ColorPicker'
 
 interface Tag {
   id: string
@@ -34,19 +35,7 @@ export default function TagManagement() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTag, setDeletingTag] = useState<Tag | null>(null)
 
-  // 预定义颜色选项
-  const colorOptions = [
-    '#3B82F6', // 蓝色
-    '#10B981', // 绿色
-    '#F59E0B', // 黄色
-    '#EF4444', // 红色
-    '#8B5CF6', // 紫色
-    '#F97316', // 橙色
-    '#06B6D4', // 青色
-    '#84CC16', // 柠檬绿
-    '#EC4899', // 粉色
-    '#6B7280'  // 灰色
-  ]
+  // 移除预定义颜色选项，使用统一的ColorPicker组件
 
   // 移除 loadTags 函数，直接使用 UserDataContext 中的数据
 
@@ -255,34 +244,10 @@ export default function TagManagement() {
           />
 
           {/* 颜色选择 */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t('tag.color')}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {colorOptions.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, color }))}
-                  className={`w-8 h-8 rounded-full border-2 transition-colors ${
-                    formData.color === color ? 'border-gray-900 dark:border-gray-100' : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
-            {formData.color && (
-              <div className="flex items-center space-x-2 mt-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">{t('tag.color.selected')}:</span>
-                <div
-                  className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600"
-                  style={{ backgroundColor: formData.color }}
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">{formData.color}</span>
-              </div>
-            )}
-          </div>
+          <ColorPicker
+            selectedColor={formData.color || '#6B7280'}
+            onColorChange={(color) => setFormData(prev => ({ ...prev, color }))}
+          />
 
           <div className="flex justify-end space-x-3 pt-4">
             <button

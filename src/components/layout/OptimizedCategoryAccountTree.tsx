@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef, forwardRef, useImperativeHandle } from 'react'
+import { useState, useEffect, useMemo, useRef, forwardRef, useImperativeHandle, useCallback } from 'react'
 import CategoryTreeItem from './CategoryTreeItem'
 import AccountTreeItem from './AccountTreeItem'
 import { useUserData } from '@/contexts/UserDataContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAllDataListener } from '@/hooks/useDataUpdateListener'
+
 
 interface Category {
   id: string
@@ -44,10 +45,6 @@ interface Account {
 
 interface OptimizedCategoryAccountTreeProps {
   searchQuery: string
-  onDataChange: (options?: {
-    type?: 'category' | 'account' | 'full'
-    silent?: boolean
-  }) => void
   onNavigate?: () => void
 }
 
@@ -59,7 +56,6 @@ export interface OptimizedCategoryAccountTreeRef {
 
 const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef, OptimizedCategoryAccountTreeProps>(({
   searchQuery,
-  onDataChange,
   onNavigate
 }, ref) => {
   // 使用语言上下文
@@ -128,6 +124,27 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
 
     // 根据事件类型决定刷新策略
     switch (type) {
+      case 'manual-refresh':
+        const refreshType = event.data?.type as 'category' | 'account' | 'full' | undefined;
+        console.log(`[OptimizedCategoryAccountTree] Manual refresh event received, type: ${refreshType}`);
+        switch (refreshType) {
+          case 'category':
+            await refreshCategories();
+            await refreshAccounts();
+            break;
+          case 'account':
+            await refreshAccounts();
+            await refreshBalances();
+            break;
+          case 'full':
+          default:
+            await refreshCategories();
+            await refreshAccounts();
+            await refreshBalances();
+            break;
+        }
+        break;
+
       case 'balance-update':
       case 'transaction-create':
       case 'transaction-update':
@@ -162,44 +179,6 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
         break
     }
   })
-
-  // 监听自定义数据变化事件（来自NavigationSidebar的handleDataChange）
-  useEffect(() => {
-    const handleDataChange = async (event: Event) => {
-      const customEvent = event as CustomEvent
-      const options = customEvent.detail || {}
-      console.log('[OptimizedCategoryAccountTree] Received custom data change event:', options)
-
-      // 如果是静默更新，跳过
-      if (options.silent) return
-
-      switch (options.type) {
-        case 'category':
-          console.log('[OptimizedCategoryAccountTree] Refreshing categories and accounts for custom category event')
-          await refreshCategories()
-          await refreshAccounts() // 账户的分类信息可能变化
-          break
-        case 'account':
-          console.log('[OptimizedCategoryAccountTree] Refreshing accounts and balances for custom account event')
-          await refreshAccounts()
-          await refreshBalances()
-          break
-        case 'full':
-        default:
-          // 全量刷新
-          console.log('[OptimizedCategoryAccountTree] Full refresh for custom event')
-          await refreshCategories()
-          await refreshAccounts()
-          await refreshBalances()
-          break
-      }
-    }
-
-    window.addEventListener('dataChange', handleDataChange)
-    return () => {
-      window.removeEventListener('dataChange', handleDataChange)
-    }
-  }, [refreshCategories, refreshAccounts, refreshBalances])
 
   // 构建树状结构并合并余额数据
   const enrichedTreeData = useMemo(() => {
@@ -290,7 +269,7 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
   }
 
   // 获取所有分类ID的递归函数
-  const getAllCategoryIds = (categories: Category[]): string[] => {
+  const getAllCategoryIds = useCallback((categories: Category[]): string[] => {
     const ids: string[] = []
     categories.forEach(category => {
       ids.push(category.id)
@@ -299,34 +278,34 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
       }
     })
     return ids
-  }
+  }, [])
 
   // 展开所有分类
-  const expandAll = () => {
+  const expandAll = useCallback(() => {
     if (filteredData) {
       const allIds = getAllCategoryIds(filteredData)
       setExpandedCategories(new Set(allIds))
     }
-  }
+  }, [filteredData, getAllCategoryIds])
 
   // 收起所有分类
-  const collapseAll = () => {
+  const collapseAll = useCallback(() => {
     setExpandedCategories(new Set())
-  }
+  }, [])
 
   // 检查是否所有分类都已展开
-  const checkAllExpanded = () => {
+  const checkAllExpanded = useCallback(() => {
     if (!filteredData) return false
     const allIds = getAllCategoryIds(filteredData)
     return allIds.every(id => expandedCategories.has(id))
-  }
+  }, [filteredData, expandedCategories, getAllCategoryIds])
 
   // 暴露方法给父组件
   useImperativeHandle(ref, () => ({
     expandAll,
     collapseAll,
     checkAllExpanded
-  }), [filteredData, expandedCategories])
+  }), [expandAll, collapseAll, checkAllExpanded])
 
   const renderCategory = (category: Category, level: number = 0) => {
     const isExpanded = expandedCategories.has(category.id)
@@ -341,7 +320,6 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
           isExpanded={isExpanded}
           hasChildren={hasChildren}
           onToggle={() => toggleCategory(category.id)}
-          onDataChange={onDataChange}
           baseCurrency={getBaseCurrency() || undefined}
         />
         
@@ -356,7 +334,6 @@ const OptimizedCategoryAccountTree = forwardRef<OptimizedCategoryAccountTreeRef,
                 key={account.id}
                 account={account}
                 level={level + 1}
-                onDataChange={onDataChange}
                 onNavigate={onNavigate}
                 baseCurrency={getBaseCurrency() || undefined}
               />

@@ -15,5 +15,6 @@
   "account.settings.currency.info": "The currency cannot be changed if the account already has transactions. This ensures data consistency.",
   "account.settings.currency.selected": "Selected currency",
   "account.settings.saving": "Saving...",
-  "account.settings.save": "Save Settings"
+  "account.settings.save": "Save Settings",
+  "account.settings.saved": "Account settings saved"
 }

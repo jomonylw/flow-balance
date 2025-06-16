@@ -133,6 +133,13 @@ export async function PUT(
 
     // 只有顶级分类可以设置账户类型
     if (!parentId && type) {
+      // 如果要变更类型，检查是否安全
+      if (existingCategory.type && type !== existingCategory.type) {
+        const canChange = await checkTypeChangeSafety(categoryId)
+        if (!canChange) {
+          return errorResponse('无法变更分类类型：该分类下存在账户或交易数据，变更类型会导致数据不一致', 400)
+        }
+      }
       updateData.type = type
     }
 
@@ -247,6 +254,72 @@ async function getRootCategory(categoryId: string): Promise<any> {
 
   // 递归查找根分类
   return getRootCategory(category.parentId)
+}
+
+// 辅助函数：检查类型变更的安全性
+async function checkTypeChangeSafety(categoryId: string): Promise<boolean> {
+  // 获取该分类及其所有子分类的ID
+  const allCategoryIds = await getAllCategoryIds(categoryId)
+
+  // 检查是否有账户
+  const accountCount = await prisma.account.count({
+    where: {
+      categoryId: {
+        in: allCategoryIds
+      }
+    }
+  })
+
+  // 检查是否有交易记录
+  const transactionCount = await prisma.transaction.count({
+    where: {
+      OR: [
+        {
+          accountId: {
+            in: await prisma.account.findMany({
+              where: {
+                categoryId: {
+                  in: allCategoryIds
+                }
+              },
+              select: {
+                id: true
+              }
+            }).then(accounts => accounts.map(a => a.id))
+          }
+        },
+        {
+          categoryId: {
+            in: allCategoryIds
+          }
+        }
+      ]
+    }
+  })
+
+  // 如果有账户或交易数据，则不能安全变更
+  return accountCount === 0 && transactionCount === 0
+}
+
+// 辅助函数：递归获取所有子分类ID
+async function getAllCategoryIds(categoryId: string): Promise<string[]> {
+  const result = [categoryId]
+
+  const children = await prisma.category.findMany({
+    where: {
+      parentId: categoryId
+    },
+    select: {
+      id: true
+    }
+  })
+
+  for (const child of children) {
+    const childIds = await getAllCategoryIds(child.id)
+    result.push(...childIds)
+  }
+
+  return result
 }
 
 // 辅助函数：递归更新所有子分类的账户类型

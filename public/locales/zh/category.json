@@ -154,5 +154,15 @@
   "category.moved": "分类已移动",
   "category.subcategory.added": "子分类已添加",
   "category.settings.saved": "分类设置已保存",
-  "category.settings.save.failed": "保存设置失败"
+  "category.settings.save.failed": "保存设置失败",
+  "category.type.change.error": "无法变更分类类型",
+  "category.type.change.error.message": "该分类下存在账户或交易数据，无法安全变更类型",
+  "category.type.change.checking": "正在检查类型变更的安全性...",
+  "category.type.change.safe": "可以安全变更类型",
+  "category.type.change.warning": "类型变更存在风险",
+  "category.type.change.danger": "无法变更类型",
+  "category.type.change.accounts.count": "该分类下有 {{count}} 个账户",
+  "category.type.change.transactions.count": "相关账户有 {{count}} 条交易记录",
+  "category.type.change.balance.records.count": "包含 {{count}} 条余额调整记录",
+  "category.type.change.risk.description": "变更账户类型会导致现有交易数据与新类型不匹配，可能造成数据不一致。建议先清理相关数据后再进行类型变更。"
 }

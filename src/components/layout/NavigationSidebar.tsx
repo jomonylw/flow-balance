@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import SidebarSearchBox from './SidebarSearchBox'
 import SidebarDashboardLink from './SidebarDashboardLink'
 import SidebarFireLink from './SidebarFireLink'
@@ -11,7 +11,8 @@ import TopCategoryModal from '@/components/ui/TopCategoryModal'
 import TranslationLoader from '@/components/ui/TranslationLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { publishCategoryCreate } from '@/utils/DataUpdateManager'
-import { useSidebarWidth } from '@/hooks/useSidebarWidth'
+import { useSidebarWidth, useSidebarScrollPosition } from '@/hooks/useSidebarWidth'
+import { useStableComponentKey, useSmoothTransition } from '@/hooks/useSidebarState'
 
 
 interface NavigationSidebarProps {
@@ -38,6 +39,19 @@ export default function NavigationSidebar({
     stopDragging,
     handleDrag
   } = useSidebarWidth()
+
+  // 侧边栏滚动位置保持
+  const {
+    scrollContainerRef,
+    handleScroll,
+    restoreScrollPosition
+  } = useSidebarScrollPosition()
+
+  // 稳定的组件key，防止路由变化时重新挂载
+  const stableKey = useStableComponentKey('navigation-sidebar')
+
+  // 平滑过渡效果
+  const { transitionRef } = useSmoothTransition()
 
   const handleAddTopCategory = () => {
     setShowAddTopCategoryModal(true)
@@ -103,15 +117,27 @@ export default function NavigationSidebar({
     return () => clearInterval(interval)
   }, [searchQuery]) // 当搜索查询改变时重新检查
 
-  // 简化的数据更新处理 - 现在由OptimizedCategoryAccountTree内部处理
-  const handleDataChange = useCallback((options?: {
-    type?: 'category' | 'account' | 'full'
-    silent?: boolean
-  }) => {
-    // 发送自定义事件通知OptimizedCategoryAccountTree刷新数据
-    const event = new CustomEvent('dataChange', { detail: options })
-    window.dispatchEvent(event)
-  }, [])
+  // 恢复滚动位置
+  useEffect(() => {
+    // 延迟恢复滚动位置，确保内容已渲染
+    const timer = setTimeout(() => {
+      restoreScrollPosition()
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [restoreScrollPosition])
+
+  // 保留此函数用于未来可能的手动刷新功能
+  // const handleDataRefresh = useCallback((options?: {
+  //   type?: 'category' | 'account' | 'full'
+  //   silent?: boolean
+  // }) => {
+  //   publishDataUpdate({
+  //     type: 'manual-refresh',
+  //     data: options,
+  //     silent: options?.silent
+  //   })
+  // }, [])
 
 
 
@@ -141,8 +167,7 @@ export default function NavigationSidebar({
           parentCategory: null
         })
 
-        // 通知树状结构刷新
-        handleDataChange({ type: 'category', silent: false })
+        // 分类创建事件已经发布，树会自动更新
       } else {
         const error = await response.json()
         throw new Error(error.message || '创建分类失败')
@@ -155,6 +180,7 @@ export default function NavigationSidebar({
 
   return (
     <TranslationLoader
+      key={stableKey}
       fallback={
         <div className={`
           ${isMobile ? 'w-full' : 'w-80'}
@@ -172,10 +198,16 @@ export default function NavigationSidebar({
       }
     >
       <div
-        ref={sidebarRef}
+        ref={(el) => {
+          sidebarRef.current = el
+          if (transitionRef) {
+            transitionRef.current = el
+          }
+        }}
         className={`
           ${isMobile ? 'w-full' : ''}
           bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full relative
+          transition-opacity duration-150 ease-in-out
         `}
         style={!isMobile ? { width: `${width}px` } : undefined}
       >
@@ -188,7 +220,11 @@ export default function NavigationSidebar({
       </div>
 
       {/* 侧边栏内容 */}
-      <div className="flex-1 overflow-y-auto overflow-x-visible">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto overflow-x-visible"
+        onScroll={handleScroll}
+      >
         <div className="p-4 space-y-4">
           {/* Dashboard 链接 */}
           <SidebarDashboardLink onNavigate={onNavigate} />
@@ -258,9 +294,9 @@ export default function NavigationSidebar({
             </div>
 
             <OptimizedCategoryAccountTree
+              key="category-tree-stable"
               ref={categoryTreeRef}
               searchQuery={searchQuery}
-              onDataChange={handleDataChange}
               onNavigate={onNavigate}
             />
           </div>

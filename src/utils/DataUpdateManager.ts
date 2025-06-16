@@ -17,10 +17,11 @@ export type DataUpdateType =
   | 'tag-create'          // 标签创建
   | 'tag-update'          // 标签更新
   | 'tag-delete'          // 标签删除
-
-export interface DataUpdateEvent {
+  | 'manual-refresh'      // 手动刷新请求
+ 
+ export interface DataUpdateEvent {
   type: DataUpdateType
-  data?: any
+  data?: Record<string, unknown>
   accountId?: string
   categoryId?: string
   tagId?: string
@@ -149,41 +150,41 @@ export const publishDataUpdate = (event: DataUpdateEvent) => dataUpdateManager.p
 export const subscribeToDataUpdates = (listener: DataUpdateListener) => dataUpdateManager.subscribe(listener)
 
 // 常用事件发布方法
-export const publishBalanceUpdate = (accountId: string, data?: any) => 
+export const publishBalanceUpdate = (accountId: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'balance-update', accountId, data })
-
-export const publishTransactionCreate = (accountId: string, categoryId?: string, data?: any) => 
+ 
+export const publishTransactionCreate = (accountId: string, categoryId?: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'transaction-create', accountId, categoryId, data })
-
-export const publishTransactionUpdate = (accountId: string, categoryId?: string, data?: any) => 
+ 
+export const publishTransactionUpdate = (accountId: string, categoryId?: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'transaction-update', accountId, categoryId, data })
-
-export const publishTransactionDelete = (accountId: string, categoryId?: string, data?: any) => 
+ 
+export const publishTransactionDelete = (accountId: string, categoryId?: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'transaction-delete', accountId, categoryId, data })
-
-export const publishAccountCreate = (categoryId: string, data?: any) => 
+ 
+export const publishAccountCreate = (categoryId: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'account-create', categoryId, data })
-
-export const publishAccountUpdate = (accountId: string, categoryId?: string, data?: any) => 
+ 
+export const publishAccountUpdate = (accountId: string, categoryId?: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'account-update', accountId, categoryId, data })
-
-export const publishAccountDelete = (accountId: string, categoryId?: string, data?: any) => 
+ 
+export const publishAccountDelete = (accountId: string, categoryId?: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'account-delete', accountId, categoryId, data })
-
-export const publishCategoryCreate = (categoryId?: string, data?: any) => 
+ 
+export const publishCategoryCreate = (categoryId?: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'category-create', categoryId, data })
-
-export const publishCategoryUpdate = (categoryId: string, data?: any) => 
+ 
+export const publishCategoryUpdate = (categoryId: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'category-update', categoryId, data })
-
-export const publishCategoryDelete = (categoryId: string, data?: any) => 
+ 
+export const publishCategoryDelete = (categoryId: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'category-delete', categoryId, data })
-
-export const publishTagCreate = (tagId: string, data?: any) => 
+ 
+export const publishTagCreate = (tagId: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'tag-create', tagId, data })
-
-export const publishTagUpdate = (tagId: string, data?: any) => 
+ 
+export const publishTagUpdate = (tagId: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'tag-update', tagId, data })
-
-export const publishTagDelete = (tagId: string, data?: any) => 
+ 
+export const publishTagDelete = (tagId: string, data?: Record<string, unknown>) =>
   publishDataUpdate({ type: 'tag-delete', tagId, data })

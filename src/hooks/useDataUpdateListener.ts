@@ -1,6 +1,6 @@
-import { useEffect, useCallback, useRef } from 'react'
-import { 
-  DataUpdateType, 
+import { useEffect, useCallback, useRef, DependencyList } from 'react'
+import {
+  DataUpdateType,
   DataUpdateEvent, 
   subscribeToDataUpdates 
 } from '@/utils/DataUpdateManager'
@@ -12,7 +12,7 @@ import {
 export function useDataUpdateListener(
   types: DataUpdateType[],
   callback: (event: DataUpdateEvent) => void | Promise<void>,
-  deps: any[] = []
+  deps: DependencyList = []
 ) {
   const callbackRef = useRef(callback)
   const listenerIdRef = useRef<string | undefined>(undefined)
@@ -162,6 +162,7 @@ export function useAllDataListener(
     'category-delete',
     'tag-create',
     'tag-update',
-    'tag-delete'
+    'tag-delete',
+    'manual-refresh'
   ], callback)
 }

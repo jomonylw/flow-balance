@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 const SIDEBAR_WIDTH_KEY = 'sidebar-width'
+const SIDEBAR_SCROLL_KEY = 'sidebar-scroll-position'
 const DEFAULT_WIDTH = 320 // 默认宽度 (w-80 = 320px)
 const MIN_WIDTH = 240 // 最小宽度
 const MAX_WIDTH = 480 // 最大宽度
@@ -47,7 +48,7 @@ export function useSidebarWidth() {
   // 处理拖拽过程中的宽度变化
   const handleDrag = useCallback((clientX: number, sidebarRect: DOMRect) => {
     if (!isDragging) return
-    
+
     const newWidth = clientX - sidebarRect.left
     setSidebarWidth(newWidth)
   }, [isDragging, setSidebarWidth])
@@ -61,5 +62,71 @@ export function useSidebarWidth() {
     handleDrag,
     minWidth: MIN_WIDTH,
     maxWidth: MAX_WIDTH
+  }
+}
+
+/**
+ * 侧边栏滚动位置保持 Hook
+ */
+export function useSidebarScrollPosition() {
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const saveTimeoutRef = useRef<NodeJS.Timeout>()
+
+  // 保存滚动位置到localStorage（防抖）
+  const saveScrollPosition = useCallback((scrollTop: number) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(SIDEBAR_SCROLL_KEY, scrollTop.toString())
+      } catch (error) {
+        console.error('Error saving scroll position:', error)
+      }
+    }, 100) // 100ms防抖
+  }, [])
+
+  // 恢复滚动位置
+  const restoreScrollPosition = useCallback(() => {
+    if (!scrollContainerRef.current) return
+
+    try {
+      const savedScrollTop = localStorage.getItem(SIDEBAR_SCROLL_KEY)
+      if (savedScrollTop) {
+        const scrollTop = parseInt(savedScrollTop, 10)
+        if (!isNaN(scrollTop)) {
+          // 使用requestAnimationFrame确保DOM已渲染
+          requestAnimationFrame(() => {
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = scrollTop
+            }
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring scroll position:', error)
+    }
+  }, [])
+
+  // 处理滚动事件
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const scrollTop = e.currentTarget.scrollTop
+    saveScrollPosition(scrollTop)
+  }, [saveScrollPosition])
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  return {
+    scrollContainerRef,
+    handleScroll,
+    restoreScrollPosition
   }
 }

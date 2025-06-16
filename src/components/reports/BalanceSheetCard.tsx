@@ -9,6 +9,7 @@ import { format } from 'date-fns'
 import { zhCN, enUS } from 'date-fns/locale'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useUserData } from '@/contexts/UserDataContext'
+import ColorManager from '@/lib/colorManager'
 import WithTranslation from '@/components/ui/WithTranslation'
 
 interface Currency {
@@ -339,8 +340,18 @@ export default function BalanceSheetCard() {
                   <div className="ml-4 space-y-1">
                     {currencyAccounts.map(account => (
                       <div key={account.id} className="flex justify-between items-start text-sm py-1">
-                        <div className="flex-1 min-w-0 pr-2">
-                          <span className="text-gray-600 dark:text-gray-400">• </span>
+                        <div className="flex-1 min-w-0 pr-2 flex items-center">
+                          {/* 账户颜色指示器 */}
+                          <div
+                            className="w-2 h-2 rounded-full mr-2 flex-shrink-0"
+                            style={{
+                              backgroundColor: (() => {
+                                const fullAccount = accounts.find(acc => acc.id === account.id)
+                                const accountType = fullAccount?.category?.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE' | undefined
+                                return ColorManager.getAccountColor(account.id, fullAccount?.color, accountType)
+                              })()
+                            }}
+                          />
                           <Link
                             href={`/accounts/${account.id}`}
                             className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 hover:underline"

@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import AccountContextMenu from './AccountContextMenu'
-import InputDialog from '@/components/ui/InputDialog'
 import DeleteConfirmModal from '@/components/ui/DeleteConfirmModal'
 import CategorySelector from '@/components/ui/CategorySelector'
 import AccountSettingsModal from '@/components/ui/AccountSettingsModal'
@@ -12,7 +11,7 @@ import SimpleFlowTransactionModal from '@/components/transactions/SimpleFlowTran
 import { useToast } from '@/contexts/ToastContext'
 import { useUserData } from '@/contexts/UserDataContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { publishAccountDelete } from '@/utils/DataUpdateManager'
+import { publishAccountDelete, publishAccountUpdate } from '@/utils/DataUpdateManager'
 import CurrencyTag from '@/components/ui/CurrencyTag'
 
 interface Account {
@@ -47,10 +46,6 @@ interface Account {
 interface AccountTreeItemProps {
   account: Account
   level: number
-  onDataChange: (options?: {
-    type?: 'category' | 'account' | 'full'
-    silent?: boolean
-  }) => void
   onNavigate?: () => void
   baseCurrency?: {
     code: string
@@ -62,7 +57,6 @@ interface AccountTreeItemProps {
 export default function AccountTreeItem({
   account,
   level,
-  onDataChange,
   onNavigate,
   baseCurrency: propBaseCurrency
 }: AccountTreeItemProps) {
@@ -73,12 +67,11 @@ export default function AccountTreeItem({
 
   // 使用UserDataContext获取数据
   const {
-    accounts,
-    categories,
     currencies,
     tags,
     getBaseCurrency,
-    removeAccount
+    removeAccount,
+    updateAccount
   } = useUserData()
 
   // 移除自动交易检查，改为在后端验证
@@ -88,7 +81,6 @@ export default function AccountTreeItem({
 
   // 模态框状态
   const [showContextMenu, setShowContextMenu] = useState(false)
-  const [showRenameDialog, setShowRenameDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showCategorySelector, setShowCategorySelector] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
@@ -136,9 +128,6 @@ export default function AccountTreeItem({
       case 'update-balance':
         setShowBalanceUpdateModal(true)
         break
-      case 'rename':
-        setShowRenameDialog(true)
-        break
       case 'move':
         setShowCategorySelector(true)
         break
@@ -153,33 +142,7 @@ export default function AccountTreeItem({
     }
   }
 
-  const handleRename = async (newName: string) => {
-    try {
-      const response = await fetch(`/api/accounts/${account.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: newName,
-          categoryId: account.categoryId,
-          description: account.description
-        }),
-      })
 
-      if (response.ok) {
-        setShowRenameDialog(false)
-        // 通知父组件刷新数据，Context会自动更新
-        onDataChange({ type: 'account', silent: true })
-      } else {
-        const error = await response.json()
-        showError('重命名失败', error.message || '未知错误')
-      }
-    } catch (error) {
-      console.error('Error renaming account:', error)
-      showError('重命名失败', '网络错误，请稍后重试')
-    }
-  }
 
   const handleDelete = async () => {
     try {
@@ -198,8 +161,7 @@ export default function AccountTreeItem({
           deletedAccount: account
         })
 
-        // 通知树状结构刷新
-        onDataChange({ type: 'account', silent: false })
+        // 账户删除事件已发布，树会自动更新
       } else {
         const error = await response.json()
         showError('删除失败', error.message || '未知错误')
@@ -248,7 +210,10 @@ export default function AccountTreeItem({
 
       if (response.ok) {
         setShowCategorySelector(false)
-        onDataChange({ type: 'account', silent: true })
+        await publishAccountUpdate(account.id, newCategoryId, {
+          updatedAccount: { ...account, categoryId: newCategoryId },
+          originalCategoryId: account.categoryId
+        })
       } else {
         const error = await response.json()
         showError('移动失败', error.message || '未知错误')
@@ -260,14 +225,12 @@ export default function AccountTreeItem({
   }
 
   const handleBalanceUpdateSuccess = () => {
-    // 通知父组件刷新数据
-    onDataChange({ type: 'account' })
+    // BalanceUpdateModal 内部会发布 balance-update 事件
     setShowBalanceUpdateModal(false)
   }
 
   const handleTransactionSuccess = () => {
-    // 通知父组件刷新数据
-    onDataChange({ type: 'account' })
+    // SimpleFlowTransactionModal 内部会发布 transaction-create/update 事件
     setShowTransactionModal(false)
   }
 
@@ -288,7 +251,19 @@ export default function AccountTreeItem({
       })
 
       if (response.ok) {
-        onDataChange({ type: 'account', silent: true })
+        // 更新UserDataContext中的账户数据
+        const updatedAccount = await response.json()
+        if (updatedAccount.data) {
+          updateAccount(updatedAccount.data)
+        }
+
+        // 发布账户更新事件
+        await publishAccountUpdate(account.id, updatedAccount.data.categoryId, {
+          updatedAccount: updatedAccount.data,
+          originalAccount: account
+        })
+
+        showSuccess(t('success.saved'), t('account.settings.saved'))
       } else {
         const error = await response.json()
         throw new Error(error.message || '保存失败')
@@ -373,20 +348,7 @@ export default function AccountTreeItem({
         account={account}
       />
 
-      {/* 重命名对话框 */}
-      <InputDialog
-        isOpen={showRenameDialog}
-        title={t('account.rename.title')}
-        placeholder={t('account.rename.placeholder')}
-        initialValue={account.name}
-        onSubmit={handleRename}
-        onCancel={() => setShowRenameDialog(false)}
-        validation={(value) => {
-          if (!value.trim()) return t('account.validation.name.required')
-          if (value.length > 50) return t('account.validation.name.too.long')
-          return null
-        }}
-      />
+
 
       {/* 删除确认对话框 */}
       <DeleteConfirmModal
