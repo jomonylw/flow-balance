@@ -21,6 +21,13 @@ interface Currency {
   name: string
 }
 
+interface Account {
+  id: string
+  name: string
+  color?: string
+  type?: string
+}
+
 type TimeRange = 'last12months' | 'all'
 
 interface StockMonthlySummaryChartProps {
@@ -28,13 +35,15 @@ interface StockMonthlySummaryChartProps {
   baseCurrency: Currency
   title?: string
   height?: number
+  accounts?: Account[] // 新增账户信息，用于获取颜色
 }
 
 export default function StockMonthlySummaryChart({
   stockMonthlyData,
   baseCurrency,
   title,
-  height = 400
+  height = 400,
+  accounts = []
 }: StockMonthlySummaryChartProps) {
   const { t, isLoading } = useLanguage()
   const { resolvedTheme } = useTheme()
@@ -120,8 +129,25 @@ export default function StockMonthlySummaryChart({
 
     const accountNames = Array.from(allAccounts)
 
+    // 使用ColorManager智能生成颜色，优先使用账户的自定义颜色，确保没有自定义颜色的项目使用不同颜色
+    const accountColors = ColorManager.generateSmartChartColors(
+      accountNames.map(name => ({ name })),
+      (item) => {
+        // 尝试根据账户名称找到对应的账户
+        const account = accounts.find(acc => acc.name === item.name)
+        if (account && account.color) {
+          return ColorManager.getAccountColor(
+            account.id,
+            account.color,
+            account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+          )
+        }
+        return null // 如果没有找到账户或账户没有自定义颜色，使用智能颜色分配
+      }
+    )
+
     // 为每个账户准备柱状图数据
-    const barSeries = accountNames.map((accountName) => {
+    const barSeries = accountNames.map((accountName, index) => {
       const data = months.map(month => {
         const monthData = filteredData[month]
         const currencyData = monthData[baseCurrency.code]
@@ -132,19 +158,14 @@ export default function StockMonthlySummaryChart({
         return 0
       })
 
-      // 使用默认颜色序列为账户生成颜色
-      const accountColor = ColorManager.generateChartColors(
-        [{ name: accountName }],
-        () => null // 这里的账户数据没有颜色信息，使用默认颜色序列
-      )[0]
-
       return {
         name: accountName,
         type: 'bar' as const,
         stack: 'total',
         data,
         itemStyle: {
-          color: accountColor
+          color: accountColors[index],
+          borderRadius: 4 // 堆叠柱状图使用统一圆角
         }
       }
     })
@@ -281,7 +302,7 @@ export default function StockMonthlySummaryChart({
 
     // 设置图表选项
     chartInstance.current.setOption(option)
-  }, [stockMonthlyData, baseCurrency, resolvedTheme, t, getFilteredData, title, isLoading])
+  }, [stockMonthlyData, baseCurrency, resolvedTheme, t, getFilteredData, title, isLoading, accounts])
 
   // 单独的 useEffect 来处理图表渲染
   useEffect(() => {

@@ -201,6 +201,10 @@ export default function NetWorthChart({ data, currency, loading = false, error }
             name: t(`chart.series.${s.name}`),
             type: 'bar',
             stack: 'balance', // 堆叠显示
+            itemStyle: {
+              ...s.itemStyle,
+              borderRadius: s.name === 'total_liabilities' ? [0, 0, 4, 4] : [4, 4, 0, 0] // 负债为负数圆角在底部，资产为正数圆角在顶部
+            }
           };
         }
       })

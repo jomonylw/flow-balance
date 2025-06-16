@@ -9,7 +9,7 @@ import { usePathname } from 'next/navigation'
  */
 export function useRoutePreservation() {
   const pathname = usePathname()
-  const previousPathnameRef = useRef<string>()
+  const previousPathnameRef = useRef<string | undefined>(undefined)
   const preservationStateRef = useRef<Map<string, any>>(new Map())
 
   // 保存状态到内存
@@ -55,7 +55,7 @@ export function useRoutePreservation() {
  * 防抖滚动保存 Hook
  */
 export function useDebounceScrollSave() {
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   const debouncedSave = useCallback((callback: () => void, delay: number = 100) => {
     if (timeoutRef.current) {

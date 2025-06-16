@@ -6,6 +6,67 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useUserData } from '@/contexts/UserDataContext'
 import { Transaction } from '@/types/transaction'
 
+// 自定义圆形复选框组件
+interface CircularCheckboxProps {
+  checked: boolean
+  onChange: () => void
+  className?: string
+  size?: 'sm' | 'md'
+}
+
+function CircularCheckbox({ checked, onChange, className = '', size = 'md' }: CircularCheckboxProps) {
+  const sizeClasses = {
+    sm: 'h-5 w-5',  // 移动端使用更小尺寸
+    md: 'h-6 w-6'       // 桌面端使用更大尺寸
+  }
+
+  const iconSizeClasses = {
+    sm: 'h-5 w-5',  
+    md: 'h-4 w-4'
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      className={`
+        ${sizeClasses[size]} rounded-full border-2 transition-all duration-200 ease-out
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800
+        hover:scale-105 active:scale-95 transform relative
+        ${checked
+          ? 'bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500'
+          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
+        }
+        ${className}
+      `}
+      aria-checked={checked}
+      role="checkbox"
+    >
+      {/* 选中状态的勾选图标 */}
+      {checked && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <svg
+            className={`${iconSizeClasses[size]} text-white`}
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </div>
+      )}
+
+      {/* 未选中状态的内圈 */}
+      {!checked && (
+        <div className="absolute inset-1 rounded-full bg-gray-50 dark:bg-gray-600 opacity-40" />
+      )}
+    </button>
+  )
+}
+
 interface TransactionListProps {
   transactions: Transaction[]
   onEdit: (transaction: Transaction) => void
@@ -154,12 +215,18 @@ export default function TransactionList({
   }
 
   const handleSelectAll = () => {
-    if (selectedTransactions.size === transactions.length) {
+    if (selectedTransactions.size === transactions.length && transactions.length > 0) {
+      // 如果全部选中，则取消全选
       setSelectedTransactions(new Set())
     } else {
+      // 否则选中全部
       setSelectedTransactions(new Set(transactions.map(t => t.id)))
     }
   }
+
+  // 计算全选按钮的状态
+  const isAllSelected = transactions.length > 0 && selectedTransactions.size === transactions.length
+  const isPartialSelected = selectedTransactions.size > 0 && selectedTransactions.size < transactions.length
 
   // const handleBatchEditClick = () => {
   //   if (onBatchEdit && selectedTransactions.size > 0) {
@@ -249,14 +316,14 @@ export default function TransactionList({
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             {!readOnly && (
-              <input
-                type="checkbox"
-                checked={transactions.length > 0 && selectedTransactions.size === transactions.length}
+              <CircularCheckbox
+                checked={isAllSelected}
                 onChange={handleSelectAll}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
+                size="md"
+                className="mr-3"
               />
             )}
-            <span className={`${!readOnly ? 'ml-3' : ''} text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               {readOnly ? t('transaction.list.header.records') : t('transaction.list.header.transactions')}
             </span>
           </div>
@@ -283,11 +350,10 @@ export default function TransactionList({
                 {/* 选择框和图标 */}
                 <div className="flex flex-col items-center space-y-2">
                   {!readOnly && (
-                    <input
-                      type="checkbox"
+                    <CircularCheckbox
                       checked={selectedTransactions.has(transaction.id)}
                       onChange={() => handleSelectTransaction(transaction.id)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
+                      size="sm"
                     />
                   )}
                   <div className="flex-shrink-0">
@@ -360,11 +426,10 @@ export default function TransactionList({
             <div className="hidden sm:flex items-center space-x-4">
               {/* 选择框 */}
               {!readOnly && (
-                <input
-                  type="checkbox"
+                <CircularCheckbox
                   checked={selectedTransactions.has(transaction.id)}
                   onChange={() => handleSelectTransaction(transaction.id)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
+                  size="md"
                 />
               )}
 

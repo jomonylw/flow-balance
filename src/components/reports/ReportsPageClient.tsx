@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertTriangle } from 'lucide-react'
 import BalanceSheetCard from './BalanceSheetCard'
@@ -8,8 +9,11 @@ import PageContainer from '@/components/ui/PageContainer'
 import TranslationLoader from '@/components/ui/TranslationLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
 
+type ReportTab = 'balance-sheet' | 'cash-flow'
+
 export default function ReportsPageClient() {
   const { t } = useLanguage()
+  const [activeTab, setActiveTab] = useState<ReportTab>('balance-sheet')
 
   return (
     <TranslationLoader
@@ -29,40 +33,47 @@ export default function ReportsPageClient() {
         title={t('reports.title')}
         subtitle={t('reports.subtitle')}
       >
-
-      {/* 重要说明 */}
-      {/* <Card className="border-blue-200 bg-blue-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-700">
-            <Info className="h-5 w-5" />
-            {t('reports.explanation.title')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-blue-700">
-          <div className="space-y-2 text-xs sm:text-sm">
-            <p><strong>{t('reports.balance.sheet')}</strong>：{t('reports.balance.sheet.description')}</p>
-            <ul className="list-disc list-inside ml-2 sm:ml-4 space-y-1">
-              <li><strong>{t('reports.assets')}</strong>：{t('reports.assets.description')}</li>
-              <li><strong>{t('reports.liabilities')}</strong>：{t('reports.liabilities.description')}</li>
-              <li><strong>{t('reports.net.worth')}</strong>：{t('reports.net.worth.description')}</li>
-            </ul>
-            <p><strong>{t('reports.cash.flow.statement')}</strong>：{t('reports.cash.flow.statement.description')}</p>
-            <ul className="list-disc list-inside ml-2 sm:ml-4 space-y-1">
-              <li><strong>{t('reports.operating.activities')}</strong>：{t('reports.operating.activities.description')}</li>
-              <li><strong>{t('reports.investing.activities')}</strong>：{t('reports.investing.activities.description')}</li>
-              <li><strong>{t('reports.financing.activities')}</strong>：{t('reports.financing.activities.description')}</li>
-            </ul>
+        {/* 标签页导航 */}
+        <div className="mb-6">
+          <div className="inline-flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setActiveTab('balance-sheet')}
+              className={`
+                relative inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md
+                transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2
+                focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800
+                ${activeTab === 'balance-sheet'
+                  ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-200 dark:border-gray-600'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-700/50'
+                }
+              `}
+              aria-current={activeTab === 'balance-sheet' ? 'page' : undefined}
+            >
+              {t('reports.balance.sheet.title')}
+            </button>
+            <button
+              onClick={() => setActiveTab('cash-flow')}
+              className={`
+                relative inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md
+                transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2
+                focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800
+                ${activeTab === 'cash-flow'
+                  ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-200 dark:border-gray-600'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-700/50'
+                }
+              `}
+              aria-current={activeTab === 'cash-flow' ? 'page' : undefined}
+            >
+              {t('reports.cash.flow.title')}
+            </button>
           </div>
-        </CardContent>
-      </Card> */}
+        </div>
 
-
-
-        {/* 资产负债表 */}
-        <BalanceSheetCard />
-
-        {/* 现金流量表 */}
-        <CashFlowCard/>
+        {/* 报表内容 */}
+        <div className="space-y-6">
+          {activeTab === 'balance-sheet' && <BalanceSheetCard />}
+          {activeTab === 'cash-flow' && <CashFlowCard />}
+        </div>
 
         {/* 账户类型设置提醒 */}
         <Card className="border-amber-200 bg-amber-50 mt-4">

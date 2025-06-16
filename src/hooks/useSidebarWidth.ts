@@ -70,7 +70,7 @@ export function useSidebarWidth() {
  */
 export function useSidebarScrollPosition() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const saveTimeoutRef = useRef<NodeJS.Timeout>()
+  const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // 保存滚动位置到localStorage（防抖）
   const saveScrollPosition = useCallback((scrollTop: number) => {

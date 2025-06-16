@@ -185,6 +185,34 @@ export default function TransactionListView({
     setShowDeleteConfirm(true)
   }
 
+  const handleBatchDelete = async (transactionIds: string[]) => {
+    try {
+      const deletePromises = transactionIds.map(id =>
+        fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+      )
+
+      const responses = await Promise.all(deletePromises)
+      const results = await Promise.all(responses.map(r => r.json()))
+
+      const failedDeletes = results.filter(result => !result.success)
+
+      if (failedDeletes.length > 0) {
+        showError(t('common.delete.failed'), t('transaction.delete.batch.partial.error', {
+          failed: failedDeletes.length,
+          total: transactionIds.length
+        }))
+      } else {
+        showSuccess(t('success.deleted'), t('transaction.delete.batch.success', { count: transactionIds.length }))
+      }
+
+      await loadTransactions()
+      await loadStats()
+    } catch (error) {
+      console.error('Error batch deleting transactions:', error)
+      showError(t('common.delete.failed'), t('error.network'))
+    }
+  }
+
   const handleConfirmDelete = async () => {
     if (!deletingTransactionId) return
 
@@ -282,6 +310,7 @@ export default function TransactionListView({
               transactions={transactions}
               onEdit={handleEditTransaction}
               onDelete={handleDeleteTransaction}
+              onBatchDelete={handleBatchDelete}
               currencySymbol={currencySymbol}
               showAccount={true}
               pagination={{

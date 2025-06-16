@@ -12,6 +12,7 @@ import DetailPageLayout from '@/components/ui/DetailPageLayout'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useUserData } from '@/contexts/UserDataContext'
 import { useBalanceUpdateListener, useTransactionListener } from '@/hooks/useDataUpdateListener'
 import {
   Category,
@@ -78,10 +79,9 @@ export default function StockCategoryDetailView({
 }: StockCategoryDetailViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { accounts, categories } = useUserData()
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null)
   const [monthlyData, setMonthlyData] = useState<MonthlyData | null>(null)
-  const [accounts, setAccounts] = useState<any[]>([])
-  const [isLoadingAccounts, setIsLoadingAccounts] = useState(true)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] = useState(false)
   const [isEditBalanceModalOpen, setIsEditBalanceModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
@@ -97,19 +97,31 @@ export default function StockCategoryDetailView({
   })
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
 
-  // 监听余额更新事件
-  useBalanceUpdateListener(async (event) => {
-    // 检查是否是当前分类相关的账户
-    if (event.accountId && accounts.some(account => account.id === event.accountId)) {
-      await handleBalanceUpdateSuccess()
+  // 过滤出属于当前分类的账户（包括子分类的账户）
+  const categoryAccounts = accounts.filter(account => {
+    // 直接属于当前分类的账户
+    if (account.categoryId === category.id) {
+      return true
     }
-  }, accounts.map(account => account.id))
+
+    // 属于当前分类的子分类的账户
+    const accountCategory = categories.find(cat => cat.id === account.categoryId)
+    return accountCategory?.parentId === category.id
+  })
+
+  // 监听余额更新事件
+  useBalanceUpdateListener((event) => {
+    // 检查是否是当前分类相关的账户
+    if (event.accountId && categoryAccounts.some(account => account.id === event.accountId)) {
+      handleBalanceUpdateSuccess()
+    }
+  }, categoryAccounts.map(account => account.id))
 
   // 监听交易相关事件
-  useTransactionListener(async (event) => {
+  useTransactionListener(() => {
     // 重新加载交易列表和汇总数据
-    await handleBalanceUpdateSuccess()
-  }, accounts.map(account => account.id), [category.id])
+    handleBalanceUpdateSuccess()
+  }, categoryAccounts.map(account => account.id), [category.id])
 
   // 获取分类汇总数据
   useEffect(() => {
@@ -137,33 +149,6 @@ export default function StockCategoryDetailView({
 
     fetchSummaryData()
   }, [category.id, user.settings?.baseCurrency?.code])
-
-  // 获取账户数据
-  useEffect(() => {
-    const fetchAccounts = async () => {
-      setIsLoadingAccounts(true)
-      try {
-        const response = await fetch('/api/accounts')
-        if (response.ok) {
-          const result = await response.json()
-          if (result.success) {
-            // 过滤出属于当前分类的账户（包括子分类的账户）
-            const categoryAccounts = result.data.filter((account: any) =>
-              account.categoryId === category.id ||
-              (account.category?.parentId === category.id)
-            )
-            setAccounts(categoryAccounts)
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching accounts:', error)
-      } finally {
-        setIsLoadingAccounts(false)
-      }
-    }
-
-    fetchAccounts()
-  }, [category.id])
 
   // 根据新的 API 数据格式生成图表所需的数据
   const generateChartData = (monthlyData: MonthlyDataItem[], baseCurrencyCode: string): StockMonthlyDataForChart => {
@@ -276,6 +261,35 @@ export default function StockCategoryDetailView({
   const handleDeleteTransaction = (transactionId: string) => {
     setDeletingTransactionId(transactionId)
     setShowDeleteConfirm(true)
+  }
+
+  // 处理批量删除交易
+  const handleBatchDelete = async (transactionIds: string[]) => {
+    try {
+      const deletePromises = transactionIds.map(id =>
+        fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+      )
+
+      const responses = await Promise.all(deletePromises)
+      const results = await Promise.all(responses.map(r => r.json()))
+
+      const failedDeletes = results.filter(result => !result.success)
+
+      if (failedDeletes.length > 0) {
+        showError(t('common.delete.failed'), t('transaction.delete.batch.partial.error', {
+          failed: failedDeletes.length,
+          total: transactionIds.length
+        }))
+      } else {
+        showSuccess(t('success.deleted'), t('transaction.delete.batch.success', { count: transactionIds.length }))
+      }
+
+      // 重新获取数据
+      handleBalanceUpdateSuccess()
+    } catch (error) {
+      console.error('Error batch deleting transactions:', error)
+      showError(t('common.delete.failed'), t('error.network'))
+    }
   }
 
   // 确认删除交易
@@ -488,6 +502,12 @@ export default function StockCategoryDetailView({
               baseCurrency={baseCurrencyForChart}
               title={`${category.name} - ${t('category.monthly.balance.summary')}`}
               height={400}
+              accounts={categoryAccounts.map(account => ({
+                id: account.id,
+                name: account.name,
+                color: account.color,
+                type: account.category?.type
+              }))}
             />
           </div>
         )
@@ -519,6 +539,7 @@ export default function StockCategoryDetailView({
             transactions={transactions}
             onEdit={handleEditTransaction}
             onDelete={handleDeleteTransaction}
+            onBatchDelete={handleBatchDelete}
             currencySymbol={currencySymbol}
             showAccount={true}
             readOnly={false}

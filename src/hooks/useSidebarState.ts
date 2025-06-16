@@ -9,7 +9,7 @@ import { usePathname } from 'next/navigation'
  */
 export function useSidebarState() {
   const pathname = usePathname()
-  const previousPathnameRef = useRef<string>()
+  const previousPathnameRef = useRef<string | undefined>(undefined)
   const isInitialRenderRef = useRef(true)
 
   // 检测路由变化
@@ -54,7 +54,7 @@ export function useStableComponentKey(baseKey: string = 'sidebar') {
  */
 export function useSmoothTransition() {
   const pathname = usePathname()
-  const transitionRef = useRef<HTMLDivElement>(null)
+  const transitionRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (transitionRef.current) {

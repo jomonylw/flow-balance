@@ -156,7 +156,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
             barWidth: '60%',
             itemStyle: {
               ...series.itemStyle,
-              borderRadius: [2, 2, 0, 0]
+              borderRadius: 4 // 统一使用4px圆角，堆叠柱状图使用统一圆角
             }
           }
         } else {

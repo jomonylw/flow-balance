@@ -24,18 +24,27 @@ interface Currency {
   name: string
 }
 
+interface Account {
+  id: string
+  name: string
+  color?: string
+  type?: string
+}
+
 interface FlowMonthlySummaryChartProps {
   monthlyData: MonthlyData
   baseCurrency: Currency
   title?: string
   height?: number
+  accounts?: Account[] // 新增账户信息，用于获取颜色
 }
 
 export default function FlowMonthlySummaryChart({
   monthlyData,
   baseCurrency,
   title,
-  height = 400
+  height = 400,
+  accounts = []
 }: FlowMonthlySummaryChartProps) {
   const { t, isLoading } = useLanguage()
   const { resolvedTheme } = useTheme()
@@ -113,10 +122,21 @@ export default function FlowMonthlySummaryChart({
 
     const categoryNames = Array.from(allCategories)
 
-    // 使用ColorManager生成颜色
-    const categoryColors = ColorManager.generateChartColors(
+    // 使用ColorManager智能生成颜色，优先使用账户的自定义颜色，确保没有自定义颜色的项目使用不同颜色
+    const categoryColors = ColorManager.generateSmartChartColors(
       categoryNames.map(name => ({ name })),
-      () => null // 分类暂时没有自定义颜色，使用默认颜色序列
+      (item) => {
+        // 尝试根据分类名称找到对应的账户
+        const account = accounts.find(acc => acc.name === item.name)
+        if (account && account.color) {
+          return ColorManager.getAccountColor(
+            account.id,
+            account.color,
+            account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+          )
+        }
+        return null // 如果没有找到账户或账户没有自定义颜色，使用智能颜色分配
+      }
     )
 
     // 判断是收入类还是支出类（基于第一个月的数据）
@@ -151,7 +171,8 @@ export default function FlowMonthlySummaryChart({
         stack: 'total',
         data,
         itemStyle: {
-          color: categoryColors[index]
+          color: categoryColors[index],
+          borderRadius: 4 // 堆叠柱状图使用统一圆角
         }
       }
     })
@@ -303,7 +324,7 @@ export default function FlowMonthlySummaryChart({
         console.error('Error setting chart option:', error)
       }
     }
-  }, [monthlyData, baseCurrency, resolvedTheme, t, isLoading, title])
+  }, [monthlyData, baseCurrency, resolvedTheme, t, isLoading, title, accounts])
 
   if (isLoading) {
     return (

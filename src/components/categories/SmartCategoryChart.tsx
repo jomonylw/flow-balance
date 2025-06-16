@@ -366,7 +366,8 @@ export default function SmartCategoryChart({
         itemStyle: {
           color: accountType === 'INCOME'
             ? ColorManager.getDefaultColors().INCOME
-            : ColorManager.getDefaultColors().EXPENSE
+            : ColorManager.getDefaultColors().EXPENSE,
+          borderRadius: [4, 4, 0, 0] // 收入和支出都是正数，圆角在顶部
         }
       }],
       grid: {

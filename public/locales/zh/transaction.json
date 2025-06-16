@@ -80,6 +80,8 @@
   "transaction.delete.transaction.message": "确定要删除这条交易吗？此操作不可撤销。",
   "transaction.delete.batch.title": "批量删除确认",
   "transaction.delete.batch.message": "确定要删除选中的 {{count}} 条记录吗？此操作不可撤销。",
+  "transaction.delete.batch.success": "成功删除 {{count}} 条记录",
+  "transaction.delete.batch.partial.error": "删除了 {{failed}}/{{total}} 条记录失败，部分删除未成功",
   "transaction.search.placeholder": "搜索描述或备注...",
   "transaction.stats.total.income": "总收入",
   "transaction.stats.total.expense": "总支出",

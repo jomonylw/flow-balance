@@ -359,7 +359,8 @@ export default function StockAccountDetailView({
           account={{
             id: account.id,
             name: account.name,
-            type: account.category.type || 'ASSET'
+            type: account.category.type || 'ASSET',
+            color: account.color
           }}
           displayCurrency={account.currency || user.settings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }}
           height={400}

@@ -47,6 +47,10 @@ interface AccountTreeItemProps {
   account: Account
   level: number
   onNavigate?: () => void
+  onDataChange?: (options?: {
+    type?: 'category' | 'account' | 'full'
+    silent?: boolean
+  }) => void
   baseCurrency?: {
     code: string
     symbol: string
@@ -58,6 +62,7 @@ export default function AccountTreeItem({
   account,
   level,
   onNavigate,
+  onDataChange,
   baseCurrency: propBaseCurrency
 }: AccountTreeItemProps) {
   const { showSuccess, showError } = useToast()
@@ -161,6 +166,9 @@ export default function AccountTreeItem({
           deletedAccount: account
         })
 
+        // 通知父组件数据已更新
+        onDataChange?.({ type: 'account' })
+
         // 账户删除事件已发布，树会自动更新
       } else {
         const error = await response.json()
@@ -214,6 +222,9 @@ export default function AccountTreeItem({
           updatedAccount: { ...account, categoryId: newCategoryId },
           originalCategoryId: account.categoryId
         })
+
+        // 通知父组件数据已更新
+        onDataChange?.({ type: 'account' })
       } else {
         const error = await response.json()
         showError('移动失败', error.message || '未知错误')
@@ -262,6 +273,9 @@ export default function AccountTreeItem({
           updatedAccount: updatedAccount.data,
           originalAccount: account
         })
+
+        // 通知父组件数据已更新
+        onDataChange?.({ type: 'account' })
 
         showSuccess(t('success.saved'), t('account.settings.saved'))
       } else {

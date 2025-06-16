@@ -18,6 +18,7 @@ interface Account {
   id: string
   name: string
   type: string
+  color?: string
 }
 
 type TimeRange = 'lastMonth' | 'lastYear' | 'all'
@@ -216,11 +217,19 @@ export default function StockAccountTrendChart({
           smooth: true,
           data: balances,
           lineStyle: {
-            color: ColorManager.getDefaultColors().ASSET,
+            color: ColorManager.getAccountColor(
+              account.id,
+              account.color,
+              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+            ),
             width: 3
           },
           itemStyle: {
-            color: ColorManager.getDefaultColors().ASSET
+            color: ColorManager.getAccountColor(
+              account.id,
+              account.color,
+              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+            )
           },
           areaStyle: {
             color: {
@@ -230,8 +239,28 @@ export default function StockAccountTrendChart({
               x2: 0,
               y2: 1,
               colorStops: [
-                { offset: 0, color: 'rgba(59, 130, 246, 0.3)' },
-                { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
+                {
+                  offset: 0,
+                  color: ColorManager.adjustColorAlpha(
+                    ColorManager.getAccountColor(
+                      account.id,
+                      account.color,
+                      account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+                    ),
+                    0.3
+                  )
+                },
+                {
+                  offset: 1,
+                  color: ColorManager.adjustColorAlpha(
+                    ColorManager.getAccountColor(
+                      account.id,
+                      account.color,
+                      account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+                    ),
+                    0.05
+                  )
+                }
               ]
             }
           },
@@ -239,7 +268,11 @@ export default function StockAccountTrendChart({
           symbolSize: 6,
           emphasis: {
             itemStyle: {
-              borderColor: ColorManager.getDefaultColors().ASSET,
+              borderColor: ColorManager.getAccountColor(
+                account.id,
+                account.color,
+                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+              ),
               borderWidth: 2
             }
           }
@@ -248,7 +281,7 @@ export default function StockAccountTrendChart({
     }
 
     chartInstance.current.setOption(option)
-  }, [trendData, displayCurrency, resolvedTheme, t, timeRange, langLoading])
+  }, [trendData, displayCurrency, resolvedTheme, t, timeRange, account.id, account.color, account.type, langLoading])
 
   useEffect(() => {
     if (chartInstance.current && !isLoading) {

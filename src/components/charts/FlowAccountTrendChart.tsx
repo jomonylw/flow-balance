@@ -18,6 +18,7 @@ interface Account {
   id: string
   name: string
   type: string
+  color?: string
 }
 
 type TimeRange = 'lastMonth' | 'lastYear' | 'all'
@@ -224,15 +225,23 @@ export default function FlowAccountTrendChart({
           yAxisIndex: 0,
           data: amounts,
           itemStyle: {
-            color: account.type === 'INCOME'
-              ? ColorManager.getDefaultColors().INCOME
-              : ColorManager.getDefaultColors().EXPENSE
+            color: ColorManager.getAccountColor(
+              account.id,
+              account.color,
+              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+            ),
+            borderRadius: [4, 4, 0, 0] // 流量账户交易金额都是正数，圆角在顶部
           },
           emphasis: {
             itemStyle: {
-              color: account.type === 'INCOME'
-                ? ColorManager.adjustColorAlpha(ColorManager.getDefaultColors().INCOME, 0.8)
-                : ColorManager.adjustColorAlpha(ColorManager.getDefaultColors().EXPENSE, 0.8)
+              color: ColorManager.adjustColorAlpha(
+                ColorManager.getAccountColor(
+                  account.id,
+                  account.color,
+                  account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+                ),
+                0.8
+              )
             }
           }
         },
@@ -243,17 +252,35 @@ export default function FlowAccountTrendChart({
           smooth: true,
           data: cumulativeAmounts,
           lineStyle: {
-            color: ColorManager.getDefaultColors().ASSET,
+            color: ColorManager.generateComplementaryColor(
+              ColorManager.getAccountColor(
+                account.id,
+                account.color,
+                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+              )
+            ),
             width: 3
           },
           itemStyle: {
-            color: ColorManager.getDefaultColors().ASSET
+            color: ColorManager.generateComplementaryColor(
+              ColorManager.getAccountColor(
+                account.id,
+                account.color,
+                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+              )
+            )
           },
           symbol: 'circle',
           symbolSize: 6,
           emphasis: {
             itemStyle: {
-              borderColor: ColorManager.getDefaultColors().ASSET,
+              borderColor: ColorManager.generateComplementaryColor(
+                ColorManager.getAccountColor(
+                  account.id,
+                  account.color,
+                  account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+                )
+              ),
               borderWidth: 2
             }
           }
@@ -262,7 +289,7 @@ export default function FlowAccountTrendChart({
     }
 
     chartInstance.current.setOption(option)
-  }, [trendData, displayCurrency, resolvedTheme, t, timeRange, account.type, langLoading])
+  }, [trendData, displayCurrency, resolvedTheme, t, timeRange, account.type, account.id, account.color, langLoading])
 
   useEffect(() => {
     if (chartInstance.current && !isLoading) {

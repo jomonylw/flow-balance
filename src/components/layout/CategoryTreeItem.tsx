@@ -44,6 +44,10 @@ interface CategoryTreeItemProps {
   isExpanded: boolean
   hasChildren: boolean
   onToggle: () => void
+  onDataChange?: (options?: {
+    type?: 'category' | 'account' | 'full'
+    silent?: boolean
+  }) => void
   baseCurrency?: {
     code: string
     symbol: string
@@ -57,6 +61,7 @@ export default function CategoryTreeItem({
   isExpanded,
   hasChildren,
   onToggle,
+  onDataChange,
   baseCurrency: propBaseCurrency
 }: CategoryTreeItemProps) {
   const { showSuccess, showError } = useToast()
@@ -196,6 +201,9 @@ export default function CategoryTreeItem({
           parentId: category.parentId
         })
 
+        // 通知父组件数据已更新
+        onDataChange?.({ type: 'category' })
+
         // 分类删除事件已发布，树会自动更新
       } else {
         const error = await response.json()
@@ -227,6 +235,9 @@ export default function CategoryTreeItem({
           updatedCategory: { ...category, parentId: newParentId },
           originalParentId: category.parentId
         })
+
+        // 通知父组件数据已更新
+        onDataChange?.({ type: 'category' })
       } else {
         const error = await response.json()
         showError(t('error.update.failed'), error.message || t('error.unknown'))
@@ -261,6 +272,9 @@ export default function CategoryTreeItem({
           parentCategory: category
         })
 
+        // 通知父组件数据已更新
+        onDataChange?.({ type: 'category' })
+
         // 分类创建事件已发布，树会自动更新
       } else {
         const error = await response.json()
@@ -282,6 +296,9 @@ export default function CategoryTreeItem({
         newAccount: account,
         category: category
       })
+
+      // 通知父组件数据已更新
+      onDataChange?.({ type: 'account' })
 
       // 账户创建事件已发布，树会自动更新
     } catch (error) {
@@ -319,6 +336,9 @@ export default function CategoryTreeItem({
           updatedCategory: updatedCategory.data,
           originalCategory: category
         })
+
+        // 通知父组件数据已更新
+        onDataChange?.({ type: 'category' })
       } else {
         const error = await response.json()
         showError(t('error.save.failed'), error.message || t('category.settings.save.failed'))

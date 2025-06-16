@@ -80,6 +80,8 @@
   "transaction.delete.transaction.message": "Are you sure you want to delete this transaction? This action cannot be undone.",
   "transaction.delete.batch.title": "Batch Delete Confirmation",
   "transaction.delete.batch.message": "Are you sure you want to delete the selected {{count}} records? This action cannot be undone.",
+  "transaction.delete.batch.success": "Successfully deleted {{count}} records",
+  "transaction.delete.batch.partial.error": "Failed to delete {{failed}}/{{total}} records, partial deletion unsuccessful",
   "transaction.search.placeholder": "Search description or notes...",
   "transaction.stats.total.income": "Total Income",
   "transaction.stats.total.expense": "Total Expense",

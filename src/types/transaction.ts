@@ -30,6 +30,7 @@ export interface Account {
   id: string
   name: string
   description?: string
+  color?: string
   category: {
     id: string
     name: string

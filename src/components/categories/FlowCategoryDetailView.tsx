@@ -108,6 +108,18 @@ export default function FlowCategoryDetailView({
   const [chartData, setChartData] = useState<FlowMonthlyData | null>(null)
   const [timeRange, setTimeRange] = useState<TimeRange>('last12months')
 
+  // 过滤出属于当前分类的账户（包括子分类的账户）
+  const categoryAccounts = accounts.filter(account => {
+    // 直接属于当前分类的账户
+    if (account.categoryId === category.id) {
+      return true
+    }
+
+    // 属于当前分类的子分类的账户
+    const accountCategory = categories.find(cat => cat.id === account.categoryId)
+    return accountCategory?.parentId === category.id
+  })
+
   // 监听交易相关事件
   useTransactionListener(async () => {
     // 重新加载交易列表和汇总数据
@@ -300,6 +312,34 @@ export default function FlowCategoryDetailView({
   const handleDeleteTransaction = (transactionId: string) => {
     setDeletingTransactionId(transactionId)
     setShowDeleteConfirm(true)
+  }
+
+  const handleBatchDelete = async (transactionIds: string[]) => {
+    try {
+      const deletePromises = transactionIds.map(id =>
+        fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+      )
+
+      const responses = await Promise.all(deletePromises)
+      const results = await Promise.all(responses.map(r => r.json()))
+
+      const failedDeletes = results.filter(result => !result.success)
+
+      if (failedDeletes.length > 0) {
+        showError(t('common.delete.failed'), t('transaction.delete.batch.partial.error', {
+          failed: failedDeletes.length,
+          total: transactionIds.length
+        }))
+      } else {
+        showSuccess(t('success.deleted'), t('transaction.delete.batch.success', { count: transactionIds.length }))
+      }
+
+      // 重新获取数据，但不重载页面
+      handleTransactionSuccess()
+    } catch (error) {
+      console.error('Error batch deleting transactions:', error)
+      showError(t('common.delete.failed'), t('error.network'))
+    }
   }
 
   const handleConfirmDelete = async () => {
@@ -553,6 +593,12 @@ export default function FlowCategoryDetailView({
                 baseCurrency={baseCurrencyForChart}
                 title={`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
                 height={400}
+                accounts={categoryAccounts.map(account => ({
+                  id: account.id,
+                  name: account.name,
+                  color: account.color,
+                  type: account.category?.type
+                }))}
               />
             </div>
           </div>
@@ -585,6 +631,7 @@ export default function FlowCategoryDetailView({
             transactions={transactions}
             onEdit={handleEditTransaction}
             onDelete={handleDeleteTransaction}
+            onBatchDelete={handleBatchDelete}
             currencySymbol={currencySymbol}
             showAccount={true}
             readOnly={false}

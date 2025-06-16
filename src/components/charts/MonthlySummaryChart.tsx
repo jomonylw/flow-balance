@@ -181,7 +181,8 @@ export default function MonthlySummaryChart({
           type: 'bar' as const,
           data: incomeData,
           itemStyle: {
-            color: '#10b981'
+            color: '#10b981',
+            borderRadius: [4, 4, 0, 0] // 收入为正数，圆角在顶部
           },
           emphasis: {
             itemStyle: {
@@ -194,7 +195,8 @@ export default function MonthlySummaryChart({
           type: 'bar' as const,
           data: expenseData.map(val => -val), // 显示为负值
           itemStyle: {
-            color: '#ef4444'
+            color: '#ef4444',
+            borderRadius: [0, 0, 4, 4] // 支出为负数，圆角在底部
           },
           emphasis: {
             itemStyle: {
@@ -270,7 +272,8 @@ export default function MonthlySummaryChart({
         stack: 'total',
         data,
         itemStyle: {
-          color: colors[index % colors.length]
+          color: colors[index % colors.length],
+          borderRadius: 4 // 堆叠柱状图使用统一圆角
         }
       }
     })

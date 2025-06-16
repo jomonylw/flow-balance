@@ -327,7 +327,8 @@ export default function FlowAccountDetailView({
           account={{
             id: account.id,
             name: account.name,
-            type: account.category.type || 'INCOME'
+            type: account.category.type || 'INCOME',
+            color: account.color
           }}
           displayCurrency={account.currency || user.settings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }}
           height={400}
