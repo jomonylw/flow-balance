@@ -176,18 +176,36 @@ export default function TransactionList({
     }
   }
 
+  // 检查是否为未来交易
+  const isFutureTransaction = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    // 设置时间为当天的开始，避免时间部分的影响
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const transactionDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    return transactionDate > today
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffTime = Math.abs(now.getTime() - date.getTime())
+    // 设置时间为当天的开始，避免时间部分的影响
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const transactionDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+    const diffTime = transactionDate.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-    if (diffDays === 1) {
+    if (diffDays === 0) {
       return t('common.date.today')
-    } else if (diffDays === 2) {
+    } else if (diffDays === -1) {
       return t('common.date.yesterday')
-    } else if (diffDays <= 7) {
-      return t('common.date.days.ago', { days: diffDays - 1 })
+    } else if (diffDays === 1) {
+      return t('common.date.tomorrow')
+    } else if (diffDays > 1 && diffDays <= 7) {
+      return t('common.date.days.later', { days: diffDays })
+    } else if (diffDays < -1 && diffDays >= -7) {
+      return t('common.date.days.ago', { days: Math.abs(diffDays) })
     } else {
       return date.toLocaleDateString(undefined, {
         year: 'numeric',
@@ -369,6 +387,11 @@ export default function TransactionList({
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {transaction.description}
                         </p>
+                        {isFutureTransaction(transaction.date) && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800">
+                            {t('common.date.future')}
+                          </span>
+                        )}
                       </div>
                       <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         <div>{transaction.category.name}</div>
@@ -446,6 +469,11 @@ export default function TransactionList({
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {transaction.description}
                       </p>
+                      {isFutureTransaction(transaction.date) && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800">
+                          {t('common.date.future')}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
                       <span>{transaction.category.name}</span>

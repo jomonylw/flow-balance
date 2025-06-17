@@ -169,42 +169,81 @@ export default function UserSettingsPage({
         <PageContainer
           title={t('settings.page.title')}
           subtitle={t('settings.page.description')}
-          className="min-h-screen bg-gray-50 dark:bg-gray-900"
+          className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-900 dark:to-gray-900/80"
         >
           {/* 设置分组卡片 */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             {settingGroups.map((group) => (
-              <div key={group.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div key={group.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden backdrop-blur-sm">
+                {/* 分组标题 */}
+                <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-50/30 dark:from-gray-700 dark:to-gray-700/30 border-b border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30">
+                      <span className="text-sm">{group.icon}</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{group.title}</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{group.description}</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 设置项目列表 */}
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
                   {group.items.map((item) => (
                     <button
                       key={item.id}
                       onClick={() => handleTabChange(item.id)}
-                      className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                        activeTab === item.id ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500 dark:border-blue-400' : ''
-                      }`}
+                      className={`
+                        w-full px-4 py-4 text-left transition-all duration-200 group
+                        ${activeTab === item.id
+                          ? 'bg-gradient-to-r from-blue-50 to-blue-50/30 dark:from-blue-900/30 dark:to-blue-900/10'
+                          : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-50/30 dark:hover:from-gray-700/30 dark:hover:to-gray-700/10'
+                        }
+                      `}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <span className="text-base">{item.icon}</span>
+                          <div className={`
+                            flex items-center justify-center w-10 h-10 rounded-xl transition-colors
+                            ${activeTab === item.id
+                              ? 'bg-blue-100 dark:bg-blue-800/50'
+                              : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600'
+                            }
+                          `}>
+                            <span className="text-base">{item.icon}</span>
+                          </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.label}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{item.description}</p>
+                            <p className={`text-sm font-medium transition-colors ${
+                              activeTab === item.id
+                                ? 'text-blue-700 dark:text-blue-300'
+                                : 'text-gray-900 dark:text-gray-100'
+                            }`}>
+                              {item.label}
+                            </p>
+                            <p className={`text-xs transition-colors ${
+                              activeTab === item.id
+                                ? 'text-blue-600/70 dark:text-blue-400/70'
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`}>
+                              {item.description}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           {item.status && (
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
-                              item.status === 'complete' ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/20' :
-                              item.status === 'warning' ? 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/20' :
-                              item.status === 'incomplete' ? 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/20' :
-                              'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800'
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                              item.status === 'complete' ? 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' :
+                              item.status === 'warning' ? 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' :
+                              item.status === 'incomplete' ? 'text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800' :
+                              'text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                             }`}>
                               {item.status === 'complete' ? '✓' : item.status === 'warning' ? '⚠' : item.status === 'incomplete' ? '!' : ''}
                             </span>
                           )}
-                          <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className={`w-5 h-5 transition-colors ${
+                            activeTab === item.id ? 'text-blue-400' : 'text-gray-400'
+                          }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>
@@ -217,8 +256,10 @@ export default function UserSettingsPage({
           </div>
 
           {/* 当前选中的设置内容 */}
-          <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            {renderTabContent()}
+          <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden backdrop-blur-sm">
+            <div className="p-6 bg-gradient-to-b from-white to-gray-50/30 dark:from-gray-800 dark:to-gray-800/50">
+              {renderTabContent()}
+            </div>
           </div>
         </PageContainer>
       </TranslationLoader>

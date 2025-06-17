@@ -129,13 +129,19 @@ export default function ChangePasswordForm() {
       )}
 
       {/* 密码修改表单 */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
-            <span className="mr-2">🔒</span>
-            {t('password.change')}
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('password.change.description')}</p>
+      <div className="bg-gradient-to-br from-white to-gray-50/30 dark:from-gray-800 dark:to-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm backdrop-blur-sm">
+        <div className="mb-6">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30">
+              <span className="text-lg">🔒</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {t('password.change')}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('password.change.description')}</p>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -173,11 +179,11 @@ export default function ChangePasswordForm() {
             required
           />
 
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+          <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-red-500/20 hover:shadow-red-500/30 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
@@ -188,7 +194,12 @@ export default function ChangePasswordForm() {
                   {t('password.changing')}
                 </span>
               ) : (
-                t('password.change')
+                <span className="flex items-center">
+                  <span>{t('password.change')}</span>
+                  <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </span>
               )}
             </button>
           </div>
@@ -196,58 +207,70 @@ export default function ChangePasswordForm() {
       </div>
 
       {/* 安全提示 */}
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 sm:p-6">
-        <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-3 flex items-center">
-          <span className="mr-2">⚠️</span>
+      <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-800/10 border border-amber-200 dark:border-amber-800/30 rounded-xl p-6 shadow-sm backdrop-blur-sm">
+        <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-4 flex items-center">
+          <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-800/50 mr-3">
+            <span className="text-xs">⚠️</span>
+          </div>
           {t('password.security.tips')}
         </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-yellow-700 dark:text-yellow-300">
-          <div className="flex items-start">
-            <span className="mr-2">•</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-amber-700 dark:text-amber-300">
+          <div className="flex items-start space-x-3">
+            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-800/50 mt-0.5">
+              <span className="text-xs">•</span>
+            </div>
             <span>{t('password.tip.length')}</span>
           </div>
-          <div className="flex items-start">
-            <span className="mr-2">•</span>
+          <div className="flex items-start space-x-3">
+            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-800/50 mt-0.5">
+              <span className="text-xs">•</span>
+            </div>
             <span>{t('password.tip.combination')}</span>
           </div>
-          <div className="flex items-start">
-            <span className="mr-2">•</span>
+          <div className="flex items-start space-x-3">
+            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-800/50 mt-0.5">
+              <span className="text-xs">•</span>
+            </div>
             <span>{t('password.tip.regular.change')}</span>
           </div>
-          <div className="flex items-start">
-            <span className="mr-2">•</span>
+          <div className="flex items-start space-x-3">
+            <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-800/50 mt-0.5">
+              <span className="text-xs">•</span>
+            </div>
             <span>{t('password.tip.unique')}</span>
           </div>
         </div>
       </div>
 
       {/* 其他安全选项 */}
-      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
-        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
-          <span className="mr-2">🛡️</span>
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-700/30 border border-gray-200 dark:border-gray-700/50 rounded-xl p-6 shadow-sm backdrop-blur-sm">
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+          <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-gray-100 dark:bg-gray-700 mr-3">
+            <span className="text-xs">🛡️</span>
+          </div>
           {t('password.other.security.options')}
         </h4>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('password.two.factor.auth')}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{t('password.two.factor.description')}</p>
             </div>
             <button
               disabled
-              className="bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
+              className="bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-4 py-2 rounded-lg cursor-not-allowed text-sm font-medium"
             >
               {t('password.coming.soon')}
             </button>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('password.login.history')}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{t('password.login.history.description')}</p>
             </div>
             <button
               disabled
-              className="bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-3 py-1.5 rounded-md cursor-not-allowed text-sm"
+              className="bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-4 py-2 rounded-lg cursor-not-allowed text-sm font-medium"
             >
               {t('password.coming.soon')}
             </button>

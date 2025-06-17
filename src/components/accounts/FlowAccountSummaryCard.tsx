@@ -82,38 +82,78 @@ export default function FlowAccountSummaryCard({
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const thisYear = new Date(now.getFullYear(), 0, 1)
-    
+    const lastYear = new Date(now.getFullYear() - 1, 0, 1)
+    const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999)
+
     let thisMonthAmount = 0
     let lastMonthAmount = 0
     let thisYearAmount = 0
+    let lastYearSamePeriodAmount = 0
     let totalAmount = 0
+
+    // 计算最近12个月的月度数据
+    const monthlyData: { [key: string]: number } = {}
 
     transactions.forEach(transaction => {
       const transactionDate = new Date(transaction.date)
       const amount = transaction.amount
-      
+
       // 流量类账户只关注对应类型的交易
-      const isRelevantTransaction = 
+      const isRelevantTransaction =
         (accountType === 'INCOME' && transaction.type === 'INCOME') ||
         (accountType === 'EXPENSE' && transaction.type === 'EXPENSE')
-      
+
       if (isRelevantTransaction) {
-        totalAmount += amount
-        
-        if (transactionDate >= thisMonth) {
-          thisMonthAmount += amount
-        } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
-          lastMonthAmount += amount
-        }
-        
-        if (transactionDate >= thisYear) {
-          thisYearAmount += amount
+        // 只统计截止当前日期的交易，排除未来交易
+        if (transactionDate <= now) {
+          totalAmount += amount
+
+          // 本月金额（本月1日到当前日期）
+          if (transactionDate >= thisMonth) {
+            thisMonthAmount += amount
+          }
+
+          // 上月金额（上月1日到上月最后一天）
+          if (transactionDate >= lastMonth && transactionDate < thisMonth) {
+            lastMonthAmount += amount
+          }
+
+          // 今年累计（今年1月1日到当前日期）
+          if (transactionDate >= thisYear) {
+            thisYearAmount += amount
+          }
+
+          // 去年同期累计（去年1月1日到去年同期的当前日期）
+          const currentDayOfYear = Math.floor((now.getTime() - thisYear.getTime()) / (1000 * 60 * 60 * 24))
+          const lastYearSamePeriodEnd = new Date(lastYear.getFullYear(), 0, 1 + currentDayOfYear)
+          if (transactionDate >= lastYear && transactionDate <= lastYearSamePeriodEnd) {
+            lastYearSamePeriodAmount += amount
+          }
+
+          // 收集最近12个月的数据（排除未来月份）
+          const monthKey = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}`
+          const cutoffDate = new Date(now.getFullYear(), now.getMonth() - 11, 1) // 12个月前
+          if (transactionDate >= cutoffDate) {
+            monthlyData[monthKey] = (monthlyData[monthKey] || 0) + amount
+          }
         }
       }
     })
 
-    const monthlyChange = lastMonthAmount !== 0 ? 
-      ((thisMonthAmount - lastMonthAmount) / lastMonthAmount) * 100 : 0
+    // 计算月度变化
+    const monthlyChange = lastMonthAmount !== 0 ?
+      ((thisMonthAmount - lastMonthAmount) / Math.abs(lastMonthAmount)) * 100 :
+      (thisMonthAmount !== 0 ? (thisMonthAmount > 0 ? 100 : -100) : 0)
+
+    // 计算年度对比
+    const yearlyComparison = lastYearSamePeriodAmount !== 0 ?
+      ((thisYearAmount - lastYearSamePeriodAmount) / Math.abs(lastYearSamePeriodAmount)) * 100 :
+      (thisYearAmount !== 0 ? (thisYearAmount > 0 ? 100 : -100) : 0)
+
+    // 计算最近12个月平均值
+    const monthlyValues = Object.values(monthlyData)
+    const average12Months = monthlyValues.length > 0 ?
+      monthlyValues.reduce((sum, val) => sum + val, 0) / monthlyValues.length : 0
 
     return {
       totalAmount,
@@ -121,7 +161,9 @@ export default function FlowAccountSummaryCard({
       lastMonthAmount,
       thisYearAmount,
       monthlyChange,
-      averageMonthly: thisYearAmount / (new Date().getMonth() + 1)
+      yearlyComparison,
+      average12Months,
+      averageMonthly: thisYearAmount / (new Date().getMonth() + 1) // 保留原有计算以防其他地方使用
     }
   }
 
@@ -147,26 +189,12 @@ export default function FlowAccountSummaryCard({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* 累计总额 */}
-        <div className="text-center md:text-left">
-          <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-            {t('account.total.amount')}
-          </div>
-          <div className={`text-3xl font-bold ${
-            accountType === 'INCOME'
-              ? 'text-green-600 dark:text-green-400'
-              : 'text-red-600 dark:text-red-400'
-          }`}>
-            {currencySymbol}{flowStats.totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-        </div>
-
         {/* 本月金额 */}
         <div className="text-center md:text-left">
           <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
             {t('account.amount.this.month')}
           </div>
-          <div className={`text-2xl font-semibold ${
+          <div className={`text-3xl font-bold ${
             accountType === 'INCOME'
               ? 'text-green-600 dark:text-green-400'
               : 'text-red-600 dark:text-red-400'
@@ -185,7 +213,7 @@ export default function FlowAccountSummaryCard({
           </div>
         </div>
 
-        {/* 月度变化 */}
+        {/* 月度变化 + 绝对变化 */}
         <div className="text-center md:text-left">
           <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
             {t('account.change.monthly')}
@@ -197,8 +225,29 @@ export default function FlowAccountSummaryCard({
           }`}>
             {flowStats.monthlyChange >= 0 ? '+' : ''}{flowStats.monthlyChange.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
           </div>
+          <div className={`text-xs mt-1 ${
+            flowStats.thisMonthAmount - flowStats.lastMonthAmount >= 0
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-red-600 dark:text-red-400'
+          }`}>
+            {flowStats.thisMonthAmount - flowStats.lastMonthAmount >= 0 ? '+' : '-'}{currencySymbol}{Math.abs(flowStats.thisMonthAmount - flowStats.lastMonthAmount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+        </div>
+
+        {/* 年度对比 + 12月均值 */}
+        <div className="text-center md:text-left">
+          <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+            {t('account.comparison.yearly')}
+          </div>
+          <div className={`text-2xl font-semibold ${
+            flowStats.yearlyComparison >= 0
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-red-600 dark:text-red-400'
+          }`}>
+            {flowStats.yearlyComparison >= 0 ? '+' : ''}{flowStats.yearlyComparison.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+          </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {t('account.average.monthly')}: {currencySymbol}{flowStats.averageMonthly.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {t('account.average.12months')}: {currencySymbol}{flowStats.average12Months.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
       </div>
@@ -213,13 +262,9 @@ export default function FlowAccountSummaryCard({
             </div>
           </div>
           <div>
-            <span className="text-gray-500 dark:text-gray-400">{t('account.year.total')}</span>
-            <div className={`font-medium ${
-              accountType === 'INCOME'
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400'
-            }`}>
-              {currencySymbol}{flowStats.thisYearAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <span className="text-gray-500 dark:text-gray-400">{t('account.transaction.count')}</span>
+            <div className="font-medium text-gray-900 dark:text-gray-100">
+              {transactions.length}
             </div>
           </div>
           <div>

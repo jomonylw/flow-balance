@@ -89,13 +89,19 @@ export default function ProfileSettingsForm({ user }: ProfileSettingsFormProps) 
       )}
 
       {/* 基本信息表单 */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
-            <span className="mr-2">👤</span>
-            {t('settings.basic.info')}
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('settings.basic.info.description')}</p>
+      <div className="bg-gradient-to-br from-white to-gray-50/30 dark:from-gray-800 dark:to-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm backdrop-blur-sm">
+        <div className="mb-6">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30">
+              <span className="text-lg">👤</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {t('settings.basic.info')}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.basic.info.description')}</p>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
