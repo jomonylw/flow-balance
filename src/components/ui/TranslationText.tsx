@@ -28,7 +28,7 @@ export default function TranslationText({
     return (
       <Component className={`${className} animate-pulse`}>
         {fallback || (
-          <span className="bg-gray-200 rounded h-4 w-20 inline-block"></span>
+          <span className="rounded h-4 w-20 inline-block bg-gray-200 dark:bg-gray-700"></span>
         )}
       </Component>
     )

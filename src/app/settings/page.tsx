@@ -6,10 +6,12 @@ import UserSettingsPage from '@/components/settings/UserSettingsPage'
 
 export default async function SettingsPage() {
   const user = await getCurrentUser()
-  
+
   if (!user) {
     redirect('/login')
   }
+
+
 
   // 获取用户设置
   const userSettings = await prisma.userSettings.findUnique({

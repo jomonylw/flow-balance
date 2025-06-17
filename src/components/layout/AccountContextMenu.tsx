@@ -20,6 +20,7 @@ interface AccountContextMenuProps {
   onClose: () => void
   onAction: (action: string) => void
   account: Account
+  triggerRef?: React.RefObject<HTMLElement | null>
 }
 
 // 辅助函数：获取账户类型标签
@@ -48,7 +49,8 @@ export default function AccountContextMenu({
   isOpen,
   onClose,
   onAction,
-  account
+  account,
+  triggerRef
 }: AccountContextMenuProps) {
   const { t } = useLanguage()
 
@@ -140,6 +142,7 @@ export default function AccountContextMenu({
       menuItems={menuItems}
       title={`${account.name} • ${getAccountTypeLabel(t, accountType)}`}
       width="lg"
+      triggerRef={triggerRef}
     />
   )
 }

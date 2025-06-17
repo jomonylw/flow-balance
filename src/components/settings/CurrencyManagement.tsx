@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Currency } from '@prisma/client'
 import { useUserData } from '@/contexts/UserDataContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { CurrencyManagementSkeleton } from '@/components/ui/page-skeletons'
 
 interface CurrencyWithStatus extends Currency {
   isSelected: boolean
@@ -203,17 +204,7 @@ export default function CurrencyManagement({ onCurrenciesUpdated }: CurrencyMana
   }
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('currency.management')}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('currency.management.description')}</p>
-        </div>
-        <div className="text-center py-8">
-          <div className="text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
-        </div>
-      </div>
-    )
+    return <CurrencyManagementSkeleton />
   }
 
   return (

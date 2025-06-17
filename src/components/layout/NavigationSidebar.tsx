@@ -9,6 +9,7 @@ import SidebarReportsLink from './SidebarReportsLink'
 import OptimizedCategoryAccountTree, { OptimizedCategoryAccountTreeRef } from './OptimizedCategoryAccountTree'
 import TopCategoryModal from '@/components/ui/TopCategoryModal'
 import TranslationLoader from '@/components/ui/TranslationLoader'
+import { SidebarSkeleton } from '@/components/ui/page-skeletons'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { publishCategoryCreate } from '@/utils/DataUpdateManager'
 import { useSidebarWidth, useSidebarScrollPosition } from '@/hooks/useSidebarWidth'
@@ -190,21 +191,7 @@ export default function NavigationSidebar({
   return (
     <TranslationLoader
       key={stableKey}
-      fallback={
-        <div className={`
-          ${isMobile ? 'w-full' : 'w-80'}
-          bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full
-        `}>
-          <div className="animate-pulse p-4 space-y-4">
-            <div className="h-10 bg-gray-200 rounded"></div>
-            <div className="space-y-2">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-8 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      }
+      fallback={<SidebarSkeleton isMobile={isMobile} />}
     >
       <div
         ref={(el) => {

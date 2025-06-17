@@ -15,6 +15,7 @@ interface CategoryContextMenuProps {
   onClose: () => void
   onAction: (action: string) => void
   category: Category
+  triggerRef?: React.RefObject<HTMLElement | null>
 }
 
 // 辅助函数：获取账户类型标签
@@ -55,7 +56,8 @@ export default function CategoryContextMenu({
   isOpen,
   onClose,
   onAction,
-  category
+  category,
+  triggerRef
 }: CategoryContextMenuProps) {
   const { t } = useLanguage()
 
@@ -152,6 +154,7 @@ export default function CategoryContextMenu({
       menuItems={menuItems}
       title={`${category.name} • ${getAccountTypeLabel(t, categoryType)}`}
       width="lg"
+      triggerRef={triggerRef}
     />
   )
 }

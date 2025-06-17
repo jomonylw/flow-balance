@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 
 import CategoryContextMenu from './CategoryContextMenu'
@@ -69,6 +69,7 @@ export default function CategoryTreeItem({
   const { t } = useLanguage()
   const pathname = usePathname()
   const { navigateToCategory } = useSidebarNavigation()
+  const moreButtonRef = useRef<HTMLButtonElement | null>(null)
 
   // 使用UserDataContext获取数据
   const { currencies, getBaseCurrency, updateCategory } = useUserData()
@@ -440,6 +441,7 @@ export default function CategoryTreeItem({
 
         {/* 更多操作按钮 */}
         <button
+          ref={moreButtonRef}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -460,6 +462,7 @@ export default function CategoryTreeItem({
         onClose={() => setShowContextMenu(false)}
         onAction={handleMenuAction}
         category={category}
+        triggerRef={moreButtonRef}
       />
 
 

@@ -13,8 +13,8 @@ interface WithTranslationProps {
  * 翻译包装器组件
  * 在翻译未加载完成时显示加载状态，避免显示翻译键值
  */
-export default function WithTranslation({ 
-  children, 
+export default function WithTranslation({
+  children,
   fallback,
   className = ''
 }: WithTranslationProps) {
@@ -25,8 +25,8 @@ export default function WithTranslation({
       <div className={`${className} animate-pulse`}>
         {fallback || (
           <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            <div className="h-4 rounded w-3/4 bg-gray-200 dark:bg-gray-700"></div>
+            <div className="h-4 rounded w-1/2 bg-gray-200 dark:bg-gray-700"></div>
           </div>
         )}
       </div>
@@ -51,8 +51,8 @@ export function withTranslation<P extends object>(
         <div className="animate-pulse">
           {fallback || (
             <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 rounded w-3/4 bg-gray-200 dark:bg-gray-700"></div>
+              <div className="h-4 rounded w-1/2 bg-gray-200 dark:bg-gray-700"></div>
             </div>
           )}
         </div>

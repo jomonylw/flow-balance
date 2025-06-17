@@ -249,7 +249,7 @@ export function validateAccountData(accounts: Account[]): ValidationResult {
  * 验证交易类型与账户类型的匹配性
  */
 function validateTransactionAccountType(
-  transactionType: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE',
+  transactionType: 'INCOME' | 'EXPENSE' | 'BALANCE',
   accountType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
 ): boolean {
   switch (accountType) {

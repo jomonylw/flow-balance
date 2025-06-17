@@ -9,6 +9,7 @@ import InputField from '@/components/ui/InputField'
 import AuthButton from '@/components/ui/AuthButton'
 import ConfirmationModal from '@/components/ui/ConfirmationModal'
 import ColorPicker from '@/components/ui/ColorPicker'
+import { TagManagementSkeleton } from '@/components/ui/page-skeletons'
 
 interface Tag {
   id: string
@@ -137,12 +138,7 @@ export default function TagManagement() {
   }
 
   if (isLoading) {
-    return (
-      <div className="p-8 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="mt-2 text-gray-500 dark:text-gray-400">{t('common.loading')}</p>
-      </div>
-    )
+    return <TagManagementSkeleton />
   }
 
   return (

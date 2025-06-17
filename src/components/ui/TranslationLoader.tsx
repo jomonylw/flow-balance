@@ -20,9 +20,9 @@ export default function TranslationLoader({ children, fallback }: TranslationLoa
       <div className="animate-pulse">
         {fallback || (
           <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            <div className="h-4 rounded w-3/4 bg-gray-200 dark:bg-gray-700"></div>
+            <div className="h-4 rounded w-1/2 bg-gray-200 dark:bg-gray-700"></div>
+            <div className="h-4 rounded w-5/6 bg-gray-200 dark:bg-gray-700"></div>
           </div>
         )}
       </div>

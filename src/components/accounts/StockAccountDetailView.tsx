@@ -11,6 +11,7 @@ import DetailPageLayout from '@/components/ui/DetailPageLayout'
 import { calculateAccountBalance } from '@/lib/account-balance'
 import { useToast } from '@/contexts/ToastContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { SkeletonTable } from '@/components/ui/skeleton'
 import { useBalanceUpdateListener, useTransactionListener } from '@/hooks/useDataUpdateListener'
 import {
   Account,
@@ -242,8 +243,14 @@ export default function StockAccountDetailView({
     }
   }
 
-  // 使用专业的余额计算服务
-  const accountBalances = calculateAccountBalance({ ...account, transactions: account.transactions || [] })
+  // 使用专业的余额计算服务，计算截止至当前日期的余额
+  const accountBalances = calculateAccountBalance(
+    { ...account, transactions: account.transactions || [] },
+    {
+      asOfDate: new Date(), // 截止至当前日期
+      validateData: false
+    }
+  )
   const baseCurrencyCode = user.settings?.baseCurrency?.code || 'USD'
 
   // 获取账户的实际余额（优先使用基础货币，如果没有则使用账户的主要货币）
@@ -293,12 +300,12 @@ export default function StockAccountDetailView({
 
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="inline-flex items-center justify-center px-4 py-2 border border-red-300 dark:border-red-600 text-sm font-medium rounded-md shadow-sm text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 touch-manipulation"
+            className="inline-flex items-center justify-center p-2 border border-red-300 dark:border-red-600 text-sm font-medium rounded-md shadow-sm text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 touch-manipulation"
+            aria-label={t('account.delete')}
           >
-            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            {t('account.delete')}
           </button>
         </>
       }
@@ -402,10 +409,7 @@ export default function StockAccountDetailView({
         </div>
         
         {isLoading ? (
-          <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">{t('common.loading')}</p>
-          </div>
+          <SkeletonTable rows={8} columns={5} className="shadow-none" />
         ) : (
           <TransactionList
             transactions={transactions}

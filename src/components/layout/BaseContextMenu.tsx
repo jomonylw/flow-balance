@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export interface MenuItem {
   label: string
@@ -21,6 +22,7 @@ interface BaseContextMenuProps {
   title?: string
   className?: string
   width?: 'sm' | 'md' | 'lg'
+  triggerRef?: React.RefObject<HTMLElement | null>
 }
 
 export default function BaseContextMenu({
@@ -30,10 +32,18 @@ export default function BaseContextMenu({
   menuItems,
   title,
   className = '',
-  width = 'md'
+  width = 'md',
+  triggerRef
 }: BaseContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null)
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
+  const [mounted, setMounted] = useState(false)
+  const [triggerElement, setTriggerElement] = useState<Element | null>(null)
+
+  // 处理组件挂载状态
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // 点击外部关闭菜单
   useEffect(() => {
@@ -54,74 +64,110 @@ export default function BaseContextMenu({
 
 
 
+  // 查找触发元素
+  useEffect(() => {
+    if (isOpen) {
+      if (triggerRef?.current) {
+        setTriggerElement(triggerRef.current)
+      } else {
+        // 回退方案：查找最近的带有更多操作按钮的元素
+        const buttons = document.querySelectorAll('button[title="更多操作"], button:has(svg path[d*="M12 5v.01M12 12v.01M12 19v.01"])')
+        const lastClickedButton = Array.from(buttons).find(button => {
+          const rect = button.getBoundingClientRect()
+          return rect.width > 0 && rect.height > 0
+        })
+        setTriggerElement(lastClickedButton || null)
+      }
+    }
+  }, [isOpen, triggerRef])
+
   // 计算菜单位置，避免超出视口
   useEffect(() => {
-    if (isOpen && menuRef.current) {
-      const triggerElement = menuRef.current.parentElement
-      if (!triggerElement) return
+    if (isOpen && mounted && triggerElement) {
+      const calculateAndSetPosition = () => {
+        if (!menuRef.current) return
 
-      const triggerRect = triggerElement.getBoundingClientRect()
-      const menuWidthMap = { sm: 192, md: 224, lg: 256 } // w-48, w-56, w-64
-      const menuWidth = menuWidthMap[width]
-      const viewportWidth = window.innerWidth
-      const viewportHeight = window.innerHeight
+        const triggerRect = triggerElement.getBoundingClientRect()
+        const menuHeight = menuRef.current.offsetHeight
+        const menuWidth = menuRef.current.offsetWidth
+        const viewportWidth = window.innerWidth
+        const viewportHeight = window.innerHeight
+        const margin = 16 // 距离视窗边缘的最小间距
 
-      let left = triggerRect.right + 8 // 默认显示在右侧，8px间距
-      const top = triggerRect.top
+        // 定义不同位置的计算函数
+        const positions = {
+          right: () => ({
+            left: triggerRect.right + 8,
+            top: triggerRect.top + triggerRect.height / 2 - menuHeight / 2
+          }),
+          left: () => ({
+            left: triggerRect.left - menuWidth - 8,
+            top: triggerRect.top + triggerRect.height / 2 - menuHeight / 2
+          }),
+          bottom: () => ({
+            left: triggerRect.left + triggerRect.width / 2 - menuWidth / 2,
+            top: triggerRect.bottom + 8
+          }),
+          top: () => ({
+            left: triggerRect.left + triggerRect.width / 2 - menuWidth / 2,
+            top: triggerRect.top - menuHeight - 8
+          })
+        }
 
-      // 如果右侧空间不够，显示在左侧
-      if (left + menuWidth > viewportWidth - 20) {
-        left = triggerRect.left - menuWidth - 8
-      }
+        // 检查位置是否在视窗内
+        const isInViewport = (pos: { top: number; left: number }) => {
+          return (
+            pos.top >= margin &&
+            pos.left >= margin &&
+            pos.top + menuHeight <= viewportHeight - margin &&
+            pos.left + menuWidth <= viewportWidth - margin
+          )
+        }
 
-      // 确保菜单不会在左侧屏幕外
-      if (left < 20) {
-        left = 20
-      }
+        let bestPosition: { top: number; left: number } | null = null
 
-      // 先设置初始位置，然后在下一帧检查高度
-      setMenuStyle({
-        position: 'fixed',
-        left: `${left}px`,
-        top: `${top}px`,
-        zIndex: 9999
-      })
-
-      // 使用 requestAnimationFrame 确保菜单已渲染后再调整位置
-      requestAnimationFrame(() => {
-        if (menuRef.current) {
-          const menuHeight = menuRef.current.offsetHeight
-          let adjustedTop = top
-
-          // 确保不超出视口顶部和底部
-          if (adjustedTop < 20) {
-            adjustedTop = 20
-          } else if (adjustedTop + menuHeight > viewportHeight - 20) {
-            // 如果菜单底部会超出视窗，则向上调整位置
-            adjustedTop = Math.max(20, viewportHeight - menuHeight - 20)
-          }
-
-          // 如果位置需要调整，更新样式
-          if (adjustedTop !== top || menuHeight > viewportHeight - 40) {
-            setMenuStyle({
-              position: 'fixed',
-              left: `${left}px`,
-              top: `${adjustedTop}px`,
-              zIndex: 9999,
-              maxHeight: menuHeight > viewportHeight - 40 ? `${viewportHeight - 40}px` : undefined,
-              overflowY: menuHeight > viewportHeight - 40 ? 'auto' : 'visible'
-            })
+        // 按优先级尝试找到最佳位置
+        const placementPriority = ['right', 'left', 'bottom', 'top']
+        for (const placement of placementPriority) {
+          const pos = positions[placement as keyof typeof positions]()
+          if (isInViewport(pos)) {
+            bestPosition = pos
+            break
           }
         }
-      })
-    }
-  }, [isOpen, width])
 
-  if (!isOpen) return null
+        // 如果所有位置都不理想，则选择第一个位置并进行调整
+        if (!bestPosition) {
+          const pos = positions.right() // 默认从 right 开始调整
+
+          pos.left = Math.max(margin, Math.min(pos.left, viewportWidth - menuWidth - margin))
+          pos.top = Math.max(margin, Math.min(pos.top, viewportHeight - menuHeight - margin))
+
+          bestPosition = pos
+        }
+
+        // 应用最终样式
+        setMenuStyle({
+          position: 'fixed',
+          left: `${bestPosition.left}px`,
+          top: `${bestPosition.top}px`,
+          zIndex: 9999,
+          maxHeight: viewportHeight - margin * 2,
+          overflowY: 'auto'
+        })
+      }
+
+      // 使用 requestAnimationFrame 确保菜单已渲染并获取到正确尺寸
+      // 增加一个极短的延时，确保DOM更新完成
+      setTimeout(() => requestAnimationFrame(calculateAndSetPosition), 50)
+    }
+  }, [isOpen, mounted, triggerElement, width])
+
+  if (!isOpen || !mounted) return null
 
   const widthClass = {
     sm: 'w-48',
-    md: 'w-56', 
+    md: 'w-56',
     lg: 'w-64'
   }[width]
 
@@ -136,7 +182,7 @@ export default function BaseContextMenu({
     return colors[color as keyof typeof colors] || colors.gray
   }
 
-  return (
+  const menuContent = (
     <div
       ref={menuRef}
       className={`
@@ -226,4 +272,7 @@ export default function BaseContextMenu({
       </div>
     </div>
   )
+
+  // 使用 Portal 将菜单渲染到 document.body，避免被父容器的 overflow 遮挡
+  return createPortal(menuContent, document.body)
 }

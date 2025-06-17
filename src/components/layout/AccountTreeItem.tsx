@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import AccountContextMenu from './AccountContextMenu'
 import DeleteConfirmModal from '@/components/ui/DeleteConfirmModal'
@@ -70,6 +70,7 @@ export default function AccountTreeItem({
   const { t } = useLanguage()
   const pathname = usePathname()
   const { navigateTo } = useOptimizedNavigation()
+  const moreButtonRef = useRef<HTMLButtonElement | null>(null)
 
   // 使用UserDataContext获取数据
   const {
@@ -349,6 +350,7 @@ export default function AccountTreeItem({
 
         {/* 更多操作按钮 */}
         <button
+          ref={moreButtonRef}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -370,6 +372,7 @@ export default function AccountTreeItem({
         onClose={() => setShowContextMenu(false)}
         onAction={handleMenuAction}
         account={account}
+        triggerRef={moreButtonRef}
       />
 
 

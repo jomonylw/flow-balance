@@ -5,6 +5,7 @@ import { useUserData } from '@/contexts/UserDataContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import ExchangeRateForm from './ExchangeRateForm'
 import ExchangeRateList from './ExchangeRateList'
+import { ExchangeRateManagementSkeleton } from '@/components/ui/page-skeletons'
 
 // 使用本地 Currency 接口而不是 Prisma 的
 interface Currency {
@@ -154,22 +155,7 @@ export default function ExchangeRateManagement({ currencies }: ExchangeRateManag
   }
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('exchange.rate.management')}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('exchange.rate.loading')}</p>
-        </div>
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
-          <div className="space-y-3">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
-          </div>
-        </div>
-      </div>
-    )
+    return <ExchangeRateManagementSkeleton />
   }
 
   return (

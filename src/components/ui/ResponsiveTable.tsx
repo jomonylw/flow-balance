@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react'
 import { useIsMobile } from '@/hooks/useResponsive'
+import { useTheme } from '@/contexts/ThemeContext'
 
 interface Column {
   key: string
@@ -35,6 +36,7 @@ export default function ResponsiveTable({
   mobileCardRender
 }: ResponsiveTableProps) {
   const isMobile = useIsMobile()
+  const { resolvedTheme } = useTheme()
 
   const getRowKey = (record: any, index: number): string => {
     if (typeof rowKey === 'function') {
@@ -49,8 +51,8 @@ export default function ResponsiveTable({
       return data.map((record, index) => (
         <div
           key={getRowKey(record, index)}
-          className={`bg-white border border-gray-200 rounded-lg p-4 mb-3 ${
-            onRowClick ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100' : ''
+          className={`${resolvedTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4 mb-3 ${
+            onRowClick ? `cursor-pointer ${resolvedTheme === 'dark' ? 'hover:bg-gray-700 active:bg-gray-600' : 'hover:bg-gray-50 active:bg-gray-100'}` : ''
           }`}
           onClick={() => onRowClick?.(record, index)}
         >
@@ -65,8 +67,8 @@ export default function ResponsiveTable({
     return data.map((record, index) => (
       <div
         key={getRowKey(record, index)}
-        className={`bg-white border border-gray-200 rounded-lg p-4 mb-3 ${
-          onRowClick ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100' : ''
+        className={`${resolvedTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4 mb-3 ${
+          onRowClick ? `cursor-pointer ${resolvedTheme === 'dark' ? 'hover:bg-gray-700 active:bg-gray-600' : 'hover:bg-gray-50 active:bg-gray-100'}` : ''
         }`}
         onClick={() => onRowClick?.(record, index)}
       >
@@ -77,10 +79,10 @@ export default function ResponsiveTable({
           return (
             <div key={column.key} className={colIndex > 0 ? 'mt-2' : ''}>
               <div className="flex justify-between items-start">
-                <span className="text-sm font-medium text-gray-500 min-w-0 flex-shrink-0 mr-3">
+                <span className={`text-sm font-medium min-w-0 flex-shrink-0 mr-3 ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                   {column.title}:
                 </span>
-                <span className="text-sm text-gray-900 text-right min-w-0 flex-1">
+                <span className={`text-sm text-right min-w-0 flex-1 ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
                   {displayValue}
                 </span>
               </div>
@@ -94,13 +96,15 @@ export default function ResponsiveTable({
   // 桌面端表格视图
   const renderDesktopTable = () => (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className={`min-w-full divide-y ${resolvedTheme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
+        <thead className={resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}>
           <tr>
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                  resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-500'
+                } ${
                   column.width ? `w-${column.width}` : ''
                 } ${
                   column.align === 'center' ? 'text-center' :
@@ -112,12 +116,12 @@ export default function ResponsiveTable({
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className={`${resolvedTheme === 'dark' ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-gray-200'} divide-y`}>
           {data.map((record, index) => (
             <tr
               key={getRowKey(record, index)}
               className={`${
-                onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''
+                onRowClick ? `cursor-pointer ${resolvedTheme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}` : ''
               }`}
               onClick={() => onRowClick?.(record, index)}
             >
@@ -128,7 +132,9 @@ export default function ResponsiveTable({
                 return (
                   <td
                     key={column.key}
-                    className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
+                    className={`px-6 py-4 whitespace-nowrap text-sm ${
+                      resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'
+                    } ${
                       column.align === 'center' ? 'text-center' :
                       column.align === 'right' ? 'text-right' : 'text-left'
                     }`}
@@ -147,11 +153,11 @@ export default function ResponsiveTable({
   // 加载状态
   if (loading) {
     return (
-      <div className={`bg-white rounded-lg shadow ${className}`}>
+      <div className={`${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow ${className}`}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">加载中...</p>
+            <div className={`animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4 ${resolvedTheme === 'dark' ? 'border-blue-400' : 'border-blue-600'}`}></div>
+            <p className={resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>加载中...</p>
           </div>
         </div>
       </div>
@@ -161,13 +167,13 @@ export default function ResponsiveTable({
   // 空数据状态
   if (data.length === 0) {
     return (
-      <div className={`bg-white rounded-lg shadow ${className}`}>
+      <div className={`${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow ${className}`}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`mx-auto h-12 w-12 mb-4 ${resolvedTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="text-gray-500">{emptyText}</p>
+            <p className={resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>{emptyText}</p>
           </div>
         </div>
       </div>
@@ -175,7 +181,7 @@ export default function ResponsiveTable({
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow ${className}`}>
+    <div className={`${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow ${className}`}>
       {isMobile ? (
         <div className="p-4">
           {renderMobileCards()}

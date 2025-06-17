@@ -4,7 +4,7 @@ interface Category {
 }
 
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: number
   date: string
 }

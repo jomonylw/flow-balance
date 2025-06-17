@@ -8,7 +8,7 @@ interface Currency {
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: number // 已序列化的数字
   description: string
   date: Date

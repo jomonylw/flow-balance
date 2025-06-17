@@ -7,7 +7,7 @@ interface Currency {
 }
 
 interface Transaction {
-  type: 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE'
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: number // 已序列化的数字
   currency: Currency
 }
