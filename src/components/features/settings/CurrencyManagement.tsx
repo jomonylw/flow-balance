@@ -27,10 +27,6 @@ export default function CurrencyManagement({
     symbol: '',
   })
 
-  useEffect(() => {
-    fetchAllCurrencies()
-  }, [fetchAllCurrencies])
-
   const fetchAllCurrencies = useCallback(async () => {
     try {
       setIsLoading(true)
@@ -52,6 +48,10 @@ export default function CurrencyManagement({
       setIsLoading(false)
     }
   }, [t])
+
+  useEffect(() => {
+    fetchAllCurrencies()
+  }, [fetchAllCurrencies])
 
   const handleAddCurrency = async (currencyCode: string) => {
     try {
