@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
 
 export default async function Home() {
   // 检查用户是否已登录
@@ -9,7 +9,7 @@ export default async function Home() {
   if (user) {
     // 检查用户是否已完成初始设置
     const userSettings = await prisma.userSettings.findUnique({
-      where: { userId: user.id }
+      where: { userId: user.id },
     })
 
     if (!userSettings?.baseCurrencyCode) {

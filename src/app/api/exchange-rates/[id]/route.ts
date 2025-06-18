@@ -1,14 +1,19 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
 
 /**
  * 获取单个汇率详情
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await getCurrentUser()
@@ -21,12 +26,12 @@ export async function GET(
     const exchangeRate = await prisma.exchangeRate.findFirst({
       where: {
         id,
-        userId: user.id
+        userId: user.id,
       },
       include: {
         fromCurrencyRef: true,
-        toCurrencyRef: true
-      }
+        toCurrencyRef: true,
+      },
     })
 
     if (!exchangeRate) {
@@ -36,7 +41,7 @@ export async function GET(
     // 序列化 Decimal 类型
     const serializedRate = {
       ...exchangeRate,
-      rate: parseFloat(exchangeRate.rate.toString())
+      rate: parseFloat(exchangeRate.rate.toString()),
     }
 
     return successResponse(serializedRate)
@@ -51,7 +56,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await getCurrentUser()
@@ -67,8 +72,8 @@ export async function PUT(
     const existingRate = await prisma.exchangeRate.findFirst({
       where: {
         id,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!existingRate) {
@@ -99,8 +104,8 @@ export async function PUT(
             fromCurrency: existingRate.fromCurrency,
             toCurrency: existingRate.toCurrency,
             effectiveDate: parsedDate,
-            id: { not: id }
-          }
+            id: { not: id },
+          },
         })
 
         if (conflictingRate) {
@@ -115,18 +120,18 @@ export async function PUT(
       data: {
         ...(rate !== undefined && { rate: parseFloat(rate) }),
         ...(effectiveDate && { effectiveDate: parsedDate }),
-        ...(notes !== undefined && { notes: notes || null })
+        ...(notes !== undefined && { notes: notes || null }),
       },
       include: {
         fromCurrencyRef: true,
-        toCurrencyRef: true
-      }
+        toCurrencyRef: true,
+      },
     })
 
     // 序列化 Decimal 类型
     const serializedRate = {
       ...updatedRate,
-      rate: parseFloat(updatedRate.rate.toString())
+      rate: parseFloat(updatedRate.rate.toString()),
     }
 
     return successResponse(serializedRate, '汇率更新成功')
@@ -141,7 +146,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await getCurrentUser()
@@ -155,8 +160,8 @@ export async function DELETE(
     const existingRate = await prisma.exchangeRate.findFirst({
       where: {
         id,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!existingRate) {
@@ -165,7 +170,7 @@ export async function DELETE(
 
     // 删除汇率
     await prisma.exchangeRate.delete({
-      where: { id }
+      where: { id },
     })
 
     return successResponse(null, '汇率删除成功')

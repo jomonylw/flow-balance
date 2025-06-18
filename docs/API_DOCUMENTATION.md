@@ -2,17 +2,20 @@
 
 ## 📋 API 概述
 
-Flow Balance 提供完整的 RESTful API，支持所有核心功能的后端操作。所有 API 都基于 Next.js API Routes 实现，提供类型安全和统一的响应格式。
+Flow Balance 提供完整的 RESTful API，支持所有核心功能的后端操作。所有 API 都基于 Next.js API
+Routes 实现，提供类型安全和统一的响应格式。
 
 ## 🔐 认证机制
 
 ### JWT 令牌认证
+
 - **令牌类型**：JWT (JSON Web Token)
 - **存储方式**：HTTP-only Cookie
 - **过期时间**：7天
 - **刷新机制**：自动刷新
 
 ### 请求头要求
+
 ```http
 Content-Type: application/json
 Cookie: auth-token=<jwt-token>
@@ -21,6 +24,7 @@ Cookie: auth-token=<jwt-token>
 ## 📊 响应格式
 
 ### 成功响应
+
 ```json
 {
   "success": true,
@@ -30,6 +34,7 @@ Cookie: auth-token=<jwt-token>
 ```
 
 ### 错误响应
+
 ```json
 {
   "success": false,
@@ -39,6 +44,7 @@ Cookie: auth-token=<jwt-token>
 ```
 
 ### HTTP 状态码
+
 - `200` - 成功
 - `201` - 创建成功
 - `400` - 请求错误
@@ -50,11 +56,13 @@ Cookie: auth-token=<jwt-token>
 ## 🔑 认证相关 API
 
 ### 用户注册
+
 ```http
 POST /api/auth/signup
 ```
 
 **请求体**：
+
 ```json
 {
   "email": "user@example.com",
@@ -64,6 +72,7 @@ POST /api/auth/signup
 ```
 
 **响应**：
+
 ```json
 {
   "success": true,
@@ -79,11 +88,13 @@ POST /api/auth/signup
 ```
 
 ### 用户登录
+
 ```http
 POST /api/auth/login
 ```
 
 **请求体**：
+
 ```json
 {
   "email": "user@example.com",
@@ -92,6 +103,7 @@ POST /api/auth/login
 ```
 
 **响应**：
+
 ```json
 {
   "success": true,
@@ -106,11 +118,13 @@ POST /api/auth/login
 ```
 
 ### 用户登出
+
 ```http
 POST /api/auth/logout
 ```
 
 **响应**：
+
 ```json
 {
   "success": true,
@@ -119,11 +133,13 @@ POST /api/auth/logout
 ```
 
 ### 请求密码重置
+
 ```http
 POST /api/auth/request-password-reset
 ```
 
 **请求体**：
+
 ```json
 {
   "email": "user@example.com"
@@ -131,11 +147,13 @@ POST /api/auth/request-password-reset
 ```
 
 ### 重置密码
+
 ```http
 POST /api/auth/reset-password
 ```
 
 **请求体**：
+
 ```json
 {
   "token": "reset_token",
@@ -147,15 +165,18 @@ POST /api/auth/reset-password
 ## 🏦 账户管理 API
 
 ### 获取账户列表
+
 ```http
 GET /api/accounts
 ```
 
 **查询参数**：
+
 - `categoryId` (可选) - 分类ID筛选
 - `type` (可选) - 账户类型筛选
 
 **响应**：
+
 ```json
 {
   "success": true,
@@ -182,11 +203,13 @@ GET /api/accounts
 ```
 
 ### 创建账户
+
 ```http
 POST /api/accounts
 ```
 
 **请求体**：
+
 ```json
 {
   "name": "新账户",
@@ -198,11 +221,13 @@ POST /api/accounts
 ```
 
 ### 获取账户详情
+
 ```http
 GET /api/accounts/[id]
 ```
 
 **响应**：
+
 ```json
 {
   "success": true,
@@ -220,7 +245,7 @@ GET /api/accounts/[id]
       {
         "id": "transaction_id",
         "type": "INCOME",
-        "amount": 1000.00,
+        "amount": 1000.0,
         "description": "交易描述",
         "date": "2024-01-01T00:00:00.000Z"
       }
@@ -230,11 +255,13 @@ GET /api/accounts/[id]
 ```
 
 ### 更新账户
+
 ```http
 PUT /api/accounts/[id]
 ```
 
 **请求体**：
+
 ```json
 {
   "name": "更新后的账户名",
@@ -244,16 +271,19 @@ PUT /api/accounts/[id]
 ```
 
 ### 删除账户
+
 ```http
 DELETE /api/accounts/[id]
 ```
 
 ### 获取账户详细统计
+
 ```http
 GET /api/accounts/[id]/details
 ```
 
 **响应**：
+
 ```json
 {
   "success": true,
@@ -264,27 +294,29 @@ GET /api/accounts/[id]/details
       "type": "ASSET"
     },
     "balance": {
-      "current": 5000.00,
-      "previous": 4500.00,
-      "change": 500.00,
+      "current": 5000.0,
+      "previous": 4500.0,
+      "change": 500.0,
       "changePercent": 11.11
     },
     "statistics": {
       "totalTransactions": 25,
-      "totalIncome": 6000.00,
-      "totalExpense": 1000.00,
-      "averageTransaction": 240.00
+      "totalIncome": 6000.0,
+      "totalExpense": 1000.0,
+      "averageTransaction": 240.0
     }
   }
 }
 ```
 
 ### 获取账户交易列表
+
 ```http
 GET /api/accounts/[id]/transactions
 ```
 
 **查询参数**：
+
 - `page` (可选) - 页码，默认1
 - `limit` (可选) - 每页数量，默认10
 - `type` (可选) - 交易类型筛选
@@ -292,6 +324,7 @@ GET /api/accounts/[id]/transactions
 - `endDate` (可选) - 结束日期
 
 **响应**：
+
 ```json
 {
   "success": true,
@@ -300,7 +333,7 @@ GET /api/accounts/[id]/transactions
       {
         "id": "transaction_id",
         "type": "INCOME",
-        "amount": 1000.00,
+        "amount": 1000.0,
         "description": "交易描述",
         "date": "2024-01-01T00:00:00.000Z",
         "tags": [
@@ -326,11 +359,13 @@ GET /api/accounts/[id]/transactions
 ## 💰 交易管理 API
 
 ### 获取交易列表
+
 ```http
 GET /api/transactions
 ```
 
 **查询参数**：
+
 - `page` (可选) - 页码
 - `limit` (可选) - 每页数量
 - `accountId` (可选) - 账户ID筛选
@@ -342,22 +377,25 @@ GET /api/transactions
 - `excludeBalanceAdjustment` (可选) - 是否排除余额调整记录，默认为 false
 
 **说明**：
+
 - 默认情况下，API返回所有类型的交易记录（包括余额调整记录）
 - 通用交易页面使用 `excludeBalanceAdjustment=true` 来排除余额调整记录
 - 存量账户类别页面使用默认行为来包含余额调整记录
 
 ### 创建交易
+
 ```http
 POST /api/transactions
 ```
 
 **请求体**：
+
 ```json
 {
   "accountId": "account_id",
   "categoryId": "category_id",
   "type": "INCOME",
-  "amount": 1000.00,
+  "amount": 1000.0,
   "description": "交易描述",
   "notes": "备注信息",
   "date": "2024-01-01T00:00:00.000Z",
@@ -366,16 +404,19 @@ POST /api/transactions
 ```
 
 ### 获取交易详情
+
 ```http
 GET /api/transactions/[id]
 ```
 
 ### 更新交易
+
 ```http
 PUT /api/transactions/[id]
 ```
 
 ### 删除交易
+
 ```http
 DELETE /api/transactions/[id]
 ```
@@ -383,21 +424,24 @@ DELETE /api/transactions/[id]
 ## ⚖️ 余额更新 API
 
 ### 更新账户余额
+
 ```http
 POST /api/balance-update
 ```
 
 **请求体**：
+
 ```json
 {
   "accountId": "account_id",
-  "newBalance": 5000.00,
+  "newBalance": 5000.0,
   "description": "余额调整说明",
   "date": "2024-01-01T00:00:00.000Z"
 }
 ```
 
 **响应**：
+
 ```json
 {
   "success": true,
@@ -405,11 +449,11 @@ POST /api/balance-update
     "transaction": {
       "id": "transaction_id",
       "type": "BALANCE",
-      "amount": 500.00,
+      "amount": 500.0,
       "description": "余额调整说明"
     },
-    "newBalance": 5000.00,
-    "balanceChange": 500.00
+    "newBalance": 5000.0,
+    "balanceChange": 500.0
   },
   "message": "余额更新成功"
 }
@@ -418,15 +462,18 @@ POST /api/balance-update
 ## 📁 分类管理 API
 
 ### 获取分类列表
+
 ```http
 GET /api/categories
 ```
 
 **查询参数**：
+
 - `type` (可选) - 账户类型筛选
 - `parentId` (可选) - 父分类ID筛选
 
 **响应**：
+
 ```json
 {
   "success": true,
@@ -459,11 +506,13 @@ GET /api/categories
 ```
 
 ### 创建分类
+
 ```http
 POST /api/categories
 ```
 
 **请求体**：
+
 ```json
 {
   "name": "新分类",
@@ -474,26 +523,31 @@ POST /api/categories
 ```
 
 ### 获取分类详情
+
 ```http
 GET /api/categories/[id]
 ```
 
 ### 更新分类
+
 ```http
 PUT /api/categories/[id]
 ```
 
 ### 删除分类
+
 ```http
 DELETE /api/categories/[id]
 ```
 
 ### 获取分类汇总统计
+
 ```http
 GET /api/categories/[id]/summary
 ```
 
 **响应**：
+
 ```json
 {
   "success": true,
@@ -504,7 +558,7 @@ GET /api/categories/[id]/summary
       "type": "ASSET"
     },
     "summary": {
-      "totalBalance": 10000.00,
+      "totalBalance": 10000.0,
       "accountCount": 3,
       "transactionCount": 50,
       "lastTransactionDate": "2024-01-01T00:00:00.000Z"
@@ -513,7 +567,7 @@ GET /api/categories/[id]/summary
       {
         "id": "account_id",
         "name": "账户名称",
-        "balance": 5000.00,
+        "balance": 5000.0,
         "currency": {
           "code": "USD",
           "symbol": "$"
@@ -524,7 +578,7 @@ GET /api/categories/[id]/summary
       {
         "id": "child_category_id",
         "name": "子分类名称",
-        "totalBalance": 3000.00,
+        "totalBalance": 3000.0,
         "accountCount": 2
       }
     ]

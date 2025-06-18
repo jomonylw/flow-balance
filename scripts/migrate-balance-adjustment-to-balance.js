@@ -44,7 +44,6 @@ async function migrateBalanceAdjustmentToBalance() {
     } else {
       console.log('⚠️ 迁移可能未完全成功，请检查')
     }
-
   } catch (error) {
     console.error('迁移过程中发生错误:', error)
     throw error
@@ -54,8 +53,7 @@ async function migrateBalanceAdjustmentToBalance() {
 }
 
 // 运行迁移
-migrateBalanceAdjustmentToBalance()
-  .catch((error) => {
-    console.error('迁移失败:', error)
-    process.exit(1)
-  })
+migrateBalanceAdjustmentToBalance().catch(error => {
+  console.error('迁移失败:', error)
+  process.exit(1)
+})

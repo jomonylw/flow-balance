@@ -35,11 +35,11 @@ async function migrateAccountCurrencies() {
         const userCurrencies = await prisma.userCurrency.findMany({
           where: {
             userId: account.userId,
-            isActive: true
+            isActive: true,
           },
           orderBy: {
-            order: 'asc'
-          }
+            order: 'asc',
+          },
         })
 
         if (userCurrencies.length > 0) {
@@ -57,8 +57,8 @@ async function migrateAccountCurrencies() {
               code: 'CNY',
               name: 'Chinese Yuan',
               symbol: '¥',
-              isCustom: false
-            }
+              isCustom: false,
+            },
           })
 
           // 为用户添加CNY到可用货币列表
@@ -66,18 +66,18 @@ async function migrateAccountCurrencies() {
             where: {
               userId_currencyCode: {
                 userId: account.userId,
-                currencyCode: 'CNY'
-              }
+                currencyCode: 'CNY',
+              },
             },
             update: {
-              isActive: true
+              isActive: true,
             },
             create: {
               userId: account.userId,
               currencyCode: 'CNY',
               isActive: true,
-              order: 0
-            }
+              order: 0,
+            },
           })
         }
       }
@@ -89,7 +89,9 @@ async function migrateAccountCurrencies() {
         WHERE id = ${account.id}
       `
 
-      console.log(`账户 "${account.name}" (用户: ${account.email}) 已设置货币为: ${defaultCurrency}`)
+      console.log(
+        `账户 "${account.name}" (用户: ${account.email}) 已设置货币为: ${defaultCurrency}`
+      )
     }
 
     console.log('账户货币迁移完成！')
@@ -108,7 +110,7 @@ if (require.main === module) {
       console.log('迁移脚本执行完成')
       process.exit(0)
     })
-    .catch((error) => {
+    .catch(error => {
       console.error('迁移脚本执行失败:', error)
       process.exit(1)
     })

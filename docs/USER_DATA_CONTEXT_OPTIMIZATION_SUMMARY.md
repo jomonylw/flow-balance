@@ -7,12 +7,14 @@
 ## 📊 优化前后对比
 
 ### 优化前的问题
+
 - **设置页面**：每次加载需要 15+ API 调用
 - **表单/模态框**：每次打开需要 3-5 个 API 调用
 - **重复数据获取**：同样的数据在多个组件中重复获取
 - **性能问题**：大量并发 API 请求影响页面加载速度
 
 ### 优化后的效果
+
 - **API 调用减少 95%**：从每次操作 20+ 个调用减少到 0 个额外调用
 - **数据一致性**：所有组件使用统一的数据源
 - **更好的用户体验**：页面加载更快，操作更流畅
@@ -23,7 +25,9 @@
 ### 1. 设置页面组件
 
 #### TagManagement.tsx
+
 **优化前：**
+
 ```typescript
 const [tags, setTags] = useState<Tag[]>([])
 const [isLoading, setIsLoading] = useState(true)
@@ -39,24 +43,28 @@ useEffect(() => {
 ```
 
 **优化后：**
+
 ```typescript
 const { tags, isLoading, updateTag, addTag, removeTag } = useUserData()
 // 数据自动可用，无需额外的 useEffect 和 API 调用
 ```
 
 #### CurrencyManagement.tsx
+
 **优化前：**
+
 ```typescript
 const fetchData = async () => {
   const [allCurrenciesRes, userCurrenciesRes] = await Promise.all([
     fetch('/api/currencies'),
-    fetch('/api/user/currencies')  // 重复调用
+    fetch('/api/user/currencies'), // 重复调用
   ])
   // ...
 }
 ```
 
 **优化后：**
+
 ```typescript
 const { currencies: userCurrencies, refreshCurrencies } = useUserData()
 // 只需获取所有货币，用户货币从 Context 获取
@@ -67,7 +75,9 @@ const fetchAllCurrencies = async () => {
 ```
 
 #### ExchangeRateManagement.tsx
+
 **优化前：**
+
 ```typescript
 const [userCurrencies, setUserCurrencies] = useState<Currency[]>([])
 
@@ -75,13 +85,14 @@ const fetchData = async () => {
   const [missingResponse, ratesResponse, userCurrenciesResponse] = await Promise.all([
     fetch('/api/exchange-rates/missing'),
     fetch('/api/exchange-rates'),
-    fetch('/api/user/currencies')  // 重复调用
+    fetch('/api/user/currencies'), // 重复调用
   ])
   // ...
 }
 ```
 
 **优化后：**
+
 ```typescript
 const { currencies: userCurrencies, getBaseCurrency } = useUserData()
 const baseCurrency = getBaseCurrency()
@@ -89,14 +100,16 @@ const baseCurrency = getBaseCurrency()
 const fetchData = async () => {
   const [missingResponse, ratesResponse] = await Promise.all([
     fetch('/api/exchange-rates/missing'),
-    fetch('/api/exchange-rates')
+    fetch('/api/exchange-rates'),
   ])
   // 用户货币和基础货币从 Context 获取
 }
 ```
 
 #### ExchangeRateForm.tsx
+
 **优化前：**
+
 ```typescript
 const [userCurrencies, setUserCurrencies] = useState<Currency[]>([])
 
@@ -111,13 +124,16 @@ useEffect(() => {
 ```
 
 **优化后：**
+
 ```typescript
 const { currencies: userCurrencies } = useUserData()
 // 移除了 fetchUserCurrencies 函数和相关的 useEffect
 ```
 
 #### PreferencesForm.tsx
+
 **优化前：**
+
 ```typescript
 const [userCurrencies, setUserCurrencies] = useState<Currency[]>([])
 
@@ -133,6 +149,7 @@ useEffect(() => {
 ```
 
 **优化后：**
+
 ```typescript
 const { currencies: userCurrencies } = useUserData()
 // 移除了 fetchUserCurrencies 函数和相关的 API 调用
@@ -141,7 +158,9 @@ const { currencies: userCurrencies } = useUserData()
 ### 2. 测试页面
 
 #### test-currency/page.tsx
+
 **优化前：**
+
 ```typescript
 const [accounts, setAccounts] = useState<Account[]>([])
 const [currencies, setCurrencies] = useState<Currency[]>([])
@@ -149,13 +168,14 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
 const fetchData = async () => {
   const [accountsRes, currenciesRes] = await Promise.all([
     fetch('/api/accounts'),
-    fetch('/api/user/currencies')
+    fetch('/api/user/currencies'),
   ])
   // ...
 }
 ```
 
 **优化后：**
+
 ```typescript
 const { accounts, currencies, refreshAccounts } = useUserData()
 // 数据自动可用，操作后使用 refreshAccounts() 同步更新
@@ -164,7 +184,9 @@ const { accounts, currencies, refreshAccounts } = useUserData()
 ### 3. UI 组件
 
 #### CategorySelector.tsx
+
 **已经优化**：该组件已经在使用 UserDataContext，是优化的良好示例：
+
 ```typescript
 const { categories: allCategories, isLoading } = useUserData()
 // 避免了重复的 API 调用
@@ -173,6 +195,7 @@ const { categories: allCategories, isLoading } = useUserData()
 ## 📈 性能提升数据
 
 ### API 调用减少统计
+
 - **TagManagement**: 从每次加载 1 个调用 → 0 个调用
 - **CurrencyManagement**: 从每次加载 2 个调用 → 1 个调用（减少 50%）
 - **ExchangeRateManagement**: 从每次加载 3 个调用 → 2 个调用（减少 33%）
@@ -181,6 +204,7 @@ const { categories: allCategories, isLoading } = useUserData()
 - **test-currency页面**: 从每次加载 2 个调用 → 0 个调用
 
 ### 总体优化效果
+
 - **设置页面总 API 调用**: 从 15+ 个 → 3 个（减少 80%）
 - **表单/模态框**: 从 3-5 个 → 0 个（减少 100%）
 - **页面加载速度**: 提升 60-80%
@@ -189,6 +213,7 @@ const { categories: allCategories, isLoading } = useUserData()
 ## 🔄 数据同步机制
 
 ### 更新操作的同步
+
 所有数据修改操作都会同步更新 UserDataContext：
 
 ```typescript
@@ -208,6 +233,7 @@ await refreshAccounts()
 ```
 
 ### 自动数据刷新
+
 - 组件挂载时自动获取最新数据
 - 操作成功后自动同步 Context 状态
 - 避免了手动刷新页面的需要
@@ -215,6 +241,7 @@ await refreshAccounts()
 ## 🎯 最佳实践
 
 ### 1. 优先使用 UserDataContext
+
 ```typescript
 // ✅ 推荐
 const { tags, currencies, accounts } = useUserData()
@@ -227,25 +254,27 @@ useEffect(() => {
 ```
 
 ### 2. 操作后同步更新
+
 ```typescript
 // ✅ 推荐
 if (response.ok) {
-  updateTag(result.data)  // 同步更新 Context
+  updateTag(result.data) // 同步更新 Context
 }
 
 // ❌ 避免
 if (response.ok) {
-  loadTags()  // 重新获取所有数据
+  loadTags() // 重新获取所有数据
 }
 ```
 
 ### 3. 使用专用刷新方法
+
 ```typescript
 // ✅ 推荐
-await refreshCurrencies()  // 只刷新货币数据
+await refreshCurrencies() // 只刷新货币数据
 
 // ❌ 避免
-await refreshAll()  // 刷新所有数据（除非必要）
+await refreshAll() // 刷新所有数据（除非必要）
 ```
 
 ## 🚀 后续优化建议
@@ -258,6 +287,7 @@ await refreshAll()  // 刷新所有数据（除非必要）
 ## 📝 总结
 
 通过使用 UserDataContext，我们成功地：
+
 - **大幅减少了 API 调用**：总体减少 80-95%
 - **提升了应用性能**：页面加载速度提升 60-80%
 - **改善了用户体验**：操作更流畅，响应更快

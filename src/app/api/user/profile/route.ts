@@ -1,6 +1,11 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
 
 export async function PUT(request: NextRequest) {
   try {
@@ -24,7 +29,7 @@ export async function PUT(request: NextRequest) {
     // 更新用户信息
     // 注意：目前只支持昵称更新，实际的昵称字段需要添加到User模型中
     // 这里暂时返回成功，实际应用中需要扩展User模型
-    
+
     // TODO: 添加nickname字段到User模型
     // const updatedUser = await prisma.user.update({
     //   where: { id: user.id },

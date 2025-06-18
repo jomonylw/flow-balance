@@ -3,6 +3,7 @@
 ## 问题分析
 
 原有的流量账户交易表单（TransactionFormModal）存在以下问题：
+
 - 用户需要填写的字段过多（9个字段）
 - 选择要素复杂，包括交易类型、账户、分类、货币、标签等
 - 与存量账户的简洁"更新余额"界面形成对比
@@ -14,6 +15,7 @@
 新建 `SimpleFlowTransactionModal` 组件，参考存量账户更新余额的设计理念：
 
 **简化前（TransactionFormModal）需要用户填写：**
+
 1. 交易类型（收入/支出）
 2. 日期
 3. 账户选择
@@ -25,6 +27,7 @@
 9. 标签选择
 
 **简化后（SimpleFlowTransactionModal）只需要用户填写：**
+
 1. 金额 ⭐
 2. 描述 ⭐
 3. 日期 ⭐
@@ -34,6 +37,7 @@
 ### 2. 自动化处理的字段
 
 以下字段由系统自动处理，无需用户选择：
+
 - **交易类型**：根据账户类型自动确定（收入账户→收入交易，支出账户→支出交易）
 - **账户**：预选定，无需选择
 - **分类**：自动使用账户所属分类
@@ -50,6 +54,7 @@
 ## 实现细节
 
 ### 组件文件
+
 - `src/components/transactions/SimpleFlowTransactionModal.tsx` - 新的简化交易表单
 - `src/components/ui/TagFormModal.tsx` - 独立的标签添加/编辑模态框
 - `src/components/accounts/FlowAccountDetailView.tsx` - 修改为使用简化表单
@@ -58,10 +63,12 @@
 ### 使用场景
 
 **使用简化表单的场景：**
+
 - 流量账户详情页面的交易操作
 - 侧边栏账户树中的"添加交易"操作
 
 **保留复杂表单的场景：**
+
 - 通用交易列表页面（需要支持所有类型交易）
 - 仪表板快速操作（需要选择不同账户）
 - 流量分类详情页面（需要在分类下选择不同账户）
@@ -74,32 +81,34 @@ const userInput = {
   amount: '100.00',
   description: '工资收入',
   date: '2024-01-15',
-  notes: '月度工资'
+  notes: '月度工资',
 }
 
 // 系统自动补充的完整数据
 const completeData = {
-  accountId: account.id,                    // 预选账户
-  categoryId: account.category.id,          // 账户分类
-  currencyCode: account.currencyCode,       // 账户货币
+  accountId: account.id, // 预选账户
+  categoryId: account.category.id, // 账户分类
+  currencyCode: account.currencyCode, // 账户货币
   type: account.category.type === 'INCOME' ? 'INCOME' : 'EXPENSE', // 自动类型
   amount: parseFloat(userInput.amount),
   description: userInput.description,
   notes: userInput.notes,
   date: userInput.date,
-  tagIds: userInput.tagIds                 // 保留标签选择
+  tagIds: userInput.tagIds, // 保留标签选择
 }
 ```
 
 ## 用户体验改进
 
 ### 简化前
+
 1. 用户点击"添加交易"
 2. 弹出复杂表单，需要选择9个字段
 3. 容易出错，需要验证多个字段的匹配性
 4. 填写时间长，操作复杂
 
 ### 简化后
+
 1. 用户点击"添加交易"
 2. 弹出简化表单，只需填写5个字段（含可选标签）
 3. 系统自动处理匹配性，减少错误
@@ -108,17 +117,22 @@ const completeData = {
 ## 标签功能改进
 
 ### 问题修复
+
 原有的简化表单中，标签创建功能存在以下问题：
+
 - 只能输入标签名称，无法选择颜色
 - 创建界面过于简单，与settings中的标签管理不一致
 
 ### 解决方案
+
 1. **创建独立的TagFormModal组件**：
+
    - 与settings中的标签管理保持一致的UI和功能
    - 支持完整的颜色选择（10种预定义颜色）
    - 统一的表单验证和错误处理
 
 2. **改进标签显示**：
+
    - 已选标签显示对应的颜色
    - 可选标签列表中选中状态有颜色区分
    - 与原有TransactionFormModal保持一致的视觉效果
@@ -141,6 +155,7 @@ const completeData = {
 ## 未来扩展
 
 如需要更多功能，可以考虑：
+
 1. 添加"高级选项"折叠面板，包含更多高级功能
 2. 支持快速模板，预设常用的交易描述
 3. 添加金额计算器功能
@@ -149,6 +164,7 @@ const completeData = {
 ## 总结
 
 通过创建简化的流量账户交易表单，我们成功地：
+
 - 将用户需要填写的字段从9个减少到5个（含可选标签）
 - 保留了完整的标签分类功能，包括颜色选择
 - 修复了标签创建功能，与settings保持一致

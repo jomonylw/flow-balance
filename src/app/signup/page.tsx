@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import AuthLayout from '@/components/auth/AuthLayout'
-import SignupForm from '@/components/auth/SignupForm'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import AuthLayout from '@/components/features/auth/AuthLayout'
+import SignupForm from '@/components/features/auth/SignupForm'
 
 export default async function SignupPage() {
   // 如果用户已登录，重定向到 dashboard
@@ -11,10 +11,7 @@ export default async function SignupPage() {
   }
 
   return (
-    <AuthLayout 
-      title="注册" 
-      subtitle="创建您的 Flow Balance 账户"
-    >
+    <AuthLayout title='注册' subtitle='创建您的 Flow Balance 账户'>
       <SignupForm />
     </AuthLayout>
   )

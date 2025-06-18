@@ -2,21 +2,25 @@
 
 ## 概述
 
-UserDataContext 是一个集中管理用户数据的Context系统，用于解决Flow Balance应用中大量重复API调用的性能问题。
+UserDataContext 是一个集中管理用户数据的Context系统，用于解决Flow
+Balance应用中大量重复API调用的性能问题。
 
 ## 主要功能
 
 ### 🎯 **集中数据管理**
+
 - 用户登录后一次性获取所有用户设置数据
 - 统一管理：currencies、tags、accounts、categories、userSettings
 - 避免组件间重复API调用
 
 ### 🔄 **数据同步**
+
 - 提供数据更新方法，保持Context与服务器数据同步
 - 支持增删改操作的本地状态更新
 - 自动处理数据依赖关系
 
 ### 📊 **性能优化**
+
 - 减少API调用从 **72个** 到 **5个**（初始化时）
 - 智能缓存账户交易记录状态
 - 按需刷新特定数据类型
@@ -29,14 +33,14 @@ UserDataContext 是一个集中管理用户数据的Context系统，用于解决
 import { useUserData } from '@/contexts/UserDataContext'
 
 function MyComponent() {
-  const { 
-    currencies, 
-    tags, 
-    accounts, 
-    categories, 
+  const {
+    currencies,
+    tags,
+    accounts,
+    categories,
     userSettings,
     isLoading,
-    error 
+    error
   } = useUserData()
 
   if (isLoading) return <div>加载中...</div>
@@ -56,18 +60,13 @@ function MyComponent() {
 
 ```typescript
 function AccountManager() {
-  const { 
-    accounts, 
-    updateAccount, 
-    addAccount, 
-    removeAccount 
-  } = useUserData()
+  const { accounts, updateAccount, addAccount, removeAccount } = useUserData()
 
   const handleRename = async (accountId: string, newName: string) => {
     // 1. 调用API更新服务器数据
     const response = await fetch(`/api/accounts/${accountId}`, {
       method: 'PUT',
-      body: JSON.stringify({ name: newName })
+      body: JSON.stringify({ name: newName }),
     })
 
     if (response.ok) {
@@ -86,10 +85,10 @@ function AccountManager() {
 ```typescript
 function BalanceDisplay() {
   const { getBaseCurrency } = useUserData()
-  
+
   const baseCurrency = getBaseCurrency()
   const symbol = baseCurrency?.symbol || '¥'
-  
+
   return <span>{symbol}1000.00</span>
 }
 ```
@@ -101,7 +100,7 @@ import { useAccountTransactions } from '@/hooks/useAccountTransactions'
 
 function AccountItem({ accountId }: { accountId: string }) {
   const { hasTransactions, isLoading } = useAccountTransactions(accountId)
-  
+
   return (
     <div>
       {isLoading ? '检查中...' : hasTransactions ? '有交易记录' : '无交易记录'}
@@ -114,11 +113,11 @@ function AccountItem({ accountId }: { accountId: string }) {
 
 ```typescript
 function DataManager() {
-  const { 
-    refreshAll, 
-    refreshAccounts, 
+  const {
+    refreshAll,
+    refreshAccounts,
     refreshTags,
-    lastUpdated 
+    lastUpdated
   } = useUserData()
 
   return (
@@ -135,6 +134,7 @@ function DataManager() {
 ## API参考
 
 ### 数据属性
+
 - `currencies: Currency[]` - 用户可用货币
 - `tags: Tag[]` - 用户标签
 - `accounts: Account[]` - 用户账户
@@ -145,6 +145,7 @@ function DataManager() {
 - `lastUpdated: Date | null` - 最后更新时间
 
 ### 刷新方法
+
 - `refreshAll()` - 刷新所有数据
 - `refreshCurrencies()` - 刷新货币数据
 - `refreshTags()` - 刷新标签数据
@@ -153,6 +154,7 @@ function DataManager() {
 - `refreshUserSettings()` - 刷新用户设置
 
 ### 更新方法
+
 - `updateTag(tag)` - 更新标签
 - `addTag(tag)` - 添加标签
 - `removeTag(tagId)` - 删除标签
@@ -165,12 +167,14 @@ function DataManager() {
 - `updateUserSettings(settings)` - 更新用户设置
 
 ### 工具方法
+
 - `getBaseCurrency()` - 获取基础货币
 - `setAccountHasTransactions(accountId, hasTransactions)` - 设置账户交易记录缓存
 
 ## 性能优化效果
 
 ### 优化前
+
 ```
 每次页面刷新:
 - 12个AccountTreeItem × 6个API = 72个API调用
@@ -179,10 +183,11 @@ function DataManager() {
 ```
 
 ### 优化后
+
 ```
 应用初始化时:
 - 1次 /api/user/currencies
-- 1次 /api/tags  
+- 1次 /api/tags
 - 1次 /api/accounts
 - 1次 /api/categories
 - 1次 /api/user/settings
@@ -194,6 +199,7 @@ function DataManager() {
 ```
 
 ### 性能提升
+
 - **API调用减少**: 80+ → 5 (减少94%)
 - **页面加载速度**: 显著提升
 - **用户体验**: 更流畅的交互
@@ -211,6 +217,7 @@ function DataManager() {
 ### 从旧的API调用迁移
 
 **旧代码:**
+
 ```typescript
 const [currencies, setCurrencies] = useState([])
 
@@ -222,6 +229,7 @@ useEffect(() => {
 ```
 
 **新代码:**
+
 ```typescript
 const { currencies } = useUserData()
 // 数据自动可用，无需额外的useEffect

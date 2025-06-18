@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ES2022",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -18,10 +18,32 @@
         "name": "next"
       }
     ],
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/contexts/*": ["./src/contexts/*"],
+      "@/utils/*": ["./src/lib/utils/*"],
+      "@/services/*": ["./src/lib/services/*"],
+      "@/constants/*": ["./src/lib/constants/*"],
+      "@/api/*": ["./src/lib/api/*"],
+      "@/database/*": ["./src/lib/database/*"],
+      "@/config/*": ["./src/config/*"],
+      "@/ui/*": ["./src/components/ui/*"],
+      "@/features/*": ["./src/components/features/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/types/**/*.d.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", ".next", "out", "dist", "build"]
 }

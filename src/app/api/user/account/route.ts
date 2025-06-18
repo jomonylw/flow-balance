@@ -1,7 +1,12 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser, clearAuthCookie } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
+import { getCurrentUser, clearAuthCookie } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
 import bcrypt from 'bcryptjs'
 
 export async function DELETE(request: NextRequest) {
@@ -27,14 +32,14 @@ export async function DELETE(request: NextRequest) {
     // 删除用户及其所有相关数据
     // 由于设置了级联删除，删除用户会自动删除相关的所有数据
     await prisma.user.delete({
-      where: { id: user.id }
+      where: { id: user.id },
     })
 
     // 清除认证Cookie
     await clearAuthCookie()
 
     return successResponse({
-      message: '账户删除成功'
+      message: '账户删除成功',
     })
   } catch (error) {
     console.error('Delete account error:', error)

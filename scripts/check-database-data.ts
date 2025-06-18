@@ -21,20 +21,17 @@ async function checkDatabaseData() {
 
     // 获取test账户的最新数据
     const testAccount = await prisma.account.findFirst({
-      where: { 
+      where: {
         userId: user.id,
-        name: 'test'
+        name: 'test',
       },
       include: {
         category: true,
         transactions: {
           include: { currency: true },
-          orderBy: [
-            { date: 'desc' },
-            { updatedAt: 'desc' }
-          ]
-        }
-      }
+          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+        },
+      },
     })
 
     if (testAccount) {
@@ -43,10 +40,12 @@ async function checkDatabaseData() {
       console.log(`  账户名称: ${testAccount.name}`)
       console.log(`  账户类型: ${testAccount.category?.type}`)
       console.log(`  交易数量: ${testAccount.transactions.length}`)
-      
+
       console.log(`\n  最近5笔交易:`)
       testAccount.transactions.slice(0, 5).forEach((t, index) => {
-        console.log(`    ${index + 1}. ${t.date.toISOString().split('T')[0]} ${t.type} ${t.currency.symbol}${parseFloat(t.amount.toString()).toFixed(2)} (ID: ${t.id})`)
+        console.log(
+          `    ${index + 1}. ${t.date.toISOString().split('T')[0]} ${t.type} ${t.currency.symbol}${parseFloat(t.amount.toString()).toFixed(2)} (ID: ${t.id})`
+        )
       })
     } else {
       console.log('\n❌ 未找到test账户')
@@ -61,19 +60,18 @@ async function checkDatabaseData() {
         transactions: {
           where: { type: 'BALANCE' },
           include: { currency: true },
-          orderBy: [
-            { date: 'desc' },
-            { updatedAt: 'desc' }
-          ],
-          take: 1
-        }
-      }
+          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+          take: 1,
+        },
+      },
     })
 
     accounts.forEach(account => {
       if (account.transactions.length > 0) {
         const latestBalance = account.transactions[0]
-        console.log(`  ${account.name} (${account.category?.type}): ${latestBalance.date.toISOString().split('T')[0]} ${latestBalance.currency.symbol}${parseFloat(latestBalance.amount.toString()).toFixed(2)}`)
+        console.log(
+          `  ${account.name} (${account.category?.type}): ${latestBalance.date.toISOString().split('T')[0]} ${latestBalance.currency.symbol}${parseFloat(latestBalance.amount.toString()).toFixed(2)}`
+        )
       } else {
         console.log(`  ${account.name} (${account.category?.type}): 无余额调整`)
       }
@@ -85,15 +83,17 @@ async function checkDatabaseData() {
       where: { userId: user.id },
       include: {
         fromCurrencyRef: true,
-        toCurrencyRef: true
+        toCurrencyRef: true,
       },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updatedAt: 'desc' },
     })
 
     if (exchangeRates.length > 0) {
       console.log(`  找到 ${exchangeRates.length} 个汇率设置:`)
       exchangeRates.forEach(rate => {
-        console.log(`    ${rate.fromCurrencyRef.code} -> ${rate.toCurrencyRef.code}: ${rate.rate} (${rate.updatedAt.toISOString().split('T')[0]})`)
+        console.log(
+          `    ${rate.fromCurrencyRef.code} -> ${rate.toCurrencyRef.code}: ${rate.rate} (${rate.updatedAt.toISOString().split('T')[0]})`
+        )
       })
     } else {
       console.log(`  ❌ 没有设置汇率`)
@@ -103,11 +103,13 @@ async function checkDatabaseData() {
     console.log(`\n⚙️  用户设置:`)
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
-      include: { baseCurrency: true }
+      include: { baseCurrency: true },
     })
 
     if (userSettings) {
-      console.log(`  本位币: ${userSettings.baseCurrency?.code} (${userSettings.baseCurrency?.symbol})`)
+      console.log(
+        `  本位币: ${userSettings.baseCurrency?.code} (${userSettings.baseCurrency?.symbol})`
+      )
       console.log(`  语言: ${userSettings.language}`)
       console.log(`  主题: ${userSettings.theme}`)
     } else {
@@ -115,7 +117,6 @@ async function checkDatabaseData() {
     }
 
     console.log('\n✅ 检查完成!')
-
   } catch (error) {
     console.error('❌ 检查失败:', error)
   } finally {

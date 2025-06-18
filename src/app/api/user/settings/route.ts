@@ -1,7 +1,12 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
 
 export async function GET() {
   try {
@@ -13,11 +18,11 @@ export async function GET() {
     // 获取用户设置
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
-      include: { baseCurrency: true }
+      include: { baseCurrency: true },
     })
 
     return successResponse({
-      userSettings
+      userSettings,
     })
   } catch (error) {
     console.error('Get user settings error:', error)
@@ -33,21 +38,33 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { baseCurrencyCode, dateFormat, theme, language, fireEnabled, fireSWR } = body
+    const {
+      baseCurrencyCode,
+      dateFormat,
+      theme,
+      language,
+      fireEnabled,
+      fireSWR,
+    } = body
 
     // 验证币种代码
     if (baseCurrencyCode) {
       const currency = await prisma.currency.findUnique({
-        where: { code: baseCurrencyCode }
+        where: { code: baseCurrencyCode },
       })
-      
+
       if (!currency) {
         return validationErrorResponse('无效的币种代码')
       }
     }
 
     // 验证日期格式
-    const validDateFormats = ['YYYY-MM-DD', 'DD/MM/YYYY', 'MM/DD/YYYY', 'DD-MM-YYYY']
+    const validDateFormats = [
+      'YYYY-MM-DD',
+      'DD/MM/YYYY',
+      'MM/DD/YYYY',
+      'DD-MM-YYYY',
+    ]
     if (dateFormat && !validDateFormats.includes(dateFormat)) {
       return validationErrorResponse('无效的日期格式')
     }
@@ -78,7 +95,7 @@ export async function PUT(request: NextRequest) {
 
     // 获取或创建用户设置
     const existingSettings = await prisma.userSettings.findUnique({
-      where: { userId: user.id }
+      where: { userId: user.id },
     })
 
     let userSettings
@@ -92,9 +109,9 @@ export async function PUT(request: NextRequest) {
           ...(theme && { theme }),
           ...(language && { language }),
           ...(fireEnabled !== undefined && { fireEnabled }),
-          ...(fireSWR !== undefined && { fireSWR })
+          ...(fireSWR !== undefined && { fireSWR }),
         },
-        include: { baseCurrency: true }
+        include: { baseCurrency: true },
       })
     } else {
       // 创建新设置
@@ -106,15 +123,15 @@ export async function PUT(request: NextRequest) {
           theme: theme || 'system',
           language: language || 'zh',
           fireEnabled: fireEnabled !== undefined ? fireEnabled : false,
-          fireSWR: fireSWR !== undefined ? fireSWR : 4.0
+          fireSWR: fireSWR !== undefined ? fireSWR : 4.0,
         },
-        include: { baseCurrency: true }
+        include: { baseCurrency: true },
       })
     }
 
     return successResponse({
       message: '设置更新成功',
-      userSettings
+      userSettings,
     })
   } catch (error) {
     console.error('Update user settings error:', error)

@@ -9,11 +9,13 @@
 ### 1. 资产负债表API (`/api/reports/balance-sheet/route.ts`)
 
 #### 新增功能
+
 - **账户级别货币转换**: 每个账户现在包含转换到本位币的金额
 - **类别级别货币转换**: 每个类别现在包含本位币汇总金额
 - **转换状态跟踪**: 记录转换成功状态、汇率和错误信息
 
 #### 数据结构增强
+
 ```typescript
 // 账户对象新增字段
 {
@@ -37,6 +39,7 @@
 ```
 
 #### 转换逻辑
+
 1. 收集所有需要转换的账户金额
 2. 批量执行货币转换
 3. 将转换结果应用到各个账户
@@ -46,10 +49,12 @@
 ### 2. 现金流量表API (`/api/reports/personal-cash-flow/route.ts`)
 
 #### 新增功能
+
 - **账户级别货币转换**: 每个收入/支出账户包含本位币金额
 - **转换状态跟踪**: 记录转换成功状态、汇率和错误信息
 
 #### 数据结构增强
+
 ```typescript
 // 账户统计对象新增字段
 {
@@ -69,6 +74,7 @@
 ```
 
 #### 转换逻辑
+
 1. 收集所有需要转换的账户金额
 2. 批量执行货币转换
 3. 将转换结果应用到各个账户
@@ -77,16 +83,19 @@
 ### 3. 技术改进
 
 #### 类型安全
+
 - 修复了交易类型映射问题 (`BALANCE_ADJUSTMENT` → `BALANCE`)
 - 增强了TypeScript类型定义
 - 添加了完整的类型注解
 
 #### 性能优化
+
 - 使用批量货币转换减少API调用次数
 - 优化了转换逻辑的执行顺序
 - 减少了重复的数据处理
 
 #### 错误处理
+
 - 增强了货币转换失败时的降级处理
 - 提供详细的错误信息记录
 - 保证API在转换失败时仍能返回有效数据
@@ -94,6 +103,7 @@
 ## 使用示例
 
 ### 资产负债表响应示例
+
 ```json
 {
   "success": true,
@@ -103,14 +113,14 @@
         "categories": {
           "category-id": {
             "categoryName": "现金及现金等价物",
-            "totalInBaseCurrency": 15000.00,
+            "totalInBaseCurrency": 15000.0,
             "accounts": [
               {
                 "id": "account-id",
                 "name": "美元储蓄账户",
-                "balance": 2000.00,
+                "balance": 2000.0,
                 "currency": { "code": "USD", "symbol": "$", "name": "美元" },
-                "balanceInBaseCurrency": 14000.00,
+                "balanceInBaseCurrency": 14000.0,
                 "conversionRate": 7.0,
                 "conversionSuccess": true
               }
@@ -121,9 +131,9 @@
     },
     "summary": {
       "baseCurrencyTotals": {
-        "totalAssets": 50000.00,
-        "totalLiabilities": 20000.00,
-        "netWorth": 30000.00
+        "totalAssets": 50000.0,
+        "totalLiabilities": 20000.0,
+        "netWorth": 30000.0
       }
     }
   }
@@ -131,6 +141,7 @@
 ```
 
 ### 现金流量表响应示例
+
 ```json
 {
   "success": true,
@@ -141,8 +152,8 @@
           "id": "income-account-id",
           "name": "美元工资收入",
           "type": "INCOME",
-          "totalAmount": 5000.00,
-          "totalAmountInBaseCurrency": 35000.00,
+          "totalAmount": 5000.0,
+          "totalAmountInBaseCurrency": 35000.0,
           "currency": { "code": "USD", "symbol": "$", "name": "美元" },
           "conversionRate": 7.0,
           "conversionSuccess": true
@@ -151,9 +162,9 @@
     },
     "summary": {
       "baseCurrencyTotals": {
-        "totalIncome": 40000.00,
-        "totalExpense": 25000.00,
-        "netCashFlow": 15000.00
+        "totalIncome": 40000.0,
+        "totalExpense": 25000.0,
+        "netCashFlow": 15000.0
       }
     }
   }
@@ -169,6 +180,7 @@ npx tsx scripts/test-enhanced-currency-conversion.ts
 ```
 
 测试内容包括：
+
 - 资产负债表API的账户级别转换
 - 资产负债表API的类别级别转换
 - 现金流量表API的账户级别转换

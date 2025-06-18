@@ -1,7 +1,12 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
 
 /**
  * 创建自定义货币
@@ -28,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     // 检查货币代码是否已存在
     const existingCurrency = await prisma.currency.findUnique({
-      where: { code }
+      where: { code },
     })
 
     if (existingCurrency) {
@@ -42,14 +47,14 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         symbol: symbol.trim(),
         isCustom: true,
-        createdBy: user.id
-      }
+        createdBy: user.id,
+      },
     })
 
     // 自动添加到用户可用货币列表
     const maxOrder = await prisma.userCurrency.aggregate({
       where: { userId: user.id },
-      _max: { order: true }
+      _max: { order: true },
     })
 
     await prisma.userCurrency.create({
@@ -57,13 +62,13 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         currencyCode: currency.code,
         order: (maxOrder._max.order || 0) + 1,
-        isActive: true
-      }
+        isActive: true,
+      },
     })
 
     return successResponse({
       currency,
-      message: '自定义货币创建成功'
+      message: '自定义货币创建成功',
     })
   } catch (error) {
     console.error('创建自定义货币失败:', error)
@@ -74,7 +79,7 @@ export async function POST(request: NextRequest) {
 /**
  * 获取用户的自定义货币列表
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -84,13 +89,13 @@ export async function GET(request: NextRequest) {
     const customCurrencies = await prisma.currency.findMany({
       where: {
         isCustom: true,
-        createdBy: user.id
+        createdBy: user.id,
       },
-      orderBy: { code: 'asc' }
+      orderBy: { code: 'asc' },
     })
 
     return successResponse({
-      currencies: customCurrencies
+      currencies: customCurrencies,
     })
   } catch (error) {
     console.error('获取自定义货币失败:', error)

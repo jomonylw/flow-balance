@@ -1,11 +1,16 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  notFoundResponse,
+} from '@/lib/api/response'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ accountId: string }> }
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
   try {
     const { accountId } = await params
@@ -18,20 +23,17 @@ export async function GET(
     const account = await prisma.account.findFirst({
       where: {
         id: accountId,
-        userId: user.id
+        userId: user.id,
       },
       include: {
         category: true,
         transactions: {
           include: {
-            currency: true
+            currency: true,
           },
-          orderBy: [
-            { date: 'desc' },
-            { updatedAt: 'desc' }
-          ]
-        }
-      }
+          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+        },
+      },
     })
 
     if (!account) {
@@ -39,14 +41,17 @@ export async function GET(
     }
 
     // 计算账户余额（按币种分组）
-    const balances: Record<string, {
-      amount: number;
-      currency: {
-        code: string;
-        symbol: string;
-        name: string;
-      };
-    }> = {}
+    const balances: Record<
+      string,
+      {
+        amount: number
+        currency: {
+          code: string
+          symbol: string
+          name: string
+        }
+      }
+    > = {}
 
     account.transactions.forEach(transaction => {
       const currencyCode = transaction.currency.code
@@ -56,11 +61,11 @@ export async function GET(
           currency: {
             code: transaction.currency.code,
             symbol: transaction.currency.symbol,
-            name: transaction.currency.name
-          }
+            name: transaction.currency.name,
+          },
         }
       }
-      
+
       const amount = parseFloat(transaction.amount.toString())
       if (transaction.type === 'INCOME') {
         balances[currencyCode].amount += amount
@@ -75,13 +80,17 @@ export async function GET(
       total: account.transactions.length,
       income: account.transactions.filter(t => t.type === 'INCOME').length,
       expense: account.transactions.filter(t => t.type === 'EXPENSE').length,
-      balanceAdjustment: account.transactions.filter(t => t.type === 'BALANCE').length
+      balanceAdjustment: account.transactions.filter(t => t.type === 'BALANCE')
+        .length,
     }
 
     // 按月统计交易（最近12个月）
-    const monthlyStats: Record<string, { income: number; expense: number; count: number }> = {}
+    const monthlyStats: Record<
+      string,
+      { income: number; expense: number; count: number }
+    > = {}
     const now = new Date()
-    
+
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
@@ -91,11 +100,11 @@ export async function GET(
     account.transactions.forEach(transaction => {
       const transactionDate = new Date(transaction.date)
       const monthKey = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}`
-      
+
       if (monthlyStats[monthKey]) {
         const amount = parseFloat(transaction.amount.toString())
         monthlyStats[monthKey].count++
-        
+
         if (transaction.type === 'INCOME') {
           monthlyStats[monthKey].income += amount
         } else if (transaction.type === 'EXPENSE') {
@@ -105,15 +114,17 @@ export async function GET(
     })
 
     // 获取最近的交易（不包含在主要交易列表中，用于快速预览）
-    const recentTransactions = account.transactions.slice(0, 5).map(transaction => ({
-      id: transaction.id,
-      type: transaction.type,
-      amount: transaction.amount,
-      currency: transaction.currency,
-      description: transaction.description,
-      date: transaction.date,
-      createdAt: transaction.createdAt
-    }))
+    const recentTransactions = account.transactions
+      .slice(0, 5)
+      .map(transaction => ({
+        id: transaction.id,
+        type: transaction.type,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        description: transaction.description,
+        date: transaction.date,
+        createdAt: transaction.createdAt,
+      }))
 
     return successResponse({
       account: {
@@ -122,7 +133,7 @@ export async function GET(
         description: account.description,
         category: account.category,
         createdAt: account.createdAt,
-        updatedAt: account.updatedAt
+        updatedAt: account.updatedAt,
       },
       balances: Object.values(balances),
       transactionStats,
@@ -132,9 +143,9 @@ export async function GET(
         .map(([month, stats]) => ({
           month,
           ...stats,
-          net: stats.income - stats.expense
+          net: stats.income - stats.expense,
         })),
-      recentTransactions
+      recentTransactions,
     })
   } catch (error) {
     console.error('Get account details error:', error)

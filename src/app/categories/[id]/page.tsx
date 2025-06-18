@@ -1,79 +1,126 @@
 import { notFound } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import AppLayout from '@/components/layout/AppLayout'
-import CategoryDetailView from '@/components/categories/CategoryDetailView'
-import { Transaction, Category } from '@/components/categories/types'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import AppLayout from '@/components/features/layout/AppLayout'
+import CategoryDetailView from '@/components/features/categories/CategoryDetailView'
+import type { SerializedCategoryWithTransactions } from '@/components/features/categories/types'
+import type { SerializedTransactionWithBasic } from '@/types/database'
 import { Decimal } from '@prisma/client/runtime/library'
+import type { AccountType } from '@prisma/client'
 
 interface CategoryPageProps {
   params: Promise<{ id: string }>
 }
 
 type PrismaTransaction = {
-  id: string;
-  type: "INCOME" | "EXPENSE" | "BALANCE";
-  amount: Decimal;
-  description: string;
-  notes: string | null;
-  date: Date;
+  id: string
+  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
+  amount: Decimal
+  description: string
+  notes: string | null
+  date: Date
+  createdAt: Date
+  updatedAt: Date
+  userId: string
+  categoryId: string
+  currencyCode: string
+  accountId: string
   currency: {
-      code: string;
-      name: string;
-      symbol: string;
-  };
+    code: string
+    name: string
+    symbol: string
+    isCustom: boolean
+    createdBy: string | null
+  }
   category: {
-      id: string;
-      name: string;
-  };
+    id: string
+    name: string
+    type: AccountType
+  }
   tags: {
-      tag: {
-          id: string;
-          name: string;
-          color: string | null;
-      };
-  }[];
+    id: string
+    tagId: string
+    transactionId: string
+    tag: {
+      id: string
+      name: string
+      color: string | null
+    }
+  }[]
   account: {
-      id: string;
-      name: string;
-      category: {
-          name: string;
-      } | null;
-  } | null;
+    id: string
+    name: string
+    category: {
+      name: string
+      type: AccountType
+    } | null
+  } | null
 }
 
-
 // Helper function to serialize transactions
-const serializeTransactions = (transactions: PrismaTransaction[]): Transaction[] => {
+const serializeTransactions = (
+  transactions: PrismaTransaction[],
+): SerializedTransactionWithBasic[] => {
   return transactions.map(transaction => ({
     ...transaction,
     amount: parseFloat(transaction.amount.toString()),
     date: transaction.date.toISOString(),
+    createdAt: transaction.createdAt.toISOString(),
+    updatedAt: transaction.updatedAt.toISOString(),
     notes: transaction.notes || undefined,
-    account: transaction.account ? {
-      id: transaction.account.id,
-      name: transaction.account.name,
-      category: transaction.account.category ? {
-        name: transaction.account.category.name
-      } : { name: 'Unknown' }
-    } : {
-      id: 'unknown',
-      name: 'Unknown Account',
-      category: { name: 'Unknown' }
-    },
-    category: transaction.category ? {
-      id: transaction.category.id,
-      name: transaction.category.name
-    } : {
-      id: 'unknown',
-      name: 'Unknown Category'
-    },
-    tags: transaction.tags ? transaction.tags.map((tt) => ({
-      tag: {
-        id: tt.tag.id,
-        name: tt.tag.name
-      }
-    })) : []
+    account: transaction.account
+      ? {
+          id: transaction.account.id,
+          name: transaction.account.name,
+          category: transaction.account.category
+            ? {
+                name: transaction.account.category.name,
+                type: transaction.account.category.type,
+              }
+            : { name: 'Unknown', type: 'ASSET' as const },
+        }
+      : {
+          id: 'unknown',
+          name: 'Unknown Account',
+          category: { name: 'Unknown', type: 'ASSET' as const },
+        },
+    category: transaction.category
+      ? {
+          id: transaction.category.id,
+          name: transaction.category.name,
+          type: transaction.category.type,
+        }
+      : {
+          id: 'unknown',
+          name: 'Unknown Category',
+          type: 'ASSET' as const,
+        },
+    tags: transaction.tags
+      ? transaction.tags.map(tt => ({
+          id: tt.id,
+          tagId: tt.tagId,
+          transactionId: tt.transactionId,
+          tag: {
+            id: tt.tag.id,
+            name: tt.tag.name,
+          },
+        }))
+      : [],
+    currency: transaction.currency
+      ? {
+          code: transaction.currency.code,
+          name: transaction.currency.name,
+          symbol: transaction.currency.symbol,
+          isCustom: transaction.currency.isCustom,
+          createdBy: transaction.currency.createdBy,
+        }
+      : {
+          code: 'USD',
+          name: 'US Dollar',
+          symbol: '$',
+          isCustom: false,
+          createdBy: null,
+        },
   }))
 }
 
@@ -88,7 +135,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const categoryData = await prisma.category.findFirst({
     where: {
       id: id,
-      userId: user.id
+      userId: user.id,
     },
     include: {
       parent: true,
@@ -103,17 +150,17 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                   category: true,
                   tags: {
                     include: {
-                      tag: true
-                    }
-                  }
-                }
-              }
-            }
-          }
+                      tag: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         orderBy: {
-          order: 'asc'
-        }
+          order: 'asc',
+        },
       },
       accounts: {
         include: {
@@ -124,17 +171,17 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
               category: true,
               tags: {
                 include: {
-                  tag: true
-                }
-              }
+                  tag: true,
+                },
+              },
             },
             orderBy: {
-              date: 'desc'
-            }
-          }
-        }
-      }
-    }
+              date: 'desc',
+            },
+          },
+        },
+      },
+    },
   })
 
   if (!categoryData) {
@@ -145,7 +192,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const getAllCategoryIds = async (categoryId: string): Promise<string[]> => {
     const category = await prisma.category.findUnique({
       where: { id: categoryId },
-      include: { children: true }
+      include: { children: true },
     })
 
     if (!category) return [categoryId]
@@ -165,96 +212,131 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     where: {
       userId: user.id,
       categoryId: {
-        in: allCategoryIds
-      }
+        in: allCategoryIds,
+      },
     },
     include: {
       account: {
         include: {
-          category: true
-        }
+          category: true,
+        },
       },
       currency: true,
       category: true,
       tags: {
         include: {
-          tag: true
-        }
-      }
+          tag: true,
+        },
+      },
     },
-    orderBy: [
-      { date: 'desc' },
-      { updatedAt: 'desc' }
-    ]
+    orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
   })
 
   // 获取其他必要数据
-  const [accounts, categories, currencies, tags, userSettings] = await Promise.all([
-    prisma.account.findMany({
-      where: { userId: user.id },
-      include: { category: true },
-      orderBy: { name: 'asc' }
-    }),
-    prisma.category.findMany({
-      where: { userId: user.id },
-      orderBy: [
-        { parentId: 'asc' },
-        { order: 'asc' }
-      ]
-    }),
-    prisma.currency.findMany({
-      orderBy: { code: 'asc' }
-    }),
-    prisma.tag.findMany({
-      where: { userId: user.id },
-      orderBy: { name: 'asc' }
-    }),
-    prisma.userSettings.findUnique({
-      where: { userId: user.id },
-      include: { baseCurrency: true }
-    })
-  ])
+  const [accounts, categories, currencies, tags, userSettings] =
+    await Promise.all([
+      prisma.account.findMany({
+        where: { userId: user.id },
+        include: { category: true },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.category.findMany({
+        where: { userId: user.id },
+        orderBy: [{ parentId: 'asc' }, { order: 'asc' }],
+      }),
+      prisma.currency.findMany({
+        orderBy: { code: 'asc' },
+      }),
+      prisma.tag.findMany({
+        where: { userId: user.id },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.userSettings.findUnique({
+        where: { userId: user.id },
+        include: { baseCurrency: true },
+      }),
+    ])
+
+  // 辅助函数：序列化日期
+  const serializeCategory = (cat: Record<string, unknown>): SerializedCategoryWithTransactions => ({
+    ...cat,
+    createdAt: (cat.createdAt as Date).toISOString(),
+    updatedAt: (cat.updatedAt as Date).toISOString(),
+    parentId: (cat.parentId as string | null) || undefined,
+    transactions: (cat.transactions as SerializedTransactionWithBasic[]) || [],
+  } as SerializedCategoryWithTransactions)
 
   // 序列化 Decimal 对象
-  const serializedCategory: Category = {
+  const serializedCategory: SerializedCategoryWithTransactions = {
     ...categoryData,
-    parent: categoryData.parent ? {
-      ...categoryData.parent,
-      transactions: []
-    } : undefined,
-    children: categoryData.children.map(child => ({
+    createdAt: categoryData.createdAt.toISOString(),
+    updatedAt: categoryData.updatedAt.toISOString(),
+    parentId: categoryData.parentId || undefined,
+    parent: categoryData.parent
+      ? serializeCategory(categoryData.parent)
+      : undefined,
+    children: categoryData.children.map(child => serializeCategory({
       ...child,
-      transactions: [], // Add empty transactions array for children
       accounts: child.accounts.map(account => ({
         ...account,
         description: account.description || undefined,
-        category: account.category ? {
-          id: account.category.id,
-          name: account.category.name,
-          type: account.category.type
-        } : {
-          id: 'unknown',
-          name: 'Unknown',
-          type: 'ASSET'
+        color: account.color || undefined,
+        category: account.category
+          ? serializeCategory(account.category)
+          : serializeCategory({
+              id: 'unknown',
+              name: 'Unknown',
+              type: 'ASSET',
+              order: 0,
+              userId: user.id,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              parentId: undefined,
+            }),
+        currency: {
+          code: account.currencyCode,
+          name: account.currencyCode,
+          symbol: account.currencyCode,
+          isCustom: false,
+          createdBy: null,
         },
-        transactions: serializeTransactions(account.transactions as unknown as PrismaTransaction[])
-      }))
+        transactions: serializeTransactions(
+          account.transactions as unknown as PrismaTransaction[],
+        ),
+      })),
     })),
     accounts: categoryData.accounts.map(account => ({
       ...account,
+      createdAt: account.createdAt.toISOString(),
+      updatedAt: account.updatedAt.toISOString(),
       description: account.description || undefined,
-      category: account.category ? {
-        id: account.category.id,
-        name: account.category.name,
-        type: account.category.type
-      } : {
-        id: 'unknown',
-        name: 'Unknown',
-        type: 'ASSET'
+      color: account.color || undefined,
+      category: account.category
+        ? serializeCategory(account.category)
+        : serializeCategory({
+            id: 'unknown',
+            name: 'Unknown',
+            type: 'ASSET',
+            order: 0,
+            userId: user.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            parentId: undefined,
+          }),
+      currency: {
+        code: account.currencyCode,
+        name: account.currencyCode,
+        symbol: account.currencyCode,
+        isCustom: false,
+        createdBy: null,
       },
-      transactions: serializeTransactions(account.transactions as unknown as PrismaTransaction[])
+      transactions: serializeTransactions(
+        account.transactions as unknown as PrismaTransaction[],
+      ),
     })),
-    transactions: serializeTransactions(allTransactions as unknown as PrismaTransaction[])
+    transactions: serializeTransactions(
+      allTransactions as unknown as PrismaTransaction[],
+    ),
   }
 
   return (
@@ -263,28 +345,55 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         category={serializedCategory}
         accounts={accounts.map(account => ({
           ...account,
+          createdAt: account.createdAt.toISOString(),
+          updatedAt: account.updatedAt.toISOString(),
           description: account.description || undefined,
-          category: {
-            id: account.category?.id || 'unknown',
-            name: account.category?.name || 'Unknown',
-            type: account.category?.type
+          color: account.color || undefined,
+          category: account.category
+            ? serializeCategory(account.category)
+            : serializeCategory({
+                id: 'unknown',
+                name: 'Unknown',
+                type: 'ASSET',
+                order: 0,
+                userId: user.id,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                parentId: undefined,
+              }),
+          currency: {
+            code: account.currencyCode,
+            name: account.currencyCode,
+            symbol: account.currencyCode,
+            isCustom: false,
+            createdBy: null,
           },
-          transactions: []
+          transactions: [],
         }))}
-        categories={categories.map(cat => ({
-          ...cat,
-          transactions: []
+        categories={categories.map(cat => serializeCategory(cat))}
+        currencies={currencies.map(currency => ({
+          ...currency,
+          isActive: true, // 默认为 true
         }))}
-        currencies={currencies}
         tags={tags.map(tag => ({
           ...tag,
-          color: tag.color || undefined
+          color: tag.color || undefined,
         }))}
         user={{
           ...user,
-          settings: userSettings ? {
-            baseCurrency: userSettings.baseCurrency || undefined
-          } : undefined
+          settings: userSettings
+            ? {
+                id: userSettings.id,
+                userId: userSettings.userId,
+                baseCurrencyCode: userSettings.baseCurrencyCode || 'USD',
+                language: userSettings.language as 'zh' | 'en',
+                theme: userSettings.theme as 'light' | 'dark' | 'system',
+                baseCurrency: userSettings.baseCurrency || undefined,
+                createdAt: userSettings.createdAt,
+                updatedAt: userSettings.updatedAt,
+                fireSWR: userSettings.fireSWR,
+              }
+            : undefined,
         }}
       />
     </AppLayout>

@@ -1,7 +1,7 @@
-import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { unauthorizedResponse, errorResponse } from '@/lib/api-response'
+
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import { unauthorizedResponse, errorResponse } from '@/lib/api/response'
 
 export async function GET() {
   try {
@@ -11,52 +11,50 @@ export async function GET() {
     }
 
     // 获取用户的所有数据
-    const [userSettings, categories, accounts, transactions, tags] = await Promise.all([
-      prisma.userSettings.findUnique({
-        where: { userId: user.id },
-        include: { baseCurrency: true }
-      }),
-      prisma.category.findMany({
-        where: { userId: user.id },
-        orderBy: [{ order: 'asc' }, { name: 'asc' }]
-      }),
-      prisma.account.findMany({
-        where: { userId: user.id },
-        include: { category: true },
-        orderBy: { name: 'asc' }
-      }),
-      prisma.transaction.findMany({
-        where: { userId: user.id },
-        include: {
-          account: true,
-          category: true,
-          currency: true,
-          tags: {
-            include: { tag: true }
-          }
-        },
-        orderBy: [
-          { date: 'desc' },
-          { updatedAt: 'desc' }
-        ]
-      }),
-      prisma.tag.findMany({
-        where: { userId: user.id },
-        orderBy: { name: 'asc' }
-      })
-    ])
+    const [userSettings, categories, accounts, transactions, tags] =
+      await Promise.all([
+        prisma.userSettings.findUnique({
+          where: { userId: user.id },
+          include: { baseCurrency: true },
+        }),
+        prisma.category.findMany({
+          where: { userId: user.id },
+          orderBy: [{ order: 'asc' }, { name: 'asc' }],
+        }),
+        prisma.account.findMany({
+          where: { userId: user.id },
+          include: { category: true },
+          orderBy: { name: 'asc' },
+        }),
+        prisma.transaction.findMany({
+          where: { userId: user.id },
+          include: {
+            account: true,
+            category: true,
+            currency: true,
+            tags: {
+              include: { tag: true },
+            },
+          },
+          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+        }),
+        prisma.tag.findMany({
+          where: { userId: user.id },
+          orderBy: { name: 'asc' },
+        }),
+      ])
 
     // 构建导出数据
     const exportData = {
       exportInfo: {
         exportDate: new Date().toISOString(),
         version: '1.0',
-        appName: 'Flow Balance'
+        appName: 'Flow Balance',
       },
       user: {
         id: user.id,
         email: user.email,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
       },
       userSettings,
       categories: categories.map(category => ({
@@ -64,7 +62,7 @@ export async function GET() {
         name: category.name,
         parentId: category.parentId,
         order: category.order,
-        createdAt: category.createdAt
+        createdAt: category.createdAt,
       })),
       accounts: accounts.map(account => ({
         id: account.id,
@@ -72,7 +70,7 @@ export async function GET() {
         description: account.description,
         categoryId: account.categoryId,
         categoryName: account.category.name,
-        createdAt: account.createdAt
+        createdAt: account.createdAt,
       })),
       transactions: transactions.map(transaction => ({
         id: transaction.id,
@@ -88,33 +86,33 @@ export async function GET() {
         categoryName: transaction.category.name,
         tags: transaction.tags.map(tt => ({
           id: tt.tag.id,
-          name: tt.tag.name
+          name: tt.tag.name,
         })),
-        createdAt: transaction.createdAt
+        createdAt: transaction.createdAt,
       })),
       tags: tags.map(tag => ({
         id: tag.id,
         name: tag.name,
         color: tag.color,
-        createdAt: tag.createdAt
+        createdAt: tag.createdAt,
       })),
       statistics: {
         totalCategories: categories.length,
         totalAccounts: accounts.length,
         totalTransactions: transactions.length,
-        totalTags: tags.length
-      }
+        totalTags: tags.length,
+      },
     }
 
     // 返回JSON文件
     const jsonData = JSON.stringify(exportData, null, 2)
-    
+
     return new Response(jsonData, {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename="flow-balance-data-${new Date().toISOString().split('T')[0]}.json"`
-      }
+        'Content-Disposition': `attachment; filename="flow-balance-data-${new Date().toISOString().split('T')[0]}.json"`,
+      },
     })
   } catch (error) {
     console.error('Export data error:', error)

@@ -1,6 +1,10 @@
 import { NextRequest } from 'next/server'
-import { loginUser, setAuthCookie } from '@/lib/auth'
-import { successResponse, errorResponse, validationErrorResponse } from '@/lib/api-response'
+import { loginUser, setAuthCookie } from '@/lib/services/auth.service'
+import {
+  successResponse,
+  errorResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // 尝试登录
     const result = await loginUser(email, password)
-    
+
     if (!result.success) {
       return errorResponse(result.error || '登录失败', 401)
     }
@@ -25,11 +29,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 返回用户信息（不包含密码）
-    const { password: _password, ...userWithoutPassword } = result.user!
-    
+    if (!result.user) {
+      return errorResponse('用户信息获取失败', 500)
+    }
+    const { password: _password, ...userWithoutPassword } = result.user
+
     return successResponse({
       user: userWithoutPassword,
-      message: '登录成功'
+      message: '登录成功',
     })
   } catch (error) {
     console.error('Login API error:', error)

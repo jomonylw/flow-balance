@@ -1,14 +1,18 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
-import { TransactionType } from '@prisma/client'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from '@/lib/api/response'
+import { TransactionType, Prisma } from '@prisma/client'
 
 // 辅助函数：递归获取所有后代分类的ID
 async function getDescendantCategoryIds(categoryId: string): Promise<string[]> {
   const children = await prisma.category.findMany({
     where: { parentId: categoryId },
-    select: { id: true }
+    select: { id: true },
   })
 
   const descendantIds: string[] = []
@@ -37,9 +41,7 @@ export async function GET(request: NextRequest) {
     const tagIds = searchParams.get('tagIds')?.split(',').filter(Boolean) || []
 
     // 构建基础查询条件
-    const baseConditions: Record<string, unknown>[] = [
-      { userId: user.id }
-    ]
+    const baseConditions: Prisma.TransactionWhereInput[] = [{ userId: user.id }]
 
     if (accountId) {
       baseConditions.push({ accountId })
@@ -81,49 +83,57 @@ export async function GET(request: NextRequest) {
         tags: {
           some: {
             tagId: {
-              in: tagIds
-            }
-          }
-        }
+              in: tagIds,
+            },
+          },
+        },
       })
     }
 
     // 构建最终查询条件
-    let where: Record<string, unknown>
+    let where: Prisma.TransactionWhereInput
 
     if (search) {
       // 当有搜索条件时，需要将搜索条件与其他条件正确组合
-      const allConditions = [
+      const allConditions: Prisma.TransactionWhereInput[] = [
         ...baseConditions,
         {
           OR: [
             {
               description: {
-                contains: search
-              }
+                contains: search,
+              },
             },
             {
               notes: {
-                contains: search
-              }
-            }
-          ]
-        }
+                contains: search,
+              },
+            },
+          ],
+        },
       ]
 
-      where = allConditions.length === 1 ? allConditions[0] : { AND: allConditions }
+      where =
+        allConditions.length === 1 ? allConditions[0] : { AND: allConditions }
     } else {
       // 没有搜索条件时，直接使用条件
-      where = baseConditions.length === 1 ? baseConditions[0] : { AND: baseConditions }
+      where =
+        baseConditions.length === 1
+          ? baseConditions[0]
+          : { AND: baseConditions }
     }
 
     // 获取用户的基础货币设置
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
-      include: { baseCurrency: true }
+      include: { baseCurrency: true },
     })
 
-    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
+    const baseCurrency = userSettings?.baseCurrency || {
+      code: 'CNY',
+      symbol: '¥',
+      name: '人民币',
+    }
 
     // 获取所有符合条件的交易用于统计
     const transactions = await prisma.transaction.findMany({
@@ -132,8 +142,8 @@ export async function GET(request: NextRequest) {
         type: true,
         amount: true,
         date: true,
-        currencyCode: true
-      }
+        currencyCode: true,
+      },
     })
 
     // 获取所有涉及的货币汇率
@@ -142,9 +152,9 @@ export async function GET(request: NextRequest) {
       where: {
         userId: user.id,
         fromCurrency: { in: currencyCodes },
-        toCurrency: baseCurrency.code
+        toCurrency: baseCurrency.code,
       },
-      orderBy: { effectiveDate: 'desc' }
+      orderBy: { effectiveDate: 'desc' },
     })
 
     // 创建汇率映射
@@ -157,7 +167,10 @@ export async function GET(request: NextRequest) {
     })
 
     // 货币转换函数
-    const convertToBaseCurrency = (amount: number, fromCurrency: string): number => {
+    const convertToBaseCurrency = (
+      amount: number,
+      fromCurrency: string,
+    ): number => {
       if (fromCurrency === baseCurrency.code) {
         return amount
       }
@@ -168,7 +181,9 @@ export async function GET(request: NextRequest) {
       if (rate) {
         return amount * rate
       } else {
-        console.warn(`No exchange rate found for ${fromCurrency} to ${baseCurrency.code}, using original amount`)
+        console.warn(
+          `No exchange rate found for ${fromCurrency} to ${baseCurrency.code}, using original amount`,
+        )
         return amount
       }
     }
@@ -177,7 +192,7 @@ export async function GET(request: NextRequest) {
     const now = new Date()
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    
+
     let totalIncome = 0
     let totalExpense = 0
     let thisMonthIncome = 0
@@ -190,14 +205,20 @@ export async function GET(request: NextRequest) {
     transactions.forEach(transaction => {
       const transactionDate = new Date(transaction.date)
       const originalAmount = parseFloat(String(transaction.amount)) || 0
-      const amount = convertToBaseCurrency(originalAmount, transaction.currencyCode)
+      const amount = convertToBaseCurrency(
+        originalAmount,
+        transaction.currencyCode,
+      )
 
       if (transaction.type === 'INCOME') {
         totalIncome += amount
         incomeCount++
         if (transactionDate >= thisMonth) {
           thisMonthIncome += amount
-        } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
+        } else if (
+          transactionDate >= lastMonth &&
+          transactionDate < thisMonth
+        ) {
           lastMonthIncome += amount
         }
       } else if (transaction.type === 'EXPENSE') {
@@ -205,7 +226,10 @@ export async function GET(request: NextRequest) {
         expenseCount++
         if (transactionDate >= thisMonth) {
           thisMonthExpense += amount
-        } else if (transactionDate >= lastMonth && transactionDate < thisMonth) {
+        } else if (
+          transactionDate >= lastMonth &&
+          transactionDate < thisMonth
+        ) {
           lastMonthExpense += amount
         }
       }
@@ -214,9 +238,10 @@ export async function GET(request: NextRequest) {
     const totalNet = totalIncome - totalExpense
     const thisMonthNet = thisMonthIncome - thisMonthExpense
     const lastMonthNet = lastMonthIncome - lastMonthExpense
-    const monthlyChange = lastMonthNet !== 0 
-      ? ((thisMonthNet - lastMonthNet) / Math.abs(lastMonthNet)) * 100 
-      : 0
+    const monthlyChange =
+      lastMonthNet !== 0
+        ? ((thisMonthNet - lastMonthNet) / Math.abs(lastMonthNet)) * 100
+        : 0
 
     const stats = {
       totalIncome,
@@ -228,7 +253,7 @@ export async function GET(request: NextRequest) {
       monthlyChange,
       incomeCount,
       expenseCount,
-      totalCount: transactions.length
+      totalCount: transactions.length,
     }
 
     return successResponse(stats)

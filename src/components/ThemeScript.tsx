@@ -49,7 +49,7 @@ export default function ThemeScript() {
         document.documentElement.classList.add('light');
       }
     })();
-  `;
+  `
 
   return (
     <script
@@ -57,5 +57,5 @@ export default function ThemeScript() {
         __html: themeScript,
       }}
     />
-  );
+  )
 }

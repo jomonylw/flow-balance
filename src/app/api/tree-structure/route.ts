@@ -1,35 +1,11 @@
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
-import { AccountType } from '@prisma/client'
-
-// 类型定义
-interface CategoryWithChildren {
-  id: string
-  userId: string
-  name: string
-  parentId: string | null
-  type: AccountType
-  order: number
-  createdAt: Date
-  updatedAt: Date
-  children: CategoryWithChildren[]
-  accounts: AccountInfo[]
-}
-
-interface AccountInfo {
-  id: string
-  name: string
-  description: string | null
-  color: string | null
-  currencyCode: string
-  categoryId: string
-  category: {
-    id: string
-    name: string
-    type: AccountType
-  }
-}
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from '@/lib/api/response'
+import type { CategoryWithChildren, TreeAccountInfo } from '@/types/api'
 
 /**
  * 获取完整的分类+账户树状结构
@@ -47,32 +23,29 @@ export async function GET() {
       // 获取所有分类
       prisma.category.findMany({
         where: {
-          userId: user.id
+          userId: user.id,
         },
-        orderBy: [
-          { order: 'asc' },
-          { name: 'asc' }
-        ]
+        orderBy: [{ order: 'asc' }, { name: 'asc' }],
       }),
-      
+
       // 获取所有账户（不包含交易数据，减少数据传输）
       prisma.account.findMany({
         where: {
-          userId: user.id
+          userId: user.id,
         },
         include: {
           category: {
             select: {
               id: true,
               name: true,
-              type: true
-            }
-          }
+              type: true,
+            },
+          },
         },
         orderBy: {
-          name: 'asc'
-        }
-      })
+          name: 'asc',
+        },
+      }),
     ])
 
     // 构建树状结构
@@ -84,7 +57,7 @@ export async function GET() {
       categoryMap.set(category.id, {
         ...category,
         children: [],
-        accounts: []
+        accounts: [],
       })
     })
 
@@ -107,15 +80,16 @@ export async function GET() {
     accounts.forEach(account => {
       const category = categoryMap.get(account.categoryId)
       if (category) {
-        category.accounts.push({
+        const accountInfo: TreeAccountInfo = {
           id: account.id,
           name: account.name,
           description: account.description,
           color: account.color,
           currencyCode: account.currencyCode,
           categoryId: account.categoryId,
-          category: account.category
-        })
+          category: account.category,
+        }
+        category.accounts.push(accountInfo)
       }
     })
 
@@ -140,13 +114,13 @@ export async function GET() {
     const stats = {
       totalCategories: categories.length,
       totalAccounts: accounts.length,
-      rootCategories: rootCategories.length
+      rootCategories: rootCategories.length,
     }
 
     return successResponse({
       treeStructure: rootCategories,
       stats,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
   } catch (error) {
     console.error('Get tree structure error:', error)

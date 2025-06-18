@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import MobilePreview from '@/components/dev/MobilePreview'
-import UserSettingsPage from '@/components/settings/UserSettingsPage'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import MobilePreview from '@/components/features/dev/MobilePreview'
+import UserSettingsPage from '@/components/features/settings/UserSettingsPage'
 
 export default async function SettingsPreviewPage() {
   const user = await getCurrentUser()
-  
+
   if (!user) {
     redirect('/login')
   }
@@ -14,12 +14,12 @@ export default async function SettingsPreviewPage() {
   // 获取用户设置
   const userSettings = await prisma.userSettings.findUnique({
     where: { userId: user.id },
-    include: { baseCurrency: true }
+    include: { baseCurrency: true },
   })
 
   // 获取所有可用币种
   const currencies = await prisma.currency.findMany({
-    orderBy: { code: 'asc' }
+    orderBy: { code: 'asc' },
   })
 
   return (

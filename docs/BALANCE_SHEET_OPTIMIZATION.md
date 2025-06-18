@@ -2,26 +2,31 @@
 
 ## 优化概述
 
-本次优化对 `BalanceSheetCard` 组件进行了重大改进，通过集成 `UserDataContext` 中的分类树数据，实现了更清晰的层级汇总展示。
+本次优化对 `BalanceSheetCard` 组件进行了重大改进，通过集成 `UserDataContext`
+中的分类树数据，实现了更清晰的层级汇总展示。
 
 ## 主要改进
 
 ### 1. 集成 UserDataContext
+
 - 从 `UserDataContext` 获取完整的 `categories` 和 `accounts` 数据
 - 利用已有的分类树结构，避免重复的 API 调用
 - 保持数据的一致性和实时性
 
 ### 2. 层级分类树构建
+
 - 新增 `enrichedCategoryTree` 计算属性，构建完整的分类层级结构
 - 支持多级分类的嵌套显示
 - 自动汇总子分类的余额到父分类
 
 ### 3. 新的渲染逻辑
+
 - 新增 `renderHierarchicalCategories` 函数，支持递归渲染分类树
 - 保留原有的 `renderCategorySection` 函数作为后备方案
 - 智能切换：优先使用层级展示，数据不可用时回退到原有展示
 
 ### 4. 视觉改进
+
 - 通过缩进显示分类层级关系
 - 顶级分类显示账户类型标签（资产、负债、收入、支出）
 - 保持原有的货币转换和显示逻辑
@@ -66,12 +71,12 @@ const renderHierarchicalCategories = (
         {category.name}
         {/* 顶级分类显示类型标签 */}
       </div>
-      
+
       {/* 账户列表 */}
       {category.accounts.length > 0 && (
         // 显示账户和余额
       )}
-      
+
       {/* 递归渲染子分类 */}
       {category.children && category.children.length > 0 && (
         renderHierarchicalCategories(category.children, level + 1)
@@ -84,21 +89,25 @@ const renderHierarchicalCategories = (
 ## 优化效果
 
 ### 1. 更清晰的层级展示
+
 - 用户可以清楚地看到分类的层级关系
 - 父分类自动汇总子分类的余额
 - 支持任意深度的分类嵌套
 
 ### 2. 更好的数据一致性
+
 - 利用 UserDataContext 的统一数据源
 - 避免数据不同步的问题
 - 减少不必要的 API 调用
 
 ### 3. 更强的扩展性
+
 - 保留原有渲染逻辑作为后备
 - 新的层级渲染逻辑可以轻松扩展
 - 支持未来的功能增强
 
 ### 4. 更好的用户体验
+
 - 视觉层次更加清晰
 - 信息组织更加合理
 - 保持原有的所有功能
@@ -120,7 +129,9 @@ const renderHierarchicalCategories = (
 ## 第二轮优化：分类汇总和样式改进
 
 ### 问题识别
+
 在第一轮优化后，用户反馈了以下问题：
+
 1. 分类汇总节点缺少本币汇总金额显示
 2. 右侧金额显示没有正确对齐
 3. 需要为分类汇总使用不同的视觉样式
@@ -128,6 +139,7 @@ const renderHierarchicalCategories = (
 ### 解决方案
 
 #### 1. 完善本币汇总计算
+
 ```typescript
 // 确保每个分类都有本币汇总金额
 if (category.totalInBaseCurrency === undefined || category.totalInBaseCurrency === 0) {
@@ -142,12 +154,15 @@ if (category.totalInBaseCurrency === undefined || category.totalInBaseCurrency =
 ```
 
 #### 2. 分类汇总特殊样式
+
 为分类汇总金额添加了带边框的特殊样式：
+
 - 顶级分类：蓝色背景和边框
 - 子分类：灰色背景和边框
 - 使用 `inline-block` 和 `px-2 py-1 rounded` 创建标签效果
 
 #### 3. 右侧对齐优化
+
 - 使用 `text-right min-w-0 flex-shrink-0` 确保右侧内容正确对齐
 - 为账户名称添加 `flex-1 min-w-0 pr-2` 确保左侧内容不会挤压右侧
 - 使用 `items-start` 确保多行内容顶部对齐
@@ -155,6 +170,7 @@ if (category.totalInBaseCurrency === undefined || category.totalInBaseCurrency =
 ### 视觉效果改进
 
 #### 分类汇总显示
+
 ```
 资产 [资产]                    ¥1,111.10  <- 带边框的特殊样式
   股票                        ¥1,111.10  <- 子分类汇总
@@ -165,6 +181,7 @@ if (category.totalInBaseCurrency === undefined || category.totalInBaseCurrency =
 ```
 
 #### 样式特点
+
 1. **分类汇总**：带边框的标签样式，视觉上突出显示
 2. **币种小计**：灰色背景，清晰区分
 3. **账户明细**：右侧金额完美对齐，支持多行显示

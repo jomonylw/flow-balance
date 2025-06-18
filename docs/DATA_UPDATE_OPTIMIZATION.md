@@ -3,6 +3,7 @@
 ## 概述
 
 本方案解决了应用中数据更新时的联动更新问题，实现了：
+
 1. 更新余额/增加交易后相关面板的数据自动刷新
 2. 左侧侧边栏金额的实时更新（只更新相关账户，不刷新整个树结构）
 3. 添加子分类&账户后，树结构的自动刷新
@@ -37,9 +38,12 @@ await publishTransactionCreate(accountId, categoryId, { transaction })
 
 ```typescript
 // 监听余额更新事件
-useBalanceUpdateListener(async (event) => {
-  await refreshData()
-}, [accountId])
+useBalanceUpdateListener(
+  async event => {
+    await refreshData()
+  },
+  [accountId]
+)
 ```
 
 ### 3. UserDataContext 增强
@@ -55,64 +59,73 @@ useBalanceUpdateListener(async (event) => {
 ### 1. 余额更新联动
 
 **触发场景**：
+
 - QuickBalanceUpdateModal 成功更新余额
 - BalanceUpdateModal 成功更新余额
 
 **联动效果**：
+
 - 发布 `balance-update` 事件
 - 左侧侧边栏相关账户金额实时更新
 - StockCategoryDetailView 重新获取汇总数据和交易记录
 - Dashboard 重新获取概览数据
 
 **实现方式**：
+
 ```typescript
 // 在模态框成功回调中
 await publishBalanceUpdate(accountId, {
   newBalance,
   currencyCode,
-  transaction: result.transaction
+  transaction: result.transaction,
 })
 ```
 
 ### 2. 交易操作联动
 
 **触发场景**：
+
 - SimpleFlowTransactionModal 创建/更新交易
 - TransactionFormModal 创建/更新交易
 
 **联动效果**：
+
 - 发布 `transaction-create/update` 事件
 - FlowCategoryDetailView 重新获取汇总数据和交易记录
 - Dashboard 重新获取概览数据
 - 左侧侧边栏相关账户金额更新
 
 **实现方式**：
+
 ```typescript
 // 交易创建成功后
 await publishTransactionCreate(accountId, categoryId, {
   transaction: result.transaction,
   amount,
-  currencyCode
+  currencyCode,
 })
 ```
 
 ### 3. 账户/分类创建联动
 
 **触发场景**：
+
 - CategoryTreeItem 添加子分类
 - CategoryTreeItem 添加账户
 
 **联动效果**：
+
 - 发布 `category-create/account-create` 事件
 - OptimizedCategoryAccountTree 刷新分类/账户数据
 - 左侧侧边栏树结构更新
 
 **实现方式**：
+
 ```typescript
 // 分类创建成功后
 await publishCategoryCreate(parentCategoryId, {
   newCategory: result.data,
-  parentCategory: category
+  parentCategory: category,
 })
 ```
 
@@ -121,9 +134,9 @@ await publishCategoryCreate(parentCategoryId, {
 **OptimizedCategoryAccountTree** 组件监听所有数据更新事件：
 
 ```typescript
-useAllDataListener(async (event) => {
+useAllDataListener(async event => {
   const { type, silent } = event
-  
+
   switch (type) {
     case 'balance-update':
     case 'transaction-create':
@@ -132,7 +145,7 @@ useAllDataListener(async (event) => {
       // 强制刷新余额数据
       await refreshBalances()
       break
-      
+
     case 'account-create':
     case 'account-update':
     case 'account-delete':
@@ -140,7 +153,7 @@ useAllDataListener(async (event) => {
       await refreshAccounts()
       await refreshBalances()
       break
-      
+
     case 'category-create':
     case 'category-update':
     case 'category-delete':
@@ -154,25 +167,30 @@ useAllDataListener(async (event) => {
 ## 性能优化
 
 ### 1. 事件队列处理
+
 - 避免同时处理多个事件造成的竞态条件
 - 批量处理事件，提高性能
 
 ### 2. 智能刷新策略
+
 - 根据事件类型决定刷新范围
 - 避免不必要的全量数据刷新
 - 支持静默更新（不显示加载状态）
 
 ### 3. 内存管理
+
 - 自动清理监听器，避免内存泄漏
 - 事件处理异常不会影响其他监听器
 
 ## 兼容性
 
 ### 向后兼容
+
 - 保持对旧事件系统（window.dispatchEvent）的兼容
 - 现有组件可以逐步迁移到新系统
 
 ### 渐进式升级
+
 - 新系统与现有代码并存
 - 可以选择性地为特定组件启用新的数据更新机制
 
@@ -197,7 +215,7 @@ function MyComponent() {
     console.log('Balance updated:', event.data)
     await refreshComponentData()
   }, [accountId])
-  
+
   return <div>...</div>
 }
 ```
@@ -209,11 +227,11 @@ import { publishTransactionCreate } from '@/utils/DataUpdateManager'
 
 async function handleCreateTransaction() {
   const result = await createTransaction(data)
-  
+
   if (result.success) {
     // 发布事件，触发相关组件更新
     await publishTransactionCreate(accountId, categoryId, {
-      transaction: result.transaction
+      transaction: result.transaction,
     })
   }
 }

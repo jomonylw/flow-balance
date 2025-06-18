@@ -1,12 +1,17 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  notFoundResponse,
+} from '@/lib/api/response'
 import { TransactionType } from '@prisma/client'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params
@@ -18,22 +23,22 @@ export async function GET(
     const transaction = await prisma.transaction.findFirst({
       where: {
         id: id,
-        userId: user.id
+        userId: user.id,
       },
       include: {
         account: {
           include: {
-            category: true
-          }
+            category: true,
+          },
         },
         category: true,
         currency: true,
         tags: {
           include: {
-            tag: true
-          }
-        }
-      }
+            tag: true,
+          },
+        },
+      },
     })
 
     if (!transaction) {
@@ -46,9 +51,9 @@ export async function GET(
       tags: transaction.tags.map(tt => ({
         tag: {
           id: tt.tag.id,
-          name: tt.tag.name
-        }
-      }))
+          name: tt.tag.name,
+        },
+      })),
     }
 
     return successResponse(formattedTransaction)
@@ -60,7 +65,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params
@@ -73,8 +78,8 @@ export async function PUT(
     const existingTransaction = await prisma.transaction.findFirst({
       where: {
         id: id,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!existingTransaction) {
@@ -91,11 +96,19 @@ export async function PUT(
       description,
       notes,
       date,
-      tagIds = []
+      tagIds = [],
     } = body
 
     // 验证必填字段
-    if (!accountId || !categoryId || !currencyCode || !type || !amount || !description || !date) {
+    if (
+      !accountId ||
+      !categoryId ||
+      !currencyCode ||
+      !type ||
+      !amount ||
+      !description ||
+      !date
+    ) {
       return errorResponse('请填写所有必填字段', 400)
     }
 
@@ -110,12 +123,12 @@ export async function PUT(
         where: { id: accountId, userId: user.id },
         include: {
           category: true,
-          currency: true
-        }
+          currency: true,
+        },
       }),
       prisma.category.findFirst({
-        where: { id: categoryId, userId: user.id }
-      })
+        where: { id: categoryId, userId: user.id },
+      }),
     ])
 
     if (!account) {
@@ -128,12 +141,15 @@ export async function PUT(
 
     // 验证账户货币限制
     if (account.currencyCode && account.currencyCode !== currencyCode) {
-      return errorResponse(`此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`, 400)
+      return errorResponse(
+        `此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`,
+        400,
+      )
     }
 
     // 验证币种
     const currency = await prisma.currency.findUnique({
-      where: { code: currencyCode }
+      where: { code: currencyCode },
     })
 
     if (!currency) {
@@ -149,7 +165,7 @@ export async function PUT(
         if (existingTransaction.type !== 'BALANCE') {
           return errorResponse(
             `存量类账户"${account.name}"不能编辑普通交易记录。请使用"更新余额"功能来管理${accountType === 'ASSET' ? '资产' : '负债'}账户的余额变化。`,
-            400
+            400,
           )
         }
         // 如果是余额调整交易，也不允许通过普通交易API编辑
@@ -160,15 +176,24 @@ export async function PUT(
 
       // 流量类账户（收入/支出）的严格验证
       if (accountType === 'INCOME' && type !== 'INCOME') {
-        return errorResponse('收入类账户只能记录收入交易，请选择正确的交易类型', 400)
+        return errorResponse(
+          '收入类账户只能记录收入交易，请选择正确的交易类型',
+          400,
+        )
       }
 
       if (accountType === 'EXPENSE' && type !== 'EXPENSE') {
-        return errorResponse('支出类账户只能记录支出交易，请选择正确的交易类型', 400)
+        return errorResponse(
+          '支出类账户只能记录支出交易，请选择正确的交易类型',
+          400,
+        )
       }
 
       // 禁止在普通交易中使用BALANCE类型
-      if (type === 'BALANCE' && (accountType === 'INCOME' || accountType === 'EXPENSE')) {
+      if (
+        type === 'BALANCE' &&
+        (accountType === 'INCOME' || accountType === 'EXPENSE')
+      ) {
         return errorResponse('BALANCE类型只能用于存量类账户', 400)
       }
     }
@@ -188,24 +213,24 @@ export async function PUT(
         tags: {
           deleteMany: {},
           create: tagIds.map((tagId: string) => ({
-            tagId
-          }))
-        }
+            tagId,
+          })),
+        },
       },
       include: {
         account: {
           include: {
-            category: true
-          }
+            category: true,
+          },
         },
         category: true,
         currency: true,
         tags: {
           include: {
-            tag: true
-          }
-        }
-      }
+            tag: true,
+          },
+        },
+      },
     })
 
     // 格式化交易数据，移除标签颜色信息
@@ -214,9 +239,9 @@ export async function PUT(
       tags: transaction.tags.map(tt => ({
         tag: {
           id: tt.tag.id,
-          name: tt.tag.name
-        }
-      }))
+          name: tt.tag.name,
+        },
+      })),
     }
 
     return successResponse(formattedTransaction, '交易更新成功')
@@ -228,7 +253,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params
@@ -241,8 +266,8 @@ export async function DELETE(
     const existingTransaction = await prisma.transaction.findFirst({
       where: {
         id: id,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!existingTransaction) {
@@ -251,7 +276,7 @@ export async function DELETE(
 
     // 删除交易
     await prisma.transaction.delete({
-      where: { id: id }
+      where: { id: id },
     })
 
     return successResponse(null, '交易删除成功')

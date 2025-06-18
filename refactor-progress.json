@@ -1,0 +1,613 @@
+{
+  "timestamp": "2025-06-17T14:02:38.928Z",
+  "summary": {
+    "totalDuplicates": 111,
+    "coreTypesAffected": 9,
+    "completionRate": 0,
+    "filesByPriority": {
+      "high": [
+        "src/components/features/dashboard/AccountBalancesCard.tsx",
+        "src/components/features/dashboard/QuickTransactionButton.tsx",
+        "src/components/features/dashboard/RecentTransactionsList.tsx",
+        "src/components/features/layout/CategoryAccountTree.tsx",
+        "src/components/features/layout/CategoryContextMenu.tsx",
+        "src/components/features/layout/CategoryTreeItem.tsx",
+        "src/components/features/layout/OptimizedCategoryAccountTree.tsx",
+        "src/components/ui/feedback/AddAccountModal.tsx",
+        "src/components/ui/feedback/CategorySettingsModal.tsx",
+        "src/components/features/dashboard/NetWorthCard.tsx",
+        "src/components/features/dashboard/RecentActivityCard.tsx",
+        "src/components/features/layout/AccountContextMenu.tsx",
+        "src/components/features/layout/AccountTreeItem.tsx",
+        "src/components/ui/feedback/AccountSettingsModal.tsx",
+        "src/components/features/dashboard/CurrencyConversionStatus.tsx",
+        "src/components/features/layout/AppLayout.tsx",
+        "src/components/features/layout/AppLayoutClient.tsx",
+        "src/components/features/layout/TopUserStatusBar.tsx",
+        "src/components/ui/feedback/TagFormModal.tsx"
+      ],
+      "medium": [
+        "src/components/features/accounts/AccountSummaryCard.tsx",
+        "src/components/features/accounts/FlowAccountSummaryCard.tsx",
+        "src/components/features/accounts/StockAccountSummaryCard.tsx",
+        "src/components/features/transactions/SimpleFlowTransactionModal.tsx",
+        "src/components/features/accounts/BalanceUpdateModal.tsx",
+        "src/components/features/charts/FlowAccountTrendChart.tsx",
+        "src/components/features/charts/FlowMonthlySummaryChart.tsx",
+        "src/components/features/charts/StockAccountTrendChart.tsx",
+        "src/components/features/charts/StockMonthlySummaryChart.tsx",
+        "src/components/features/charts/MonthlySummaryChart.tsx"
+      ],
+      "low": [
+        "src/components/features/reports/CashFlowCard.tsx",
+        "src/components/features/reports/BalanceSheetCard.tsx",
+        "src/components/features/settings/ExchangeRateForm.tsx",
+        "src/components/features/settings/ExchangeRateList.tsx",
+        "src/components/features/settings/ExchangeRateManagement.tsx",
+        "src/components/features/settings/TagManagement.tsx"
+      ],
+      "other": [
+        "src/components/features/categories/CategorySummaryCard.tsx",
+        "src/components/features/categories/FlowCategorySummaryCard.tsx",
+        "src/components/features/categories/SmartCategoryChart.tsx",
+        "src/components/features/categories/SmartCategorySummaryCard.tsx",
+        "src/components/features/categories/StockCategorySummaryCard.tsx",
+        "src/contexts/providers/UserDataContext.tsx",
+        "src/types/business/transaction.ts",
+        "src/types/core/index.ts",
+        "src/components/features/categories/CategoryChart.tsx",
+        "src/lib/services/account.service.ts",
+        "src/lib/utils/validation.ts",
+        "src/components/features/categories/StockCategoryBalanceCard.tsx",
+        "src/components/features/categories/types.ts",
+        "src/components/features/fire/CockpitControls.tsx",
+        "src/components/features/fire/JourneyVisualization.tsx",
+        "src/components/features/fire/NorthStarMetrics.tsx",
+        "src/components/features/fire/RealitySnapshot.tsx",
+        "src/lib/validation/schemas.ts",
+        "src/components/features/fire/FireJourneyContent.tsx",
+        "src/lib/services/category-summary/types.ts"
+      ]
+    }
+  },
+  "duplicates": [
+    {
+      "typeName": "Currency",
+      "count": 30,
+      "files": [
+        {
+          "file": "src/components/features/accounts/BalanceUpdateModal.tsx",
+          "line": 13
+        },
+        {
+          "file": "src/components/features/categories/FlowCategorySummaryCard.tsx",
+          "line": 24
+        },
+        {
+          "file": "src/components/features/categories/StockCategorySummaryCard.tsx",
+          "line": 24
+        },
+        {
+          "file": "src/components/features/categories/types.ts",
+          "line": 12
+        },
+        {
+          "file": "src/components/features/charts/FlowAccountTrendChart.tsx",
+          "line": 11
+        },
+        {
+          "file": "src/components/features/charts/FlowMonthlySummaryChart.tsx",
+          "line": 24
+        },
+        {
+          "file": "src/components/features/charts/MonthlySummaryChart.tsx",
+          "line": 30
+        },
+        {
+          "file": "src/components/features/charts/StockAccountTrendChart.tsx",
+          "line": 11
+        },
+        {
+          "file": "src/components/features/charts/StockMonthlySummaryChart.tsx",
+          "line": 18
+        },
+        {
+          "file": "src/components/features/dashboard/AccountBalancesCard.tsx",
+          "line": 5
+        },
+        {
+          "file": "src/components/features/dashboard/CurrencyConversionStatus.tsx",
+          "line": 6
+        },
+        {
+          "file": "src/components/features/dashboard/NetWorthCard.tsx",
+          "line": 3
+        },
+        {
+          "file": "src/components/features/dashboard/RecentActivityCard.tsx",
+          "line": 3
+        },
+        {
+          "file": "src/components/features/dashboard/RecentTransactionsList.tsx",
+          "line": 6
+        },
+        {
+          "file": "src/components/features/fire/CockpitControls.tsx",
+          "line": 13
+        },
+        {
+          "file": "src/components/features/fire/JourneyVisualization.tsx",
+          "line": 16
+        },
+        {
+          "file": "src/components/features/fire/NorthStarMetrics.tsx",
+          "line": 14
+        },
+        {
+          "file": "src/components/features/fire/RealitySnapshot.tsx",
+          "line": 13
+        },
+        {
+          "file": "src/components/features/reports/BalanceSheetCard.tsx",
+          "line": 15
+        },
+        {
+          "file": "src/components/features/reports/CashFlowCard.tsx",
+          "line": 16
+        },
+        {
+          "file": "src/components/features/settings/ExchangeRateForm.tsx",
+          "line": 10
+        },
+        {
+          "file": "src/components/features/settings/ExchangeRateList.tsx",
+          "line": 8
+        },
+        {
+          "file": "src/components/features/settings/ExchangeRateManagement.tsx",
+          "line": 11
+        },
+        {
+          "file": "src/components/features/transactions/SimpleFlowTransactionModal.tsx",
+          "line": 33
+        },
+        {
+          "file": "src/components/ui/feedback/AccountSettingsModal.tsx",
+          "line": 11
+        },
+        {
+          "file": "src/components/ui/feedback/AddAccountModal.tsx",
+          "line": 13
+        },
+        {
+          "file": "src/contexts/providers/UserDataContext.tsx",
+          "line": 13
+        },
+        {
+          "file": "src/lib/validation/schemas.ts",
+          "line": 248
+        },
+        {
+          "file": "src/types/business/transaction.ts",
+          "line": 56
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 34
+        }
+      ]
+    },
+    {
+      "typeName": "Account",
+      "count": 27,
+      "files": [
+        {
+          "file": "src/components/features/accounts/AccountSummaryCard.tsx",
+          "line": 12
+        },
+        {
+          "file": "src/components/features/accounts/BalanceUpdateModal.tsx",
+          "line": 19
+        },
+        {
+          "file": "src/components/features/accounts/FlowAccountSummaryCard.tsx",
+          "line": 19
+        },
+        {
+          "file": "src/components/features/accounts/StockAccountSummaryCard.tsx",
+          "line": 26
+        },
+        {
+          "file": "src/components/features/categories/SmartCategorySummaryCard.tsx",
+          "line": 30
+        },
+        {
+          "file": "src/components/features/categories/StockCategoryBalanceCard.tsx",
+          "line": 5
+        },
+        {
+          "file": "src/components/features/charts/FlowAccountTrendChart.tsx",
+          "line": 17
+        },
+        {
+          "file": "src/components/features/charts/FlowMonthlySummaryChart.tsx",
+          "line": 30
+        },
+        {
+          "file": "src/components/features/charts/StockAccountTrendChart.tsx",
+          "line": 17
+        },
+        {
+          "file": "src/components/features/charts/StockMonthlySummaryChart.tsx",
+          "line": 24
+        },
+        {
+          "file": "src/components/features/dashboard/AccountBalancesCard.tsx",
+          "line": 21
+        },
+        {
+          "file": "src/components/features/dashboard/NetWorthCard.tsx",
+          "line": 15
+        },
+        {
+          "file": "src/components/features/dashboard/QuickTransactionButton.tsx",
+          "line": 10
+        },
+        {
+          "file": "src/components/features/dashboard/RecentTransactionsList.tsx",
+          "line": 12
+        },
+        {
+          "file": "src/components/features/layout/AccountContextMenu.tsx",
+          "line": 6
+        },
+        {
+          "file": "src/components/features/layout/AccountTreeItem.tsx",
+          "line": 21
+        },
+        {
+          "file": "src/components/features/layout/CategoryAccountTree.tsx",
+          "line": 15
+        },
+        {
+          "file": "src/components/features/layout/CategoryTreeItem.tsx",
+          "line": 23
+        },
+        {
+          "file": "src/components/features/layout/OptimizedCategoryAccountTree.tsx",
+          "line": 28
+        },
+        {
+          "file": "src/components/features/transactions/SimpleFlowTransactionModal.tsx",
+          "line": 17
+        },
+        {
+          "file": "src/components/ui/feedback/AccountSettingsModal.tsx",
+          "line": 17
+        },
+        {
+          "file": "src/components/ui/feedback/AddAccountModal.tsx",
+          "line": 25
+        },
+        {
+          "file": "src/contexts/providers/UserDataContext.tsx",
+          "line": 31
+        },
+        {
+          "file": "src/lib/services/account.service.ts",
+          "line": 153
+        },
+        {
+          "file": "src/lib/utils/validation.ts",
+          "line": 9
+        },
+        {
+          "file": "src/types/business/transaction.ts",
+          "line": 59
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 91
+        }
+      ]
+    },
+    {
+      "typeName": "Category",
+      "count": 20,
+      "files": [
+        {
+          "file": "src/components/features/accounts/AccountSummaryCard.tsx",
+          "line": 1
+        },
+        {
+          "file": "src/components/features/accounts/FlowAccountSummaryCard.tsx",
+          "line": 8
+        },
+        {
+          "file": "src/components/features/accounts/StockAccountSummaryCard.tsx",
+          "line": 9
+        },
+        {
+          "file": "src/components/features/categories/CategorySummaryCard.tsx",
+          "line": 7
+        },
+        {
+          "file": "src/components/features/categories/FlowCategorySummaryCard.tsx",
+          "line": 5
+        },
+        {
+          "file": "src/components/features/categories/SmartCategoryChart.tsx",
+          "line": 31
+        },
+        {
+          "file": "src/components/features/categories/SmartCategorySummaryCard.tsx",
+          "line": 22
+        },
+        {
+          "file": "src/components/features/categories/StockCategorySummaryCard.tsx",
+          "line": 5
+        },
+        {
+          "file": "src/components/features/dashboard/AccountBalancesCard.tsx",
+          "line": 17
+        },
+        {
+          "file": "src/components/features/dashboard/QuickTransactionButton.tsx",
+          "line": 5
+        },
+        {
+          "file": "src/components/features/dashboard/RecentTransactionsList.tsx",
+          "line": 17
+        },
+        {
+          "file": "src/components/features/layout/CategoryAccountTree.tsx",
+          "line": 7
+        },
+        {
+          "file": "src/components/features/layout/CategoryContextMenu.tsx",
+          "line": 6
+        },
+        {
+          "file": "src/components/features/layout/CategoryTreeItem.tsx",
+          "line": 40
+        },
+        {
+          "file": "src/components/features/layout/OptimizedCategoryAccountTree.tsx",
+          "line": 18
+        },
+        {
+          "file": "src/components/ui/feedback/AddAccountModal.tsx",
+          "line": 19
+        },
+        {
+          "file": "src/components/ui/feedback/CategorySettingsModal.tsx",
+          "line": 9
+        },
+        {
+          "file": "src/contexts/providers/UserDataContext.tsx",
+          "line": 46
+        },
+        {
+          "file": "src/types/business/transaction.ts",
+          "line": 55
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 72
+        }
+      ]
+    },
+    {
+      "typeName": "Transaction",
+      "count": 19,
+      "files": [
+        {
+          "file": "src/components/features/accounts/AccountSummaryCard.tsx",
+          "line": 6
+        },
+        {
+          "file": "src/components/features/accounts/FlowAccountSummaryCard.tsx",
+          "line": 13
+        },
+        {
+          "file": "src/components/features/accounts/StockAccountSummaryCard.tsx",
+          "line": 14
+        },
+        {
+          "file": "src/components/features/categories/CategoryChart.tsx",
+          "line": 6
+        },
+        {
+          "file": "src/components/features/categories/CategorySummaryCard.tsx",
+          "line": 1
+        },
+        {
+          "file": "src/components/features/categories/FlowCategorySummaryCard.tsx",
+          "line": 12
+        },
+        {
+          "file": "src/components/features/categories/SmartCategoryChart.tsx",
+          "line": 24
+        },
+        {
+          "file": "src/components/features/categories/SmartCategorySummaryCard.tsx",
+          "line": 41
+        },
+        {
+          "file": "src/components/features/categories/StockCategorySummaryCard.tsx",
+          "line": 12
+        },
+        {
+          "file": "src/components/features/dashboard/AccountBalancesCard.tsx",
+          "line": 11
+        },
+        {
+          "file": "src/components/features/dashboard/NetWorthCard.tsx",
+          "line": 9
+        },
+        {
+          "file": "src/components/features/dashboard/RecentActivityCard.tsx",
+          "line": 9
+        },
+        {
+          "file": "src/components/features/dashboard/RecentTransactionsList.tsx",
+          "line": 32
+        },
+        {
+          "file": "src/components/features/reports/CashFlowCard.tsx",
+          "line": 22
+        },
+        {
+          "file": "src/components/features/transactions/SimpleFlowTransactionModal.tsx",
+          "line": 45
+        },
+        {
+          "file": "src/lib/services/account.service.ts",
+          "line": 139
+        },
+        {
+          "file": "src/lib/utils/validation.ts",
+          "line": 20
+        },
+        {
+          "file": "src/types/business/transaction.ts",
+          "line": 60
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 114
+        }
+      ]
+    },
+    {
+      "typeName": "Tag",
+      "count": 9,
+      "files": [
+        {
+          "file": "src/components/features/categories/types.ts",
+          "line": 13
+        },
+        {
+          "file": "src/components/features/dashboard/RecentTransactionsList.tsx",
+          "line": 22
+        },
+        {
+          "file": "src/components/features/settings/TagManagement.tsx",
+          "line": 14
+        },
+        {
+          "file": "src/components/features/transactions/SimpleFlowTransactionModal.tsx",
+          "line": 39
+        },
+        {
+          "file": "src/components/ui/feedback/TagFormModal.tsx",
+          "line": 11
+        },
+        {
+          "file": "src/contexts/providers/UserDataContext.tsx",
+          "line": 21
+        },
+        {
+          "file": "src/lib/validation/schemas.ts",
+          "line": 249
+        },
+        {
+          "file": "src/types/business/transaction.ts",
+          "line": 57
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 55
+        }
+      ]
+    },
+    {
+      "typeName": "User",
+      "count": 7,
+      "files": [
+        {
+          "file": "src/components/features/categories/types.ts",
+          "line": 11
+        },
+        {
+          "file": "src/components/features/fire/FireJourneyContent.tsx",
+          "line": 13
+        },
+        {
+          "file": "src/components/features/layout/AppLayout.tsx",
+          "line": 10
+        },
+        {
+          "file": "src/components/features/layout/AppLayoutClient.tsx",
+          "line": 9
+        },
+        {
+          "file": "src/components/features/layout/TopUserStatusBar.tsx",
+          "line": 10
+        },
+        {
+          "file": "src/types/business/transaction.ts",
+          "line": 62
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "typeName": "UserSettings",
+      "count": 4,
+      "files": [
+        {
+          "file": "src/components/features/fire/FireJourneyContent.tsx",
+          "line": 19
+        },
+        {
+          "file": "src/contexts/providers/UserDataContext.tsx",
+          "line": 56
+        },
+        {
+          "file": "src/lib/validation/schemas.ts",
+          "line": 247
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "typeName": "Balance",
+      "count": 2,
+      "files": [
+        {
+          "file": "src/lib/services/category-summary/types.ts",
+          "line": 5
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 199
+        }
+      ]
+    },
+    {
+      "typeName": "TrendDataPoint",
+      "count": 2,
+      "files": [
+        {
+          "file": "src/types/business/transaction.ts",
+          "line": 63
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 209
+        }
+      ]
+    }
+  ],
+  "recommendations": {
+    "nextFile": "src/components/features/dashboard/AccountBalancesCard.tsx",
+    "worstTypes": ["Currency", "Account", "Category", "Transaction", "Tag"]
+  }
+}

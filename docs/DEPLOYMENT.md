@@ -3,23 +3,28 @@
 ## 开发环境设置
 
 ### 1. 克隆项目
+
 ```bash
 git clone <repository-url>
 cd persional-balance-sheet
 ```
 
 ### 2. 安装依赖
+
 ```bash
 pnpm install
 ```
 
 ### 3. 环境变量配置
+
 复制环境变量示例文件：
+
 ```bash
 cp .env.example .env
 ```
 
 编辑 `.env` 文件，设置必要的环境变量：
+
 ```env
 DATABASE_URL="file:./prisma/dev.db"
 JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
@@ -27,6 +32,7 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
 ### 4. 数据库设置
+
 ```bash
 # 生成 Prisma 客户端
 pnpm db:generate
@@ -39,6 +45,7 @@ pnpm db:seed
 ```
 
 ### 5. 启动开发服务器
+
 ```bash
 pnpm dev
 ```
@@ -50,11 +57,13 @@ pnpm dev
 ### 1. 数据库配置
 
 #### PostgreSQL 设置
+
 1. 创建 PostgreSQL 数据库
 2. 获取数据库连接字符串
 3. 更新环境变量
 
 #### 使用 PostgreSQL schema
+
 ```bash
 # 复制生产环境 schema
 cp prisma/schema.production.prisma prisma/schema.prisma
@@ -69,6 +78,7 @@ cp prisma/schema.production.prisma prisma/schema.prisma
 ### 2. 环境变量配置
 
 生产环境 `.env` 示例：
+
 ```env
 NODE_ENV="production"
 DATABASE_URL="postgresql://username:password@your-db-host:5432/flowbalance?schema=public"
@@ -77,6 +87,7 @@ NEXT_PUBLIC_APP_URL="https://your-domain.com"
 ```
 
 ### 3. 数据库迁移
+
 ```bash
 # 生成 Prisma 客户端
 npx prisma generate
@@ -89,11 +100,13 @@ npx prisma db seed
 ```
 
 ### 4. 构建应用
+
 ```bash
 pnpm build
 ```
 
 ### 5. 启动生产服务器
+
 ```bash
 pnpm start
 ```
@@ -122,6 +135,7 @@ pnpm start
 ### Docker 部署
 
 创建 `Dockerfile`：
+
 ```dockerfile
 FROM node:18-alpine
 
@@ -144,6 +158,7 @@ CMD ["pnpm", "start"]
 ```
 
 构建和运行：
+
 ```bash
 docker build -t flow-balance .
 docker run -p 3000:3000 --env-file .env flow-balance
@@ -152,16 +167,19 @@ docker run -p 3000:3000 --env-file .env flow-balance
 ## 数据库管理
 
 ### 查看数据库
+
 ```bash
 npx prisma studio
 ```
 
 ### 重置数据库（开发环境）
+
 ```bash
 pnpm db:reset
 ```
 
 ### 备份数据库
+
 ```bash
 # PostgreSQL
 pg_dump $DATABASE_URL > backup.sql
@@ -181,11 +199,14 @@ cp prisma/dev.db backup.db
 ## 监控和日志
 
 ### 错误监控
+
 推荐集成：
+
 - Sentry (错误追踪)
 - LogRocket (用户会话录制)
 
 ### 性能监控
+
 - Vercel Analytics
 - Google Analytics
 - New Relic
@@ -193,12 +214,14 @@ cp prisma/dev.db backup.db
 ## 维护
 
 ### 定期任务
+
 1. 数据库备份
 2. 日志清理
 3. 安全更新
 4. 性能监控
 
 ### 更新部署
+
 ```bash
 git pull origin main
 pnpm install
@@ -212,16 +235,19 @@ pnpm start
 ### 常见问题
 
 1. **数据库连接失败**
+
    - 检查 DATABASE_URL 格式
    - 确认数据库服务运行
    - 检查网络连接
 
 2. **Prisma 错误**
+
    - 运行 `npx prisma generate`
    - 检查 schema.prisma 语法
    - 确认迁移状态
 
 3. **JWT 错误**
+
    - 检查 JWT_SECRET 配置
    - 确认令牌格式正确
 
@@ -231,6 +257,7 @@ pnpm start
    - 检查环境变量
 
 ### 日志查看
+
 ```bash
 # 查看应用日志
 pm2 logs
@@ -242,6 +269,7 @@ tail -f /var/log/postgresql/postgresql.log
 ## 支持
 
 如有问题，请查看：
+
 1. 项目 README.md
 2. GitHub Issues
 3. Prisma 文档

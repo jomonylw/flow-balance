@@ -13,6 +13,7 @@
 ## 🏗️ 技术架构
 
 ### 1. 语言上下文系统
+
 **文件**: `src/contexts/LanguageContext.tsx`
 
 - 创建了 React Context 来管理全局语言状态
@@ -21,7 +22,9 @@
 - 实现参数替换功能（如 `{{email}}` 占位符）
 
 ### 2. 翻译数据结构
+
 内置翻译数据包含以下模块：
+
 - **通用词汇**: 保存、取消、删除、编辑等
 - **导航菜单**: 仪表板、账户、分类、交易、报表、设置
 - **侧边栏**: 搜索框、分类树、添加按钮
@@ -37,6 +40,7 @@
 - **菜单描述**: 各功能模块的详细说明
 
 ### 3. 语言切换组件
+
 **文件**: `src/components/layout/LanguageToggle.tsx`
 
 - 显示当前语言状态（中文/English）
@@ -45,6 +49,7 @@
 - 响应式设计，移动端隐藏文字只显示图标
 
 ### 4. 用户设置集成
+
 - 数据库已有 `language` 字段支持
 - API 端点 `/api/user/settings` 支持语言设置
 - 优先级：用户设置 > localStorage > 默认中文
@@ -52,6 +57,7 @@
 ## 📝 已国际化的组件
 
 ### 布局组件
+
 - ✅ `NavigationSidebar.tsx` - 侧边栏导航
 - ✅ `SidebarSearchBox.tsx` - 搜索框
 - ✅ `SidebarDashboardLink.tsx` - Dashboard链接
@@ -60,39 +66,49 @@
 - ✅ `LanguageToggle.tsx` - 语言切换按钮
 
 ### 认证组件
+
 - ✅ `LoginForm.tsx` - 登录表单
 
 ### Dashboard组件
+
 - ✅ `DashboardContent.tsx` - 主要内容区域
 
 ### 账户管理组件
+
 - ✅ `StockAccountDetailView.tsx` - 存量账户详情页面
 - ✅ `FlowAccountDetailView.tsx` - 流量账户详情页面
 
 ### 交易管理组件
+
 - ✅ `TransactionListView.tsx` - 交易列表页面
 
 ### 分类管理组件
+
 - ✅ `CategoryDetailView.tsx` - 分类详情页面
 
 ### 财务报表组件
+
 - ✅ `ReportsPageClient.tsx` - 财务报表页面
 
 ### 图表组件
+
 - ✅ `CategoryChart.tsx` - 分类图表 (日期格式修复)
 - ✅ `MonthlySummaryChart.tsx` - 月度汇总图表 (日期格式修复)
 
 ### 设置组件
+
 - ✅ `PreferencesForm.tsx` - 偏好设置表单
 - ✅ `UserSettingsPage.tsx` - 用户设置页面
 
 ### 应用级别
+
 - ✅ `layout.tsx` - 根布局，集成语言上下文
 - ✅ 页面标题和元数据更新
 
 ## 🔧 实现细节
 
 ### 1. 语言初始化流程
+
 ```typescript
 // 优先级顺序
 1. 用户数据库设置 (最高优先级)
@@ -101,6 +117,7 @@
 ```
 
 ### 2. 语言切换流程
+
 ```typescript
 1. 用户点击语言切换按钮
 2. 更新 React Context 状态
@@ -110,6 +127,7 @@
 ```
 
 ### 3. 翻译函数使用
+
 ```typescript
 const { t } = useLanguage()
 
@@ -124,24 +142,29 @@ t('dashboard.welcome', { email: user.email })
 ## 🎨 用户体验特性
 
 ### 1. 实时切换
+
 - 无需刷新页面即可切换语言
 - 所有已国际化的文本立即更新
 
 ### 2. 状态持久化
+
 - 语言选择自动保存
 - 下次访问时保持用户选择
 
 ### 3. 响应式设计
+
 - 桌面端显示完整语言名称
 - 移动端只显示图标节省空间
 
 ### 4. 视觉反馈
+
 - 悬停提示显示切换目标语言
 - 当前语言状态清晰显示
 
 ## 📊 翻译覆盖率
 
 ### 已完成模块 (约60%)
+
 - ✅ 导航和布局组件
 - ✅ 认证系统
 - ✅ Dashboard主要功能
@@ -149,6 +172,7 @@ t('dashboard.welcome', { email: user.email })
 - ✅ 通用词汇和消息
 
 ### 已完成模块 (约90%)
+
 - ✅ 账户详情页面 (StockAccountDetailView, FlowAccountDetailView)
 - ✅ 交易管理页面 (TransactionListView)
 - ✅ 图表组件日期格式修复
@@ -157,50 +181,60 @@ t('dashboard.welcome', { email: user.email })
 - ✅ 错误和成功消息
 
 ### 已完成模块 (约95%)
+
 - ✅ 分类管理页面 (CategoryDetailView)
 - ✅ 财务报表页面 (ReportsPageClient)
 - ✅ 设置页面组件 (UserSettingsPage)
 
 ### 待完成模块 (约5%)
+
 - 🔄 一些小的UI组件和模态框
 - 🔄 错误页面和特殊状态页面
 
 ## 🚀 后续优化建议
 
 ### 1. 完善翻译覆盖
+
 - 继续为剩余组件添加国际化支持
 - 补充缺失的翻译键值
 
 ### 2. 翻译文件优化
+
 - 考虑将翻译数据分离到独立文件
 - 支持动态加载翻译资源
 
 ### 3. 语言检测
+
 - 添加浏览器语言自动检测
 - 支持更多语言（如繁体中文）
 
 ### 4. 翻译质量
+
 - 审核现有翻译的准确性
 - 优化专业术语翻译
 
 ### 5. 开发工具
+
 - 添加翻译键值检查工具
 - 实现缺失翻译的警告机制
 
 ## 🔍 测试验证
 
 ### 功能测试
+
 - ✅ 语言切换按钮正常工作
 - ✅ 翻译文本正确显示
 - ✅ 用户设置正确保存
 - ✅ 页面刷新后语言保持
 
 ### 兼容性测试
+
 - ✅ 桌面端浏览器
 - ✅ 移动端响应式
 - ✅ 不同屏幕尺寸
 
 ### 性能测试
+
 - ✅ 语言切换响应迅速
 - ✅ 无明显性能影响
 - ✅ 内存使用正常
@@ -210,16 +244,19 @@ t('dashboard.welcome', { email: user.email })
 ### 为新组件添加国际化
 
 1. **导入语言Hook**
+
 ```typescript
 import { useLanguage } from '@/contexts/LanguageContext'
 ```
 
 2. **在组件中使用**
+
 ```typescript
 const { t } = useLanguage()
 ```
 
 3. **替换硬编码文本**
+
 ```typescript
 // 之前
 <button>保存</button>
@@ -228,8 +265,7 @@ const { t } = useLanguage()
 <button>{t('common.save')}</button>
 ```
 
-4. **添加翻译键值**
-在 `LanguageContext.tsx` 中添加对应的中英文翻译。
+4. **添加翻译键值** 在 `LanguageContext.tsx` 中添加对应的中英文翻译。
 
 ### 添加新翻译键
 
@@ -240,14 +276,19 @@ const { t } = useLanguage()
 ## 📊 图表日期格式修复
 
 ### 修复内容
-- ✅ **CategoryChart.tsx**: 将 `${date.getMonth() + 1}月` 改为 `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`
-- ✅ **MonthlySummaryChart.tsx**: 将 `${year}年${monthNum}月` 改为 `${year}/${monthNum.padStart(2, '0')}`
+
+- ✅ **CategoryChart.tsx**: 将 `${date.getMonth() + 1}月` 改为
+  `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`
+- ✅ **MonthlySummaryChart.tsx**: 将 `${year}年${monthNum}月` 改为
+  `${year}/${monthNum.padStart(2, '0')}`
 
 ### 修复效果
+
 - **修复前**: 显示为 "2024年04月"、"4月" 等中文格式
 - **修复后**: 显示为 "2024/04"、"2024/04" 等数字格式
 
 ### 技术细节
+
 - 使用 `padStart(2, '0')` 确保月份始终为两位数
 - 保持年份显示完整的四位数格式
 - 适用于所有时间范围的图表显示
@@ -255,6 +296,7 @@ const { t } = useLanguage()
 ## 🆕 最新完成的国际化工作
 
 ### 分类管理页面 (CategoryDetailView)
+
 - ✅ 面包屑导航国际化
 - ✅ 页面标题和操作按钮
 - ✅ 存量类分类只读提示
@@ -265,6 +307,7 @@ const { t } = useLanguage()
 - ✅ 删除确认模态框
 
 ### 财务报表页面 (ReportsPageClient)
+
 - ✅ 创建独立的客户端组件
 - ✅ 页面标题和说明文本
 - ✅ 财务报表概念解释
@@ -274,6 +317,7 @@ const { t } = useLanguage()
 - ✅ 使用技巧和说明
 
 ### 翻译键值扩展
+
 - ✅ 添加 50+ 新的分类管理相关翻译
 - ✅ 添加 40+ 新的财务报表相关翻译
 - ✅ 完善时间范围选择翻译
@@ -284,6 +328,7 @@ const { t } = useLanguage()
 Flow Balance 的中英文语言切换功能已成功实现，包括：
 
 ### ✅ 已完成功能
+
 - **完整的国际化架构** - 语言上下文、翻译系统、切换组件
 - **95%组件国际化** - 几乎所有主要页面和功能组件已支持中英文
 - **图表日期格式修复** - 统一使用数字格式显示日期
@@ -291,25 +336,30 @@ Flow Balance 的中英文语言切换功能已成功实现，包括：
 - **500+翻译键值对** - 覆盖所有主要功能模块
 
 ### 🔧 技术特性
+
 - 支持参数替换的翻译系统
 - 优先级管理：用户设置 > localStorage > 默认中文
 - 自动更新HTML lang属性
 - 与用户设置API集成
 
 ### 🚀 扩展性
+
 该实现具有良好的扩展性，未来可以：
+
 - 轻松添加更多语言支持
 - 动态加载翻译资源
 - 实现翻译管理工具
 - 支持复杂的本地化需求
 
 ### 🎯 完成度统计
+
 - **翻译覆盖率**: 95% (500+ 翻译键值对)
 - **组件国际化**: 95% (主要功能组件全部完成)
 - **页面国际化**: 100% (所有主要页面已完成)
 - **用户体验**: 100% (实时切换、状态持久化)
 
 ### 🌟 项目亮点
+
 - **专业级国际化架构**: 完整的语言管理系统
 - **无缝语言切换**: 实时更新，无需刷新页面
 - **响应式设计**: 桌面端和移动端完美适配

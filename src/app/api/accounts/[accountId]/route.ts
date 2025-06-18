@@ -1,11 +1,16 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  notFoundResponse,
+} from '@/lib/api/response'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ accountId: string }> }
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
   try {
     const { accountId } = await params
@@ -18,15 +23,15 @@ export async function PUT(
     const existingAccount = await prisma.account.findFirst({
       where: {
         id: accountId,
-        userId: user.id
+        userId: user.id,
       },
       include: {
         currency: true,
         transactions: {
           select: { id: true },
-          take: 1 // 只需要知道是否有交易记录
-        }
-      }
+          take: 1, // 只需要知道是否有交易记录
+        },
+      },
     })
 
     if (!existingAccount) {
@@ -46,15 +51,15 @@ export async function PUT(
         prisma.category.findFirst({
           where: {
             id: existingAccount.categoryId,
-            userId: user.id
-          }
+            userId: user.id,
+          },
         }),
         prisma.category.findFirst({
           where: {
             id: categoryId,
-            userId: user.id
-          }
-        })
+            userId: user.id,
+          },
+        }),
       ])
 
       if (!newCategory) {
@@ -70,7 +75,10 @@ export async function PUT(
     }
 
     // 处理货币更换逻辑
-    if (currencyCode !== undefined && currencyCode !== existingAccount.currencyCode) {
+    if (
+      currencyCode !== undefined &&
+      currencyCode !== existingAccount.currencyCode
+    ) {
       // 检查账户是否有交易记录
       const hasTransactions = existingAccount.transactions.length > 0
 
@@ -85,7 +93,7 @@ export async function PUT(
 
       // 验证货币是否存在且用户有权使用
       const currency = await prisma.currency.findUnique({
-        where: { code: currencyCode }
+        where: { code: currencyCode },
       })
 
       if (!currency) {
@@ -97,8 +105,8 @@ export async function PUT(
         where: {
           userId: user.id,
           currencyCode: currencyCode,
-          isActive: true
-        }
+          isActive: true,
+        },
       })
 
       if (!userCurrency) {
@@ -111,8 +119,8 @@ export async function PUT(
       where: {
         userId: user.id,
         name,
-        id: { not: accountId }
-      }
+        id: { not: accountId },
+      },
     })
 
     if (duplicateAccount) {
@@ -124,14 +132,17 @@ export async function PUT(
       data: {
         name,
         categoryId: categoryId || existingAccount.categoryId,
-        currencyCode: currencyCode !== undefined ? currencyCode : existingAccount.currencyCode,
+        currencyCode:
+          currencyCode !== undefined
+            ? currencyCode
+            : existingAccount.currencyCode,
         description: description || null,
-        color: color || null
+        color: color || null,
       },
       include: {
         category: true,
-        currency: true
-      }
+        currency: true,
+      },
     })
 
     return successResponse(updatedAccount, '账户更新成功')
@@ -143,7 +154,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ accountId: string }> }
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
   try {
     const { accountId } = await params
@@ -156,8 +167,8 @@ export async function DELETE(
     const existingAccount = await prisma.account.findFirst({
       where: {
         id: accountId,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!existingAccount) {
@@ -167,44 +178,54 @@ export async function DELETE(
     // 检查账户是否有交易记录
     const transactionCount = await prisma.transaction.count({
       where: {
-        accountId: accountId
-      }
+        accountId: accountId,
+      },
     })
 
     if (transactionCount > 0) {
       // 获取账户类型以提供更详细的错误信息
       const account = await prisma.account.findUnique({
         where: { id: accountId },
-        include: { category: true }
+        include: { category: true },
       })
 
       const accountType = account?.category?.type
-      const isStockAccount = accountType === 'ASSET' || accountType === 'LIABILITY'
+      const isStockAccount =
+        accountType === 'ASSET' || accountType === 'LIABILITY'
 
       if (isStockAccount) {
         // 检查是否只有余额调整交易
         const balanceAdjustmentCount = await prisma.transaction.count({
           where: {
             accountId: accountId,
-            type: 'BALANCE'
-          }
+            type: 'BALANCE',
+          },
         })
 
         const otherTransactionCount = transactionCount - balanceAdjustmentCount
 
         if (otherTransactionCount > 0) {
-          return errorResponse(`该账户存在 ${otherTransactionCount} 条普通交易记录和 ${balanceAdjustmentCount} 条余额调整记录，无法删除。请先删除相关交易记录。`, 400)
+          return errorResponse(
+            `该账户存在 ${otherTransactionCount} 条普通交易记录和 ${balanceAdjustmentCount} 条余额调整记录，无法删除。请先删除相关交易记录。`,
+            400,
+          )
         } else {
-          return errorResponse(`该账户存在 ${balanceAdjustmentCount} 条余额调整记录，无法删除。如需删除账户，请先清空余额历史记录。`, 400)
+          return errorResponse(
+            `该账户存在 ${balanceAdjustmentCount} 条余额调整记录，无法删除。如需删除账户，请先清空余额历史记录。`,
+            400,
+          )
         }
       } else {
-        return errorResponse(`该账户存在 ${transactionCount} 条交易记录，无法删除。请先删除相关交易记录。`, 400)
+        return errorResponse(
+          `该账户存在 ${transactionCount} 条交易记录，无法删除。请先删除相关交易记录。`,
+          400,
+        )
       }
     }
 
     // 删除账户
     await prisma.account.delete({
-      where: { id: accountId }
+      where: { id: accountId },
     })
 
     return successResponse(null, '账户删除成功')

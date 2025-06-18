@@ -1,14 +1,19 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  notFoundResponse,
+} from '@/lib/api/response'
 
 /**
  * 获取单个标签详情
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ tagId: string }> }
+  { params }: { params: Promise<{ tagId: string }> },
 ) {
   try {
     const { tagId } = await params
@@ -20,15 +25,15 @@ export async function GET(
     const tag = await prisma.tag.findFirst({
       where: {
         id: tagId,
-        userId: user.id
+        userId: user.id,
       },
       include: {
         _count: {
           select: {
-            transactions: true
-          }
-        }
-      }
+            transactions: true,
+          },
+        },
+      },
     })
 
     if (!tag) {
@@ -47,7 +52,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ tagId: string }> }
+  { params }: { params: Promise<{ tagId: string }> },
 ) {
   try {
     const { tagId } = await params
@@ -60,8 +65,8 @@ export async function PUT(
     const existingTag = await prisma.tag.findFirst({
       where: {
         id: tagId,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!existingTag) {
@@ -94,8 +99,8 @@ export async function PUT(
       where: {
         userId: user.id,
         name: name.trim(),
-        id: { not: tagId }
-      }
+        id: { not: tagId },
+      },
     })
 
     if (duplicateTag) {
@@ -106,8 +111,8 @@ export async function PUT(
       where: { id: tagId },
       data: {
         name: name.trim(),
-        color: color || null
-      }
+        color: color || null,
+      },
     })
 
     return successResponse(updatedTag, '标签更新成功')
@@ -122,7 +127,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ tagId: string }> }
+  { params }: { params: Promise<{ tagId: string }> },
 ) {
   try {
     const { tagId } = await params
@@ -135,8 +140,8 @@ export async function DELETE(
     const existingTag = await prisma.tag.findFirst({
       where: {
         id: tagId,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!existingTag) {
@@ -146,17 +151,20 @@ export async function DELETE(
     // 检查标签是否被交易使用
     const transactionCount = await prisma.transactionTag.count({
       where: {
-        tagId: tagId
-      }
+        tagId: tagId,
+      },
     })
 
     if (transactionCount > 0) {
-      return errorResponse(`该标签正在被 ${transactionCount} 笔交易使用，无法删除`, 400)
+      return errorResponse(
+        `该标签正在被 ${transactionCount} 笔交易使用，无法删除`,
+        400,
+      )
     }
 
     // 删除标签
     await prisma.tag.delete({
-      where: { id: tagId }
+      where: { id: tagId },
     })
 
     return successResponse(null, '标签删除成功')

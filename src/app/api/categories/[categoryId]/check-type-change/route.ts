@@ -1,11 +1,16 @@
 import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
-import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
+import { prisma } from '@/lib/database/prisma'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  notFoundResponse,
+} from '@/lib/api/response'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> }
+  { params }: { params: Promise<{ categoryId: string }> },
 ) {
   try {
     const { categoryId } = await params
@@ -18,8 +23,8 @@ export async function GET(
     const category = await prisma.category.findFirst({
       where: {
         id: categoryId,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!category) {
@@ -38,9 +43,9 @@ export async function GET(
     const accountCount = await prisma.account.count({
       where: {
         categoryId: {
-          in: allCategoryIds
-        }
-      }
+          in: allCategoryIds,
+        },
+      },
     })
 
     // 检查是否有交易记录
@@ -49,33 +54,35 @@ export async function GET(
         OR: [
           {
             accountId: {
-              in: await prisma.account.findMany({
-                where: {
-                  categoryId: {
-                    in: allCategoryIds
-                  }
-                },
-                select: {
-                  id: true
-                }
-              }).then(accounts => accounts.map(a => a.id))
-            }
+              in: await prisma.account
+                .findMany({
+                  where: {
+                    categoryId: {
+                      in: allCategoryIds,
+                    },
+                  },
+                  select: {
+                    id: true,
+                  },
+                })
+                .then(accounts => accounts.map(a => a.id)),
+            },
           },
           {
             categoryId: {
-              in: allCategoryIds
-            }
-          }
-        ]
-      }
+              in: allCategoryIds,
+            },
+          },
+        ],
+      },
     })
 
     // 获取具体的账户信息（用于显示详细信息）
     const accounts = await prisma.account.findMany({
       where: {
         categoryId: {
-          in: allCategoryIds
-        }
+          in: allCategoryIds,
+        },
       },
       select: {
         id: true,
@@ -83,10 +90,10 @@ export async function GET(
         currencyCode: true,
         category: {
           select: {
-            name: true
-          }
-        }
-      }
+            name: true,
+          },
+        },
+      },
     })
 
     // 检查不同类型的交易数量
@@ -96,19 +103,19 @@ export async function GET(
         OR: [
           {
             accountId: {
-              in: accounts.map(a => a.id)
-            }
+              in: accounts.map(a => a.id),
+            },
           },
           {
             categoryId: {
-              in: allCategoryIds
-            }
-          }
-        ]
+              in: allCategoryIds,
+            },
+          },
+        ],
       },
       _count: {
-        id: true
-      }
+        id: true,
+      },
     })
 
     const result = {
@@ -118,11 +125,14 @@ export async function GET(
       accountCount,
       transactionCount,
       accounts,
-      transactionStats: transactionStats.reduce((acc, stat) => {
-        acc[stat.type] = stat._count.id
-        return acc
-      }, {} as Record<string, number>),
-      riskLevel: getRiskLevel(accountCount, transactionCount, transactionStats)
+      transactionStats: transactionStats.reduce(
+        (acc, stat) => {
+          acc[stat.type] = stat._count.id
+          return acc
+        },
+        {} as Record<string, number>,
+      ),
+      riskLevel: getRiskLevel(accountCount, transactionCount, transactionStats),
     }
 
     return successResponse(result)
@@ -135,14 +145,14 @@ export async function GET(
 // 递归获取所有子分类ID
 async function getAllCategoryIds(categoryId: string): Promise<string[]> {
   const result = [categoryId]
-  
+
   const children = await prisma.category.findMany({
     where: {
-      parentId: categoryId
+      parentId: categoryId,
     },
     select: {
-      id: true
-    }
+      id: true,
+    },
   })
 
   for (const child of children) {
@@ -155,17 +165,19 @@ async function getAllCategoryIds(categoryId: string): Promise<string[]> {
 
 // 评估风险等级
 function getRiskLevel(
-  accountCount: number, 
-  transactionCount: number, 
-  transactionStats: Array<{ type: string; _count: { id: number } }>
+  accountCount: number,
+  transactionCount: number,
+  transactionStats: Array<{ type: string; _count: { id: number } }>,
 ): 'safe' | 'warning' | 'danger' {
   if (accountCount === 0 && transactionCount === 0) {
     return 'safe'
   }
 
   // 检查是否有余额调整记录
-  const hasBalanceRecords = transactionStats.some(stat => stat.type === 'BALANCE' && stat._count.id > 0)
-  
+  const hasBalanceRecords = transactionStats.some(
+    stat => stat.type === 'BALANCE' && stat._count.id > 0,
+  )
+
   if (hasBalanceRecords) {
     return 'danger' // 有余额调整记录，变更类型会导致严重数据不一致
   }

@@ -1,7 +1,11 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from '@/lib/api/response'
 
 /**
  * 批量检查账户是否有交易记录
@@ -25,13 +29,15 @@ export async function POST(request: NextRequest) {
     const userAccounts = await prisma.account.findMany({
       where: {
         id: { in: accountIds },
-        userId: user.id
+        userId: user.id,
       },
-      select: { id: true }
+      select: { id: true },
     })
 
     const validAccountIds = userAccounts.map(acc => acc.id)
-    const invalidAccountIds = accountIds.filter(id => !validAccountIds.includes(id))
+    const invalidAccountIds = accountIds.filter(
+      id => !validAccountIds.includes(id),
+    )
 
     if (invalidAccountIds.length > 0) {
       return errorResponse(`无效的账户ID: ${invalidAccountIds.join(', ')}`, 400)
@@ -39,28 +45,34 @@ export async function POST(request: NextRequest) {
 
     // 批量查询每个账户的交易记录数量
     const transactionCounts = await Promise.all(
-      validAccountIds.map(async (accountId) => {
+      validAccountIds.map(async accountId => {
         const count = await prisma.transaction.count({
           where: {
-            accountId: accountId
-          }
+            accountId: accountId,
+          },
         })
         return {
           accountId,
           hasTransactions: count > 0,
-          transactionCount: count
+          transactionCount: count,
         }
-      })
+      }),
     )
 
     // 构建结果对象
-    const result = transactionCounts.reduce((acc, item) => {
-      acc[item.accountId] = {
-        hasTransactions: item.hasTransactions,
-        transactionCount: item.transactionCount
-      }
-      return acc
-    }, {} as Record<string, { hasTransactions: boolean; transactionCount: number }>)
+    const result = transactionCounts.reduce(
+      (acc, item) => {
+        acc[item.accountId] = {
+          hasTransactions: item.hasTransactions,
+          transactionCount: item.transactionCount,
+        }
+        return acc
+      },
+      {} as Record<
+        string,
+        { hasTransactions: boolean; transactionCount: number }
+      >,
+    )
 
     return successResponse(result, '批量检查完成')
   } catch (error) {

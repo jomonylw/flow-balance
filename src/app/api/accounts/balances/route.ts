@@ -1,13 +1,18 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
-import { calculateAccountBalance } from '@/lib/account-balance'
-import { convertMultipleCurrencies } from '@/lib/currency-conversion'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from '@/lib/api/response'
+import { calculateAccountBalance } from '@/lib/services/account.service'
+import { convertMultipleCurrencies, type ConversionResult } from '@/lib/services/currency.service'
+import type { Prisma } from '@prisma/client'
 
 // 这个函数已经不需要了，因为我们现在使用统一的 calculateAccountBalance 函数
 // 保留注释以便理解之前的逻辑
-// function calculateCurrentMonthFlow(account: any): Record<string, any> {
+// function calculateCurrentMonthFlow(account: AccountWithTransactions): Record<string, number> {
 //   // 之前的逻辑：计算当前月份的流量汇总
 //   // 现在由 calculateAccountBalance 统一处理
 // }
@@ -21,25 +26,32 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const accountIds = searchParams.get('accountIds')?.split(',').filter(Boolean)
+    const accountIds = searchParams
+      .get('accountIds')
+      ?.split(',')
+      .filter(Boolean)
 
     // 获取用户设置以确定本位币
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
-      include: { baseCurrency: true }
+      include: { baseCurrency: true },
     })
 
-    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
+    const baseCurrency = userSettings?.baseCurrency || {
+      code: 'CNY',
+      symbol: '¥',
+      name: '人民币',
+    }
 
     // 构建查询条件
-    const whereCondition: any = {
-      userId: user.id
+    const whereCondition: Prisma.AccountWhereInput = {
+      userId: user.id,
     }
 
     // 如果指定了账户ID，则只获取这些账户
     if (accountIds && accountIds.length > 0) {
       whereCondition.id = {
-        in: accountIds
+        in: accountIds,
       }
     }
 
@@ -50,35 +62,38 @@ export async function GET(request: NextRequest) {
         category: true,
         transactions: {
           include: {
-            currency: true
+            currency: true,
           },
-          orderBy: [
-            { date: 'desc' },
-            { updatedAt: 'desc' }
-          ]
-        }
+          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+        },
       },
       orderBy: {
-        name: 'asc'
-      }
+        name: 'asc',
+      },
     })
 
     // 批量计算所有账户余额
-    const accountBalances: Record<string, {
-      id: string
-      name: string
-      categoryId: string
-      accountType: string
-      balances: Record<string, {
-        amount: number
-        currency: {
-          code: string
-          symbol: string
-          name: string
-        }
-      }>
-      balanceInBaseCurrency: number
-    }> = {}
+    const accountBalances: Record<
+      string,
+      {
+        id: string
+        name: string
+        categoryId: string
+        accountType: string
+        balances: Record<
+          string,
+          {
+            amount: number
+            currency: {
+              code: string
+              symbol: string
+              name: string
+            }
+          }
+        >
+        balanceInBaseCurrency: number
+      }
+    > = {}
 
     // 准备货币转换数据
     const amountsToConvert: Array<{ amount: number; currency: string }> = []
@@ -92,11 +107,17 @@ export async function GET(request: NextRequest) {
         transactions: account.transactions.map(transaction => ({
           ...transaction,
           amount: parseFloat(transaction.amount.toString()),
-          date: transaction.date.toISOString()
-        }))
+          date: transaction.date.toISOString(),
+        })),
       }
 
-      let balances: Record<string, any> = {}
+      let balances: Record<
+        string,
+        {
+          amount: number
+          currency: { code: string; symbol: string; name: string }
+        }
+      > = {}
 
       if (accountType === 'ASSET' || accountType === 'LIABILITY') {
         // 存量账户：获取最新余额
@@ -106,36 +127,47 @@ export async function GET(request: NextRequest) {
         // 使用期间计算，默认为当前月份
         const now = new Date()
         const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
-        const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+        const periodEnd = new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        )
 
         balances = calculateAccountBalance(serializedAccount, {
           periodStart,
           periodEnd,
-          usePeriodCalculation: true
+          usePeriodCalculation: true,
         })
       }
 
       // 转换为API响应格式
-      const balancesForResponse: Record<string, {
-        amount: number
-        currency: {
-          code: string
-          symbol: string
-          name: string
+      const balancesForResponse: Record<
+        string,
+        {
+          amount: number
+          currency: {
+            code: string
+            symbol: string
+            name: string
+          }
         }
-      }> = {}
+      > = {}
 
       Object.entries(balances).forEach(([currencyCode, balanceData]) => {
         balancesForResponse[currencyCode] = {
           amount: balanceData.amount,
-          currency: balanceData.currency
+          currency: balanceData.currency,
         }
 
         // 收集需要转换的金额
         if (currencyCode !== baseCurrency.code) {
           amountsToConvert.push({
             amount: balanceData.amount,
-            currency: currencyCode
+            currency: currencyCode,
           })
         }
       })
@@ -146,18 +178,18 @@ export async function GET(request: NextRequest) {
         categoryId: account.categoryId,
         accountType,
         balances: balancesForResponse,
-        balanceInBaseCurrency: 0 // 稍后计算
+        balanceInBaseCurrency: 0, // 稍后计算
       }
     }
 
     // 批量转换货币到本位币
-    let conversionResults: any[] = []
+    let conversionResults: ConversionResult[] = []
     if (amountsToConvert.length > 0) {
       try {
         conversionResults = await convertMultipleCurrencies(
           user.id,
           amountsToConvert,
-          baseCurrency.code
+          baseCurrency.code,
         )
       } catch (error) {
         console.error('Currency conversion error:', error)
@@ -168,25 +200,30 @@ export async function GET(request: NextRequest) {
     Object.values(accountBalances).forEach(account => {
       let totalInBaseCurrency = 0
 
-      Object.entries(account.balances).forEach(([currencyCode, balanceData]) => {
-        if (currencyCode === baseCurrency.code) {
-          // 本位币直接累加
-          totalInBaseCurrency += balanceData.amount
-        } else {
-          // 查找转换结果
-          const conversionResult = conversionResults.find(result =>
-            result.originalAmount === balanceData.amount &&
-            result.fromCurrency === currencyCode
-          )
-
-          if (conversionResult && conversionResult.success) {
-            totalInBaseCurrency += conversionResult.convertedAmount
+      Object.entries(account.balances).forEach(
+        ([currencyCode, balanceData]) => {
+          if (currencyCode === baseCurrency.code) {
+            // 本位币直接累加
+            totalInBaseCurrency += balanceData.amount
           } else {
-            // 转换失败时，记录警告但不影响其他数据
-            console.warn(`Failed to convert ${balanceData.amount} ${currencyCode} to ${baseCurrency.code} for account ${account.name}`)
+            // 查找转换结果
+            const conversionResult = conversionResults.find(
+              result =>
+                result.originalAmount === balanceData.amount &&
+                result.fromCurrency === currencyCode,
+            )
+
+            if (conversionResult && conversionResult.success) {
+              totalInBaseCurrency += conversionResult.convertedAmount
+            } else {
+              // 转换失败时，记录警告但不影响其他数据
+              console.warn(
+                `Failed to convert ${balanceData.amount} ${currencyCode} to ${baseCurrency.code} for account ${account.name}`,
+              )
+            }
           }
-        }
-      })
+        },
+      )
 
       account.balanceInBaseCurrency = totalInBaseCurrency
     })
@@ -194,7 +231,7 @@ export async function GET(request: NextRequest) {
     return successResponse({
       accountBalances,
       baseCurrency,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
   } catch (error) {
     console.error('Get account balances error:', error)

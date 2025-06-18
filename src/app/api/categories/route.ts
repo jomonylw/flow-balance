@@ -1,7 +1,13 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from '@/lib/api/response'
+import { CategoryCreateSchema, validateData } from '@/lib/validation/schemas'
+import type { Prisma } from '@prisma/client'
 
 export async function GET() {
   try {
@@ -12,12 +18,9 @@ export async function GET() {
 
     const categories = await prisma.category.findMany({
       where: {
-        userId: user.id
+        userId: user.id,
       },
-      orderBy: [
-        { order: 'asc' },
-        { name: 'asc' }
-      ]
+      orderBy: [{ order: 'asc' }, { name: 'asc' }],
     })
 
     return successResponse(categories)
@@ -35,19 +38,25 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, parentId, order, type } = body
 
-    if (!name) {
-      return errorResponse('分类名称不能为空', 400)
+    // 使用 Zod 验证请求数据
+    const validationResult = validateData(CategoryCreateSchema, body)
+    if (!validationResult.success) {
+      return errorResponse(
+        `验证失败: ${validationResult.errors.join(', ')}`,
+        400,
+      )
     }
+
+    const { name, parentId, type } = validationResult.data
 
     // 检查同一父分类下是否已存在同名分类
     const existingCategory = await prisma.category.findFirst({
       where: {
         userId: user.id,
         name,
-        parentId: parentId || null
-      }
+        parentId: parentId || null,
+      },
     })
 
     if (existingCategory) {
@@ -55,11 +64,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 准备创建数据
-    const createData: any = {
-      userId: user.id,
+    const createData: Prisma.CategoryCreateInput = {
+      user: {
+        connect: { id: user.id },
+      },
       name,
-      parentId: parentId || null,
-      order: order || 0
+      type: 'ASSET', // 默认类型，实际应该从请求中获取
+      parent: parentId ? { connect: { id: parentId } } : undefined,
+      order: 0, // 默认排序
+      // 注意：icon, color, description 字段在当前 schema 中不存在
+      // 如果需要这些字段，需要先更新 Prisma schema
     }
 
     // 如果是顶级分类，可以设置账户类型
@@ -70,8 +84,8 @@ export async function POST(request: NextRequest) {
       const parentCategory = await prisma.category.findFirst({
         where: {
           id: parentId,
-          userId: user.id
-        }
+          userId: user.id,
+        },
       })
 
       if (parentCategory && parentCategory.type) {
@@ -80,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     const category = await prisma.category.create({
-      data: createData
+      data: createData,
     })
 
     return successResponse(category, '分类创建成功')

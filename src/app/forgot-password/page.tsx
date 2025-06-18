@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import AuthLayout from '@/components/auth/AuthLayout'
-import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import AuthLayout from '@/components/features/auth/AuthLayout'
+import ForgotPasswordForm from '@/components/features/auth/ForgotPasswordForm'
 
 export default async function ForgotPasswordPage() {
   // 如果用户已登录，重定向到 dashboard
@@ -11,9 +11,9 @@ export default async function ForgotPasswordPage() {
   }
 
   return (
-    <AuthLayout 
-      title="忘记密码" 
-      subtitle="输入您的邮箱地址，我们将发送重置链接"
+    <AuthLayout
+      title='忘记密码'
+      subtitle='输入您的邮箱地址，我们将发送重置链接'
     >
       <ForgotPasswordForm />
     </AuthLayout>

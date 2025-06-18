@@ -22,9 +22,13 @@ async function debugDashboardAPI() {
     // 获取用户设置和本位币
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
-      include: { baseCurrency: true }
+      include: { baseCurrency: true },
     })
-    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
+    const baseCurrency = userSettings?.baseCurrency || {
+      code: 'CNY',
+      symbol: '¥',
+      name: '人民币',
+    }
     console.log(`💰 本位币: ${baseCurrency.code} (${baseCurrency.symbol})`)
 
     // 获取所有账户及其交易
@@ -34,12 +38,9 @@ async function debugDashboardAPI() {
         category: true,
         transactions: {
           include: { currency: true },
-          orderBy: [
-            { date: 'desc' },
-            { updatedAt: 'desc' }
-          ]
-        }
-      }
+          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+        },
+      },
     })
 
     console.log(`\n📊 数据库中的账户:`)
@@ -50,7 +51,7 @@ async function debugDashboardAPI() {
       ASSET: accounts.filter(acc => acc.category?.type === 'ASSET'),
       LIABILITY: accounts.filter(acc => acc.category?.type === 'LIABILITY'),
       INCOME: accounts.filter(acc => acc.category?.type === 'INCOME'),
-      EXPENSE: accounts.filter(acc => acc.category?.type === 'EXPENSE')
+      EXPENSE: accounts.filter(acc => acc.category?.type === 'EXPENSE'),
     }
 
     console.log(`  - 资产账户: ${accountsByType.ASSET.length}`)
@@ -61,10 +62,14 @@ async function debugDashboardAPI() {
     // 检查每个账户的交易数量
     console.log(`\n📋 账户详情:`)
     accounts.forEach(account => {
-      console.log(`  ${account.name} (${account.category?.type || 'UNKNOWN'}): ${account.transactions.length} 笔交易`)
+      console.log(
+        `  ${account.name} (${account.category?.type || 'UNKNOWN'}): ${account.transactions.length} 笔交易`
+      )
       if (account.transactions.length > 0) {
         const latestTransaction = account.transactions[0]
-        console.log(`    最新交易: ${latestTransaction.date.toISOString().split('T')[0]} ${latestTransaction.type} ${latestTransaction.currency.symbol}${parseFloat(latestTransaction.amount.toString()).toFixed(2)}`)
+        console.log(
+          `    最新交易: ${latestTransaction.date.toISOString().split('T')[0]} ${latestTransaction.type} ${latestTransaction.currency.symbol}${parseFloat(latestTransaction.amount.toString()).toFixed(2)}`
+        )
       }
     })
 
@@ -80,16 +85,20 @@ async function debugDashboardAPI() {
         type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
-        currency: t.currency
-      }))
+        currency: t.currency,
+      })),
     }))
 
     // 分离存量类账户和流量类账户
-    const stockAccounts = accountsForCalculation.filter(account =>
-      account.category?.type === 'ASSET' || account.category?.type === 'LIABILITY'
+    const stockAccounts = accountsForCalculation.filter(
+      account =>
+        account.category?.type === 'ASSET' ||
+        account.category?.type === 'LIABILITY'
     )
-    const flowAccounts = accountsForCalculation.filter(account =>
-      account.category?.type === 'INCOME' || account.category?.type === 'EXPENSE'
+    const flowAccounts = accountsForCalculation.filter(
+      account =>
+        account.category?.type === 'INCOME' ||
+        account.category?.type === 'EXPENSE'
     )
 
     console.log(`  存量类账户: ${stockAccounts.length}`)
@@ -97,7 +106,9 @@ async function debugDashboardAPI() {
 
     // 检查存量类账户的余额计算
     console.log(`\n💰 存量类账户余额计算:`)
-    const { calculateAccountBalance } = await import('../src/lib/account-balance')
+    const { calculateAccountBalance } = await import(
+      '../src/lib/services/account.service'
+    )
 
     let hasStockBalances = false
     for (const account of stockAccounts) {
@@ -108,18 +119,25 @@ async function debugDashboardAPI() {
           ...t,
           type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
           amount: parseFloat(t.amount.toString()),
-          date: typeof t.date === 'string' ? t.date : (t.date as Date).toISOString()
-        }))
+          date:
+            typeof t.date === 'string'
+              ? t.date
+              : (t.date as Date).toISOString(),
+        })),
       }
 
       const balances = calculateAccountBalance(accountForCalculation)
-      const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
+      const hasBalance = Object.values(balances).some(
+        balance => Math.abs(balance.amount) > 0.01
+      )
 
       if (hasBalance) {
         hasStockBalances = true
         console.log(`  ✓ ${account.name}: 有余额`)
         Object.values(balances).forEach(balance => {
-          console.log(`    ${balance.currency.symbol}${balance.amount.toFixed(2)} ${balance.currencyCode}`)
+          console.log(
+            `    ${balance.currency.symbol}${balance.amount.toFixed(2)} ${balance.currencyCode}`
+          )
         })
       } else {
         console.log(`  ❌ ${account.name}: 无余额`)
@@ -134,9 +152,19 @@ async function debugDashboardAPI() {
     console.log(`\n💸 流量类账户余额计算 (当月):`)
     const now = new Date()
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
-    
-    console.log(`  计算期间: ${periodStart.toISOString().split('T')[0]} 到 ${periodEnd.toISOString().split('T')[0]}`)
+    const periodEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    )
+
+    console.log(
+      `  计算期间: ${periodStart.toISOString().split('T')[0]} 到 ${periodEnd.toISOString().split('T')[0]}`
+    )
 
     let hasFlowBalances = false
     for (const account of flowAccounts) {
@@ -147,22 +175,29 @@ async function debugDashboardAPI() {
           ...t,
           type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
           amount: parseFloat(t.amount.toString()),
-          date: typeof t.date === 'string' ? t.date : (t.date as Date).toISOString()
-        }))
+          date:
+            typeof t.date === 'string'
+              ? t.date
+              : (t.date as Date).toISOString(),
+        })),
       }
 
       const balances = calculateAccountBalance(accountForCalculation, {
         periodStart,
         periodEnd,
-        usePeriodCalculation: true
+        usePeriodCalculation: true,
       })
-      const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
+      const hasBalance = Object.values(balances).some(
+        balance => Math.abs(balance.amount) > 0.01
+      )
 
       if (hasBalance) {
         hasFlowBalances = true
         console.log(`  ✓ ${account.name}: 有余额`)
         Object.values(balances).forEach(balance => {
-          console.log(`    ${balance.currency.symbol}${balance.amount.toFixed(2)} ${balance.currencyCode}`)
+          console.log(
+            `    ${balance.currency.symbol}${balance.amount.toFixed(2)} ${balance.currencyCode}`
+          )
         })
       } else {
         console.log(`  ❌ ${account.name}: 无余额`)
@@ -176,7 +211,7 @@ async function debugDashboardAPI() {
     // 检查API返回的accountBalances数组
     console.log(`\n📋 API accountBalances 数组模拟:`)
     const accountBalances = []
-    
+
     // 添加存量类账户
     for (const account of stockAccounts) {
       // 转换账户数据格式以匹配类型
@@ -186,12 +221,17 @@ async function debugDashboardAPI() {
           ...t,
           type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
           amount: parseFloat(t.amount.toString()),
-          date: typeof t.date === 'string' ? t.date : (t.date as Date).toISOString()
-        }))
+          date:
+            typeof t.date === 'string'
+              ? t.date
+              : (t.date as Date).toISOString(),
+        })),
       }
 
       const balances = calculateAccountBalance(accountForCalculation)
-      const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
+      const hasBalance = Object.values(balances).some(
+        balance => Math.abs(balance.amount) > 0.01
+      )
       if (hasBalance) {
         const balancesRecord: Record<string, number> = {}
         Object.values(balances).forEach(balance => {
@@ -201,7 +241,7 @@ async function debugDashboardAPI() {
           id: account.id,
           name: account.name,
           category: account.category,
-          balances: balancesRecord
+          balances: balancesRecord,
         })
       }
     }
@@ -215,16 +255,21 @@ async function debugDashboardAPI() {
           ...t,
           type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
           amount: parseFloat(t.amount.toString()),
-          date: typeof t.date === 'string' ? t.date : (t.date as Date).toISOString()
-        }))
+          date:
+            typeof t.date === 'string'
+              ? t.date
+              : (t.date as Date).toISOString(),
+        })),
       }
 
       const balances = calculateAccountBalance(accountForCalculation, {
         periodStart,
         periodEnd,
-        usePeriodCalculation: true
+        usePeriodCalculation: true,
       })
-      const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
+      const hasBalance = Object.values(balances).some(
+        balance => Math.abs(balance.amount) > 0.01
+      )
       if (hasBalance) {
         const balancesRecord: Record<string, number> = {}
         Object.values(balances).forEach(balance => {
@@ -234,24 +279,25 @@ async function debugDashboardAPI() {
           id: account.id,
           name: account.name,
           category: account.category,
-          balances: balancesRecord
+          balances: balancesRecord,
         })
       }
     }
 
     console.log(`  accountBalances 数组长度: ${accountBalances.length}`)
-    
+
     if (accountBalances.length === 0) {
       console.log(`  ❌ accountBalances 数组为空！这就是前端显示0的原因！`)
     } else {
       console.log(`  ✓ accountBalances 包含以下账户:`)
       accountBalances.forEach((acc: any) => {
-        console.log(`    - ${acc.name} (${acc.category.type}): ${JSON.stringify(acc.balances)}`)
+        console.log(
+          `    - ${acc.name} (${acc.category.type}): ${JSON.stringify(acc.balances)}`
+        )
       })
     }
 
     console.log('\n✅ 调试完成!')
-
   } catch (error) {
     console.error('❌ 调试失败:', error)
   } finally {

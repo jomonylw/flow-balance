@@ -3,6 +3,7 @@
 ## 🐛 问题描述
 
 **错误信息**：
+
 ```
 TypeError: Cannot read properties of undefined (reading 'type')
 at SmartCategorySummaryCard.tsx:76:27
@@ -21,6 +22,7 @@ at SmartCategorySummaryCard.tsx:76:27
 **问题**：在序列化账户数据时，没有包含完整的`category`信息
 
 **修复前**：
+
 ```typescript
 accounts: child.accounts.map(account => ({
   ...account,
@@ -30,6 +32,7 @@ accounts: child.accounts.map(account => ({
 ```
 
 **修复后**：
+
 ```typescript
 accounts: child.accounts.map(account => ({
   ...account,
@@ -50,6 +53,7 @@ accounts: child.accounts.map(account => ({
 **改进**：添加更安全的属性检查
 
 **修复前**：
+
 ```typescript
 if (account.category.type !== accountType) {
   // 可能报错：Cannot read properties of undefined (reading 'type')
@@ -57,9 +61,12 @@ if (account.category.type !== accountType) {
 ```
 
 **修复后**：
+
 ```typescript
 if (!account.category || !account.category.type || account.category.type !== accountType) {
-  console.warn(`Account ${account.name} type mismatch with category ${category.name}. Account type: ${account.category?.type}, Expected: ${accountType}`)
+  console.warn(
+    `Account ${account.name} type mismatch with category ${category.name}. Account type: ${account.category?.type}, Expected: ${accountType}`
+  )
   return
 }
 ```
@@ -92,6 +99,7 @@ if (!account.transactions) {
 ## 🧪 测试验证
 
 ### 测试步骤：
+
 1. 启动应用：`pnpm dev`
 2. 导航到Dashboard
 3. 点击左侧导航栏中的存量类分类（如"资产"）
@@ -99,6 +107,7 @@ if (!account.transactions) {
 5. 验证页面正常加载，无JavaScript错误
 
 ### 预期结果：
+
 - ✅ 页面正常加载
 - ✅ 智能分类汇总卡片正确显示
 - ✅ 无JavaScript控制台错误
@@ -107,10 +116,12 @@ if (!account.transactions) {
 ## 📝 相关文件
 
 ### 主要修改文件：
+
 1. `src/app/categories/[id]/page.tsx` - 修复数据序列化
 2. `src/components/categories/SmartCategorySummaryCard.tsx` - 增强错误处理
 
 ### 影响范围：
+
 - 分类详情页面
 - 智能分类汇总功能
 - 存量类账户统计
@@ -118,12 +129,14 @@ if (!account.transactions) {
 ## 🔍 技术细节
 
 ### 数据流：
+
 1. **数据获取**：`page.tsx` 从数据库获取分类和账户信息
 2. **数据序列化**：将Prisma对象转换为可序列化的JSON
 3. **组件渲染**：`SmartCategorySummaryCard` 处理序列化后的数据
 4. **统计计算**：基于账户类型进行存量/流量统计
 
 ### 关键改进：
+
 - **类型安全**：确保所有必需的属性都存在
 - **错误恢复**：当数据不完整时提供默认值
 - **调试支持**：添加详细的错误日志
@@ -138,12 +151,14 @@ if (!account.transactions) {
 ## 📊 影响评估
 
 ### 正面影响：
+
 - ✅ 修复了存量类子分类页面的崩溃问题
 - ✅ 提高了应用的稳定性和可靠性
 - ✅ 改善了用户体验
 - ✅ 增强了错误处理和调试能力
 
 ### 风险评估：
+
 - ⚠️ 低风险：修改仅涉及数据序列化和错误处理
 - ⚠️ 向后兼容：不影响现有功能
 - ⚠️ 测试覆盖：需要验证所有分类类型的页面

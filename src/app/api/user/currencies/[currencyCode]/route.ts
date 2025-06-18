@@ -1,18 +1,18 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
-
-interface RouteParams {
-  params: Promise<{
-    currencyCode: string
-  }>
-}
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
+import type { CurrencyCodeRouteParams } from '@/types/api'
 
 /**
  * 删除用户可用货币
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: CurrencyCodeRouteParams) {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -23,7 +23,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // 检查是否是本位币
     const userSettings = await prisma.userSettings.findUnique({
-      where: { userId: user.id }
+      where: { userId: user.id },
     })
 
     if (userSettings?.baseCurrencyCode === currencyCode) {
@@ -34,35 +34,36 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const transactionCount = await prisma.transaction.count({
       where: {
         userId: user.id,
-        currencyCode
-      }
+        currencyCode,
+      },
     })
 
     if (transactionCount > 0) {
-      return validationErrorResponse(`该货币有 ${transactionCount} 条交易记录，不能删除`)
+      return validationErrorResponse(
+        `该货币有 ${transactionCount} 条交易记录，不能删除`,
+      )
     }
 
     // 检查是否有相关的汇率设置
     const exchangeRateCount = await prisma.exchangeRate.count({
       where: {
         userId: user.id,
-        OR: [
-          { fromCurrency: currencyCode },
-          { toCurrency: currencyCode }
-        ]
-      }
+        OR: [{ fromCurrency: currencyCode }, { toCurrency: currencyCode }],
+      },
     })
 
     if (exchangeRateCount > 0) {
-      return validationErrorResponse(`该货币有 ${exchangeRateCount} 条汇率设置，不能删除`)
+      return validationErrorResponse(
+        `该货币有 ${exchangeRateCount} 条汇率设置，不能删除`,
+      )
     }
 
     // 删除用户货币记录
     const deletedCount = await prisma.userCurrency.deleteMany({
       where: {
         userId: user.id,
-        currencyCode
-      }
+        currencyCode,
+      },
     })
 
     if (deletedCount.count === 0) {
@@ -79,7 +80,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 /**
  * 更新用户货币设置（激活/停用）
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(request: NextRequest, { params }: CurrencyCodeRouteParams) {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -95,9 +96,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       where: {
         userId_currencyCode: {
           userId: user.id,
-          currencyCode
-        }
-      }
+          currencyCode,
+        },
+      },
     })
 
     if (!userCurrency) {
@@ -107,7 +108,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // 如果要停用货币，检查是否是本位币
     if (isActive === false) {
       const userSettings = await prisma.userSettings.findUnique({
-        where: { userId: user.id }
+        where: { userId: user.id },
       })
 
       if (userSettings?.baseCurrencyCode === currencyCode) {
@@ -120,20 +121,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       where: { id: userCurrency.id },
       data: {
         ...(typeof isActive === 'boolean' && { isActive }),
-        ...(typeof order === 'number' && { order })
+        ...(typeof order === 'number' && { order }),
       },
       include: {
-        currency: true
-      }
+        currency: true,
+      },
     })
 
     return successResponse({
       currency: {
         ...updatedUserCurrency.currency,
         order: updatedUserCurrency.order,
-        isActive: updatedUserCurrency.isActive
+        isActive: updatedUserCurrency.isActive,
       },
-      message: '货币设置更新成功'
+      message: '货币设置更新成功',
     })
   } catch (error) {
     console.error('更新用户货币失败:', error)

@@ -1,7 +1,11 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from '@/lib/api/response'
 
 export async function GET() {
   try {
@@ -12,18 +16,18 @@ export async function GET() {
 
     const tags = await prisma.tag.findMany({
       where: {
-        userId: user.id
+        userId: user.id,
       },
       orderBy: {
-        name: 'asc'
+        name: 'asc',
       },
       include: {
         _count: {
           select: {
-            transactions: true
-          }
-        }
-      }
+            transactions: true,
+          },
+        },
+      },
     })
 
     return successResponse(tags)
@@ -65,8 +69,8 @@ export async function POST(request: NextRequest) {
     const existingTag = await prisma.tag.findFirst({
       where: {
         userId: user.id,
-        name: name.trim()
-      }
+        name: name.trim(),
+      },
     })
 
     if (existingTag) {
@@ -77,8 +81,8 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         name: name.trim(),
-        color: color || null
-      }
+        color: color || null,
+      },
     })
 
     return successResponse(tag, '标签创建成功')

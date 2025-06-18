@@ -3,7 +3,10 @@
  */
 
 import { PrismaClient } from '@prisma/client'
-import { calculateAccountBalance, calculateTotalBalanceWithConversion } from '../src/lib/account-balance'
+import {
+  calculateAccountBalance,
+  calculateTotalBalanceWithConversion,
+} from '../src/lib/services/account.service'
 
 const prisma = new PrismaClient()
 
@@ -21,9 +24,13 @@ async function testDashboardSummaryAPI() {
     // 获取用户设置和本位币
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
-      include: { baseCurrency: true }
+      include: { baseCurrency: true },
     })
-    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
+    const baseCurrency = userSettings?.baseCurrency || {
+      code: 'CNY',
+      symbol: '¥',
+      name: '人民币',
+    }
 
     // 获取所有账户及其交易
     const accounts = await prisma.account.findMany({
@@ -32,12 +39,9 @@ async function testDashboardSummaryAPI() {
         category: true,
         transactions: {
           include: { currency: true },
-          orderBy: [
-            { date: 'desc' },
-            { updatedAt: 'desc' }
-          ]
-        }
-      }
+          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+        },
+      },
     })
 
     // 转换账户数据格式
@@ -49,16 +53,20 @@ async function testDashboardSummaryAPI() {
         type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
-        currency: t.currency
-      }))
+        currency: t.currency,
+      })),
     }))
 
     // 分离存量类账户和流量类账户
-    const stockAccounts = accountsForCalculation.filter(account =>
-      account.category?.type === 'ASSET' || account.category?.type === 'LIABILITY'
+    const stockAccounts = accountsForCalculation.filter(
+      account =>
+        account.category?.type === 'ASSET' ||
+        account.category?.type === 'LIABILITY'
     )
-    const flowAccounts = accountsForCalculation.filter(account =>
-      account.category?.type === 'INCOME' || account.category?.type === 'EXPENSE'
+    const flowAccounts = accountsForCalculation.filter(
+      account =>
+        account.category?.type === 'INCOME' ||
+        account.category?.type === 'EXPENSE'
     )
 
     console.log('📊 模拟API计算过程:')
@@ -73,18 +81,22 @@ async function testDashboardSummaryAPI() {
     )
 
     console.log('\n💰 净资产计算结果:')
-    console.log(`  净资产 (本位币): ${baseCurrency.symbol}${totalBalanceResult.totalInBaseCurrency.toFixed(2)}`)
+    console.log(
+      `  净资产 (本位币): ${baseCurrency.symbol}${totalBalanceResult.totalInBaseCurrency.toFixed(2)}`
+    )
 
     // 计算各账户余额（模拟API逻辑）
     const accountBalances = []
-    
+
     // 计算存量类账户余额（当前时点）
     console.log('\n🏦 存量类账户余额:')
     for (const account of stockAccounts) {
       const balances = calculateAccountBalance(account)
 
       // 只显示有余额的账户
-      const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
+      const hasBalance = Object.values(balances).some(
+        balance => Math.abs(balance.amount) > 0.01
+      )
       if (hasBalance) {
         const balancesRecord: Record<string, number> = {}
         Object.values(balances).forEach(balance => {
@@ -95,11 +107,11 @@ async function testDashboardSummaryAPI() {
           id: account.id,
           name: account.name,
           category: account.category,
-          balances: balancesRecord
+          balances: balancesRecord,
         }
 
         accountBalances.push(accountData)
-        
+
         console.log(`  ${account.name} (${account.category?.type}):`)
         Object.entries(balancesRecord).forEach(([currency, amount]) => {
           console.log(`    ${currency}: ${amount.toFixed(2)}`)
@@ -110,18 +122,28 @@ async function testDashboardSummaryAPI() {
     // 计算流量类账户余额（当前月份期间）
     const now = new Date()
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
-    
+    const periodEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    )
+
     console.log('\n💸 流量类账户余额 (当月):')
     for (const account of flowAccounts) {
       const balances = calculateAccountBalance(account, {
         periodStart,
         periodEnd,
-        usePeriodCalculation: true
+        usePeriodCalculation: true,
       })
 
       // 只显示有余额的账户
-      const hasBalance = Object.values(balances).some(balance => Math.abs(balance.amount) > 0.01)
+      const hasBalance = Object.values(balances).some(
+        balance => Math.abs(balance.amount) > 0.01
+      )
       if (hasBalance) {
         const balancesRecord: Record<string, number> = {}
         Object.values(balances).forEach(balance => {
@@ -132,11 +154,11 @@ async function testDashboardSummaryAPI() {
           id: account.id,
           name: account.name,
           category: account.category,
-          balances: balancesRecord
+          balances: balancesRecord,
         }
 
         accountBalances.push(accountData)
-        
+
         console.log(`  ${account.name} (${account.category?.type}):`)
         Object.entries(balancesRecord).forEach(([currency, amount]) => {
           console.log(`    ${currency}: ${amount.toFixed(2)}`)
@@ -146,30 +168,41 @@ async function testDashboardSummaryAPI() {
 
     // 模拟前端计算逻辑
     console.log('\n🧮 前端计算逻辑模拟:')
-    
+
     // 计算总资产
-    const assetAccounts = accountBalances.filter((acc: any) => acc.category.type === 'ASSET')
+    const assetAccounts = accountBalances.filter(
+      (acc: any) => acc.category.type === 'ASSET'
+    )
     const totalAssets = assetAccounts.reduce((sum: number, acc: any) => {
       const balance = acc.balances[baseCurrency.code] || 0
       return sum + Math.max(0, balance) // 只计算正余额
     }, 0)
 
     // 计算总负债
-    const liabilityAccounts = accountBalances.filter((acc: any) => acc.category.type === 'LIABILITY')
-    const totalLiabilities = liabilityAccounts.reduce((sum: number, acc: any) => {
-      const balance = acc.balances[baseCurrency.code] || 0
-      return sum + Math.max(0, balance) // 只计算正余额
-    }, 0)
+    const liabilityAccounts = accountBalances.filter(
+      (acc: any) => acc.category.type === 'LIABILITY'
+    )
+    const totalLiabilities = liabilityAccounts.reduce(
+      (sum: number, acc: any) => {
+        const balance = acc.balances[baseCurrency.code] || 0
+        return sum + Math.max(0, balance) // 只计算正余额
+      },
+      0
+    )
 
     console.log(`  资产账户数量: ${assetAccounts.length}`)
     console.log(`  负债账户数量: ${liabilityAccounts.length}`)
     console.log(`  总资产: ${baseCurrency.symbol}${totalAssets.toFixed(2)}`)
-    console.log(`  总负债: ${baseCurrency.symbol}${totalLiabilities.toFixed(2)}`)
-    console.log(`  净资产: ${baseCurrency.symbol}${(totalAssets - totalLiabilities).toFixed(2)}`)
+    console.log(
+      `  总负债: ${baseCurrency.symbol}${totalLiabilities.toFixed(2)}`
+    )
+    console.log(
+      `  净资产: ${baseCurrency.symbol}${(totalAssets - totalLiabilities).toFixed(2)}`
+    )
 
     // 检查问题
     console.log('\n⚠️  问题诊断:')
-    
+
     if (accountBalances.length === 0) {
       console.log('  ❌ accountBalances 数组为空')
       console.log('  原因可能是：')
@@ -193,19 +226,20 @@ async function testDashboardSummaryAPI() {
     }
 
     // 检查本位币余额
-    const accountsWithBaseCurrency = accountBalances.filter((acc: any) => 
-      acc.balances[baseCurrency.code] !== undefined
+    const accountsWithBaseCurrency = accountBalances.filter(
+      (acc: any) => acc.balances[baseCurrency.code] !== undefined
     )
-    
+
     if (accountsWithBaseCurrency.length === 0) {
       console.log(`  ❌ 没有账户有 ${baseCurrency.code} 余额`)
       console.log('  这可能是汇率转换问题')
     } else {
-      console.log(`  ✓ ${accountsWithBaseCurrency.length} 个账户有 ${baseCurrency.code} 余额`)
+      console.log(
+        `  ✓ ${accountsWithBaseCurrency.length} 个账户有 ${baseCurrency.code} 余额`
+      )
     }
 
     console.log('\n✅ 测试完成!')
-
   } catch (error) {
     console.error('❌ 测试失败:', error)
   } finally {

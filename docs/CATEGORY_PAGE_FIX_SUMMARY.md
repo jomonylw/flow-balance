@@ -3,6 +3,7 @@
 ## 🐛 问题描述
 
 **错误信息**：
+
 ```
 TypeError: Cannot read properties of undefined (reading 'id')
 at CategoryPage (src/app/categories/[id]/page.tsx:165:29)
@@ -11,6 +12,7 @@ at CategoryPage (src/app/categories/[id]/page.tsx:165:29)
 **触发条件**：点击任何分类汇总面板时报错
 
 **根本原因**：
+
 1. 数据库查询时缺少必要的关联数据（`category`关系）
 2. 数据序列化时没有进行安全的属性检查
 3. 某些账户可能确实没有关联的分类信息
@@ -24,6 +26,7 @@ at CategoryPage (src/app/categories/[id]/page.tsx:165:29)
 **问题**：在查询分类的子分类和账户时，没有包含`category`关系
 
 **修复前**：
+
 ```typescript
 children: {
   include: {
@@ -41,6 +44,7 @@ children: {
 ```
 
 **修复后**：
+
 ```typescript
 children: {
   include: {
@@ -61,6 +65,7 @@ children: {
 ### 2. 修复主分类账户查询
 
 **修复前**：
+
 ```typescript
 accounts: {
   include: {
@@ -80,6 +85,7 @@ accounts: {
 ```
 
 **修复后**：
+
 ```typescript
 accounts: {
   include: {
@@ -102,6 +108,7 @@ accounts: {
 ### 3. 增强数据序列化安全性
 
 **修复前**：
+
 ```typescript
 category: {
   id: account.category.id,
@@ -111,12 +118,15 @@ category: {
 ```
 
 **修复后**：
+
 ```typescript
-category: account.category ? {
-  id: account.category.id,
-  name: account.category.name,
-  type: account.category.type
-} : null
+category: account.category
+  ? {
+      id: account.category.id,
+      name: account.category.name,
+      type: account.category.type,
+    }
+  : null
 ```
 
 ### 4. 修复交易数据序列化
@@ -157,7 +167,7 @@ interface Account {
     id?: string
     name?: string
     type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
-  } | null  // 允许为null
+  } | null // 允许为null
   transactions: Transaction[]
 }
 ```
@@ -172,6 +182,7 @@ interface Account {
 ## 🧪 测试验证
 
 ### 测试步骤：
+
 1. 启动应用：`pnpm dev`
 2. 导航到Dashboard
 3. 点击任何分类汇总面板
@@ -179,6 +190,7 @@ interface Account {
 5. 检查智能分类汇总卡片显示
 
 ### 预期结果：
+
 - ✅ 页面正常加载（HTTP 200状态）
 - ✅ 智能分类汇总卡片正确显示
 - ✅ 无JavaScript控制台错误
@@ -187,10 +199,12 @@ interface Account {
 ## 📝 相关文件
 
 ### 主要修改文件：
+
 1. `src/app/categories/[id]/page.tsx` - 修复数据库查询和序列化
 2. `src/components/categories/SmartCategorySummaryCard.tsx` - 更新类型定义
 
 ### 影响范围：
+
 - 所有分类详情页面
 - 智能分类汇总功能
 - 存量类和流量类账户统计
@@ -198,11 +212,13 @@ interface Account {
 ## 🔍 技术细节
 
 ### 数据流改进：
+
 1. **查询阶段**：确保所有必要的关联数据都被包含
 2. **序列化阶段**：添加安全的属性检查
 3. **渲染阶段**：正确处理可能为null的数据
 
 ### 关键改进：
+
 - **关联完整性**：确保所有账户都有完整的分类信息
 - **类型安全**：处理可能的null值情况
 - **错误恢复**：当数据不完整时提供合理的默认值
@@ -217,12 +233,14 @@ interface Account {
 ## 📊 影响评估
 
 ### 正面影响：
+
 - ✅ 修复了分类页面的崩溃问题
 - ✅ 提高了应用的稳定性和可靠性
 - ✅ 改善了用户体验
 - ✅ 增强了数据处理的健壮性
 
 ### 风险评估：
+
 - ⚠️ 低风险：修改主要涉及查询优化和安全检查
 - ⚠️ 向后兼容：不影响现有功能
 - ⚠️ 性能影响：查询包含更多关联数据，但影响微小
@@ -232,6 +250,7 @@ interface Account {
 此次修复成功解决了分类页面的JavaScript错误，通过完善数据库查询和增强数据序列化的安全性，确保了应用在各种数据状态下都能正常运行。修复遵循了最佳实践，提高了代码的健壮性和可维护性。
 
 **关键成果**：
+
 - 🔧 修复了数据库查询缺失关联的问题
 - 🛡️ 增强了数据序列化的安全性
 - 📈 提高了应用的整体稳定性

@@ -1,5 +1,5 @@
-import AppLayout from '@/components/layout/AppLayout'
-import ReportsPageClient from '@/components/reports/ReportsPageClient'
+import AppLayout from '@/components/features/layout/AppLayout'
+import ReportsPageClient from '@/components/features/reports/ReportsPageClient'
 
 export default function ReportsPage() {
   return (

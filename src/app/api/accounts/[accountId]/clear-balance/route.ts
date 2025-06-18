@@ -1,11 +1,16 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  notFoundResponse,
+} from '@/lib/api/response'
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ accountId: string }> }
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
   try {
     const { accountId } = await params
@@ -18,11 +23,11 @@ export async function DELETE(
     const existingAccount = await prisma.account.findFirst({
       where: {
         id: accountId,
-        userId: user.id
+        userId: user.id,
       },
       include: {
-        category: true
-      }
+        category: true,
+      },
     })
 
     if (!existingAccount) {
@@ -40,28 +45,30 @@ export async function DELETE(
       where: {
         accountId: accountId,
         type: {
-          not: 'BALANCE'
-        }
-      }
+          not: 'BALANCE',
+        },
+      },
     })
 
     if (otherTransactionCount > 0) {
-      return errorResponse(`该账户存在 ${otherTransactionCount} 条普通交易记录，请先删除这些交易记录后再清空余额历史`, 400)
+      return errorResponse(
+        `该账户存在 ${otherTransactionCount} 条普通交易记录，请先删除这些交易记录后再清空余额历史`,
+        400,
+      )
     }
 
     // 删除所有余额调整交易记录
     const deletedCount = await prisma.transaction.deleteMany({
       where: {
         accountId: accountId,
-        type: 'BALANCE'
-      }
+        type: 'BALANCE',
+      },
     })
 
     return successResponse({
       deletedCount: deletedCount.count,
-      message: `已清空 ${existingAccount.name} 的余额历史记录（${deletedCount.count} 条记录）`
+      message: `已清空 ${existingAccount.name} 的余额历史记录（${deletedCount.count} 条记录）`,
     })
-
   } catch (error) {
     console.error('Clear balance history error:', error)
     return errorResponse('清空余额历史失败', 500)

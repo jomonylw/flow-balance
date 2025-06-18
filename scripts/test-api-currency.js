@@ -21,13 +21,13 @@ async function testAPICurrency() {
     const sessionCookie = await getSessionCookie()
     const headers = {
       'Content-Type': 'application/json',
-      'Cookie': sessionCookie
+      Cookie: sessionCookie,
     }
 
     // 1. 获取账户列表
     console.log('📝 获取账户列表...')
     const accountsResponse = await fetch(`${BASE_URL}/api/accounts`, {
-      headers
+      headers,
     })
 
     if (!accountsResponse.ok) {
@@ -37,12 +37,12 @@ async function testAPICurrency() {
 
     const accountsData = await accountsResponse.json()
     const accounts = accountsData.data || []
-    
+
     console.log(`✅ 找到 ${accounts.length} 个账户`)
 
     // 2. 查找有货币限制的账户
     const accountWithCurrency = accounts.find(acc => acc.currencyCode)
-    
+
     if (!accountWithCurrency) {
       console.log('❌ 没有找到有货币限制的账户')
       console.log('💡 请先通过前端界面为账户设置货币限制')
@@ -55,7 +55,7 @@ async function testAPICurrency() {
     // 3. 获取用户可用货币
     console.log('\n📝 获取用户可用货币...')
     const currenciesResponse = await fetch(`${BASE_URL}/api/user/currencies`, {
-      headers
+      headers,
     })
 
     if (!currenciesResponse.ok) {
@@ -65,28 +65,33 @@ async function testAPICurrency() {
 
     const currenciesData = await currenciesResponse.json()
     const currencies = currenciesData.data?.currencies || []
-    
+
     console.log(`✅ 用户可用货币: ${currencies.map(c => c.code).join(', ')}`)
 
     // 4. 测试使用正确货币进行余额更新
-    console.log(`\n📝 测试使用正确货币 (${accountWithCurrency.currencyCode}) 进行余额更新...`)
-    
-    const correctCurrencyResponse = await fetch(`${BASE_URL}/api/balance-update`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        accountId: accountWithCurrency.id,
-        currencyCode: accountWithCurrency.currencyCode,
-        balanceChange: 100,
-        newBalance: 1100,
-        updateDate: new Date().toISOString().split('T')[0],
-        notes: 'API 测试 - 正确货币',
-        updateType: 'adjustment'
-      })
-    })
+    console.log(
+      `\n📝 测试使用正确货币 (${accountWithCurrency.currencyCode}) 进行余额更新...`
+    )
+
+    const correctCurrencyResponse = await fetch(
+      `${BASE_URL}/api/balance-update`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          accountId: accountWithCurrency.id,
+          currencyCode: accountWithCurrency.currencyCode,
+          balanceChange: 100,
+          newBalance: 1100,
+          updateDate: new Date().toISOString().split('T')[0],
+          notes: 'API 测试 - 正确货币',
+          updateType: 'adjustment',
+        }),
+      }
+    )
 
     const correctResult = await correctCurrencyResponse.json()
-    
+
     if (correctCurrencyResponse.ok) {
       console.log(`✅ 正确货币余额更新成功: ${correctResult.message}`)
     } else {
@@ -94,27 +99,34 @@ async function testAPICurrency() {
     }
 
     // 5. 测试使用错误货币进行余额更新
-    const wrongCurrency = currencies.find(c => c.code !== accountWithCurrency.currencyCode)
-    
+    const wrongCurrency = currencies.find(
+      c => c.code !== accountWithCurrency.currencyCode
+    )
+
     if (wrongCurrency) {
-      console.log(`\n📝 测试使用错误货币 (${wrongCurrency.code}) 进行余额更新...`)
-      
-      const wrongCurrencyResponse = await fetch(`${BASE_URL}/api/balance-update`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          accountId: accountWithCurrency.id,
-          currencyCode: wrongCurrency.code,
-          balanceChange: 50,
-          newBalance: 1150,
-          updateDate: new Date().toISOString().split('T')[0],
-          notes: 'API 测试 - 错误货币',
-          updateType: 'adjustment'
-        })
-      })
+      console.log(
+        `\n📝 测试使用错误货币 (${wrongCurrency.code}) 进行余额更新...`
+      )
+
+      const wrongCurrencyResponse = await fetch(
+        `${BASE_URL}/api/balance-update`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            accountId: accountWithCurrency.id,
+            currencyCode: wrongCurrency.code,
+            balanceChange: 50,
+            newBalance: 1150,
+            updateDate: new Date().toISOString().split('T')[0],
+            notes: 'API 测试 - 错误货币',
+            updateType: 'adjustment',
+          }),
+        }
+      )
 
       const wrongResult = await wrongCurrencyResponse.json()
-      
+
       if (wrongCurrencyResponse.ok) {
         console.log(`❌ 意外成功：应该阻止使用错误货币`)
       } else {
@@ -124,21 +136,24 @@ async function testAPICurrency() {
 
     // 6. 测试账户设置更新
     console.log(`\n📝 测试更新账户货币设置...`)
-    
-    const updateAccountResponse = await fetch(`${BASE_URL}/api/accounts/${accountWithCurrency.id}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({
-        name: accountWithCurrency.name,
-        categoryId: accountWithCurrency.categoryId,
-        currencyCode: wrongCurrency?.code || 'USD', // 尝试更换货币
-        description: accountWithCurrency.description,
-        color: accountWithCurrency.color
-      })
-    })
+
+    const updateAccountResponse = await fetch(
+      `${BASE_URL}/api/accounts/${accountWithCurrency.id}`,
+      {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          name: accountWithCurrency.name,
+          categoryId: accountWithCurrency.categoryId,
+          currencyCode: wrongCurrency?.code || 'USD', // 尝试更换货币
+          description: accountWithCurrency.description,
+          color: accountWithCurrency.color,
+        }),
+      }
+    )
 
     const updateResult = await updateAccountResponse.json()
-    
+
     if (updateAccountResponse.ok) {
       console.log(`❌ 意外成功：应该阻止更换有交易记录账户的货币`)
     } else {
@@ -150,7 +165,6 @@ async function testAPICurrency() {
     console.log(`   ✅ API 正确验证账户货币限制`)
     console.log(`   ✅ 阻止使用错误货币进行余额更新`)
     console.log(`   ✅ 阻止更换有交易记录账户的货币`)
-
   } catch (error) {
     console.error('❌ 测试过程中发生错误:', error.message)
     console.log('\n💡 提示:')

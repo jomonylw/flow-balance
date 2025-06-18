@@ -1,6 +1,10 @@
 import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, validationErrorResponse } from '@/lib/api-response'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
@@ -23,9 +27,9 @@ export async function POST(request: NextRequest) {
       where: {
         resetToken: token,
         resetTokenExpiry: {
-          gt: new Date() // 令牌未过期
-        }
-      }
+          gt: new Date(), // 令牌未过期
+        },
+      },
     })
 
     if (!user) {
@@ -41,12 +45,12 @@ export async function POST(request: NextRequest) {
       data: {
         password: hashedPassword,
         resetToken: null,
-        resetTokenExpiry: null
-      }
+        resetTokenExpiry: null,
+      },
     })
 
     return successResponse({
-      message: '密码重置成功，请使用新密码登录'
+      message: '密码重置成功，请使用新密码登录',
     })
   } catch (error) {
     console.error('Reset password error:', error)

@@ -1,0 +1,109 @@
+{
+  "timestamp": "2025-06-18T01:42:40.549Z",
+  "summary": {
+    "totalFiles": 356,
+    "duplicateTypes": 3,
+    "coreTypeStats": [
+      {
+        "name": "User",
+        "definitions": 1,
+        "imports": 11
+      },
+      {
+        "name": "Account",
+        "definitions": 1,
+        "imports": 8
+      },
+      {
+        "name": "Transaction",
+        "definitions": 1,
+        "imports": 11
+      },
+      {
+        "name": "Category",
+        "definitions": 1,
+        "imports": 8
+      },
+      {
+        "name": "Currency",
+        "definitions": 2,
+        "imports": 17
+      },
+      {
+        "name": "Tag",
+        "definitions": 2,
+        "imports": 3
+      },
+      {
+        "name": "UserSettings",
+        "definitions": 2,
+        "imports": 2
+      },
+      {
+        "name": "ExchangeRate",
+        "definitions": 1,
+        "imports": 1
+      },
+      {
+        "name": "Balance",
+        "definitions": 1,
+        "imports": 1
+      },
+      {
+        "name": "TrendDataPoint",
+        "definitions": 1,
+        "imports": 6
+      }
+    ]
+  },
+  "duplicates": [
+    {
+      "typeName": "UserSettings",
+      "count": 2,
+      "locations": [
+        {
+          "file": "src/lib/validation/schemas.ts",
+          "line": 265,
+          "type": "type"
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 21,
+          "type": "interface"
+        }
+      ]
+    },
+    {
+      "typeName": "Currency",
+      "count": 2,
+      "locations": [
+        {
+          "file": "src/lib/validation/schemas.ts",
+          "line": 266,
+          "type": "type"
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 34,
+          "type": "interface"
+        }
+      ]
+    },
+    {
+      "typeName": "Tag",
+      "count": 2,
+      "locations": [
+        {
+          "file": "src/lib/validation/schemas.ts",
+          "line": 267,
+          "type": "type"
+        },
+        {
+          "file": "src/types/core/index.ts",
+          "line": 56,
+          "type": "interface"
+        }
+      ]
+    }
+  ]
+}

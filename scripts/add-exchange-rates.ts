@@ -34,14 +34,14 @@ async function addExchangeRates() {
 
     // 检查现有汇率
     const existingRates = await prisma.exchangeRate.findMany({
-      where: { userId: user.id }
+      where: { userId: user.id },
     })
 
     console.log(`📊 现有汇率: ${existingRates.length} 个`)
 
     // 添加USD到CNY的汇率
-    const usdToCnyExists = existingRates.some(rate =>
-      rate.fromCurrency === 'USD' && rate.toCurrency === 'CNY'
+    const usdToCnyExists = existingRates.some(
+      rate => rate.fromCurrency === 'USD' && rate.toCurrency === 'CNY'
     )
 
     const now = new Date()
@@ -53,8 +53,8 @@ async function addExchangeRates() {
           fromCurrency: 'USD',
           toCurrency: 'CNY',
           rate: 7.2, // 假设汇率
-          effectiveDate: now
-        }
+          effectiveDate: now,
+        },
       })
       console.log('✅ 添加了 USD -> CNY 汇率: 7.2')
     } else {
@@ -62,8 +62,8 @@ async function addExchangeRates() {
     }
 
     // 添加JPY到CNY的汇率
-    const jpyToCnyExists = existingRates.some(rate =>
-      rate.fromCurrency === 'JPY' && rate.toCurrency === 'CNY'
+    const jpyToCnyExists = existingRates.some(
+      rate => rate.fromCurrency === 'JPY' && rate.toCurrency === 'CNY'
     )
 
     if (!jpyToCnyExists) {
@@ -73,8 +73,8 @@ async function addExchangeRates() {
           fromCurrency: 'JPY',
           toCurrency: 'CNY',
           rate: 0.05, // 假设汇率
-          effectiveDate: now
-        }
+          effectiveDate: now,
+        },
       })
       console.log('✅ 添加了 JPY -> CNY 汇率: 0.05')
     } else {
@@ -82,8 +82,8 @@ async function addExchangeRates() {
     }
 
     // 添加CNY到USD的汇率（反向）
-    const cnyToUsdExists = existingRates.some(rate =>
-      rate.fromCurrency === 'CNY' && rate.toCurrency === 'USD'
+    const cnyToUsdExists = existingRates.some(
+      rate => rate.fromCurrency === 'CNY' && rate.toCurrency === 'USD'
     )
 
     if (!cnyToUsdExists) {
@@ -93,8 +93,8 @@ async function addExchangeRates() {
           fromCurrency: 'CNY',
           toCurrency: 'USD',
           rate: 0.139, // 1/7.2
-          effectiveDate: now
-        }
+          effectiveDate: now,
+        },
       })
       console.log('✅ 添加了 CNY -> USD 汇率: 0.139')
     } else {
@@ -103,7 +103,7 @@ async function addExchangeRates() {
 
     // 验证汇率设置
     const finalRates = await prisma.exchangeRate.findMany({
-      where: { userId: user.id }
+      where: { userId: user.id },
     })
 
     console.log(`\n📋 最终汇率设置 (${finalRates.length} 个):`)
@@ -112,7 +112,6 @@ async function addExchangeRates() {
     })
 
     console.log('\n✅ 汇率设置完成!')
-
   } catch (error) {
     console.error('❌ 设置失败:', error)
   } finally {

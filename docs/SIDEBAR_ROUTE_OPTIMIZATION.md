@@ -7,12 +7,14 @@
 ## 问题分析
 
 ### 根本原因
+
 1. **路由变化导致组件重新渲染**：Next.js App Router在路由变化时会重新渲染页面组件
 2. **侧边栏滚动位置丢失**：没有保存和恢复滚动位置的机制
 3. **组件重新挂载**：缺乏稳定的key导致组件在某些情况下重新挂载
 4. **视觉抖动**：缺少平滑过渡效果
 
 ### 影响范围
+
 - 用户体验：每次路由变化都需要重新定位到之前的位置
 - 操作效率：频繁的状态重置影响操作流畅性
 - 视觉体验：页面抖动和闪烁
@@ -22,6 +24,7 @@
 ### 1. 滚动位置保持
 
 #### 新增Hook: `useSidebarScrollPosition`
+
 ```typescript
 // src/hooks/useSidebarWidth.ts (扩展)
 export function useSidebarScrollPosition() {
@@ -33,7 +36,7 @@ export function useSidebarScrollPosition() {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current)
     }
-    
+
     saveTimeoutRef.current = setTimeout(() => {
       try {
         localStorage.setItem(SIDEBAR_SCROLL_KEY, scrollTop.toString())
@@ -67,7 +70,7 @@ export function useSidebarScrollPosition() {
   return {
     scrollContainerRef,
     handleScroll,
-    restoreScrollPosition
+    restoreScrollPosition,
   }
 }
 ```
@@ -75,6 +78,7 @@ export function useSidebarScrollPosition() {
 ### 2. 组件稳定性保证
 
 #### 新增Hook: `useSidebarState`
+
 ```typescript
 // src/hooks/useSidebarState.ts
 export function useStableComponentKey(baseKey: string = 'sidebar') {
@@ -91,7 +95,7 @@ export function useSmoothTransition() {
       // 添加过渡效果，减少视觉抖动
       transitionRef.current.style.transition = 'opacity 0.15s ease-in-out'
       transitionRef.current.style.opacity = '0.95'
-      
+
       const timer = setTimeout(() => {
         if (transitionRef.current) {
           transitionRef.current.style.opacity = '1'
@@ -109,6 +113,7 @@ export function useSmoothTransition() {
 ### 3. 路由状态保持
 
 #### 新增Hook: `useRoutePreservation`
+
 ```typescript
 // src/hooks/useRoutePreservation.ts
 export function useRoutePreservation() {
@@ -128,7 +133,7 @@ export function useRoutePreservation() {
   return {
     currentPath: pathname,
     preserveState,
-    getPreservedState
+    getPreservedState,
   }
 }
 ```
@@ -136,6 +141,7 @@ export function useRoutePreservation() {
 ### 4. 组件更新
 
 #### NavigationSidebar组件优化
+
 ```typescript
 // src/components/layout/NavigationSidebar.tsx
 export default function NavigationSidebar({ isMobile = false, onNavigate }: NavigationSidebarProps) {
@@ -171,7 +177,7 @@ export default function NavigationSidebar({ isMobile = false, onNavigate }: Navi
         }}
         className="... transition-opacity duration-150 ease-in-out"
       >
-        <div 
+        <div
           ref={scrollContainerRef}
           className="flex-1 overflow-y-auto overflow-x-visible"
           onScroll={handleScroll}
@@ -185,6 +191,7 @@ export default function NavigationSidebar({ isMobile = false, onNavigate }: Navi
 ```
 
 #### AppLayoutClient组件优化
+
 ```typescript
 // src/components/layout/AppLayoutClient.tsx
 <div className={`${isMobile ? 'hidden' : 'block'} flex-shrink-0`}>
@@ -197,15 +204,18 @@ export default function NavigationSidebar({ isMobile = false, onNavigate }: Navi
 ### ✅ 已实现功能
 
 1. **滚动位置保持**
+
    - 使用 localStorage 保存滚动位置
    - 防抖机制避免频繁保存
    - 路由变化后自动恢复位置
 
 2. **组件稳定性**
+
    - 使用稳定的 key 防止重新挂载
    - 组件状态在路由变化时保持
 
 3. **平滑过渡**
+
    - 添加 CSS 过渡效果
    - 减少视觉抖动
 
@@ -223,15 +233,18 @@ export default function NavigationSidebar({ isMobile = false, onNavigate }: Navi
 ## 测试验证
 
 ### 测试页面
+
 创建了专门的测试页面 `/test-sidebar` 用于验证优化效果。
 
 ### 测试步骤
+
 1. 展开侧边栏中的多个分类
 2. 滚动侧边栏到特定位置
 3. 点击不同页面进行路由跳转
 4. 验证展开状态和滚动位置是否保持
 
 ### 预期结果
+
 - ✅ 侧边栏展开状态保持
 - ✅ 滚动位置保持
 - ✅ 无明显抖动或闪烁
@@ -240,11 +253,13 @@ export default function NavigationSidebar({ isMobile = false, onNavigate }: Navi
 ## 性能影响
 
 ### 正面影响
+
 - 减少了不必要的组件重新挂载
 - 提升了用户体验的流畅性
 - 减少了DOM操作和重绘
 
 ### 资源消耗
+
 - localStorage存储：约100字节（展开状态 + 滚动位置）
 - 内存消耗：增加了几个ref和状态管理
 - 计算开销：防抖机制的轻微开销

@@ -1,7 +1,13 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
+import type { Prisma } from '@prisma/client'
 
 /**
  * 获取用户的汇率设置
@@ -17,7 +23,7 @@ export async function GET(request: NextRequest) {
     const fromCurrency = searchParams.get('fromCurrency')
     const toCurrency = searchParams.get('toCurrency')
 
-    let whereClause: any = { userId: user.id }
+    const whereClause: Prisma.ExchangeRateWhereInput = { userId: user.id }
 
     // 如果指定了货币对，则过滤
     if (fromCurrency) {
@@ -31,19 +37,19 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       include: {
         fromCurrencyRef: true,
-        toCurrencyRef: true
+        toCurrencyRef: true,
       },
       orderBy: [
         { fromCurrency: 'asc' },
         { toCurrency: 'asc' },
-        { effectiveDate: 'desc' }
-      ]
+        { effectiveDate: 'desc' },
+      ],
     })
 
     // 序列化 Decimal 类型
     const serializedRates = exchangeRates.map(rate => ({
       ...rate,
-      rate: parseFloat(rate.rate.toString())
+      rate: parseFloat(rate.rate.toString()),
     }))
 
     return successResponse(serializedRates)
@@ -80,7 +86,7 @@ export async function POST(request: NextRequest) {
     // 验证货币代码
     const [fromCurrencyExists, toCurrencyExists] = await Promise.all([
       prisma.currency.findUnique({ where: { code: fromCurrency } }),
-      prisma.currency.findUnique({ where: { code: toCurrency } })
+      prisma.currency.findUnique({ where: { code: toCurrency } }),
     ])
 
     if (!fromCurrencyExists) {
@@ -109,9 +115,9 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           fromCurrency,
           toCurrency,
-          effectiveDate: parsedDate
-        }
-      }
+          effectiveDate: parsedDate,
+        },
+      },
     })
 
     let exchangeRate
@@ -121,12 +127,12 @@ export async function POST(request: NextRequest) {
         where: { id: existingRate.id },
         data: {
           rate: rateValue,
-          notes: notes || null
+          notes: notes || null,
         },
         include: {
           fromCurrencyRef: true,
-          toCurrencyRef: true
-        }
+          toCurrencyRef: true,
+        },
       })
     } else {
       // 创建新汇率
@@ -137,22 +143,25 @@ export async function POST(request: NextRequest) {
           toCurrency,
           rate: rateValue,
           effectiveDate: parsedDate,
-          notes: notes || null
+          notes: notes || null,
         },
         include: {
           fromCurrencyRef: true,
-          toCurrencyRef: true
-        }
+          toCurrencyRef: true,
+        },
       })
     }
 
     // 序列化 Decimal 类型
     const serializedRate = {
       ...exchangeRate,
-      rate: parseFloat(exchangeRate.rate.toString())
+      rate: parseFloat(exchangeRate.rate.toString()),
     }
 
-    return successResponse(serializedRate, existingRate ? '汇率更新成功' : '汇率创建成功')
+    return successResponse(
+      serializedRate,
+      existingRate ? '汇率更新成功' : '汇率创建成功',
+    )
   } catch (error) {
     console.error('创建/更新汇率失败:', error)
     return errorResponse('操作失败', 500)
@@ -182,7 +191,8 @@ export async function PUT(request: NextRequest) {
     for (let i = 0; i < rates.length; i++) {
       const rateData = rates[i]
       try {
-        const { fromCurrency, toCurrency, rate, effectiveDate, notes } = rateData
+        const { fromCurrency, toCurrency, rate, effectiveDate, notes } =
+          rateData
 
         // 基本验证
         if (!fromCurrency || !toCurrency || !rate || !effectiveDate) {
@@ -214,12 +224,12 @@ export async function PUT(request: NextRequest) {
               userId: user.id,
               fromCurrency,
               toCurrency,
-              effectiveDate: parsedDate
-            }
+              effectiveDate: parsedDate,
+            },
           },
           update: {
             rate: rateValue,
-            notes: notes || null
+            notes: notes || null,
           },
           create: {
             userId: user.id,
@@ -227,29 +237,34 @@ export async function PUT(request: NextRequest) {
             toCurrency,
             rate: rateValue,
             effectiveDate: parsedDate,
-            notes: notes || null
+            notes: notes || null,
           },
           include: {
             fromCurrencyRef: true,
-            toCurrencyRef: true
-          }
+            toCurrencyRef: true,
+          },
         })
 
         results.push({
           ...exchangeRate,
-          rate: parseFloat(exchangeRate.rate.toString())
+          rate: parseFloat(exchangeRate.rate.toString()),
         })
       } catch (error) {
-        errors.push(`第${i + 1}条记录：${error instanceof Error ? error.message : '未知错误'}`)
+        errors.push(
+          `第${i + 1}条记录：${error instanceof Error ? error.message : '未知错误'}`,
+        )
       }
     }
 
-    return successResponse({
-      success: results.length,
-      errors: errors.length,
-      results,
-      errorMessages: errors
-    }, `成功处理 ${results.length} 条汇率记录${errors.length > 0 ? `，${errors.length} 条失败` : ''}`)
+    return successResponse(
+      {
+        success: results.length,
+        errors: errors.length,
+        results,
+        errorMessages: errors,
+      },
+      `成功处理 ${results.length} 条汇率记录${errors.length > 0 ? `，${errors.length} 条失败` : ''}`,
+    )
   } catch (error) {
     console.error('批量创建汇率失败:', error)
     return errorResponse('批量操作失败', 500)

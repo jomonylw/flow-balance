@@ -1,10 +1,17 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
-import type { Transaction } from '@prisma/client'
-import { publishBalanceUpdate, publishTransactionUpdate } from '@/utils/DataUpdateManager'
- 
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from '@/lib/api/response'
+import type { Prisma } from '@prisma/client'
+import {
+  publishBalanceUpdate,
+  publishTransactionUpdate,
+} from '@/lib/services/data-update.service'
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser()
@@ -19,11 +26,16 @@ export async function POST(request: NextRequest) {
       balanceChange,
       newBalance,
       updateDate,
-      notes
+      notes,
     } = body
 
     // 验证必填字段
-    if (!accountId || !currencyCode || balanceChange === undefined || !updateDate) {
+    if (
+      !accountId ||
+      !currencyCode ||
+      balanceChange === undefined ||
+      !updateDate
+    ) {
       return errorResponse('缺少必填字段', 400)
     }
 
@@ -31,12 +43,12 @@ export async function POST(request: NextRequest) {
     const account = await prisma.account.findFirst({
       where: {
         id: accountId,
-        userId: user.id
+        userId: user.id,
       },
       include: {
         category: true,
-        currency: true
-      }
+        currency: true,
+      },
     })
 
     if (!account) {
@@ -45,7 +57,10 @@ export async function POST(request: NextRequest) {
 
     // 验证账户货币限制
     if (account.currencyCode && account.currencyCode !== currencyCode) {
-      return errorResponse(`此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`, 400)
+      return errorResponse(
+        `此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`,
+        400,
+      )
     }
 
     // 验证是否为存量类账户
@@ -56,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // 验证币种
     const currency = await prisma.currency.findUnique({
-      where: { code: currencyCode }
+      where: { code: currencyCode },
     })
 
     if (!currency) {
@@ -71,15 +86,19 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证前端提交的余额和计算的变化金额是否一致
-    console.log('API接收数据验证:', {
+    console.warn('API接收数据验证:', {
       newBalance: newBalanceAmount,
       balanceChange: changeAmount,
       accountId,
-      updateDate
+      updateDate,
     })
 
     const updateDateObj = new Date(updateDate)
-    const startOfDay = new Date(updateDateObj.getFullYear(), updateDateObj.getMonth(), updateDateObj.getDate())
+    const startOfDay = new Date(
+      updateDateObj.getFullYear(),
+      updateDateObj.getMonth(),
+      updateDateObj.getDate(),
+    )
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1)
 
     // 检查当天是否已有BALANCE记录
@@ -90,23 +109,23 @@ export async function POST(request: NextRequest) {
         type: 'BALANCE',
         date: {
           gte: startOfDay,
-          lte: endOfDay
-        }
+          lte: endOfDay,
+        },
       },
       include: {
         account: {
           include: {
-            category: true
-          }
+            category: true,
+          },
         },
         category: true,
         currency: true,
         tags: {
           include: {
-            tag: true
-          }
-        }
-      }
+            tag: true,
+          },
+        },
+      },
     })
 
     let transaction
@@ -118,31 +137,33 @@ export async function POST(request: NextRequest) {
       type: 'BALANCE' as const,
       amount: newBalanceAmount, // 存储目标余额，而不是变化金额
       description: `余额更新 - ${account.name}`,
-      notes: notes || `余额更新：${currency.symbol}${newBalanceAmount.toFixed(2)}。变化金额：${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)}`,
-      date: updateDateObj
+      notes:
+        notes ||
+        `余额更新：${currency.symbol}${newBalanceAmount.toFixed(2)}。变化金额：${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)}`,
+      date: updateDateObj,
     }
 
     if (existingTransaction) {
       // 如果当天已有记录，则更新现有记录
       transaction = await prisma.transaction.update({
         where: {
-          id: existingTransaction.id
+          id: existingTransaction.id,
         },
         data: transactionData,
         include: {
           account: {
             include: {
-              category: true
-            }
+              category: true,
+            },
           },
           category: true,
           currency: true,
           tags: {
             include: {
-              tag: true
-            }
-          }
-        }
+              tag: true,
+            },
+          },
+        },
       })
     } else {
       // 如果当天没有记录，则创建新记录
@@ -151,49 +172,48 @@ export async function POST(request: NextRequest) {
         include: {
           account: {
             include: {
-              category: true
-            }
+              category: true,
+            },
           },
           category: true,
           currency: true,
           tags: {
             include: {
-              tag: true
-            }
-          }
-        }
+              tag: true,
+            },
+          },
+        },
       })
     }
 
     // 记录余额更新历史（可选：创建一个专门的余额历史表）
     // 这里我们可以在未来扩展一个 BalanceHistory 表来跟踪余额变化
- 
+
     // 发布余额更新事件
     await publishBalanceUpdate(accountId, {
       newBalance: newBalanceAmount,
-      currencyCode
+      currencyCode,
     })
- 
+
     // 同时发布交易更新事件，因为余额调整也是一种交易
     await publishTransactionUpdate(accountId, account.categoryId, {
-      transactionId: transaction.id
+      transactionId: transaction.id,
     })
- 
+
     return successResponse({
       transaction: {
         ...transaction,
         amount: parseFloat(transaction.amount.toString()),
         date: transaction.date.toISOString(),
-        notes: transaction.notes || undefined
+        notes: transaction.notes || undefined,
       },
       balanceChange: changeAmount,
       newBalance: newBalanceAmount,
       isUpdate: !!existingTransaction,
       message: existingTransaction
         ? `${account.name} 当天余额记录已更新`
-        : `${account.name} 余额已更新`
+        : `${account.name} 余额已更新`,
     })
- 
   } catch (error) {
     console.error('Balance update error:', error)
     return errorResponse('余额更新失败', 500)
@@ -221,11 +241,11 @@ export async function GET(request: NextRequest) {
     const account = await prisma.account.findFirst({
       where: {
         id: accountId,
-        userId: user.id
+        userId: user.id,
       },
       include: {
-        category: true
-      }
+        category: true,
+      },
     })
 
     if (!account) {
@@ -233,9 +253,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取余额相关的交易历史
-    const whereClause: any = {
+    const whereClause: Prisma.TransactionWhereInput = {
       userId: user.id,
-      accountId: accountId
+      accountId: accountId,
     }
 
     if (currencyCode) {
@@ -246,40 +266,56 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       include: {
         currency: true,
-        category: true
+        category: true,
       },
-      orderBy: [
-        { date: 'desc' },
-        { updatedAt: 'desc' }
-      ],
-      take: limit
+      orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+      take: limit,
     })
 
+    // 定义交易类型（包含关联数据）
+    type TransactionWithCurrencyAndCategory = Prisma.TransactionGetPayload<{
+      include: {
+        currency: true
+        category: true
+      }
+    }>
+
     // 计算每个时点的累计余额
-    const balanceHistory = []
+    const balanceHistory: Array<{
+      date: string
+      balance: number
+      change: number
+      transaction: {
+        id: string
+        type: string
+        amount: number
+        description: string
+        notes: string | null
+      }
+    }> = []
 
     // 按时间正序处理以计算累计余额
-    const sortedTransactions = [...transactions].sort((a, b) =>
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+    const sortedTransactions = [...transactions].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     )
 
     // 对于存量类账户，需要特殊处理BALANCE
-    const isStockAccount = account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
+    const isStockAccount =
+      account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
     let cumulativeBalance = 0
 
     if (isStockAccount) {
       // 存量类账户：找到最新的BALANCE作为基准
-      let latestBalanceAdjustment: (Transaction & {
-        currency: any;
-        category: any;
-      }) | null = null
+      let latestBalanceAdjustment: TransactionWithCurrencyAndCategory | null =
+        null
       let latestBalanceDate = new Date(0)
 
       sortedTransactions.forEach(transaction => {
         if (transaction.type === 'BALANCE') {
           const transactionDate = new Date(transaction.date)
           if (transactionDate > latestBalanceDate) {
-            latestBalanceAdjustment = transaction
+            latestBalanceAdjustment =
+              transaction as TransactionWithCurrencyAndCategory
             latestBalanceDate = transactionDate
           }
         }
@@ -287,26 +323,30 @@ export async function GET(request: NextRequest) {
 
       // 如果有余额调整记录，使用该记录作为基准
       if (latestBalanceAdjustment) {
-        cumulativeBalance = parseFloat((latestBalanceAdjustment as any).amount.toString())
+        const balanceTransaction =
+          latestBalanceAdjustment as TransactionWithCurrencyAndCategory
+        cumulativeBalance = parseFloat(balanceTransaction.amount.toString())
 
         // 添加余额调整记录到历史
         balanceHistory.push({
-          date: (latestBalanceAdjustment as any).date.toISOString(),
+          date: balanceTransaction.date.toISOString(),
           balance: cumulativeBalance,
           change: cumulativeBalance, // 对于余额调整，变化金额就是目标余额
           transaction: {
-            id: (latestBalanceAdjustment as any).id,
-            type: (latestBalanceAdjustment as any).type,
-            amount: parseFloat((latestBalanceAdjustment as any).amount.toString()),
-            description: (latestBalanceAdjustment as any).description,
-            notes: (latestBalanceAdjustment as any).notes
-          }
+            id: balanceTransaction.id,
+            type: balanceTransaction.type,
+            amount: parseFloat(balanceTransaction.amount.toString()),
+            description: balanceTransaction.description,
+            notes: balanceTransaction.notes,
+          },
         })
 
         // 处理余额调整之后的其他交易
         sortedTransactions.forEach(transaction => {
-          if (transaction.type === 'BALANCE' ||
-              new Date(transaction.date) <= latestBalanceDate) {
+          if (
+            transaction.type === 'BALANCE' ||
+            new Date(transaction.date) <= latestBalanceDate
+          ) {
             return // 跳过余额调整记录和之前的交易
           }
 
@@ -330,8 +370,8 @@ export async function GET(request: NextRequest) {
               type: transaction.type,
               amount: amount,
               description: transaction.description,
-              notes: transaction.notes
-            }
+              notes: transaction.notes,
+            },
           })
         })
       }
@@ -358,28 +398,31 @@ export async function GET(request: NextRequest) {
             type: transaction.type,
             amount: amount,
             description: transaction.description,
-            notes: transaction.notes
-          }
+            notes: transaction.notes,
+          },
         })
       })
     }
 
     // 按日期倒序排列历史记录
-    balanceHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    balanceHistory.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    )
 
     return successResponse({
       account: {
         id: account.id,
         name: account.name,
-        type: account.category.type
+        type: account.category.type,
       },
       currentBalance: cumulativeBalance,
-      currency: currencyCode ? await prisma.currency.findUnique({
-        where: { code: currencyCode }
-      }) : null,
-      history: balanceHistory.slice(0, limit)
+      currency: currencyCode
+        ? await prisma.currency.findUnique({
+            where: { code: currencyCode },
+          })
+        : null,
+      history: balanceHistory.slice(0, limit),
     })
-
   } catch (error) {
     console.error('Get balance history error:', error)
     return errorResponse('获取余额历史失败', 500)

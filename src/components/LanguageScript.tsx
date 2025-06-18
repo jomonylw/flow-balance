@@ -61,7 +61,7 @@ export default function LanguageScript() {
         window.__LANGUAGE_INITIALIZING__ = false;
       }
     })();
-  `;
+  `
 
   return (
     <script
@@ -69,5 +69,5 @@ export default function LanguageScript() {
         __html: languageScript,
       }}
     />
-  );
+  )
 }

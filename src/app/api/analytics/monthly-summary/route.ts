@@ -1,8 +1,13 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
-import { calculateAccountBalance } from '@/lib/account-balance'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from '@/lib/api/response'
+import type { Prisma } from '@prisma/client'
+import { calculateAccountBalance } from '@/lib/services/account.service'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,10 +23,14 @@ export async function GET(request: NextRequest) {
     // 获取用户的基础货币设置
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
-      include: { baseCurrency: true }
+      include: { baseCurrency: true },
     })
 
-    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
+    const baseCurrency = userSettings?.baseCurrency || {
+      code: 'CNY',
+      symbol: '¥',
+      name: '人民币',
+    }
 
     // 如果指定了分类ID，检查分类类型
     let targetCategory = null
@@ -29,8 +38,8 @@ export async function GET(request: NextRequest) {
       targetCategory = await prisma.category.findFirst({
         where: {
           id: categoryId,
-          userId: user.id
-        }
+          userId: user.id,
+        },
       })
 
       if (!targetCategory) {
@@ -38,8 +47,16 @@ export async function GET(request: NextRequest) {
       }
 
       // 如果是存量类分类，使用专门的存量数据处理逻辑
-      if (targetCategory.type === 'ASSET' || targetCategory.type === 'LIABILITY') {
-        return await getStockCategoryMonthlyData(user.id, categoryId, months, baseCurrency)
+      if (
+        targetCategory.type === 'ASSET' ||
+        targetCategory.type === 'LIABILITY'
+      ) {
+        return await getStockCategoryMonthlyData(
+          user.id,
+          categoryId,
+          months,
+          baseCurrency,
+        )
       }
     }
 
@@ -58,7 +75,7 @@ async function getStockCategoryMonthlyData(
   userId: string,
   categoryId: string,
   months: number,
-  baseCurrency: { code: string; symbol: string; name: string }
+  baseCurrency: { code: string; symbol: string; name: string },
 ) {
   // 计算日期范围
   const endDate = new Date()
@@ -71,7 +88,7 @@ async function getStockCategoryMonthlyData(
   const getAllCategoryIds = async (categoryId: string): Promise<string[]> => {
     const category = await prisma.category.findUnique({
       where: { id: categoryId },
-      include: { children: true }
+      include: { children: true },
     })
 
     if (!category) return [categoryId]
@@ -90,37 +107,43 @@ async function getStockCategoryMonthlyData(
   const accounts = await prisma.account.findMany({
     where: {
       categoryId: {
-        in: categoryIds
+        in: categoryIds,
       },
-      userId: userId
+      userId: userId,
     },
     include: {
       category: true,
       transactions: {
         include: {
-          currency: true
+          currency: true,
         },
         orderBy: {
-          date: 'asc'
-        }
-      }
-    }
+          date: 'asc',
+        },
+      },
+    },
   })
 
-  console.log(`存量类分类 ${categoryId} 找到 ${accounts.length} 个账户`)
-  accounts.forEach(account => {
-    console.log(`账户 ${account.name}: 分类类型=${account.category?.type}, 交易数=${account.transactions.length}`)
-  })
+
 
   // 按月计算每个账户的余额
-  const monthlyData: Record<string, Record<string, {
-    totalBalance: number
-    accounts: Record<string, {
-      id: string
-      name: string
-      balance: number
-    }>
-  }>> = {}
+  const monthlyData: Record<
+    string,
+    Record<
+      string,
+      {
+        totalBalance: number
+        accounts: Record<
+          string,
+          {
+            id: string
+            name: string
+            balance: number
+          }
+        >
+      }
+    >
+  > = {}
 
   // 生成完整的月份列表
   const currentDate = new Date(startDate)
@@ -138,61 +161,66 @@ async function getStockCategoryMonthlyData(
       transactions: account.transactions.map(transaction => ({
         ...transaction,
         amount: parseFloat(transaction.amount.toString()),
-        date: transaction.date.toISOString()
-      }))
+        date: transaction.date.toISOString(),
+      })),
     }
 
     // 为每个月计算该账户的余额
     Object.keys(monthlyData).forEach(monthKey => {
       const [year, month] = monthKey.split('-')
-      const monthEnd = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999) // 月末最后一刻
+      const monthEnd = new Date(
+        parseInt(year),
+        parseInt(month),
+        0,
+        23,
+        59,
+        59,
+        999,
+      ) // 月末最后一刻
 
       // 计算截止到该月末的余额
       const balancesAtMonthEnd = calculateAccountBalance(serializedAccount, {
         asOfDate: monthEnd,
-        validateData: false // 减少日志输出
+        validateData: false, // 减少日志输出
       })
 
       // 如果该月没有余额数据，跳过
       if (Object.keys(balancesAtMonthEnd).length === 0) {
-        console.log(`  ${monthKey}: 账户 ${account.name} 无余额数据`)
         return
       }
 
-      console.log(`  ${monthKey}: 账户 ${account.name} 余额:`, Object.keys(balancesAtMonthEnd).map(curr =>
-        `${curr}=${balancesAtMonthEnd[curr].amount}`
-      ).join(', '))
-
-      Object.entries(balancesAtMonthEnd).forEach(([currencyCode, balanceData]) => {
-        if (!monthlyData[monthKey][currencyCode]) {
-          monthlyData[monthKey][currencyCode] = {
-            totalBalance: 0,
-            accounts: {}
+      Object.entries(balancesAtMonthEnd).forEach(
+        ([currencyCode, balanceData]) => {
+          if (!monthlyData[monthKey][currencyCode]) {
+            monthlyData[monthKey][currencyCode] = {
+              totalBalance: 0,
+              accounts: {},
+            }
           }
-        }
 
-        monthlyData[monthKey][currencyCode].accounts[account.id] = {
-          id: account.id,
-          name: account.name,
-          balance: balanceData.amount
-        }
+          monthlyData[monthKey][currencyCode].accounts[account.id] = {
+            id: account.id,
+            name: account.name,
+            balance: balanceData.amount,
+          }
 
-        monthlyData[monthKey][currencyCode].totalBalance += balanceData.amount
-      })
+          monthlyData[monthKey][currencyCode].totalBalance += balanceData.amount
+        },
+      )
     })
   }
 
-  console.log('存量类月度数据汇总完成，账户数:', accounts.length)
+
 
   return successResponse({
     monthlyData,
     baseCurrency,
     dateRange: {
       start: startDate.toISOString(),
-      end: endDate.toISOString()
+      end: endDate.toISOString(),
     },
     totalMonths: months,
-    dataType: 'stock' // 标识为存量数据
+    dataType: 'stock', // 标识为存量数据
   })
 }
 
@@ -203,7 +231,7 @@ async function getFlowMonthlyData(
   userId: string,
   categoryId: string | null,
   months: number,
-  baseCurrency: { code: string; symbol: string; name: string }
+  baseCurrency: { code: string; symbol: string; name: string },
 ) {
   // 计算日期范围
   const endDate = new Date()
@@ -213,12 +241,12 @@ async function getFlowMonthlyData(
   startDate.setHours(0, 0, 0, 0)
 
   // 构建查询条件
-  const whereCondition: any = {
+  const whereCondition: Prisma.TransactionWhereInput = {
     userId: userId,
     date: {
       gte: startDate,
-      lte: endDate
-    }
+      lte: endDate,
+    },
   }
 
   if (categoryId) {
@@ -226,8 +254,8 @@ async function getFlowMonthlyData(
     const category = await prisma.category.findFirst({
       where: {
         id: categoryId,
-        userId: userId
-      }
+        userId: userId,
+      },
     })
 
     if (!category) {
@@ -239,9 +267,9 @@ async function getFlowMonthlyData(
       const children = await prisma.category.findMany({
         where: {
           parentId: catId,
-          userId: userId
+          userId: userId,
         },
-        select: { id: true }
+        select: { id: true },
       })
 
       let allIds = [catId]
@@ -258,15 +286,15 @@ async function getFlowMonthlyData(
     const accounts = await prisma.account.findMany({
       where: {
         categoryId: {
-          in: categoryIds
+          in: categoryIds,
         },
-        userId: userId
+        userId: userId,
       },
-      select: { id: true }
+      select: { id: true },
     })
 
     whereCondition.accountId = {
-      in: accounts.map(acc => acc.id)
+      in: accounts.map(acc => acc.id),
     }
   }
 
@@ -277,23 +305,32 @@ async function getFlowMonthlyData(
       currency: true,
       account: {
         include: {
-          category: true
-        }
-      }
+          category: true,
+        },
+      },
     },
     orderBy: {
-      date: 'asc'
-    }
+      date: 'asc',
+    },
   })
 
   // 按月分组数据
-  const monthlyData: Record<string, Record<string, {
-    income: number
-    expense: number
-    balance: number
-    transactionCount: number
-    categories: Record<string, { income: number; expense: number; balance: number }>
-  }>> = {}
+  const monthlyData: Record<
+    string,
+    Record<
+      string,
+      {
+        income: number
+        expense: number
+        balance: number
+        transactionCount: number
+        categories: Record<
+          string,
+          { income: number; expense: number; balance: number }
+        >
+      }
+    >
+  > = {}
 
   transactions.forEach(transaction => {
     const date = new Date(transaction.date)
@@ -312,14 +349,14 @@ async function getFlowMonthlyData(
         expense: 0,
         balance: 0,
         transactionCount: 0,
-        categories: {}
+        categories: {},
       }
     }
     if (!monthlyData[monthKey][currencyCode].categories[categoryName]) {
       monthlyData[monthKey][currencyCode].categories[categoryName] = {
         income: 0,
         expense: 0,
-        balance: 0
+        balance: 0,
       }
     }
 
@@ -328,10 +365,12 @@ async function getFlowMonthlyData(
 
     if (transaction.type === 'INCOME') {
       monthlyData[monthKey][currencyCode].income += amount
-      monthlyData[monthKey][currencyCode].categories[categoryName].income += amount
+      monthlyData[monthKey][currencyCode].categories[categoryName].income +=
+        amount
     } else if (transaction.type === 'EXPENSE') {
       monthlyData[monthKey][currencyCode].expense += amount
-      monthlyData[monthKey][currencyCode].categories[categoryName].expense += amount
+      monthlyData[monthKey][currencyCode].categories[categoryName].expense +=
+        amount
     }
   })
 
@@ -349,7 +388,22 @@ async function getFlowMonthlyData(
   })
 
   // 生成完整的月份列表（包括没有交易的月份）
-  const completeMonthlyData: Record<string, Record<string, any>> = {}
+  const completeMonthlyData: Record<
+    string,
+    Record<
+      string,
+      {
+        income: number
+        expense: number
+        balance: number
+        transactionCount: number
+        categories: Record<
+          string,
+          { income: number; expense: number; balance: number }
+        >
+      }
+    >
+  > = {}
   const currentDate = new Date(startDate)
 
   while (currentDate <= endDate) {
@@ -363,9 +417,9 @@ async function getFlowMonthlyData(
     baseCurrency,
     dateRange: {
       start: startDate.toISOString(),
-      end: endDate.toISOString()
+      end: endDate.toISOString(),
     },
     totalMonths: months,
-    dataType: 'flow' // 标识为流量数据
+    dataType: 'flow', // 标识为流量数据
   })
 }

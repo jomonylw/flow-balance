@@ -1,4 +1,4 @@
-import { SettingsPageSkeleton } from '@/components/ui/page-skeletons'
+import { SettingsPageSkeleton } from '@/components/ui/data-display/page-skeletons'
 
 export default function Loading() {
   // 这个 loading.tsx 主要用于客户端导航时的加载状态

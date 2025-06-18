@@ -1,7 +1,12 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
@@ -25,7 +30,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证当前密码
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password)
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    )
     if (!isCurrentPasswordValid) {
       return errorResponse('当前密码不正确', 400)
     }
@@ -42,11 +50,11 @@ export async function POST(request: NextRequest) {
     // 更新密码
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedNewPassword }
+      data: { password: hashedNewPassword },
     })
 
     return successResponse({
-      message: '密码修改成功'
+      message: '密码修改成功',
     })
   } catch (error) {
     console.error('Change password error:', error)

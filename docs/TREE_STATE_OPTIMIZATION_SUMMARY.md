@@ -3,6 +3,7 @@
 ## 问题描述
 
 用户反馈右侧侧边栏的树型结构存在以下问题：
+
 - 当用户展开某些分类或账户后，点击确认操作（如添加账户、重命名、移动等）
 - 树型结构会重置成最初状态（全部收起）
 - 用户需要重新展开之前的节点，影响使用体验
@@ -10,6 +11,7 @@
 ## 问题根因分析
 
 ### 1. 页面重载问题
+
 主要原因是多个组件在数据更新后使用了 `window.location.reload()` 来刷新数据：
 
 ```typescript
@@ -20,6 +22,7 @@ const handleDataChange = () => {
 ```
 
 ### 2. 状态管理缺陷
+
 `CategoryAccountTree` 组件的展开状态 `expandedCategories` 是本地状态，页面重载后会丢失：
 
 ```typescript
@@ -31,6 +34,7 @@ const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Se
 ### 1. 移除页面重载机制
 
 #### NavigationSidebar.tsx
+
 ```typescript
 // 修改前
 const handleDataChange = () => {
@@ -43,14 +47,14 @@ const handleDataChange = async () => {
     setIsLoading(true)
     const [categoriesRes, accountsRes] = await Promise.all([
       fetch('/api/categories'),
-      fetch('/api/accounts')
+      fetch('/api/accounts'),
     ])
-    
+
     if (categoriesRes.ok) {
       const categoriesData = await categoriesRes.json()
       setCategories(categoriesData.data || [])
     }
-    
+
     if (accountsRes.ok) {
       const accountsData = await accountsRes.json()
       setAccounts(accountsData.data || [])
@@ -64,6 +68,7 @@ const handleDataChange = async () => {
 ```
 
 #### DashboardContent.tsx
+
 ```typescript
 // 修改前
 const handleTransactionSuccess = () => {
@@ -78,7 +83,7 @@ const handleTransactionSuccess = async () => {
       const summaryData = await summaryResponse.json()
       setSummaryData(summaryData.data)
     }
-    
+
     const chartResponse = await fetch('/api/dashboard/charts?months=12')
     if (chartResponse.ok) {
       const chartData = await chartResponse.json()
@@ -93,6 +98,7 @@ const handleTransactionSuccess = async () => {
 ### 2. 实现状态持久化
 
 #### CategoryAccountTree.tsx
+
 添加 localStorage 支持来保存和恢复展开状态：
 
 ```typescript
@@ -123,6 +129,7 @@ useEffect(() => {
 ### 3. 其他组件优化
 
 #### 账户详情页面
+
 ```typescript
 // StockAccountDetailView.tsx & FlowAccountDetailView.tsx
 // 修改前
@@ -137,6 +144,7 @@ const handleBalanceUpdateSuccess = () => {
 ```
 
 #### 分类详情页面
+
 ```typescript
 // CategoryDetailView.tsx
 // 修改前
@@ -155,11 +163,13 @@ if (result.success) {
 ## 修改文件列表
 
 ### 主要修改
+
 1. **src/components/layout/NavigationSidebar.tsx** - 移除页面重载，改用API数据刷新
 2. **src/components/layout/CategoryAccountTree.tsx** - 添加状态持久化机制
 3. **src/components/dashboard/DashboardContent.tsx** - 移除页面重载，改用数据刷新
 
 ### 次要修改
+
 4. **src/components/categories/CategoryDetailView.tsx** - 优化数据刷新逻辑
 5. **src/components/accounts/StockAccountDetailView.tsx** - 使用 router.refresh()
 6. **src/components/accounts/FlowAccountDetailView.tsx** - 使用 router.refresh()
@@ -168,16 +178,19 @@ if (result.success) {
 ## 技术特性
 
 ### 状态持久化
+
 - ✅ 使用 localStorage 保存树型展开状态
 - ✅ 页面刷新后自动恢复展开状态
 - ✅ 错误处理，避免 localStorage 异常影响功能
 
 ### 数据刷新优化
+
 - ✅ 移除所有不必要的页面重载
 - ✅ 使用精确的 API 调用更新数据
 - ✅ 保持用户界面状态不变
 
 ### 用户体验提升
+
 - ✅ 树型结构状态保持
 - ✅ 操作后无需重新展开节点
 - ✅ 更流畅的交互体验
@@ -186,12 +199,14 @@ if (result.success) {
 ## 测试验证
 
 ### 测试步骤
+
 1. 打开右侧侧边栏
 2. 展开多个分类节点
 3. 对某个账户或分类执行操作（重命名、移动、添加等）
 4. 确认操作后检查树型结构是否保持展开状态
 
 ### 预期结果
+
 - ✅ 树型结构保持用户操作前的展开状态
 - ✅ 数据正确更新（新增、修改、删除的内容正确显示）
 - ✅ 无页面重载，交互更流畅
@@ -210,16 +225,19 @@ if (result.success) {
 ### 🎯 核心解决方案
 
 #### 第一阶段：状态持久化
+
 1. **移除页面重载** - 将所有 `window.location.reload()` 替换为精确的数据刷新
 2. **状态持久化** - 使用 localStorage 保存和恢复树型展开状态
 3. **组件稳定性** - 添加固定 key 防止组件意外重新挂载
 
 #### 第二阶段：智能数据更新
+
 4. **局部更新策略** - 支持分类、账户、完整三种更新模式
 5. **静默更新** - 大部分操作使用静默更新，避免加载闪烁
 6. **智能加载指示器** - 初始加载显示骨架屏，后续更新显示小型指示器
 
 ### 📈 用户体验提升
+
 - ✅ **树型结构状态保持** - 操作后保持展开状态
 - ✅ **消除菜单闪烁** - 使用静默更新和智能加载指示器
 - ✅ **更快的响应速度** - 局部更新减少数据传输
@@ -228,6 +246,7 @@ if (result.success) {
 ### 🔧 技术实现
 
 #### 智能数据更新机制
+
 ```typescript
 const handleDataChange = async (options?: {
   type?: 'category' | 'account' | 'full'
@@ -246,6 +265,7 @@ const handleDataChange = async (options?: {
 ```
 
 #### 操作优化示例
+
 ```typescript
 // 重命名操作 - 使用静默更新
 onDataChange({ type: 'category', silent: true })
@@ -255,6 +275,7 @@ onDataChange({ type: 'account', silent: true })
 ```
 
 #### 加载状态优化
+
 ```typescript
 // 初始加载 - 显示骨架屏
 {isLoading && categories.length === 0 && (
@@ -278,25 +299,30 @@ onDataChange({ type: 'account', silent: true })
 ## 最终修复清单
 
 ### ✅ 已修复的问题
+
 1. **NavigationSidebar.tsx** - `handleSaveTopCategory` 函数使用静默更新
 2. **CategoryTreeItem.tsx** - 所有操作（重命名、移动、添加子分类、删除、设置、添加账户）使用静默更新
 3. **AccountTreeItem.tsx** - 所有操作（重命名、删除、移动、余额更新、交易、设置）使用静默更新
 4. **智能加载指示器** - 初始加载显示骨架屏，数据更新显示小型指示器
 
 ### 🎯 优化效果验证
+
 - ✅ **无状态重置** - 树型结构在所有操作后保持展开状态
 - ✅ **无菜单闪烁** - 使用 `{ silent: true }` 参数避免加载状态显示
 - ✅ **局部更新** - 分类操作只更新分类数据，账户操作只更新账户数据
 - ✅ **流畅体验** - 操作响应快速，无不必要的重新加载
 
 ### 📊 性能提升
+
 - **减少数据传输** - 局部更新只获取需要的数据
 - **减少DOM重绘** - 静默更新避免加载状态变化
 - **提升响应速度** - 无页面重载，操作更快速
 - **降低服务器负载** - 精确的API调用，减少不必要的请求
 
 ### 🧪 测试建议
+
 现在可以测试以下场景，应该都有流畅的体验：
+
 1. **展开多个分类节点**
 2. **重命名分类或账户** ✅ 静默更新
 3. **移动分类或账户** ✅ 静默更新

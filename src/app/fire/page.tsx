@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import AppLayout from '@/components/layout/AppLayout'
-import FireJourneyContent from '@/components/fire/FireJourneyContent'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import AppLayout from '@/components/features/layout/AppLayout'
+import FireJourneyContent from '@/components/features/fire/FireJourneyContent'
 
 export default async function FirePage() {
   const user = await getCurrentUser()
-  
+
   if (!user) {
     redirect('/login')
   }
@@ -14,7 +14,7 @@ export default async function FirePage() {
   // 获取用户设置
   const userSettings = await prisma.userSettings.findUnique({
     where: { userId: user.id },
-    include: { baseCurrency: true }
+    include: { baseCurrency: true },
   })
 
   // 如果用户未完成初始设置，重定向到设置页面

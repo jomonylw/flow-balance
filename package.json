@@ -7,10 +7,28 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "type-check:detailed": "node scripts/type-check.js",
+    "type-check:strict": "tsc --noEmit --project tsconfig.strict.json",
+    "analyze-types": "node scripts/analyze-type-usage.js",
+    "refactor-types": "node scripts/refactor-types.js",
+    "track-progress": "node scripts/track-refactor-progress.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force"
+    "db:reset": "prisma migrate reset --force",
+    "db:studio": "prisma studio",
+    "analyze": "ANALYZE=true npm run build",
+    "clean": "rm -rf .next out dist build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky install",
+    "pre-commit": "lint-staged"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -31,15 +49,27 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^14.3.1",
+    "@testing-library/user-event": "^14.6.1",
     "@types/bcryptjs": "^3.0.0",
+    "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "eslint-plugin-import": "^2.31.0",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.5.3",
     "tailwindcss": "^4",
     "tsx": "^4.19.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "webpack-bundle-analyzer": "^4.10.2",
+    "zod": "^3.25.67"
   }
 }

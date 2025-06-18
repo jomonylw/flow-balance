@@ -1,11 +1,17 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  notFoundResponse,
+} from '@/lib/api/response'
+import type { Prisma, Category, AccountType } from '@prisma/client'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> }
+  { params }: { params: Promise<{ categoryId: string }> },
 ) {
   try {
     const { categoryId } = await params
@@ -18,17 +24,14 @@ export async function GET(
     const category = await prisma.category.findFirst({
       where: {
         id: categoryId,
-        userId: user.id
+        userId: user.id,
       },
       include: {
         parent: true,
         children: {
-          orderBy: [
-            { order: 'asc' },
-            { name: 'asc' }
-          ]
-        }
-      }
+          orderBy: [{ order: 'asc' }, { name: 'asc' }],
+        },
+      },
     })
 
     if (!category) {
@@ -44,7 +47,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> }
+  { params }: { params: Promise<{ categoryId: string }> },
 ) {
   try {
     const { categoryId } = await params
@@ -57,8 +60,8 @@ export async function PUT(
     const existingCategory = await prisma.category.findFirst({
       where: {
         id: categoryId,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!existingCategory) {
@@ -86,8 +89,8 @@ export async function PUT(
       const parentCategory = await prisma.category.findFirst({
         where: {
           id: parentId,
-          userId: user.id
-        }
+          userId: user.id,
+        },
       })
 
       if (!parentCategory) {
@@ -116,8 +119,8 @@ export async function PUT(
         userId: user.id,
         name,
         parentId: parentId || null,
-        id: { not: categoryId }
-      }
+        id: { not: categoryId },
+      },
     })
 
     if (duplicateCategory) {
@@ -125,10 +128,10 @@ export async function PUT(
     }
 
     // 准备更新数据
-    const updateData: any = {
+    const updateData: Prisma.CategoryUpdateInput = {
       name,
-      parentId: parentId || null,
-      order: order !== undefined ? order : existingCategory.order
+      parent: parentId ? { connect: { id: parentId } } : { disconnect: true },
+      order: order !== undefined ? order : existingCategory.order,
     }
 
     // 只有顶级分类可以设置账户类型
@@ -137,7 +140,10 @@ export async function PUT(
       if (existingCategory.type && type !== existingCategory.type) {
         const canChange = await checkTypeChangeSafety(categoryId)
         if (!canChange) {
-          return errorResponse('无法变更分类类型：该分类下存在账户或交易数据，变更类型会导致数据不一致', 400)
+          return errorResponse(
+            '无法变更分类类型：该分类下存在账户或交易数据，变更类型会导致数据不一致',
+            400,
+          )
         }
       }
       updateData.type = type
@@ -145,7 +151,7 @@ export async function PUT(
 
     const updatedCategory = await prisma.category.update({
       where: { id: categoryId },
-      data: updateData
+      data: updateData,
     })
 
     // 如果是顶级分类且更新了账户类型，需要更新所有子分类的类型
@@ -162,7 +168,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> }
+  { params }: { params: Promise<{ categoryId: string }> },
 ) {
   try {
     const { categoryId } = await params
@@ -175,8 +181,8 @@ export async function DELETE(
     const existingCategory = await prisma.category.findFirst({
       where: {
         id: categoryId,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!existingCategory) {
@@ -186,8 +192,8 @@ export async function DELETE(
     // 检查分类是否有子分类
     const childrenCount = await prisma.category.count({
       where: {
-        parentId: categoryId
-      }
+        parentId: categoryId,
+      },
     })
 
     if (childrenCount > 0) {
@@ -197,8 +203,8 @@ export async function DELETE(
     // 检查分类是否有账户
     const accountCount = await prisma.account.count({
       where: {
-        categoryId: categoryId
-      }
+        categoryId: categoryId,
+      },
     })
 
     if (accountCount > 0) {
@@ -207,7 +213,7 @@ export async function DELETE(
 
     // 删除分类
     await prisma.category.delete({
-      where: { id: categoryId }
+      where: { id: categoryId },
     })
 
     return successResponse(null, '分类删除成功')
@@ -218,11 +224,14 @@ export async function DELETE(
 }
 
 // 辅助函数：检查是否是后代分类（防止循环引用）
-async function checkIfDescendant(categoryId: string, potentialAncestorId: string): Promise<boolean> {
+async function checkIfDescendant(
+  categoryId: string,
+  potentialAncestorId: string,
+): Promise<boolean> {
   const descendants = await prisma.category.findMany({
     where: {
-      parentId: categoryId
-    }
+      parentId: categoryId,
+    },
   })
 
   for (const descendant of descendants) {
@@ -238,9 +247,9 @@ async function checkIfDescendant(categoryId: string, potentialAncestorId: string
 }
 
 // 辅助函数：获取根分类
-async function getRootCategory(categoryId: string): Promise<any> {
+async function getRootCategory(categoryId: string): Promise<Category | null> {
   const category = await prisma.category.findUnique({
-    where: { id: categoryId }
+    where: { id: categoryId },
   })
 
   if (!category) {
@@ -265,9 +274,9 @@ async function checkTypeChangeSafety(categoryId: string): Promise<boolean> {
   const accountCount = await prisma.account.count({
     where: {
       categoryId: {
-        in: allCategoryIds
-      }
-    }
+        in: allCategoryIds,
+      },
+    },
   })
 
   // 检查是否有交易记录
@@ -276,25 +285,27 @@ async function checkTypeChangeSafety(categoryId: string): Promise<boolean> {
       OR: [
         {
           accountId: {
-            in: await prisma.account.findMany({
-              where: {
-                categoryId: {
-                  in: allCategoryIds
-                }
-              },
-              select: {
-                id: true
-              }
-            }).then(accounts => accounts.map(a => a.id))
-          }
+            in: await prisma.account
+              .findMany({
+                where: {
+                  categoryId: {
+                    in: allCategoryIds,
+                  },
+                },
+                select: {
+                  id: true,
+                },
+              })
+              .then(accounts => accounts.map(a => a.id)),
+          },
         },
         {
           categoryId: {
-            in: allCategoryIds
-          }
-        }
-      ]
-    }
+            in: allCategoryIds,
+          },
+        },
+      ],
+    },
   })
 
   // 如果有账户或交易数据，则不能安全变更
@@ -307,11 +318,11 @@ async function getAllCategoryIds(categoryId: string): Promise<string[]> {
 
   const children = await prisma.category.findMany({
     where: {
-      parentId: categoryId
+      parentId: categoryId,
     },
     select: {
-      id: true
-    }
+      id: true,
+    },
   })
 
   for (const child of children) {
@@ -323,19 +334,22 @@ async function getAllCategoryIds(categoryId: string): Promise<string[]> {
 }
 
 // 辅助函数：递归更新所有子分类的账户类型
-async function updateChildrenAccountType(parentId: string, accountType: string): Promise<void> {
+async function updateChildrenAccountType(
+  parentId: string,
+  accountType: AccountType,
+): Promise<void> {
   // 获取所有直接子分类
   const children = await prisma.category.findMany({
     where: {
-      parentId: parentId
-    }
+      parentId: parentId,
+    },
   })
 
   // 更新所有子分类的账户类型
   for (const child of children) {
     await prisma.category.update({
       where: { id: child.id },
-      data: { type: accountType as any }
+      data: { type: accountType },
     })
 
     // 递归更新子分类的子分类

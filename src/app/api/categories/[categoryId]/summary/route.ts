@@ -1,13 +1,18 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
-import { getStockCategorySummary } from '@/lib/category-summary/stock-category-service'
-import { getFlowCategorySummary } from '@/lib/category-summary/flow-category-service'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  notFoundResponse,
+} from '@/lib/api/response'
+import { getStockCategorySummary } from '@/lib/services/category-summary/stock-category-service'
+import { getFlowCategorySummary } from '@/lib/services/category-summary/flow-category-service'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> }
+  { params }: { params: Promise<{ categoryId: string }> },
 ) {
   try {
     const { categoryId } = await params
@@ -20,13 +25,13 @@ export async function GET(
     const category = await prisma.category.findFirst({
       where: {
         id: categoryId,
-        userId: user.id
+        userId: user.id,
       },
       select: {
         id: true,
         name: true,
-        type: true
-      }
+        type: true,
+      },
     })
 
     if (!category) {
@@ -44,8 +49,6 @@ export async function GET(
     }
 
     return successResponse(summaryData)
-
-
   } catch (error) {
     console.error('Get category summary error:', error)
     return errorResponse('获取分类汇总失败', 500)

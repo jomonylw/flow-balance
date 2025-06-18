@@ -9,14 +9,17 @@
 ### ❌ 发现的问题
 
 1. **骨架屏不符合页面结构**
+
    - 大部分组件使用简单的loading spinner，不能反映真实页面结构
    - 缺少针对具体内容布局的骨架屏设计
 
 2. **明暗主题处理不一致**
+
    - 部分组件有主题适配，部分没有
    - 骨架屏颜色硬编码，没有统一的主题系统
 
 3. **缺少专用骨架屏组件**
+
    - 没有可复用的骨架屏组件库
    - 每个组件都在重复实现相似的骨架屏逻辑
 
@@ -48,47 +51,58 @@
 ### 第二阶段：改进现有组件的骨架屏
 
 #### 1. 仪表板 (`DashboardContent.tsx`)
+
 - ✅ 替换为专用的 `DashboardSkeleton`
 - ✅ 支持明暗主题适配
 
 #### 2. 侧边栏 (`NavigationSidebar.tsx`)
+
 - ✅ 替换为专用的 `SidebarSkeleton`
 - ✅ 支持移动端适配
 
 #### 3. 账户详情页面
+
 - ✅ `StockAccountDetailView.tsx`: 使用 `SkeletonTable` 替换简单spinner
 - ✅ `FlowAccountDetailView.tsx`: 使用 `SkeletonTable` 替换简单spinner
 
 #### 4. 交易列表页面 (`TransactionListView.tsx`)
+
 - ✅ 替换为专用的 `TransactionListSkeleton`
 
 #### 5. 报表页面 (`ReportsPageClient.tsx`)
+
 - ✅ 替换为专用的 `ReportsSkeleton`
 
 #### 6. FIRE页面 (`FireJourneyContent.tsx`)
+
 - ✅ 替换为专用的 `FirePageSkeleton`
 
 ### 第三阶段：改进翻译加载组件的主题支持
 
 #### 1. TranslationLoader (`TranslationLoader.tsx`)
+
 - ✅ 添加明暗主题支持
 - ✅ 使用 `useTheme` hook 获取当前主题
 
 #### 2. WithTranslation (`WithTranslation.tsx`)
+
 - ✅ 添加明暗主题支持
 - ✅ 高阶组件也支持主题适配
 
 #### 3. TranslationText (`TranslationText.tsx`)
+
 - ✅ 添加明暗主题支持
 - ✅ 文本占位符支持主题色彩
 
 ### 第四阶段：修复其他组件的明暗主题支持
 
 #### 1. ResponsiveTable (`ResponsiveTable.tsx`)
+
 - ✅ 添加明暗主题支持
 - ✅ 表格、卡片、加载状态、空数据状态全面适配
 
 #### 2. NetWorthChart (`NetWorthChart.tsx`)
+
 - ✅ 修复loading状态spinner的明暗主题适配
 
 ## 🎨 主题适配特性
@@ -97,14 +111,14 @@
 
 ```typescript
 // 明亮主题
-bg-gray-200  // 骨架屏背景
-bg-white     // 卡片背景
-bg-gray-50   // 表头背景
+bg - gray - 200 // 骨架屏背景
+bg - white // 卡片背景
+bg - gray - 50 // 表头背景
 
-// 暗黑主题  
-bg-gray-700  // 骨架屏背景
-bg-gray-800  // 卡片背景
-bg-gray-700  // 表头背景
+// 暗黑主题
+bg - gray - 700 // 骨架屏背景
+bg - gray - 800 // 卡片背景
+bg - gray - 700 // 表头背景
 ```
 
 ### 自动主题检测
@@ -207,19 +221,21 @@ import { DashboardSkeleton } from '@/components/ui/page-skeletons'
 可以根据需要添加更多专用骨架屏组件：
 
 - **FormSkeleton**: 表单骨架屏
-- **ListSkeleton**: 列表骨架屏  
+- **ListSkeleton**: 列表骨架屏
 - **ProfileSkeleton**: 用户资料骨架屏
 - **CommentSkeleton**: 评论骨架屏
 
 ## 🔧 **问题修复记录**
 
 ### ❌ **发现的问题**
+
 1. **页边距问题**: 页面级骨架屏缺少合适的页边距，导致内容贴边显示
 2. **暗色主题问题**: 在暗色主题下出现大片白色骨架屏，主题适配不完整
 
 ### ✅ **修复方案**
 
 #### 1. **页边距问题修复**
+
 - **问题**: 所有页面级骨架屏组件缺少页边距
 - **修复**: 为所有页面级骨架屏添加 `p-6` 类
 - **影响组件**:
@@ -230,6 +246,7 @@ import { DashboardSkeleton } from '@/components/ui/page-skeletons'
   - `FirePageSkeleton`
 
 #### 2. **暗色主题问题修复**
+
 - **问题**: 骨架屏在暗色主题下颜色不正确
 - **修复**: 调整骨架屏颜色方案
   - 明亮主题: `bg-gray-200`
@@ -237,6 +254,7 @@ import { DashboardSkeleton } from '@/components/ui/page-skeletons'
 - **验证**: 通过浏览器主题切换器测试确认
 
 #### 3. **调试信息清理**
+
 - **移除**: 清理了所有调试 `console.log` 语句
 - **保持**: 代码整洁，生产环境友好
 
@@ -244,19 +262,20 @@ import { DashboardSkeleton } from '@/components/ui/page-skeletons'
 
 ```typescript
 // 明亮主题
-bg-gray-200  // 骨架屏背景
-bg-white     // 卡片背景
-bg-gray-50   // 表头背景
+bg - gray - 200 // 骨架屏背景
+bg - white // 卡片背景
+bg - gray - 50 // 表头背景
 
 // 暗色主题
-bg-gray-700  // 骨架屏背景 (已优化)
-bg-gray-800  // 卡片背景
-bg-gray-700  // 表头背景
+bg - gray - 700 // 骨架屏背景 (已优化)
+bg - gray - 800 // 卡片背景
+bg - gray - 700 // 表头背景
 ```
 
 ### 📱 **测试验证**
 
 #### 测试步骤
+
 1. 在浏览器中打开应用
 2. 使用主题切换器切换到暗色主题
 3. 刷新页面观察骨架屏效果
@@ -264,6 +283,7 @@ bg-gray-700  // 表头背景
 5. 确认暗色主题下骨架屏可见性
 
 #### 预期结果
+
 - ✅ 页面级骨架屏有合适的页边距 (`p-6`)
 - ✅ 明亮主题下骨架屏为浅灰色 (`bg-gray-200`)
 - ✅ 暗色主题下骨架屏为深灰色 (`bg-gray-700`)
@@ -275,6 +295,7 @@ bg-gray-700  // 表头背景
 本次骨架屏优化改进全面提升了应用的加载体验，通过统一的组件库、完善的主题支持和响应式设计，为用户提供了更加流畅和一致的界面体验。
 
 **关键改进**:
+
 1. **修复了页边距问题** - 所有页面级骨架屏现在有合适的内边距
 2. **完善了暗色主题支持** - 确保在暗色主题下骨架屏清晰可见
 3. **统一了组件库** - 提供了可复用的骨架屏组件

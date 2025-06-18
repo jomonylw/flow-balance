@@ -1,7 +1,7 @@
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import AppLayout from '@/components/layout/AppLayout'
-import TransactionListView from '@/components/transactions/TransactionListView'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import AppLayout from '@/components/features/layout/AppLayout'
+import TransactionListView from '@/components/features/transactions/TransactionListView'
 
 export default async function TransactionsPage() {
   const user = await getCurrentUser()
@@ -12,7 +12,7 @@ export default async function TransactionsPage() {
   // 获取用户设置用于基础货币信息
   const userSettings = await prisma.userSettings.findUnique({
     where: { userId: user.id },
-    include: { baseCurrency: true }
+    include: { baseCurrency: true },
   })
 
   return (
@@ -20,9 +20,21 @@ export default async function TransactionsPage() {
       <TransactionListView
         user={{
           ...user,
-          settings: userSettings ? {
-            baseCurrency: userSettings.baseCurrency || undefined
-          } : undefined
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          settings: userSettings
+            ? {
+                id: userSettings.id,
+                userId: userSettings.userId,
+                baseCurrencyCode: userSettings.baseCurrencyCode || 'USD',
+                language: userSettings.language as 'zh' | 'en',
+                theme: userSettings.theme as 'light' | 'dark' | 'system',
+                baseCurrency: userSettings.baseCurrency || undefined,
+                createdAt: userSettings.createdAt,
+                updatedAt: userSettings.updatedAt,
+                fireSWR: userSettings.fireSWR,
+              }
+            : undefined,
         }}
       />
     </AppLayout>

@@ -1,6 +1,10 @@
 import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, validationErrorResponse } from '@/lib/api-response'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
@@ -21,14 +25,14 @@ export async function POST(request: NextRequest) {
 
     // 查找用户
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     })
 
     // 无论用户是否存在，都返回成功信息（安全考虑）
     // 这样可以防止邮箱枚举攻击
     if (!user) {
       return successResponse({
-        message: '如果该邮箱存在，我们已发送重置链接到您的邮箱'
+        message: '如果该邮箱存在，我们已发送重置链接到您的邮箱',
       })
     }
 
@@ -41,17 +45,19 @@ export async function POST(request: NextRequest) {
       where: { id: user.id },
       data: {
         resetToken,
-        resetTokenExpiry
-      }
+        resetTokenExpiry,
+      },
     })
 
     // TODO: 在实际应用中，这里应该发送邮件
     // 目前只是模拟邮件发送
-    console.log(`Password reset token for ${email}: ${resetToken}`)
-    console.log(`Reset link: ${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`)
+    console.warn(`Password reset token for ${email}: ${resetToken}`)
+    console.warn(
+      `Reset link: ${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`,
+    )
 
     return successResponse({
-      message: '如果该邮箱存在，我们已发送重置链接到您的邮箱'
+      message: '如果该邮箱存在，我们已发送重置链接到您的邮箱',
     })
   } catch (error) {
     console.error('Request password reset error:', error)

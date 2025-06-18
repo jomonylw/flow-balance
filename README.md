@@ -2,7 +2,8 @@
 
 ## 📖 项目简介
 
-Flow Balance 是一个基于现代 Web 技术栈开发的个人财务管理系统，采用企业级财务管理理念，正确区分**存量**（资产负债）和**流量**（收入支出）概念，为个人用户提供专业级的财务分析和管理工具。
+Flow
+Balance 是一个基于现代 Web 技术栈开发的个人财务管理系统，采用企业级财务管理理念，正确区分**存量**（资产负债）和**流量**（收入支出）概念，为个人用户提供专业级的财务分析和管理工具。
 
 ### 🎯 核心理念
 
@@ -15,24 +16,28 @@ Flow Balance 是一个基于现代 Web 技术栈开发的个人财务管理系�
 ### ✨ 主要特性
 
 #### 🏦 账户管理
+
 - **分类体系**：支持树状结构的账户分类管理
 - **账户类型**：自动区分资产、负债、收入、支出四种类型
 - **多币种**：每个账户支持独立的货币设置
 - **余额管理**：存量账户支持余额更新，流量账户记录交易流水
 
 #### 📊 财务报表
+
 - **资产负债表**：反映特定时点的财务状况
 - **现金流量表**：分析特定期间的现金流动情况
 - **智能统计**：根据账户类型自动选择合适的统计方法
 - **趋势分析**：多时间段的财务数据对比分析
 
 #### 💱 多币种支持
+
 - **货币管理**：支持添加和管理多种货币
 - **汇率设置**：用户自定义汇率管理
 - **本位币转换**：统一转换为本位币进行汇总分析
 - **货币标签**：直观的货币标识和颜色编码
 
 #### 📱 用户体验
+
 - **响应式设计**：完美适配桌面端和移动端
 - **国际化**：支持中文和英文双语切换
 - **主题切换**：支持明亮、暗黑和系统主题
@@ -41,6 +46,7 @@ Flow Balance 是一个基于现代 Web 技术栈开发的个人财务管理系�
 ## 🛠️ 技术栈
 
 ### 前端技术
+
 - **框架**：Next.js 15.3.3 (App Router)
 - **UI库**：React 19 + TypeScript
 - **样式**：Tailwind CSS 4
@@ -49,6 +55,7 @@ Flow Balance 是一个基于现代 Web 技术栈开发的个人财务管理系�
 - **状态管理**：React Context API
 
 ### 后端技术
+
 - **运行时**：Node.js
 - **数据库**：SQLite (开发) / PostgreSQL (生产)
 - **ORM**：Prisma 6.9.0
@@ -56,6 +63,7 @@ Flow Balance 是一个基于现代 Web 技术栈开发的个人财务管理系�
 - **API**：Next.js API Routes
 
 ### 开发工具
+
 - **包管理器**：pnpm
 - **代码规范**：ESLint + TypeScript
 - **构建工具**：Next.js Turbopack
@@ -64,23 +72,27 @@ Flow Balance 是一个基于现代 Web 技术栈开发的个人财务管理系�
 ## 🚀 快速开始
 
 ### 环境要求
+
 - Node.js 18.0+
 - pnpm 8.0+
 
 ### 安装步骤
 
 1. **克隆项目**
+
 ```bash
 git clone <repository-url>
 cd persional-balance-sheet
 ```
 
 2. **安装依赖**
+
 ```bash
 pnpm install
 ```
 
 3. **环境配置**
+
 ```bash
 # 复制环境变量文件
 cp .env.example .env.local
@@ -91,6 +103,7 @@ cp .env.example .env.local
 ```
 
 4. **数据库设置**
+
 ```bash
 # 生成Prisma客户端
 pnpm db:generate
@@ -103,6 +116,7 @@ pnpm db:seed
 ```
 
 5. **启动开发服务器**
+
 ```bash
 pnpm dev
 ```
@@ -125,23 +139,83 @@ npx prisma studio
 persional-balance-sheet/
 ├── src/
 │   ├── app/                    # Next.js App Router
+│   │   ├── (auth)/            # 认证路由组
+│   │   │   ├── login/         # 登录页面
+│   │   │   ├── signup/        # 注册页面
+│   │   │   └── forgot-password/ # 忘记密码
+│   │   ├── (app)/             # 主应用路由组
+│   │   │   ├── dashboard/     # 仪表板
+│   │   │   ├── accounts/      # 账户管理
+│   │   │   ├── categories/    # 分类管理
+│   │   │   ├── transactions/  # 交易管理
+│   │   │   ├── reports/       # 财务报表
+│   │   │   ├── fire/          # FIRE计算器
+│   │   │   └── settings/      # 用户设置
 │   │   ├── api/               # API路由
-│   │   ├── auth/              # 认证页面
-│   │   ├── dashboard/         # 仪表板
-│   │   ├── accounts/          # 账户管理
-│   │   ├── categories/        # 分类管理
-│   │   ├── settings/          # 用户设置
-│   │   └── reports/           # 财务报表
+│   │   │   ├── v1/           # API版本控制
+│   │   │   └── middleware.ts  # API中间件
+│   │   └── globals.css        # 全局样式
 │   ├── components/            # React组件
-│   │   ├── ui/               # 基础UI组件
-│   │   ├── auth/             # 认证组件
-│   │   ├── dashboard/        # 仪表板组件
-│   │   ├── accounts/         # 账户组件
-│   │   ├── categories/       # 分类组件
-│   │   ├── transactions/     # 交易组件
-│   │   └── settings/         # 设置组件
-│   ├── contexts/             # React Context
+│   │   ├── ui/               # 基础UI组件库
+│   │   │   ├── forms/        # 表单组件
+│   │   │   ├── feedback/     # 反馈组件(Toast, Modal等)
+│   │   │   ├── navigation/   # 导航组件
+│   │   │   ├── data-display/ # 数据展示组件
+│   │   │   └── layout/       # 布局组件
+│   │   ├── features/         # 功能模块组件
+│   │   │   ├── auth/         # 认证功能
+│   │   │   ├── dashboard/    # 仪表板功能
+│   │   │   ├── accounts/     # 账户功能
+│   │   │   ├── categories/   # 分类功能
+│   │   │   ├── transactions/ # 交易功能
+│   │   │   ├── reports/      # 报表功能
+│   │   │   ├── fire/         # FIRE功能
+│   │   │   └── settings/     # 设置功能
+│   │   ├── charts/           # 图表组件
+│   │   └── layout/           # 全局布局组件
+│   ├── lib/                  # 核心库文件
+│   │   ├── api/              # API相关
+│   │   │   ├── client.ts     # API客户端
+│   │   │   ├── types.ts      # API类型
+│   │   │   └── endpoints.ts  # API端点
+│   │   ├── database/         # 数据库相关
+│   │   │   ├── prisma.ts     # Prisma客户端
+│   │   │   ├── queries/      # 数据库查询
+│   │   │   └── migrations/   # 数据迁移脚本
+│   │   ├── services/         # 业务服务
+│   │   │   ├── auth.ts       # 认证服务
+│   │   │   ├── currency.ts   # 货币服务
+│   │   │   ├── account.ts    # 账户服务
+│   │   │   └── transaction.ts # 交易服务
+│   │   ├── utils/            # 工具函数
+│   │   │   ├── format.ts     # 格式化工具
+│   │   │   ├── validation.ts # 验证工具
+│   │   │   ├── date.ts       # 日期工具
+│   │   │   └── currency.ts   # 货币工具
+│   │   └── constants/        # 常量定义
+│   │       ├── api.ts        # API常量
+│   │       ├── ui.ts         # UI常量
+│   │       └── business.ts   # 业务常量
+│   ├── types/                # TypeScript类型定义
+│   │   ├── api/              # API类型
+│   │   ├── database/         # 数据库类型
+│   │   ├── ui/               # UI类型
+│   │   └── business/         # 业务类型
 │   ├── hooks/                # 自定义Hooks
+│   │   ├── api/              # API相关Hooks
+│   │   ├── ui/               # UI相关Hooks
+│   │   └── business/         # 业务相关Hooks
+│   ├── contexts/             # React Context
+│   │   ├── providers/        # Context提供者
+│   │   └── types.ts          # Context类型
+│   ├── styles/               # 样式文件
+│   │   ├── globals.css       # 全局样式
+│   │   ├── components.css    # 组件样式
+│   │   └── themes/           # 主题样式
+│   └── config/               # 配置文件
+│       ├── database.ts       # 数据库配置
+│       ├── auth.ts           # 认证配置
+│       └── app.ts            # 应用配置
 │   ├── lib/                  # 工具库
 │   └── types/                # TypeScript类型定义
 ├── prisma/                   # 数据库相关
@@ -161,6 +235,7 @@ persional-balance-sheet/
 ## 1. 用户认证系统
 
 ### 1.1 用户注册
+
 - **功能描述**：新用户账户创建
 - **实现位置**：`/auth/signup`
 - **核心特性**：
@@ -170,6 +245,7 @@ persional-balance-sheet/
   - 自动跳转到初始设置
 
 ### 1.2 用户登录
+
 - **功能描述**：用户身份验证
 - **实现位置**：`/auth/login`
 - **核心特性**：
@@ -179,6 +255,7 @@ persional-balance-sheet/
   - 支持初始设置跳转
 
 ### 1.3 密码重置
+
 - **功能描述**：忘记密码恢复
 - **实现位置**：`/auth/forgot-password`, `/auth/reset-password`
 - **核心特性**：
@@ -188,6 +265,7 @@ persional-balance-sheet/
   - 密码重置确认
 
 ### 1.4 会话管理
+
 - **功能描述**：用户会话状态管理
 - **技术实现**：
   - HTTP-only Cookie存储JWT
@@ -198,6 +276,7 @@ persional-balance-sheet/
 ## 2. 初始设置系统
 
 ### 2.1 货币选择
+
 - **功能描述**：用户可用货币配置
 - **实现位置**：`/setup`
 - **核心特性**：
@@ -207,6 +286,7 @@ persional-balance-sheet/
   - 货币搜索功能
 
 ### 2.2 本位币设置
+
 - **功能描述**：主要货币选择
 - **核心特性**：
   - 从可用货币中选择
@@ -215,6 +295,7 @@ persional-balance-sheet/
   - 后续可修改
 
 ### 2.3 设置完成
+
 - **功能描述**：初始配置确认
 - **核心特性**：
   - 设置验证
@@ -225,6 +306,7 @@ persional-balance-sheet/
 ## 3. 仪表板系统
 
 ### 3.1 财务概览
+
 - **功能描述**：核心财务指标展示
 - **实现位置**：`/dashboard`
 - **核心指标**：
@@ -234,6 +316,7 @@ persional-balance-sheet/
   - 本月收支情况
 
 ### 3.2 账户汇总
+
 - **功能描述**：账户余额快速查看
 - **核心特性**：
   - 按分类分组显示
@@ -242,6 +325,7 @@ persional-balance-sheet/
   - 快速操作入口
 
 ### 3.3 趋势图表
+
 - **功能描述**：财务趋势可视化
 - **图表类型**：
   - **净资产趋势图**：显示资产净值变化
@@ -250,6 +334,7 @@ persional-balance-sheet/
   - **月度对比图**：显示月度财务变化
 
 ### 3.4 快速操作
+
 - **功能描述**：常用操作快捷入口
 - **操作类型**：
   - 添加交易记录
@@ -258,6 +343,7 @@ persional-balance-sheet/
   - 查看详细报表
 
 ### 3.5 数据验证
+
 - **功能描述**：数据质量检查
 - **验证项目**：
   - 账户类型设置完整性
@@ -270,6 +356,7 @@ persional-balance-sheet/
 ### 4.1 账户分类管理
 
 #### 4.1.1 分类树结构
+
 - **功能描述**：层级分类组织
 - **实现位置**：`/categories`
 - **核心特性**：
@@ -279,18 +366,22 @@ persional-balance-sheet/
   - 批量操作
 
 #### 4.1.2 账户类型
+
 - **资产类（ASSET）**：
+
   - 现金账户
   - 银行存款
   - 投资账户
   - 固定资产
 
 - **负债类（LIABILITY）**：
+
   - 信用卡
   - 贷款
   - 应付款项
 
 - **收入类（INCOME）**：
+
   - 工资收入
   - 投资收益
   - 其他收入
@@ -301,7 +392,9 @@ persional-balance-sheet/
   - 交通费用
 
 #### 4.1.3 分类操作
+
 - **创建分类**：
+
   - 分类名称设置
   - 父分类选择
   - 账户类型指定
@@ -316,6 +409,7 @@ persional-balance-sheet/
 ### 4.2 账户管理
 
 #### 4.2.1 账户创建
+
 - **功能描述**：新建账户
 - **必填信息**：
   - 账户名称（用户内唯一）
@@ -324,7 +418,9 @@ persional-balance-sheet/
   - 账户描述（可选）
 
 #### 4.2.2 账户配置
+
 - **货币设置**：
+
   - 单一货币限制
   - 货币不可变更（有交易后）
   - 支持用户可用货币
@@ -335,7 +431,9 @@ persional-balance-sheet/
   - 排序权重
 
 #### 4.2.3 账户操作
+
 - **存量类账户**：
+
   - 主操作：更新余额
   - 次操作：查看交易记录
   - 特点：关注时点余额
@@ -347,6 +445,7 @@ persional-balance-sheet/
 ### 4.3 账户详情页面
 
 #### 4.3.1 存量类账户详情
+
 - **实现组件**：`StockAccountDetailView`
 - **展示内容**：
   - 当前余额
@@ -355,6 +454,7 @@ persional-balance-sheet/
   - 余额更新操作
 
 #### 4.3.2 流量类账户详情
+
 - **实现组件**：`FlowAccountDetailView`
 - **展示内容**：
   - 累计流量
@@ -363,7 +463,9 @@ persional-balance-sheet/
   - 添加交易操作
 
 #### 4.3.3 通用功能
+
 - **交易列表**：
+
   - 分页显示（10条/页）
   - 筛选和搜索
   - 排序功能
@@ -379,12 +481,15 @@ persional-balance-sheet/
 ### 5.1 交易类型
 
 #### 5.1.1 基础交易类型
+
 - **收入交易（INCOME）**：
+
   - 增加资产账户余额
   - 减少负债账户余额
   - 记录收入类账户流量
 
 - **支出交易（EXPENSE）**：
+
   - 减少资产账户余额
   - 增加负债账户余额
   - 记录支出类账户流量
@@ -395,7 +500,9 @@ persional-balance-sheet/
   - 自动计算调整金额
 
 #### 5.1.2 交易验证规则
+
 - **账户类型匹配**：
+
   - 资产/负债账户：支持所有交易类型
   - 收入账户：仅支持收入交易
   - 支出账户：仅支持支出交易
@@ -408,6 +515,7 @@ persional-balance-sheet/
 ### 5.2 交易创建
 
 #### 5.2.1 交易表单
+
 - **实现组件**：`TransactionFormModal`
 - **必填字段**：
   - 交易金额
@@ -417,7 +525,9 @@ persional-balance-sheet/
   - 交易描述
 
 #### 5.2.2 高级功能
+
 - **标签系统**：
+
   - 多标签支持
   - 标签颜色编码
   - 标签搜索筛选
@@ -429,6 +539,7 @@ persional-balance-sheet/
 ### 5.3 余额更新功能
 
 #### 5.3.1 余额更新模式
+
 - **适用账户**：仅存量类账户（资产/负债）
 - **实现组件**：`BalanceUpdateModal`
 - **操作方式**：
@@ -437,6 +548,7 @@ persional-balance-sheet/
   - 创建调整交易记录
 
 #### 5.3.2 使用场景
+
 - **银行对账**：根据银行账单更新余额
 - **投资账户**：根据市值变化更新余额
 - **信用卡账单**：根据账单更新负债余额
@@ -444,6 +556,7 @@ persional-balance-sheet/
 ### 5.4 交易列表管理
 
 #### 5.4.1 列表功能
+
 - **分页显示**：每页10条记录
 - **排序功能**：按日期、金额、类型排序
 - **筛选功能**：
@@ -453,6 +566,7 @@ persional-balance-sheet/
   - 按金额范围筛选
 
 #### 5.4.2 批量操作
+
 - **批量删除**：选择多条记录删除
 - **批量编辑**：批量修改标签、分类
 - **批量导出**：导出为CSV/Excel格式
@@ -462,7 +576,9 @@ persional-balance-sheet/
 ### 6.1 货币管理
 
 #### 6.1.1 全球货币支持
+
 - **预置货币**：
+
   - 主要国际货币（USD, EUR, GBP, JPY等）
   - 中国货币（CNY）
   - 其他常用货币
@@ -473,7 +589,9 @@ persional-balance-sheet/
   - 货币名称设置
 
 #### 6.1.2 用户可用货币
+
 - **管理机制**：
+
   - 用户选择可用货币列表
   - 简化界面显示
   - 避免货币混乱
@@ -486,6 +604,7 @@ persional-balance-sheet/
 ### 6.2 汇率管理
 
 #### 6.2.1 汇率设置
+
 - **实现位置**：`/settings` - 汇率管理标签
 - **设置方式**：
   - 手动输入汇率
@@ -493,6 +612,7 @@ persional-balance-sheet/
   - 添加备注说明
 
 #### 6.2.2 汇率应用
+
 - **转换方向**：主要设置其他货币到本位币的汇率
 - **应用范围**：
   - 仪表板汇总统计
@@ -500,6 +620,7 @@ persional-balance-sheet/
   - 跨货币对比分析
 
 #### 6.2.3 汇率提醒
+
 - **缺失检测**：自动检测缺失的汇率设置
 - **Dashboard提醒**：在仪表板显示设置提醒
 - **引导设置**：一键跳转到汇率设置页面
@@ -507,6 +628,7 @@ persional-balance-sheet/
 ### 6.3 货币转换
 
 #### 6.3.1 转换逻辑
+
 - **实现服务**：`src/lib/currency-conversion.ts`
 - **转换方式**：
   - 单个金额转换
@@ -514,6 +636,7 @@ persional-balance-sheet/
   - 实时汇率应用
 
 #### 6.3.2 显示策略
+
 - **原始金额**：显示交易原始货币和金额
 - **转换金额**：显示本位币等值金额
 - **汇率信息**：透明显示使用的汇率
@@ -523,6 +646,7 @@ persional-balance-sheet/
 ### 7.1 资产负债表
 
 #### 7.1.1 报表结构
+
 - **实现位置**：`/reports` - 资产负债表
 - **报表内容**：
   - **资产部分**：
@@ -536,6 +660,7 @@ persional-balance-sheet/
   - **净资产**：资产总额 - 负债总额
 
 #### 7.1.2 数据特点
+
 - **时点数据**：反映特定时点的财务状况
 - **余额导向**：关注账户当前余额
 - **分类汇总**：按分类层级汇总显示
@@ -543,6 +668,7 @@ persional-balance-sheet/
 ### 7.2 现金流量表
 
 #### 7.2.1 报表结构
+
 - **实现位置**：`/reports` - 现金流量表
 - **报表内容**：
   - **经营活动现金流**：
@@ -559,6 +685,7 @@ persional-balance-sheet/
     - 筹资活动净现金流
 
 #### 7.2.2 数据特点
+
 - **期间数据**：反映特定期间的现金流动
 - **流量导向**：关注交易流水汇总
 - **活动分类**：按现金流活动性质分类
@@ -566,6 +693,7 @@ persional-balance-sheet/
 ### 7.3 报表功能
 
 #### 7.3.1 时间范围选择
+
 - **预设范围**：
   - 本月
   - 本季度
@@ -573,11 +701,13 @@ persional-balance-sheet/
   - 自定义范围
 
 #### 7.3.2 货币显示
+
 - **本位币显示**：统一转换为本位币显示
 - **原币种参考**：提供原始货币金额参考
 - **汇率说明**：显示使用的汇率信息
 
 #### 7.3.3 导出功能
+
 - **PDF导出**：生成专业格式的PDF报表
 - **Excel导出**：导出可编辑的Excel格式
 - **打印功能**：支持浏览器打印
@@ -587,6 +717,7 @@ persional-balance-sheet/
 ### 8.1 个人信息设置
 
 #### 8.1.1 基本信息
+
 - **实现位置**：`/settings` - 个人信息标签
 - **可设置项**：
   - 用户邮箱（登录账号）
@@ -594,6 +725,7 @@ persional-balance-sheet/
   - 账户安全设置
 
 #### 8.1.2 安全设置
+
 - **密码管理**：
   - 当前密码验证
   - 新密码设置
@@ -602,7 +734,9 @@ persional-balance-sheet/
 ### 8.2 系统偏好设置
 
 #### 8.2.1 显示设置
+
 - **主题选择**：
+
   - 明亮主题
   - 暗黑主题
   - 跟随系统
@@ -613,7 +747,9 @@ persional-balance-sheet/
   - 实时切换
 
 #### 8.2.2 货币设置
+
 - **本位币设置**：
+
   - 从可用货币中选择
   - 影响汇总计算
   - 影响报表显示
@@ -626,6 +762,7 @@ persional-balance-sheet/
 ### 8.3 分类设置
 
 #### 8.3.1 分类管理
+
 - **实现位置**：`/settings` - 分类设置标签
 - **管理功能**：
   - 创建新分类
@@ -634,7 +771,9 @@ persional-balance-sheet/
   - 分类排序
 
 #### 8.3.2 分类类型设置
+
 - **类型指定**：
+
   - 资产类分类
   - 负债类分类
   - 收入类分类
@@ -648,6 +787,7 @@ persional-balance-sheet/
 ### 8.4 汇率设置
 
 #### 8.4.1 汇率管理
+
 - **实现位置**：`/settings` - 汇率管理标签
 - **管理功能**：
   - 查看现有汇率
@@ -656,6 +796,7 @@ persional-balance-sheet/
   - 删除过期汇率
 
 #### 8.4.2 汇率设置向导
+
 - **缺失检测**：自动检测需要设置的汇率
 - **批量设置**：一次性设置多个汇率
 - **汇率验证**：检查汇率合理性
@@ -665,7 +806,9 @@ persional-balance-sheet/
 ### 9.1 设计原则
 
 #### 9.1.1 响应式设计
+
 - **桌面端优化**：
+
   - 宽屏布局
   - 多列显示
   - 丰富的交互
@@ -676,7 +819,9 @@ persional-balance-sheet/
   - 简化操作
 
 #### 9.1.2 视觉层次
+
 - **颜色系统**：
+
   - 资产类：蓝色主题
   - 负债类：橙色主题
   - 收入类：绿色主题
@@ -690,12 +835,15 @@ persional-balance-sheet/
 ### 9.2 布局结构
 
 #### 9.2.1 主布局
+
 - **顶部导航**：
+
   - 应用标题
   - 用户菜单
   - 快速设置
 
 - **侧边栏**：
+
   - 主导航菜单
   - 账户分类树
   - 快速统计
@@ -706,7 +854,9 @@ persional-balance-sheet/
   - 操作界面
 
 #### 9.2.2 导航系统
+
 - **主导航**：
+
   - 仪表板
   - 账户管理
   - 分类管理
@@ -721,7 +871,9 @@ persional-balance-sheet/
 ### 9.3 交互设计
 
 #### 9.3.1 表单设计
+
 - **表单验证**：
+
   - 实时验证
   - 错误提示
   - 成功反馈
@@ -732,7 +884,9 @@ persional-balance-sheet/
   - 操作说明
 
 #### 9.3.2 反馈系统
+
 - **Toast通知**：
+
   - 操作成功提示
   - 错误信息显示
   - 警告信息提醒
@@ -745,7 +899,9 @@ persional-balance-sheet/
 ### 9.4 数据可视化
 
 #### 9.4.1 图表设计
+
 - **ECharts集成**：
+
   - 专业图表库
   - 丰富的图表类型
   - 交互式图表
@@ -757,7 +913,9 @@ persional-balance-sheet/
   - 面积图：累积展示
 
 #### 9.4.2 数据展示
+
 - **千位分隔符**：
+
   - 金额显示格式化
   - 提高可读性
   - 统一格式标准
@@ -772,7 +930,9 @@ persional-balance-sheet/
 ### 10.1 国际化支持
 
 #### 10.1.1 多语言系统
+
 - **支持语言**：
+
   - 中文（简体）- 默认语言
   - English - 英文支持
 
@@ -782,7 +942,9 @@ persional-balance-sheet/
   - 动态语言切换
 
 #### 10.1.2 翻译覆盖
+
 - **界面翻译**：
+
   - 所有UI文本
   - 按钮和标签
   - 提示信息
@@ -795,12 +957,15 @@ persional-balance-sheet/
 ### 10.2 主题系统
 
 #### 10.2.1 主题选项
+
 - **明亮主题**：
+
   - 白色背景
   - 深色文字
   - 清晰对比
 
 - **暗黑主题**：
+
   - 深色背景
   - 浅色文字
   - 护眼设计
@@ -811,7 +976,9 @@ persional-balance-sheet/
   - 用户友好
 
 #### 10.2.2 主题实现
+
 - **CSS变量**：
+
   - 动态颜色值
   - 主题切换
   - 一致性保证
@@ -828,6 +995,7 @@ persional-balance-sheet/
 ## 1. 系统架构
 
 ### 1.1 整体架构
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   前端 (React)   │    │  后端 (Next.js)  │    │  数据库 (SQLite) │
@@ -841,6 +1009,7 @@ persional-balance-sheet/
 ### 1.2 技术选型理由
 
 #### 1.2.1 Next.js App Router
+
 - **优势**：
   - 服务端渲染（SSR）
   - 静态生成（SSG）
@@ -848,6 +1017,7 @@ persional-balance-sheet/
   - 文件系统路由
 
 #### 1.2.2 Prisma ORM
+
 - **优势**：
   - 类型安全
   - 数据库迁移
@@ -855,7 +1025,9 @@ persional-balance-sheet/
   - 开发体验优秀
 
 #### 1.2.3 SQLite/PostgreSQL
+
 - **SQLite**（开发环境）：
+
   - 零配置
   - 文件数据库
   - 快速开发
@@ -894,6 +1066,7 @@ erDiagram
 ### 2.2 关键数据模型
 
 #### 2.2.1 用户模型 (User)
+
 ```prisma
 model User {
   id               String    @id @default(cuid())
@@ -915,6 +1088,7 @@ model User {
 ```
 
 #### 2.2.2 账户类型枚举
+
 ```prisma
 enum AccountType {
   ASSET     // 资产类（存量）
@@ -925,6 +1099,7 @@ enum AccountType {
 ```
 
 #### 2.2.3 交易类型枚举
+
 ```prisma
 enum TransactionType {
   INCOME             // 收入
@@ -936,12 +1111,14 @@ enum TransactionType {
 ### 2.3 数据完整性约束
 
 #### 2.3.1 唯一性约束
+
 - 用户邮箱唯一性
 - 用户内账户名唯一性
 - 用户内分类名唯一性（同级）
 - 汇率设置唯一性（用户+货币对+日期）
 
 #### 2.3.2 外键约束
+
 - 级联删除：用户删除时删除所有关联数据
 - 引用完整性：确保外键引用存在
 - 约束检查：业务规则验证
@@ -951,12 +1128,14 @@ enum TransactionType {
 ### 3.1 API 架构
 
 #### 3.1.1 RESTful 设计
+
 - **资源导向**：以资源为中心的URL设计
 - **HTTP方法**：GET、POST、PUT、DELETE
 - **状态码**：标准HTTP状态码
 - **响应格式**：统一JSON格式
 
 #### 3.1.2 API 响应格式
+
 ```typescript
 // 成功响应
 {
@@ -976,6 +1155,7 @@ enum TransactionType {
 ### 3.2 核心 API 端点
 
 #### 3.2.1 认证相关
+
 ```
 POST /api/auth/signup          # 用户注册
 POST /api/auth/login           # 用户登录
@@ -985,6 +1165,7 @@ POST /api/auth/reset-password  # 重置密码
 ```
 
 #### 3.2.2 账户管理
+
 ```
 GET    /api/accounts           # 获取账户列表
 POST   /api/accounts           # 创建新账户
@@ -996,6 +1177,7 @@ GET    /api/accounts/[id]/transactions # 获取账户交易列表
 ```
 
 #### 3.2.3 交易管理
+
 ```
 GET    /api/transactions       # 获取交易列表
 POST   /api/transactions       # 创建新交易
@@ -1005,11 +1187,13 @@ DELETE /api/transactions/[id]  # 删除交易
 ```
 
 #### 3.2.4 余额更新
+
 ```
 POST   /api/balance-update     # 更新账户余额
 ```
 
 #### 3.2.5 分类管理
+
 ```
 GET    /api/categories         # 获取分类列表
 POST   /api/categories         # 创建新分类
@@ -1020,6 +1204,7 @@ GET    /api/categories/[id]/summary # 获取分类汇总统计
 ```
 
 #### 3.2.6 货币和汇率
+
 ```
 GET    /api/currencies         # 获取货币列表
 GET    /api/user-currencies    # 获取用户可用货币
@@ -1030,6 +1215,7 @@ GET    /api/exchange-rates/missing # 检查缺失汇率
 ```
 
 #### 3.2.7 报表和统计
+
 ```
 GET    /api/dashboard/summary  # 仪表板汇总数据
 GET    /api/dashboard/charts   # 仪表板图表数据
@@ -1038,6 +1224,7 @@ GET    /api/reports/personal-cash-flow # 个人现金流量表
 ```
 
 #### 3.2.8 用户设置
+
 ```
 GET    /api/user/settings      # 获取用户设置
 PUT    /api/user/settings      # 更新用户设置
@@ -1047,17 +1234,20 @@ PUT    /api/user/password      # 修改密码
 ### 3.3 API 安全
 
 #### 3.3.1 认证机制
+
 - **JWT令牌**：无状态认证
 - **HTTP-only Cookie**：安全存储
 - **令牌过期**：自动过期机制
 - **刷新机制**：令牌自动刷新
 
 #### 3.3.2 授权控制
+
 - **用户隔离**：数据按用户隔离
 - **权限检查**：操作权限验证
 - **资源保护**：防止越权访问
 
 #### 3.3.3 数据验证
+
 - **输入验证**：所有输入数据验证
 - **类型检查**：TypeScript类型安全
 - **业务规则**：业务逻辑验证
@@ -1068,16 +1258,19 @@ PUT    /api/user/password      # 修改密码
 ### 4.1 前端优化
 
 #### 4.1.1 代码分割
+
 - **路由分割**：按页面分割代码
 - **组件懒加载**：动态导入组件
 - **第三方库分割**：独立打包第三方库
 
 #### 4.1.2 缓存策略
+
 - **浏览器缓存**：静态资源缓存
 - **API缓存**：接口数据缓存
 - **状态缓存**：组件状态缓存
 
 #### 4.1.3 渲染优化
+
 - **服务端渲染**：首屏快速加载
 - **静态生成**：预生成静态页面
 - **增量静态再生**：动态更新静态页面
@@ -1085,11 +1278,13 @@ PUT    /api/user/password      # 修改密码
 ### 4.2 后端优化
 
 #### 4.2.1 数据库优化
+
 - **索引优化**：关键字段索引
 - **查询优化**：高效查询语句
 - **连接池**：数据库连接复用
 
 #### 4.2.2 API优化
+
 - **批量操作**：减少API调用次数
 - **数据聚合**：服务端数据聚合
 - **分页查询**：大数据集分页处理
@@ -1097,11 +1292,13 @@ PUT    /api/user/password      # 修改密码
 ### 4.3 用户体验优化
 
 #### 4.3.1 加载体验
+
 - **骨架屏**：加载状态展示
 - **进度指示**：操作进度反馈
 - **错误处理**：友好错误提示
 
 #### 4.3.2 交互体验
+
 - **实时更新**：数据实时同步
 - **乐观更新**：界面即时响应
 - **离线支持**：基础离线功能
@@ -1115,6 +1312,7 @@ PUT    /api/user/password      # 修改密码
 ### 1.1 生产环境部署
 
 #### 1.1.1 环境准备
+
 ```bash
 # 1. 服务器要求
 - Node.js 18.0+
@@ -1130,6 +1328,7 @@ NEXTAUTH_SECRET="your-nextauth-secret"
 ```
 
 #### 1.1.2 部署步骤
+
 ```bash
 # 1. 克隆代码
 git clone <repository-url>
@@ -1152,6 +1351,7 @@ pnpm start
 ### 1.2 Docker 部署
 
 #### 1.2.1 Dockerfile
+
 ```dockerfile
 FROM node:18-alpine AS base
 WORKDIR /app
@@ -1178,13 +1378,14 @@ CMD ["node", "server.js"]
 ```
 
 #### 1.2.2 Docker Compose
+
 ```yaml
 version: '3.8'
 services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - DATABASE_URL=postgresql://postgres:password@db:5432/flowbalance
       - JWT_SECRET=your-jwt-secret
@@ -1207,6 +1408,7 @@ volumes:
 ### 1.3 云平台部署
 
 #### 1.3.1 Vercel 部署
+
 ```bash
 # 1. 安装 Vercel CLI
 npm i -g vercel
@@ -1223,6 +1425,7 @@ vercel env add JWT_SECRET
 ```
 
 #### 1.3.2 Railway 部署
+
 ```bash
 # 1. 安装 Railway CLI
 npm install -g @railway/cli
@@ -1242,6 +1445,7 @@ railway up
 ### 2.1 数据库迁移
 
 #### 2.1.1 开发环境迁移
+
 ```bash
 # 创建新迁移
 npx prisma migrate dev --name migration_name
@@ -1254,6 +1458,7 @@ npx prisma migrate status
 ```
 
 #### 2.1.2 生产环境迁移
+
 ```bash
 # 部署迁移
 npx prisma migrate deploy
@@ -1265,6 +1470,7 @@ npx prisma generate
 ### 2.2 数据备份
 
 #### 2.2.1 PostgreSQL 备份
+
 ```bash
 # 备份数据库
 pg_dump -h localhost -U username -d flowbalance > backup.sql
@@ -1274,6 +1480,7 @@ psql -h localhost -U username -d flowbalance < backup.sql
 ```
 
 #### 2.2.2 自动备份脚本
+
 ```bash
 #!/bin/bash
 # backup.sh
@@ -1290,12 +1497,14 @@ find $BACKUP_DIR -name "backup_*.sql" -mtime +7 -delete
 ### 2.3 数据监控
 
 #### 2.3.1 性能监控
+
 - 查询性能分析
 - 慢查询日志
 - 连接数监控
 - 存储空间监控
 
 #### 2.3.2 数据完整性检查
+
 ```sql
 -- 检查数据一致性
 SELECT
@@ -1318,6 +1527,7 @@ GROUP BY a.id, a.name;
 ### 3.1 应用监控
 
 #### 3.1.1 健康检查
+
 ```typescript
 // /api/health
 export async function GET() {
@@ -1328,18 +1538,22 @@ export async function GET() {
     return Response.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      database: 'connected'
+      database: 'connected',
     })
   } catch (error) {
-    return Response.json({
-      status: 'unhealthy',
-      error: error.message
-    }, { status: 500 })
+    return Response.json(
+      {
+        status: 'unhealthy',
+        error: error.message,
+      },
+      { status: 500 }
+    )
   }
 }
 ```
 
 #### 3.1.2 性能指标
+
 - 响应时间监控
 - 错误率统计
 - 用户活跃度
@@ -1348,6 +1562,7 @@ export async function GET() {
 ### 3.2 日志管理
 
 #### 3.2.1 日志级别
+
 ```typescript
 // 日志配置
 const logger = {
@@ -1364,11 +1579,12 @@ const logger = {
     if (process.env.NODE_ENV === 'development') {
       console.debug(`[DEBUG] ${message}`)
     }
-  }
+  },
 }
 ```
 
 #### 3.2.2 日志收集
+
 - 应用日志收集
 - 错误日志追踪
 - 用户行为日志
@@ -1379,6 +1595,7 @@ const logger = {
 ### 4.1 安全更新
 
 #### 4.1.1 依赖更新
+
 ```bash
 # 检查安全漏洞
 npm audit
@@ -1391,6 +1608,7 @@ pnpm update
 ```
 
 #### 4.1.2 安全配置
+
 ```typescript
 // 安全头配置
 const securityHeaders = {
@@ -1399,19 +1617,21 @@ const securityHeaders = {
   'X-Frame-Options': 'SAMEORIGIN',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'origin-when-cross-origin',
-  'Content-Security-Policy': "default-src 'self'"
+  'Content-Security-Policy': "default-src 'self'",
 }
 ```
 
 ### 4.2 数据安全
 
 #### 4.2.1 数据加密
+
 - 密码哈希存储
 - 敏感数据加密
 - 传输层加密（HTTPS）
 - 数据库连接加密
 
 #### 4.2.2 访问控制
+
 - 用户认证验证
 - 权限边界检查
 - API访问限制
@@ -1422,6 +1642,7 @@ const securityHeaders = {
 ### 5.1 开发环境设置
 
 #### 5.1.1 IDE 配置
+
 ```json
 // .vscode/settings.json
 {
@@ -1434,6 +1655,7 @@ const securityHeaders = {
 ```
 
 #### 5.1.2 Git 工作流
+
 ```bash
 # 功能开发流程
 git checkout -b feature/new-feature
@@ -1449,12 +1671,14 @@ git push origin feature/new-feature
 ### 5.2 代码规范
 
 #### 5.2.1 命名规范
+
 - **文件命名**：kebab-case（短横线分隔）
 - **组件命名**：PascalCase（帕斯卡命名）
 - **函数命名**：camelCase（驼峰命名）
 - **常量命名**：UPPER_SNAKE_CASE（大写下划线）
 
 #### 5.2.2 代码组织
+
 ```
 src/
 ├── components/
@@ -1474,12 +1698,14 @@ src/
 ### 5.3 测试策略
 
 #### 5.3.1 测试类型
+
 - **单元测试**：组件和函数测试
 - **集成测试**：API接口测试
 - **端到端测试**：用户流程测试
 - **性能测试**：负载和压力测试
 
 #### 5.3.2 测试工具
+
 ```bash
 # 安装测试依赖
 pnpm add -D jest @testing-library/react @testing-library/jest-dom
@@ -1496,6 +1722,7 @@ pnpm test:coverage
 ### 6.1 常见问题
 
 #### 6.1.1 数据库连接问题
+
 ```bash
 # 检查数据库连接
 npx prisma db pull
@@ -1508,6 +1735,7 @@ npx prisma migrate status
 ```
 
 #### 6.1.2 构建问题
+
 ```bash
 # 清理缓存
 rm -rf .next
@@ -1521,12 +1749,14 @@ pnpm build
 ### 6.2 性能问题
 
 #### 6.2.1 查询优化
+
 - 添加数据库索引
 - 优化查询语句
 - 使用查询缓存
 - 减少N+1查询
 
 #### 6.2.2 前端优化
+
 - 代码分割
 - 图片优化
 - 缓存策略
@@ -1537,11 +1767,13 @@ pnpm build
 # 📞 支持与贡献
 
 ## 技术支持
+
 - 📧 邮箱：support@flowbalance.com
 - 📖 文档：查看 `/docs` 目录
 - 🐛 问题反馈：GitHub Issues
 
 ## 贡献指南
+
 1. Fork 项目
 2. 创建功能分支
 3. 提交代码变更
@@ -1549,9 +1781,9 @@ pnpm build
 5. 代码审查和合并
 
 ## 许可证
+
 本项目采用 MIT 许可证，详见 LICENSE 文件。
 
 ---
 
-**Flow Balance** - 专业的个人财务管理系统
-*让财务管理更简单、更专业、更智能*
+**Flow Balance** - 专业的个人财务管理系统 _让财务管理更简单、更专业、更智能_

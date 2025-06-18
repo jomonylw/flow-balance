@@ -1,7 +1,11 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from '@/lib/api/response'
 
 export async function GET() {
   try {
@@ -12,15 +16,15 @@ export async function GET() {
 
     const accounts = await prisma.account.findMany({
       where: {
-        userId: user.id
+        userId: user.id,
       },
       include: {
         category: true,
-        currency: true
+        currency: true,
       },
       orderBy: {
-        name: 'asc'
-      }
+        name: 'asc',
+      },
     })
 
     return successResponse(accounts)
@@ -56,8 +60,8 @@ export async function POST(request: NextRequest) {
     const category = await prisma.category.findFirst({
       where: {
         id: categoryId,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!category) {
@@ -66,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // 验证货币
     const currency = await prisma.currency.findUnique({
-      where: { code: currencyCode }
+      where: { code: currencyCode },
     })
 
     if (!currency) {
@@ -78,8 +82,8 @@ export async function POST(request: NextRequest) {
       where: {
         userId: user.id,
         currencyCode: currencyCode,
-        isActive: true
-      }
+        isActive: true,
+      },
     })
 
     if (!userCurrency) {
@@ -90,8 +94,8 @@ export async function POST(request: NextRequest) {
     const existingAccount = await prisma.account.findFirst({
       where: {
         userId: user.id,
-        name
-      }
+        name,
+      },
     })
 
     if (existingAccount) {
@@ -105,12 +109,12 @@ export async function POST(request: NextRequest) {
         currencyCode,
         name,
         description: description || null,
-        color: color || null
+        color: color || null,
       },
       include: {
         category: true,
-        currency: true
-      }
+        currency: true,
+      },
     })
 
     return successResponse(account, '账户创建成功')

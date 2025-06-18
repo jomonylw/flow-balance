@@ -2,7 +2,7 @@
   "fire.title": "FIRE Journey",
   "fire.subtitle": "Grounded in Reality, Insight, Foresight, Control",
   "fire.description": "Transform abstract financial freedom goals into a visual, interactive, dynamic life dashboard with instant feedback",
-  
+
   "fire.reality.snapshot.title": "Reality Snapshot",
   "fire.reality.snapshot.subtitle": "The following data is the foundation for your FIRE predictions",
   "fire.reality.snapshot.past12months.expenses": "Past 12 Months Total Expenses",
@@ -12,7 +12,7 @@
   "fire.reality.snapshot.expenses.source": "This data is used to preset \"Retirement Annual Expenses\"",
   "fire.reality.snapshot.networth.source": "This data is used to preset \"Current Investable Assets\"",
   "fire.reality.snapshot.return.source": "This data is used to preset \"Expected Annual Return\"",
-  
+
   "fire.north.star.title": "The North Star",
   "fire.north.star.subtitle": "The most intuitive and impactful way to show you the four most important numbers about your financial freedom",
   "fire.north.star.fire.target": "FIRE Target Amount",
@@ -24,7 +24,7 @@
   "fire.north.star.current.progress.description": "Current investable assets: {{amount}}",
   "fire.north.star.retirement.income": "Retirement \"Salary\"",
   "fire.north.star.retirement.income.description": "By then, your assets will provide you monthly...",
-  
+
   "fire.journey.title": "The Journey",
   "fire.journey.subtitle": "Your wealth growth journey visualization",
   "fire.journey.description": "Transform the abstract wealth growth process into a visual movie that you can witness with your own eyes, full of emotional connection",
@@ -32,7 +32,7 @@
   "fire.journey.fire.target.line": "FIRE Target Line",
   "fire.journey.fire.point": "FIRE Achievement Point",
   "fire.journey.tooltip": "{{date}}: Assets projected to reach {{amount}}",
-  
+
   "fire.cockpit.title": "The Cockpit",
   "fire.cockpit.subtitle": "Adjust parameters to control your financial future",
   "fire.cockpit.magic.description": "🎯 This is where the magic happens - with simple drag and drop, you can personally \"direct\" your own future",
@@ -47,23 +47,23 @@
   "fire.cockpit.monthly.investment": "Monthly Net Investment",
   "fire.cockpit.monthly.investment.description": "How much money do you plan to invest monthly toward this goal?",
   "fire.cockpit.configure": "Configure",
-  
+
   "fire.calculation.fire.target": "FIRE Target Amount",
   "fire.calculation.fire.date": "Projected FIRE Date",
   "fire.calculation.current.progress": "Current Progress",
   "fire.calculation.monthly.income": "Retirement Monthly Income",
-  
+
   "fire.error.no.data": "Insufficient data for FIRE calculations",
   "fire.error.invalid.settings": "Invalid FIRE settings, please check your configuration",
   "fire.error.calculation.failed": "FIRE calculation failed, please try again later",
-  
+
   "fire.help.swr.title": "What is Safe Withdrawal Rate?",
   "fire.help.swr.description": "Safe Withdrawal Rate (SWR) is the percentage of funds that can be withdrawn annually from an investment portfolio without depleting the principal. The 4% rule is a classic theory based on historical data.",
-  
+
   "fire.status.enabled": "FIRE feature is enabled",
   "fire.status.disabled": "FIRE feature is not enabled",
   "fire.status.enable.instruction": "Please enable FIRE feature in settings to view this page.",
-  
+
   "fire.units.years": "years",
   "fire.units.months": "months",
   "fire.units.per.year": "/year",

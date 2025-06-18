@@ -1,12 +1,17 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/lib/api-response'
-import { TransactionType } from '@prisma/client'
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+  notFoundResponse,
+} from '@/lib/api/response'
+import { Prisma, TransactionType } from '@prisma/client'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ accountId: string }> }
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
   try {
     const { accountId } = await params
@@ -19,8 +24,8 @@ export async function GET(
     const account = await prisma.account.findFirst({
       where: {
         id: accountId,
-        userId: user.id
-      }
+        userId: user.id,
+      },
     })
 
     if (!account) {
@@ -37,9 +42,9 @@ export async function GET(
     const skip = (page - 1) * limit
 
     // 构建基础查询条件
-    const baseConditions: Record<string, unknown>[] = [
+    const baseConditions: Prisma.TransactionWhereInput[] = [
       { userId: user.id },
-      { accountId: accountId }
+      { accountId: accountId },
     ]
 
     if (type) {
@@ -58,32 +63,36 @@ export async function GET(
     }
 
     // 构建最终查询条件
-    let where: Record<string, unknown>
+    let where: Prisma.TransactionWhereInput
 
     if (search) {
       // 当有搜索条件时，需要将搜索条件与其他条件正确组合
-      const allConditions = [
+      const allConditions: Prisma.TransactionWhereInput[] = [
         ...baseConditions,
         {
           OR: [
             {
               description: {
-                contains: search
-              }
+                contains: search,
+              },
             },
             {
               notes: {
-                contains: search
-              }
-            }
-          ]
-        }
+                contains: search,
+              },
+            },
+          ],
+        },
       ]
 
-      where = allConditions.length === 1 ? allConditions[0] : { AND: allConditions }
+      where =
+        allConditions.length === 1 ? allConditions[0] : { AND: allConditions }
     } else {
       // 没有搜索条件时，直接使用条件
-      where = baseConditions.length === 1 ? baseConditions[0] : { AND: baseConditions }
+      where =
+        baseConditions.length === 1
+          ? baseConditions[0]
+          : { AND: baseConditions }
     }
 
     // 获取交易列表
@@ -96,18 +105,15 @@ export async function GET(
           currency: true,
           tags: {
             include: {
-              tag: true
-            }
-          }
+              tag: true,
+            },
+          },
         },
-        orderBy: [
-          { date: 'desc' },
-          { updatedAt: 'desc' }
-        ],
+        orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
         skip,
-        take: limit
+        take: limit,
       }),
-      prisma.transaction.count({ where })
+      prisma.transaction.count({ where }),
     ])
 
     // 计算分页信息
@@ -126,20 +132,20 @@ export async function GET(
       date: transaction.date,
       account: {
         id: transaction.account.id,
-        name: transaction.account.name
+        name: transaction.account.name,
       },
       category: {
         id: transaction.category.id,
-        name: transaction.category.name
+        name: transaction.category.name,
       },
       tags: transaction.tags.map(tt => ({
         tag: {
           id: tt.tag.id,
-          name: tt.tag.name
-        }
+          name: tt.tag.name,
+        },
       })),
       createdAt: transaction.createdAt,
-      updatedAt: transaction.updatedAt
+      updatedAt: transaction.updatedAt,
     }))
 
     return successResponse({
@@ -150,12 +156,12 @@ export async function GET(
         totalCount,
         totalPages,
         hasNextPage,
-        hasPrevPage
+        hasPrevPage,
       },
       account: {
         id: account.id,
-        name: account.name
-      }
+        name: account.name,
+      },
     })
   } catch (error) {
     console.error('Get account transactions error:', error)

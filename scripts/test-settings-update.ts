@@ -20,7 +20,7 @@ async function testSettingsUpdate() {
     // 获取或创建用户设置
     let userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
-      include: { baseCurrency: true }
+      include: { baseCurrency: true },
     })
 
     if (!userSettings) {
@@ -31,9 +31,9 @@ async function testSettingsUpdate() {
           baseCurrencyCode: 'USD',
           dateFormat: 'YYYY-MM-DD',
           theme: 'system',
-          language: 'zh'
+          language: 'zh',
         },
-        include: { baseCurrency: true }
+        include: { baseCurrency: true },
       })
     }
 
@@ -50,9 +50,9 @@ async function testSettingsUpdate() {
       data: {
         theme: 'dark',
         language: 'en',
-        dateFormat: 'DD/MM/YYYY'
+        dateFormat: 'DD/MM/YYYY',
       },
-      include: { baseCurrency: true }
+      include: { baseCurrency: true },
     })
 
     console.log('✅ Updated settings:')
@@ -67,12 +67,11 @@ async function testSettingsUpdate() {
       data: {
         theme: userSettings.theme,
         language: userSettings.language,
-        dateFormat: userSettings.dateFormat
-      }
+        dateFormat: userSettings.dateFormat,
+      },
     })
 
     console.log('\n✅ Settings test completed successfully!')
-
   } catch (error) {
     console.error('❌ Settings test failed:', error)
   } finally {

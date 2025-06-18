@@ -9,6 +9,7 @@
 ### 1. 新增公用组件
 
 #### BreadcrumbNavigation 组件
+
 - **文件位置**: `src/components/ui/BreadcrumbNavigation.tsx`
 - **功能**:
   - 自动构建面包屑路径，支持分类和账户的层级显示
@@ -18,6 +19,7 @@
   - 美化的视觉设计，包含导航图标和背景容器
 
 #### DetailPageLayout 组件
+
 - **文件位置**: `src/components/ui/DetailPageLayout.tsx`
 - **功能**:
   - 统一详情页面的布局结构
@@ -37,15 +39,18 @@
 ### 3. 面包屑显示修复
 
 #### 修复前
+
 - 只显示：Dashboard > 当前项目名称
 - 没有显示完整的分类层级
 
 #### 修复后
+
 - 分类页面：父分类 > 子分类 > 当前分类
 - 账户页面：父分类 > 子分类 > 分类 > 账户
 - 移除了开头的 Dashboard 项目，使面包屑更简洁
 
 #### 示例
+
 ```
 资产 > 现金 > 现金钱包
 收入 > 工资收入 > 基本工资 > 工资账户
@@ -72,7 +77,7 @@ const buildCategoryPath = (catId: string): BreadcrumbItem[] => {
   // 添加当前分类
   path.push({
     label: category.name,
-    href: `/categories/${category.id}`
+    href: `/categories/${category.id}`,
   })
 
   return path
@@ -88,16 +93,19 @@ const buildCategoryPath = (catId: string): BreadcrumbItem[] => {
 ## 代码变更统计
 
 ### 新增文件
+
 - `src/components/ui/BreadcrumbNavigation.tsx` (120 行)
 - `src/components/ui/DetailPageLayout.tsx` (95 行)
 
 ### 修改文件
+
 - `src/components/categories/FlowCategoryDetailView.tsx` (减少 ~70 行重复代码)
 - `src/components/categories/StockCategoryDetailView.tsx` (减少 ~70 行重复代码)
 - `src/components/accounts/StockAccountDetailView.tsx` (减少 ~100 行重复代码)
 - `src/components/accounts/FlowAccountDetailView.tsx` (减少 ~100 行重复代码)
 
 ### 总体效果
+
 - **新增代码**: ~215 行
 - **减少重复代码**: ~340 行
 - **净减少**: ~125 行代码
@@ -106,21 +114,25 @@ const buildCategoryPath = (catId: string): BreadcrumbItem[] => {
 ## 功能特性
 
 ### 响应式设计
+
 - 移动端优化的面包屑显示
 - 自动截断过长的文本
 - 触摸友好的交互设计
 
 ### 可扩展性
+
 - 支持自定义面包屑项目
 - 灵活的图标和徽章配置
 - 可配置的操作按钮区域
 
 ### 一致性
+
 - 统一的视觉风格
 - 标准化的间距和布局
 - 一致的交互行为
 
 ### 视觉美化
+
 - 添加了导航图标（地图图标）在面包屑最前方
 - 使用圆角背景容器包裹整个面包屑
 - 当前页面项目使用蓝色背景高亮显示
@@ -130,6 +142,7 @@ const buildCategoryPath = (catId: string): BreadcrumbItem[] => {
 ## 使用示例
 
 ### 分类详情页面
+
 ```tsx
 <DetailPageLayout
   categoryId={category.id}
@@ -139,13 +152,14 @@ const buildCategoryPath = (catId: string): BreadcrumbItem[] => {
   iconBackgroundColor={category.color + '20'}
   badge={<CategoryTypeBadge type={category.type} />}
   actions={<CategoryActions />}
-  actionsTip="操作提示"
+  actionsTip='操作提示'
 >
   {/* 页面内容 */}
 </DetailPageLayout>
 ```
 
 ### 账户详情页面
+
 ```tsx
 <DetailPageLayout
   accountId={account.id}

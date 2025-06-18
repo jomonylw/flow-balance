@@ -1,11 +1,13 @@
 import { NextRequest } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api-response'
-import { convertMultipleCurrencies } from '@/lib/currency-conversion'
-import { calculateAccountBalance } from '@/lib/account-balance'
-
-
+import { getCurrentUser } from '@/lib/services/auth.service'
+import { prisma } from '@/lib/database/prisma'
+import {
+  successResponse,
+  errorResponse,
+  unauthorizedResponse,
+} from '@/lib/api/response'
+import { convertMultipleCurrencies } from '@/lib/services/currency.service'
+import { calculateAccountBalance } from '@/lib/services/account.service'
 
 /**
  * 个人资产负债表 API
@@ -25,10 +27,14 @@ export async function GET(request: NextRequest) {
     // 获取用户设置以确定本位币
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
-      include: { baseCurrency: true }
+      include: { baseCurrency: true },
     })
 
-    const baseCurrency = userSettings?.baseCurrency || { code: 'CNY', symbol: '¥', name: '人民币' }
+    const baseCurrency = userSettings?.baseCurrency || {
+      code: 'CNY',
+      symbol: '¥',
+      name: '人民币',
+    }
 
     // 获取所有账户及其交易（截止到指定日期）
     const accounts = await prisma.account.findMany({
@@ -38,60 +44,69 @@ export async function GET(request: NextRequest) {
         transactions: {
           where: {
             date: {
-              lte: targetDate
-            }
+              lte: targetDate,
+            },
           },
           include: {
-            currency: true
-          }
-        }
-      }
+            currency: true,
+          },
+        },
+      },
     })
 
     // 按账户类型分组计算余额
     const balanceSheet = {
       assets: {
-        categories: {} as Record<string, {
-          categoryName: string
-          accounts: Array<{
-            id: string
-            name: string
-            balance: number
-            currency: { code: string; symbol: string; name: string }
-            balanceInBaseCurrency?: number
-            conversionRate?: number
-            conversionSuccess?: boolean
-            conversionError?: string
-          }>
-          totalByCurrency: Record<string, number>
-          totalInBaseCurrency?: number
-        }>,
-        totalByCurrency: {} as Record<string, number>
+        categories: {} as Record<
+          string,
+          {
+            categoryName: string
+            accounts: Array<{
+              id: string
+              name: string
+              balance: number
+              currency: { code: string; symbol: string; name: string }
+              balanceInBaseCurrency?: number
+              conversionRate?: number
+              conversionSuccess?: boolean
+              conversionError?: string
+            }>
+            totalByCurrency: Record<string, number>
+            totalInBaseCurrency?: number
+          }
+        >,
+        totalByCurrency: {} as Record<string, number>,
       },
       liabilities: {
-        categories: {} as Record<string, {
-          categoryName: string
-          accounts: Array<{
-            id: string
-            name: string
-            balance: number
-            currency: { code: string; symbol: string; name: string }
-            balanceInBaseCurrency?: number
-            conversionRate?: number
-            conversionSuccess?: boolean
-            conversionError?: string
-          }>
-          totalByCurrency: Record<string, number>
-          totalInBaseCurrency?: number
-        }>,
-        totalByCurrency: {} as Record<string, number>
+        categories: {} as Record<
+          string,
+          {
+            categoryName: string
+            accounts: Array<{
+              id: string
+              name: string
+              balance: number
+              currency: { code: string; symbol: string; name: string }
+              balanceInBaseCurrency?: number
+              conversionRate?: number
+              conversionSuccess?: boolean
+              conversionError?: string
+            }>
+            totalByCurrency: Record<string, number>
+            totalInBaseCurrency?: number
+          }
+        >,
+        totalByCurrency: {} as Record<string, number>,
       },
-      equity: {} as Record<string, number>
+      equity: {} as Record<string, number>,
     }
 
     accounts.forEach(account => {
       // 只处理资产和负债类账户（存量账户）
-      if (!account.category.type || !['ASSET', 'LIABILITY'].includes(account.category.type)) {
+      if (
+        !account.category.type ||
+        !['ASSET', 'LIABILITY'].includes(account.category.type)
+      ) {
         return
       }
 
@@ -103,14 +118,14 @@ export async function GET(request: NextRequest) {
           amount: parseFloat(transaction.amount.toString()),
           date: transaction.date.toISOString(),
           // 交易类型已经是正确的格式
-          type: transaction.type as 'INCOME' | 'EXPENSE' | 'BALANCE'
-        }))
+          type: transaction.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+        })),
       }
 
       // 使用专业的余额计算服务，传入截止日期
       const accountBalances = calculateAccountBalance(serializedAccount, {
         asOfDate: targetDate,
-        validateData: true
+        validateData: true,
       })
 
       // 将账户按类别分组
@@ -123,7 +138,7 @@ export async function GET(request: NextRequest) {
           id: account.id,
           name: account.name,
           balance,
-          currency: balanceData.currency
+          currency: balanceData.currency,
         }
 
         const categoryId = account.category.id
@@ -136,39 +151,56 @@ export async function GET(request: NextRequest) {
             balanceSheet.assets.categories[categoryId] = {
               categoryName,
               accounts: [],
-              totalByCurrency: {}
+              totalByCurrency: {},
             }
           }
 
           balanceSheet.assets.categories[categoryId].accounts.push(accountInfo)
 
-          if (!balanceSheet.assets.categories[categoryId].totalByCurrency[currencyCode]) {
-            balanceSheet.assets.categories[categoryId].totalByCurrency[currencyCode] = 0
+          if (
+            !balanceSheet.assets.categories[categoryId].totalByCurrency[
+              currencyCode
+            ]
+          ) {
+            balanceSheet.assets.categories[categoryId].totalByCurrency[
+              currencyCode
+            ] = 0
           }
-          balanceSheet.assets.categories[categoryId].totalByCurrency[currencyCode] += balance
+          balanceSheet.assets.categories[categoryId].totalByCurrency[
+            currencyCode
+          ] += balance
 
           // 累计到总资产
           if (!balanceSheet.assets.totalByCurrency[currencyCode]) {
             balanceSheet.assets.totalByCurrency[currencyCode] = 0
           }
           balanceSheet.assets.totalByCurrency[currencyCode] += balance
-
         } else if (accountType === 'LIABILITY') {
           // 初始化负债类别
           if (!balanceSheet.liabilities.categories[categoryId]) {
             balanceSheet.liabilities.categories[categoryId] = {
               categoryName,
               accounts: [],
-              totalByCurrency: {}
+              totalByCurrency: {},
             }
           }
 
-          balanceSheet.liabilities.categories[categoryId].accounts.push(accountInfo)
+          balanceSheet.liabilities.categories[categoryId].accounts.push(
+            accountInfo,
+          )
 
-          if (!balanceSheet.liabilities.categories[categoryId].totalByCurrency[currencyCode]) {
-            balanceSheet.liabilities.categories[categoryId].totalByCurrency[currencyCode] = 0
+          if (
+            !balanceSheet.liabilities.categories[categoryId].totalByCurrency[
+              currencyCode
+            ]
+          ) {
+            balanceSheet.liabilities.categories[categoryId].totalByCurrency[
+              currencyCode
+            ] = 0
           }
-          balanceSheet.liabilities.categories[categoryId].totalByCurrency[currencyCode] += balance
+          balanceSheet.liabilities.categories[categoryId].totalByCurrency[
+            currencyCode
+          ] += balance
 
           // 累计到总负债
           if (!balanceSheet.liabilities.totalByCurrency[currencyCode]) {
@@ -182,12 +214,13 @@ export async function GET(request: NextRequest) {
     // 计算净资产（所有者权益）
     const allCurrencies = new Set([
       ...Object.keys(balanceSheet.assets.totalByCurrency),
-      ...Object.keys(balanceSheet.liabilities.totalByCurrency)
+      ...Object.keys(balanceSheet.liabilities.totalByCurrency),
     ])
 
     allCurrencies.forEach(currencyCode => {
       const totalAssets = balanceSheet.assets.totalByCurrency[currencyCode] || 0
-      const totalLiabilities = balanceSheet.liabilities.totalByCurrency[currencyCode] || 0
+      const totalLiabilities =
+        balanceSheet.liabilities.totalByCurrency[currencyCode] || 0
       balanceSheet.equity[currencyCode] = totalAssets - totalLiabilities
     })
 
@@ -195,66 +228,84 @@ export async function GET(request: NextRequest) {
     let baseCurrencyTotals = {
       totalAssets: 0,
       totalLiabilities: 0,
-      netWorth: 0
+      netWorth: 0,
     }
 
     try {
       // 收集所有需要转换的金额（包括账户级别）
       const allAmountsToConvert: Array<{
-        amount: number;
-        currency: string;
-        type: 'asset' | 'liability';
-        categoryId: string;
-        accountId: string;
+        amount: number
+        currency: string
+        type: 'asset' | 'liability'
+        categoryId: string
+        accountId: string
       }> = []
 
       // 收集资产账户的转换数据
-      Object.entries(balanceSheet.assets.categories).forEach(([categoryId, category]) => {
-        category.accounts.forEach(account => {
-          if (Math.abs(account.balance) > 0.01 && account.currency.code !== baseCurrency.code) {
-            allAmountsToConvert.push({
-              amount: Math.abs(account.balance),
-              currency: account.currency.code,
-              type: 'asset',
-              categoryId,
-              accountId: account.id
-            })
-          }
-        })
-      })
+      Object.entries(balanceSheet.assets.categories).forEach(
+        ([categoryId, category]) => {
+          category.accounts.forEach(account => {
+            if (
+              Math.abs(account.balance) > 0.01 &&
+              account.currency.code !== baseCurrency.code
+            ) {
+              allAmountsToConvert.push({
+                amount: Math.abs(account.balance),
+                currency: account.currency.code,
+                type: 'asset',
+                categoryId,
+                accountId: account.id,
+              })
+            }
+          })
+        },
+      )
 
       // 收集负债账户的转换数据
-      Object.entries(balanceSheet.liabilities.categories).forEach(([categoryId, category]) => {
-        category.accounts.forEach(account => {
-          if (Math.abs(account.balance) > 0.01 && account.currency.code !== baseCurrency.code) {
-            allAmountsToConvert.push({
-              amount: Math.abs(account.balance),
-              currency: account.currency.code,
-              type: 'liability',
-              categoryId,
-              accountId: account.id
-            })
-          }
-        })
-      })
+      Object.entries(balanceSheet.liabilities.categories).forEach(
+        ([categoryId, category]) => {
+          category.accounts.forEach(account => {
+            if (
+              Math.abs(account.balance) > 0.01 &&
+              account.currency.code !== baseCurrency.code
+            ) {
+              allAmountsToConvert.push({
+                amount: Math.abs(account.balance),
+                currency: account.currency.code,
+                type: 'liability',
+                categoryId,
+                accountId: account.id,
+              })
+            }
+          })
+        },
+      )
 
       // 执行批量货币转换
       const conversionResults = await convertMultipleCurrencies(
         user.id,
-        allAmountsToConvert.map(item => ({ amount: item.amount, currency: item.currency })),
+        allAmountsToConvert.map(item => ({
+          amount: item.amount,
+          currency: item.currency,
+        })),
         baseCurrency.code,
-        targetDate
+        targetDate,
       )
 
       // 应用转换结果到账户
       conversionResults.forEach((result, index) => {
         const conversionData = allAmountsToConvert[index]
-        const convertedAmount = result.success ? result.convertedAmount : result.originalAmount
+        const convertedAmount = result.success
+          ? result.convertedAmount
+          : result.originalAmount
 
         if (conversionData.type === 'asset') {
           // 找到对应的资产账户并添加转换信息
-          const category = balanceSheet.assets.categories[conversionData.categoryId]
-          const account = category.accounts.find(acc => acc.id === conversionData.accountId)
+          const category =
+            balanceSheet.assets.categories[conversionData.categoryId]
+          const account = category.accounts.find(
+            acc => acc.id === conversionData.accountId,
+          )
           if (account) {
             account.balanceInBaseCurrency = convertedAmount
             account.conversionRate = result.exchangeRate
@@ -263,8 +314,11 @@ export async function GET(request: NextRequest) {
           }
         } else {
           // 找到对应的负债账户并添加转换信息
-          const category = balanceSheet.liabilities.categories[conversionData.categoryId]
-          const account = category.accounts.find(acc => acc.id === conversionData.accountId)
+          const category =
+            balanceSheet.liabilities.categories[conversionData.categoryId]
+          const account = category.accounts.find(
+            acc => acc.id === conversionData.accountId,
+          )
           if (account) {
             account.balanceInBaseCurrency = convertedAmount
             account.conversionRate = result.exchangeRate
@@ -297,33 +351,39 @@ export async function GET(request: NextRequest) {
 
       // 计算类别级别的本位币总计
       Object.values(balanceSheet.assets.categories).forEach(category => {
-        category.totalInBaseCurrency = category.accounts.reduce((sum, account) =>
-          sum + (account.balanceInBaseCurrency || 0), 0
+        category.totalInBaseCurrency = category.accounts.reduce(
+          (sum, account) => sum + (account.balanceInBaseCurrency || 0),
+          0,
         )
       })
 
       Object.values(balanceSheet.liabilities.categories).forEach(category => {
-        category.totalInBaseCurrency = category.accounts.reduce((sum, account) =>
-          sum + (account.balanceInBaseCurrency || 0), 0
+        category.totalInBaseCurrency = category.accounts.reduce(
+          (sum, account) => sum + (account.balanceInBaseCurrency || 0),
+          0,
         )
       })
 
       // 计算总计
-      baseCurrencyTotals.totalAssets = Object.values(balanceSheet.assets.categories)
-        .reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
+      baseCurrencyTotals.totalAssets = Object.values(
+        balanceSheet.assets.categories,
+      ).reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
 
-      baseCurrencyTotals.totalLiabilities = Object.values(balanceSheet.liabilities.categories)
-        .reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
+      baseCurrencyTotals.totalLiabilities = Object.values(
+        balanceSheet.liabilities.categories,
+      ).reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
 
-      baseCurrencyTotals.netWorth = baseCurrencyTotals.totalAssets - baseCurrencyTotals.totalLiabilities
-
+      baseCurrencyTotals.netWorth =
+        baseCurrencyTotals.totalAssets - baseCurrencyTotals.totalLiabilities
     } catch (error) {
       console.error('货币转换失败:', error)
       // 如果转换失败，使用原始数据（仅限本位币）
       baseCurrencyTotals = {
-        totalAssets: balanceSheet.assets.totalByCurrency[baseCurrency.code] || 0,
-        totalLiabilities: balanceSheet.liabilities.totalByCurrency[baseCurrency.code] || 0,
-        netWorth: balanceSheet.equity[baseCurrency.code] || 0
+        totalAssets:
+          balanceSheet.assets.totalByCurrency[baseCurrency.code] || 0,
+        totalLiabilities:
+          balanceSheet.liabilities.totalByCurrency[baseCurrency.code] || 0,
+        netWorth: balanceSheet.equity[baseCurrency.code] || 0,
       }
     }
 
@@ -335,8 +395,8 @@ export async function GET(request: NextRequest) {
         totalAssets: balanceSheet.assets.totalByCurrency,
         totalLiabilities: balanceSheet.liabilities.totalByCurrency,
         netWorth: balanceSheet.equity,
-        baseCurrencyTotals
-      }
+        baseCurrencyTotals,
+      },
     })
   } catch (error) {
     console.error('Get balance sheet error:', error)

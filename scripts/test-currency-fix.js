@@ -18,9 +18,9 @@ async function testCurrencyFix() {
     const user = await prisma.user.findFirst({
       where: {
         email: {
-          contains: 'test'
-        }
-      }
+          contains: 'test',
+        },
+      },
     })
 
     if (!user) {
@@ -34,11 +34,11 @@ async function testCurrencyFix() {
     const userCurrencies = await prisma.userCurrency.findMany({
       where: {
         userId: user.id,
-        isActive: true
+        isActive: true,
       },
       include: {
-        currency: true
-      }
+        currency: true,
+      },
     })
 
     if (userCurrencies.length === 0) {
@@ -46,14 +46,16 @@ async function testCurrencyFix() {
       return
     }
 
-    console.log(`✅ 用户可用货币: ${userCurrencies.map(uc => uc.currency.code).join(', ')}`)
+    console.log(
+      `✅ 用户可用货币: ${userCurrencies.map(uc => uc.currency.code).join(', ')}`
+    )
 
     // 3. 查找一个资产分类
     const category = await prisma.category.findFirst({
       where: {
         userId: user.id,
-        type: 'ASSET'
-      }
+        type: 'ASSET',
+      },
     })
 
     if (!category) {
@@ -66,27 +68,29 @@ async function testCurrencyFix() {
     const accountName = `测试货币修复_${Date.now()}`
 
     console.log(`\n📝 创建有货币限制的账户 (${testCurrency.code})`)
-    
+
     const testAccount = await prisma.account.create({
       data: {
         userId: user.id,
         categoryId: category.id,
         currencyCode: testCurrency.code,
         name: accountName,
-        description: '测试货币限制修复'
+        description: '测试货币限制修复',
       },
       include: {
         currency: true,
-        category: true
-      }
+        category: true,
+      },
     })
 
     console.log(`✅ 创建账户: ${testAccount.name}`)
-    console.log(`   货币限制: ${testAccount.currency?.code} (${testAccount.currency?.name})`)
+    console.log(
+      `   货币限制: ${testAccount.currency?.code} (${testAccount.currency?.name})`
+    )
 
     // 5. 测试余额更新 - 使用正确货币
     console.log(`\n📝 测试余额更新 - 使用正确货币 (${testCurrency.code})`)
-    
+
     try {
       const balanceUpdate = await prisma.transaction.create({
         data: {
@@ -97,8 +101,8 @@ async function testCurrencyFix() {
           type: 'BALANCE',
           amount: 1000,
           description: '测试余额更新 - 正确货币',
-          date: new Date()
-        }
+          date: new Date(),
+        },
       })
 
       console.log(`✅ 余额更新成功: ${balanceUpdate.description}`)
@@ -107,10 +111,14 @@ async function testCurrencyFix() {
     }
 
     // 6. 测试余额更新 - 使用错误货币（应该失败）
-    const otherCurrency = userCurrencies.find(uc => uc.currency.code !== testCurrency.code)
+    const otherCurrency = userCurrencies.find(
+      uc => uc.currency.code !== testCurrency.code
+    )
     if (otherCurrency) {
-      console.log(`\n📝 测试余额更新 - 使用错误货币 (${otherCurrency.currency.code})`)
-      
+      console.log(
+        `\n📝 测试余额更新 - 使用错误货币 (${otherCurrency.currency.code})`
+      )
+
       try {
         await prisma.transaction.create({
           data: {
@@ -121,8 +129,8 @@ async function testCurrencyFix() {
             type: 'BALANCE',
             amount: 500,
             description: '测试余额更新 - 错误货币',
-            date: new Date()
-          }
+            date: new Date(),
+          },
         })
 
         console.log(`❌ 意外成功：应该阻止使用错误货币`)
@@ -133,7 +141,7 @@ async function testCurrencyFix() {
 
     // 7. 验证账户信息
     console.log(`\n📝 验证账户信息`)
-    
+
     const accountWithCurrency = await prisma.account.findUnique({
       where: { id: testAccount.id },
       include: {
@@ -143,32 +151,35 @@ async function testCurrencyFix() {
             id: true,
             currencyCode: true,
             amount: true,
-            description: true
-          }
-        }
-      }
+            description: true,
+          },
+        },
+      },
     })
 
     console.log(`✅ 账户货币: ${accountWithCurrency?.currency?.code}`)
     console.log(`✅ 交易记录数: ${accountWithCurrency?.transactions.length}`)
-    
+
     if (accountWithCurrency?.transactions.length > 0) {
       console.log(`✅ 交易货币一致性:`)
       accountWithCurrency.transactions.forEach((tx, index) => {
-        const isConsistent = tx.currencyCode === accountWithCurrency.currencyCode
-        console.log(`   ${index + 1}. ${tx.description}: ${tx.currencyCode} ${isConsistent ? '✅' : '❌'}`)
+        const isConsistent =
+          tx.currencyCode === accountWithCurrency.currencyCode
+        console.log(
+          `   ${index + 1}. ${tx.description}: ${tx.currencyCode} ${isConsistent ? '✅' : '❌'}`
+        )
       })
     }
 
     // 8. 清理测试数据
     console.log(`\n🧹 清理测试数据...`)
-    
+
     await prisma.transaction.deleteMany({
-      where: { accountId: testAccount.id }
+      where: { accountId: testAccount.id },
     })
-    
+
     await prisma.account.delete({
-      where: { id: testAccount.id }
+      where: { id: testAccount.id },
     })
 
     console.log(`✅ 测试数据已清理`)
@@ -179,7 +190,6 @@ async function testCurrencyFix() {
     console.log(`   ✅ 余额更新使用正确货币`)
     console.log(`   ✅ 数据库结构支持货币关联`)
     console.log(`   ⚠️  前端表单应该自动使用账户限制货币`)
-
   } catch (error) {
     console.error('❌ 测试过程中发生错误:', error)
   } finally {
