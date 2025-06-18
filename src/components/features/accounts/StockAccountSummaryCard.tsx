@@ -44,7 +44,7 @@ export default function StockAccountSummaryCard({
 
   // 本地状态管理最新的交易数据和余额
   const [transactions, setTransactions] = useState<StockTransaction[]>(
-    account.transactions,
+    account.transactions
   )
   const [currentBalance, setCurrentBalance] = useState<number>(balance)
   const [isLoading, setIsLoading] = useState(false)
@@ -52,19 +52,19 @@ export default function StockAccountSummaryCard({
   // 获取最新的交易数据和余额
   const fetchLatestData = async () => {
     console.log(
-      `[StockAccountSummaryCard] Fetching latest data for account ${account.id}`,
+      `[StockAccountSummaryCard] Fetching latest data for account ${account.id}`
     )
     setIsLoading(true)
     try {
       // 获取交易数据
       const transactionsResponse = await fetch(
-        `/api/accounts/${account.id}/transactions?limit=1000`,
+        `/api/accounts/${account.id}/transactions?limit=1000`
       )
       const transactionsResult = await transactionsResponse.json()
 
       console.log(
         '[StockAccountSummaryCard] Transactions result:',
-        transactionsResult,
+        transactionsResult
       )
 
       if (transactionsResult.success) {
@@ -75,10 +75,10 @@ export default function StockAccountSummaryCard({
             date: t.date,
             notes: t.notes,
             currency: t.currency,
-          }),
+          })
         )
         console.log(
-          `[StockAccountSummaryCard] Setting ${newTransactions.length} transactions`,
+          `[StockAccountSummaryCard] Setting ${newTransactions.length} transactions`
         )
         setTransactions(newTransactions)
 
@@ -87,24 +87,24 @@ export default function StockAccountSummaryCard({
           .filter((t: StockTransaction) => t.type === 'BALANCE')
           .sort(
             (a: StockTransaction, b: StockTransaction) =>
-              new Date(b.date).getTime() - new Date(a.date).getTime(),
+              new Date(b.date).getTime() - new Date(a.date).getTime()
           )[0]
 
         if (latestBalanceTransaction) {
           console.log(
-            `[StockAccountSummaryCard] Using latest balance from transaction: ${latestBalanceTransaction.amount}`,
+            `[StockAccountSummaryCard] Using latest balance from transaction: ${latestBalanceTransaction.amount}`
           )
           setCurrentBalance(latestBalanceTransaction.amount)
         } else {
           console.log(
-            `[StockAccountSummaryCard] No balance adjustment found, keeping current balance: ${currentBalance}`,
+            `[StockAccountSummaryCard] No balance adjustment found, keeping current balance: ${currentBalance}`
           )
         }
       }
     } catch (error) {
       console.error(
         '[StockAccountSummaryCard] Error fetching latest data:',
-        error,
+        error
       )
     } finally {
       setIsLoading(false)
@@ -122,28 +122,28 @@ export default function StockAccountSummaryCard({
     async event => {
       console.log(
         '[StockAccountSummaryCard] Data update event received:',
-        event,
+        event
       )
       // 检查是否是当前账户的事件
       if (event.accountId === account.id) {
         console.log(
-          `[StockAccountSummaryCard] Event for current account ${account.id}, fetching latest data`,
+          `[StockAccountSummaryCard] Event for current account ${account.id}, fetching latest data`
         )
         await fetchLatestData()
       } else {
         console.log(
-          `[StockAccountSummaryCard] Event for different account ${event.accountId}, ignoring`,
+          `[StockAccountSummaryCard] Event for different account ${event.accountId}, ignoring`
         )
       }
     },
-    [account.id],
+    [account.id]
   )
 
   // 初始化时如果没有交易数据，获取一次
   useEffect(() => {
     if (transactions.length === 0) {
       console.log(
-        `[StockAccountSummaryCard] Component mounted for account ${account.id}, fetching latest data`,
+        `[StockAccountSummaryCard] Component mounted for account ${account.id}, fetching latest data`
       )
       fetchLatestData()
     }
@@ -152,7 +152,7 @@ export default function StockAccountSummaryCard({
   // 存量类账户统计（资产/负债）
   const calculateStockStats = () => {
     console.log(
-      `[StockAccountSummaryCard] Calculating stats with currentBalance: ${currentBalance}, transactions: ${transactions.length}`,
+      `[StockAccountSummaryCard] Calculating stats with currentBalance: ${currentBalance}, transactions: ${transactions.length}`
     )
 
     const now = new Date()
@@ -165,14 +165,14 @@ export default function StockAccountSummaryCard({
       23,
       59,
       59,
-      999,
+      999
     ) // 上月最后一天
     const yearStart = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999) // 去年最后一天（即今年开始前）
 
     // 使用本地状态的当前余额
     const accountCurrentBalance = currentBalance
     console.log(
-      `[StockAccountSummaryCard] Using accountCurrentBalance: ${accountCurrentBalance}`,
+      `[StockAccountSummaryCard] Using accountCurrentBalance: ${accountCurrentBalance}`
     )
 
     // 构造账户对象用于计算历史余额
@@ -200,12 +200,12 @@ export default function StockAccountSummaryCard({
         lastMonthBalance = balanceEntries[0].amount
       }
       console.log(
-        `[StockAccountSummaryCard] lastMonthBalance: ${lastMonthBalance}`,
+        `[StockAccountSummaryCard] lastMonthBalance: ${lastMonthBalance}`
       )
     } catch (error) {
       console.error(
         '[StockAccountSummaryCard] Error calculating last month balance:',
-        error,
+        error
       )
     }
 
@@ -223,12 +223,12 @@ export default function StockAccountSummaryCard({
         yearStartBalance = balanceEntries[0].amount
       }
       console.log(
-        `[StockAccountSummaryCard] yearStartBalance: ${yearStartBalance}`,
+        `[StockAccountSummaryCard] yearStartBalance: ${yearStartBalance}`
       )
     } catch (error) {
       console.error(
         '[StockAccountSummaryCard] Error calculating year start balance:',
-        error,
+        error
       )
     }
 
@@ -278,7 +278,7 @@ export default function StockAccountSummaryCard({
         </div>
       )}
       {/* 账户类型标识 */}
-      <div className='mb-4'>
+      {/* <div className='mb-4'>
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
             accountType === 'ASSET'
@@ -291,7 +291,7 @@ export default function StockAccountSummaryCard({
             : t('account.type.liability')}{' '}
           • {t('account.data.type.stock')}
         </span>
-      </div>
+      </div> */}
 
       <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
         {/* 当前余额 */}
@@ -359,7 +359,7 @@ export default function StockAccountSummaryCard({
               : '-'}
             {currencySymbol}
             {Math.abs(
-              stockStats.currentBalance - stockStats.lastMonthBalance,
+              stockStats.currentBalance - stockStats.lastMonthBalance
             ).toLocaleString('zh-CN', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -437,11 +437,11 @@ export default function StockAccountSummaryCard({
       </div>
 
       {/* 存量特有信息 */}
-      <div className='mt-4 pt-4 border-t border-gray-200 dark:border-gray-700'>
+      {/* <div className='mt-4 pt-4 border-t border-gray-200 dark:border-gray-700'>
         <div className='text-xs text-gray-500 dark:text-gray-400 text-center'>
           💡 {t('account.stock.data.description')}
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }

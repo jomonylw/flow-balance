@@ -29,7 +29,7 @@ export default function FlowAccountSummaryCard({
   const accountType = account.category.type || 'EXPENSE'
   // 本地状态管理最新的交易数据
   const [transactions, setTransactions] = useState<SimpleTransaction[]>(
-    account.transactions,
+    account.transactions
   )
   const [isLoading, setIsLoading] = useState(false)
   // 获取最新的交易数据
@@ -37,7 +37,7 @@ export default function FlowAccountSummaryCard({
     setIsLoading(true)
     try {
       const response = await fetch(
-        `/api/accounts/${account.id}/transactions?limit=1000`,
+        `/api/accounts/${account.id}/transactions?limit=1000`
       )
       const result = await response.json()
       if (result.success) {
@@ -46,7 +46,7 @@ export default function FlowAccountSummaryCard({
             type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE',
             amount: parseFloat(t.amount.toString()),
             date: t.date,
-          })),
+          }))
         )
       }
     } catch (error) {
@@ -63,7 +63,7 @@ export default function FlowAccountSummaryCard({
         await fetchLatestTransactions()
       }
     },
-    [account.id],
+    [account.id]
   )
   // 初始化时如果没有交易数据，获取一次
   useEffect(() => {
@@ -78,7 +78,15 @@ export default function FlowAccountSummaryCard({
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const thisYear = new Date(now.getFullYear(), 0, 1)
     const lastYear = new Date(now.getFullYear() - 1, 0, 1)
-    const _lastYearEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999)
+    const _lastYearEnd = new Date(
+      now.getFullYear() - 1,
+      11,
+      31,
+      23,
+      59,
+      59,
+      999
+    )
     let thisMonthAmount = 0
     let lastMonthAmount = 0
     let thisYearAmount = 0
@@ -111,12 +119,12 @@ export default function FlowAccountSummaryCard({
           }
           // 去年同期累计（去年1月1日到去年同期的当前日期）
           const currentDayOfYear = Math.floor(
-            (now.getTime() - thisYear.getTime()) / (1000 * 60 * 60 * 24),
+            (now.getTime() - thisYear.getTime()) / (1000 * 60 * 60 * 24)
           )
           const lastYearSamePeriodEnd = new Date(
             lastYear.getFullYear(),
             0,
-            1 + currentDayOfYear,
+            1 + currentDayOfYear
           )
           if (
             transactionDate >= lastYear &&
@@ -182,7 +190,7 @@ export default function FlowAccountSummaryCard({
         </div>
       )}
       {/* 账户类型标识 */}
-      <div className='mb-4'>
+      {/* <div className='mb-4'>
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
             accountType === 'INCOME'
@@ -195,7 +203,7 @@ export default function FlowAccountSummaryCard({
             : t('account.type.expense')}{' '}
           • {t('account.data.type.flow')}
         </span>
-      </div>
+      </div> */}
       <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
         {/* 本月金额 */}
         <div className='text-center md:text-left'>
@@ -260,7 +268,7 @@ export default function FlowAccountSummaryCard({
               : '-'}
             {currencySymbol}
             {Math.abs(
-              flowStats.thisMonthAmount - flowStats.lastMonthAmount,
+              flowStats.thisMonthAmount - flowStats.lastMonthAmount
             ).toLocaleString('zh-CN', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -335,11 +343,11 @@ export default function FlowAccountSummaryCard({
         </div>
       </div>
       {/* 流量特有信息 */}
-      <div className='mt-4 pt-4 border-t border-gray-200 dark:border-gray-700'>
+      {/* <div className='mt-4 pt-4 border-t border-gray-200 dark:border-gray-700'>
         <div className='text-xs text-gray-500 dark:text-gray-400 text-center'>
           📊 {t('account.flow.data.description')}
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }

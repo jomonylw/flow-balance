@@ -66,7 +66,7 @@ export default function StockAccountDetailView({
         await fetchTrendData(timeRange)
       }
     },
-    [account.id],
+    [account.id]
   )
 
   // 监听交易相关事件（主要是删除操作）
@@ -78,7 +78,7 @@ export default function StockAccountDetailView({
         await fetchTrendData(timeRange)
       }
     },
-    [account.id],
+    [account.id]
   )
 
   const fetchTrendData = async (range: TimeRange) => {
@@ -100,7 +100,7 @@ export default function StockAccountDetailView({
       console.error('Error fetching trend data:', error)
       showError(
         '获取趋势数据失败',
-        error instanceof Error ? error.message : '未知错误',
+        error instanceof Error ? error.message : '未知错误'
       )
       setTrendData([])
     } finally {
@@ -139,7 +139,7 @@ export default function StockAccountDetailView({
           // 显示错误信息，用户可以通过删除确认模态框处理
           showError(
             t('common.delete.failed'),
-            `${errorMessage}。${t('account.use.clear.option')}`,
+            `${errorMessage}。${t('account.use.clear.option')}`
           )
           return
         }
@@ -158,14 +158,14 @@ export default function StockAccountDetailView({
         `/api/accounts/${account.id}/clear-balance`,
         {
           method: 'DELETE',
-        },
+        }
       )
 
       if (response.ok) {
         const result = await response.json()
         showSuccess(
           t('success.cleared'),
-          result.message || t('account.balance.history.cleared'),
+          result.message || t('account.balance.history.cleared')
         )
 
         // 清空成功后，直接删除账户
@@ -174,7 +174,7 @@ export default function StockAccountDetailView({
         const error = await response.json()
         showError(
           t('error.clear.failed'),
-          error.message || t('account.balance.history.clear.failed'),
+          error.message || t('account.balance.history.clear.failed')
         )
       }
     } catch (error) {
@@ -192,7 +192,7 @@ export default function StockAccountDetailView({
       })
       // 使用账户专用的交易API，包含余额调整记录
       const response = await fetch(
-        `/api/accounts/${account.id}/transactions?${params}`,
+        `/api/accounts/${account.id}/transactions?${params}`
       )
       const result = await response.json()
       if (result.success) {
@@ -206,7 +206,7 @@ export default function StockAccountDetailView({
       } else {
         showError(
           t('error.load.transactions'),
-          result.error || t('error.unknown'),
+          result.error || t('error.unknown')
         )
       }
     } catch (error) {
@@ -255,7 +255,7 @@ export default function StockAccountDetailView({
   const handleBatchDelete = async (transactionIds: string[]) => {
     try {
       const deletePromises = transactionIds.map(id =>
-        fetch(`/api/transactions/${id}`, { method: 'DELETE' }),
+        fetch(`/api/transactions/${id}`, { method: 'DELETE' })
       )
 
       const results = await Promise.all(deletePromises)
@@ -264,7 +264,7 @@ export default function StockAccountDetailView({
       if (successCount === transactionIds.length) {
         showSuccess(
           t('success.batch.deleted'),
-          t('batch.delete.success', { count: successCount }),
+          t('batch.delete.success', { count: successCount })
         )
         loadTransactions(pagination.currentPage)
       } else {
@@ -273,7 +273,7 @@ export default function StockAccountDetailView({
           t('batch.delete.partial', {
             success: successCount,
             total: transactionIds.length,
-          }),
+          })
         )
         loadTransactions(pagination.currentPage)
       }
@@ -289,7 +289,7 @@ export default function StockAccountDetailView({
     {
       asOfDate: new Date(), // 截止至当前日期
       validateData: false,
-    },
+    }
   )
   const baseCurrencyCode = user.settings?.baseCurrency?.code || 'USD'
 
@@ -376,7 +376,7 @@ export default function StockAccountDetailView({
       }
     >
       {/* 账户类型提示横幅 */}
-      <div
+      {/* <div
         className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg border-l-4 ${
           account.category.type === 'ASSET'
             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-400 dark:border-blue-500'
@@ -429,7 +429,7 @@ export default function StockAccountDetailView({
             </p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* 账户摘要卡片 */}
       <div className='mb-6 sm:mb-8'>
@@ -551,7 +551,10 @@ export default function StockAccountDetailView({
                 id: editingTransaction.id,
                 amount: editingTransaction.amount,
                 currencyCode: editingTransaction.currencyCode,
-                date: editingTransaction.date instanceof Date ? editingTransaction.date.toISOString().split('T')[0] : editingTransaction.date,
+                date:
+                  editingTransaction.date instanceof Date
+                    ? editingTransaction.date.toISOString().split('T')[0]
+                    : editingTransaction.date,
                 notes: editingTransaction.notes || undefined,
                 type: editingTransaction.type,
               }

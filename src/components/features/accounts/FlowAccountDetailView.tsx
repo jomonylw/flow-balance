@@ -75,7 +75,7 @@ export default function FlowAccountDetailView({
         await fetchTrendData(timeRange)
       }
     },
-    [account.id],
+    [account.id]
   )
 
   const fetchTrendData = async (range: TimeRange) => {
@@ -97,7 +97,7 @@ export default function FlowAccountDetailView({
       console.error('Error fetching trend data:', error)
       showError(
         '获取趋势数据失败',
-        error instanceof Error ? error.message : '未知错误',
+        error instanceof Error ? error.message : '未知错误'
       )
       setTrendData([])
     } finally {
@@ -122,7 +122,10 @@ export default function FlowAccountDetailView({
       amount: transaction.amount,
       description: transaction.description,
       notes: transaction.notes || undefined,
-      date: transaction.date instanceof Date ? transaction.date.toISOString().split('T')[0] : transaction.date,
+      date:
+        transaction.date instanceof Date
+          ? transaction.date.toISOString().split('T')[0]
+          : transaction.date,
       tagIds: transaction.tags ? transaction.tags.map(tt => tt.tag.id) : [],
     }
     setEditingTransaction(formTransaction)
@@ -138,7 +141,7 @@ export default function FlowAccountDetailView({
       })
       // 使用账户专用的交易API，确保数据一致性
       const response = await fetch(
-        `/api/accounts/${account.id}/transactions?${params}`,
+        `/api/accounts/${account.id}/transactions?${params}`
       )
       const result = await response.json()
       if (result.success) {
@@ -152,7 +155,7 @@ export default function FlowAccountDetailView({
       } else {
         showError(
           t('error.load.transactions'),
-          result.error || t('error.unknown'),
+          result.error || t('error.unknown')
         )
       }
     } catch (error) {
@@ -227,7 +230,7 @@ export default function FlowAccountDetailView({
   const handleBatchDelete = async (transactionIds: string[]) => {
     try {
       const deletePromises = transactionIds.map(id =>
-        fetch(`/api/transactions/${id}`, { method: 'DELETE' }),
+        fetch(`/api/transactions/${id}`, { method: 'DELETE' })
       )
 
       const results = await Promise.all(deletePromises)
@@ -236,7 +239,7 @@ export default function FlowAccountDetailView({
       if (successCount === transactionIds.length) {
         showSuccess(
           t('success.batch.deleted'),
-          t('batch.delete.success', { count: successCount }),
+          t('batch.delete.success', { count: successCount })
         )
         loadTransactions(pagination.currentPage)
       } else {
@@ -245,7 +248,7 @@ export default function FlowAccountDetailView({
           t('batch.delete.partial', {
             success: successCount,
             total: transactionIds.length,
-          }),
+          })
         )
         loadTransactions(pagination.currentPage)
       }
@@ -328,7 +331,7 @@ export default function FlowAccountDetailView({
       }
     >
       {/* 账户类型提示横幅 */}
-      <div
+      {/* <div
         className={`mb-6 p-4 rounded-lg border-l-4 ${
           account.category.type === 'INCOME'
             ? 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-500'
@@ -381,7 +384,7 @@ export default function FlowAccountDetailView({
             </p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* 账户摘要卡片 */}
       <div className='mb-8'>

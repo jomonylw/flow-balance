@@ -1,10 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
-import type {
-  SimpleTransaction,
-  SimpleCurrency,
-} from '@/types/core'
+import type { SimpleTransaction, SimpleCurrency } from '@/types/core'
 import type { StockSummaryData } from '@/types/components'
 
 // 本地类型定义（用于这个组件的特定需求）
@@ -14,8 +11,6 @@ interface StockCategory {
   type: 'ASSET' | 'LIABILITY'
   transactions: SimpleTransaction[]
 }
-
-
 
 interface StockCategorySummaryCardProps {
   category: StockCategory
@@ -33,7 +28,7 @@ export default function StockCategorySummaryCard({
   currencies = [],
 }: StockCategorySummaryCardProps) {
   const { t } = useLanguage()
-  const accountType = category.type
+  // const accountType = category.type
 
   // 存量类分类统计（资产/负债）
   const calculateStockStats = () => {
@@ -89,7 +84,7 @@ export default function StockCategorySummaryCard({
       // 年初数据（查找1月份数据或使用估算值）
       const currentYear = new Date().getFullYear()
       const yearStartMonth = summaryData.monthlyData.find(month =>
-        month.month.startsWith(`${currentYear}-01`),
+        month.month.startsWith(`${currentYear}-01`)
       )
 
       if (yearStartMonth) {
@@ -162,7 +157,7 @@ export default function StockCategorySummaryCard({
   return (
     <div className='bg-white dark:bg-gray-800 shadow rounded-lg p-6'>
       {/* 分类类型标识 */}
-      <div className='flex items-center justify-between mb-4'>
+      {/* <div className='flex items-center justify-between mb-4'>
         <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
           {category.name}
         </h3>
@@ -178,7 +173,7 @@ export default function StockCategorySummaryCard({
             : t('category.type.liability')}{' '}
           • {t('category.type.stock')}
         </span>
-      </div>
+      </div> */}
 
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
         {/* 当前净值 */}
@@ -288,7 +283,7 @@ export default function StockCategorySummaryCard({
                       ([currencyCode, amount]) => {
                         if (!currencyTotals[currencyCode]) {
                           const currencyInfo = currencies.find(
-                            c => c.code === currencyCode,
+                            c => c.code === currencyCode
                           )
                           currencyTotals[currencyCode] = {
                             current: 0,
@@ -297,7 +292,7 @@ export default function StockCategorySummaryCard({
                           }
                         }
                         currencyTotals[currencyCode].current += amount as number
-                      },
+                      }
                     )
                   })
 
@@ -307,7 +302,7 @@ export default function StockCategorySummaryCard({
                       ([currencyCode, amount]) => {
                         if (!currencyTotals[currencyCode]) {
                           const currencyInfo = currencies.find(
-                            c => c.code === currencyCode,
+                            c => c.code === currencyCode
                           )
                           currencyTotals[currencyCode] = {
                             current: 0,
@@ -316,7 +311,7 @@ export default function StockCategorySummaryCard({
                           }
                         }
                         currencyTotals[currencyCode].current += amount as number
-                      },
+                      }
                     )
                   })
                 }
@@ -328,7 +323,7 @@ export default function StockCategorySummaryCard({
                       ([currencyCode, amount]) => {
                         if (!currencyTotals[currencyCode]) {
                           const currencyInfo = currencies.find(
-                            c => c.code === currencyCode,
+                            c => c.code === currencyCode
                           )
                           currencyTotals[currencyCode] = {
                             current: 0,
@@ -338,7 +333,7 @@ export default function StockCategorySummaryCard({
                         }
                         currencyTotals[currencyCode].lastMonth +=
                           amount as number
-                      },
+                      }
                     )
                   })
 
@@ -347,7 +342,7 @@ export default function StockCategorySummaryCard({
                       ([currencyCode, amount]) => {
                         if (!currencyTotals[currencyCode]) {
                           const currencyInfo = currencies.find(
-                            c => c.code === currencyCode,
+                            c => c.code === currencyCode
                           )
                           currencyTotals[currencyCode] = {
                             current: 0,
@@ -357,7 +352,7 @@ export default function StockCategorySummaryCard({
                         }
                         currencyTotals[currencyCode].lastMonth +=
                           amount as number
-                      },
+                      }
                     )
                   })
                 } else {
@@ -421,7 +416,7 @@ export default function StockCategorySummaryCard({
                         </div>
                       </div>
                     )
-                  },
+                  }
                 )
               })()}
             </div>

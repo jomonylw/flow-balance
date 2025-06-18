@@ -1,10 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
-import type {
-  SimpleTransaction,
-  SimpleCurrency,
-} from '@/types/core'
+import type { SimpleTransaction, SimpleCurrency } from '@/types/core'
 import type { FlowSummaryData } from '@/types/components'
 
 // 本地类型定义（用于这个组件的特定需求）
@@ -47,8 +44,6 @@ const getCurrencySymbol = (currencyCode: string) => {
   return symbolMap[currencyCode] || currencyCode
 }
 
-
-
 interface FlowCategorySummaryCardProps {
   category: FlowCategory
   currencySymbol: string
@@ -57,13 +52,13 @@ interface FlowCategorySummaryCardProps {
 }
 
 export default function FlowCategorySummaryCard({
-  category,
+  // category,
   currencySymbol,
   summaryData,
   baseCurrency,
 }: FlowCategorySummaryCardProps) {
   const { t } = useLanguage()
-  const accountType = category.type
+  // const accountType = category.type
 
   // 流量类分类统计（基于月度数据）
   const calculateFlowStats = () => {
@@ -196,7 +191,7 @@ export default function FlowCategorySummaryCard({
             if (isCurrentYear) {
               currencyStats[currencyCode].thisYear += amount
             }
-          },
+          }
         )
       })
 
@@ -218,7 +213,7 @@ export default function FlowCategorySummaryCard({
             if (isCurrentYear) {
               currencyStats[currencyCode].thisYear += amount
             }
-          },
+          }
         )
       })
     })
@@ -226,7 +221,7 @@ export default function FlowCategorySummaryCard({
     // 过滤掉金额为0的币种
     const filteredStats = Object.entries(currencyStats).filter(
       ([, data]) =>
-        Math.abs(data.thisMonth) > 0.01 || Math.abs(data.thisYear) > 0.01,
+        Math.abs(data.thisMonth) > 0.01 || Math.abs(data.thisYear) > 0.01
     )
 
     return Object.fromEntries(filteredStats)
@@ -237,7 +232,7 @@ export default function FlowCategorySummaryCard({
   return (
     <div className='bg-white dark:bg-gray-800 shadow rounded-lg p-6'>
       {/* 分类类型标识 */}
-      <div className='flex items-center justify-between mb-4'>
+      {/* <div className='flex items-center justify-between mb-4'>
         <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
           {category.name}
         </h3>
@@ -253,7 +248,7 @@ export default function FlowCategorySummaryCard({
             : t('category.type.expense')}{' '}
           • {t('category.type.flow')}
         </span>
-      </div>
+      </div> */}
 
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
         {/* 本月总流量（累计） */}
@@ -303,7 +298,7 @@ export default function FlowCategorySummaryCard({
             {baseCurrency?.symbol || currencySymbol}
             {Math.abs(flowStats.thisYearMonthlyAverage).toLocaleString(
               'zh-CN',
-              { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
             )}
           </div>
         </div>
@@ -331,7 +326,7 @@ export default function FlowCategorySummaryCard({
             {baseCurrency?.symbol || currencySymbol}
             {Math.abs(flowStats.lastYearMonthlyAverage).toLocaleString(
               'zh-CN',
-              { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
             )}
           </div>
         </div>
@@ -376,7 +371,7 @@ export default function FlowCategorySummaryCard({
                       })}
                     </div>
                   </div>
-                ),
+                )
               )}
             </div>
           </div>

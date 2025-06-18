@@ -225,7 +225,17 @@ persional-balance-sheet/
 ├── public/                   # 静态资源
 │   └── locales/             # 国际化文件
 ├── docs/                     # 项目文档
+│   ├── DEVELOPMENT_STANDARDS.md    # 开发规范与质量保证指南
+│   ├── QUICK_REFERENCE.md          # 常用命令和快速参考
+│   ├── CODE_REVIEW_CHECKLIST.md    # 代码审查检查清单
+│   ├── PROJECT_CONFIGURATION.md    # 项目配置详解
+│   ├── CODING_STANDARDS.md         # 代码规范详细说明
+│   └── API_DOCUMENTATION.md        # API 接口文档
 └── scripts/                  # 工具脚本
+    ├── smart-lint-fix.js           # 智能修复 lint 错误
+    ├── type-check.js               # 详细类型检查
+    ├── analyze-type-usage.js       # 类型使用分析
+    └── fix-console-logs.js         # 修复 console 语句
 ```
 
 ---
@@ -1772,13 +1782,85 @@ pnpm build
 - 📖 文档：查看 `/docs` 目录
 - 🐛 问题反馈：GitHub Issues
 
+## 📋 开发规范与质量保证
+
+### 🔧 代码质量工具
+
+项目配置了完整的代码质量保证体系：
+
+- **ESLint**: 代码规范检查，严格的 TypeScript 规则
+- **Prettier**: 统一的代码格式化
+- **TypeScript**: 严格模式类型检查
+- **Jest**: 单元测试框架，覆盖率要求 70%
+- **Husky + lint-staged**: Git hooks 自动化检查
+
+### 🚀 开发工作流
+
+```bash
+# 开发前检查
+pnpm install                 # 安装依赖
+pnpm db:generate            # 生成数据库客户端
+pnpm db:migrate             # 运行数据库迁移
+
+# 开发中检查
+pnpm lint                   # ESLint 检查
+pnpm type-check            # TypeScript 类型检查
+pnpm test                  # 运行测试
+pnpm format:check          # 格式检查
+
+# 自动修复
+pnpm lint:fix              # 自动修复 ESLint 错误
+pnpm format                # 自动格式化代码
+
+# 高级工具
+node scripts/smart-lint-fix.js     # 智能批量修复
+pnpm type-check:detailed           # 详细类型检查报告
+```
+
+### 📝 代码规范要点
+
+- **组件命名**: PascalCase (如 `UserProfile.tsx`)
+- **文件命名**: kebab-case (如 `format-currency.ts`)
+- **Hook 命名**: camelCase，以 `use` 开头
+- **类型安全**: 避免使用 `any`，充分利用 TypeScript
+- **测试覆盖**: 新功能必须有对应测试
+- **注释规范**: 复杂逻辑添加 JSDoc 注释
+
+### 📚 详细文档
+
+- **[开发规范指南](docs/DEVELOPMENT_STANDARDS.md)**: 完整的开发规范和最佳实践
+- **[快速参考](docs/QUICK_REFERENCE.md)**: 常用命令和操作速查
+- **[代码审查清单](docs/CODE_REVIEW_CHECKLIST.md)**: 代码审查要点
+- **[项目配置详解](docs/PROJECT_CONFIGURATION.md)**: 所有配置文件说明
+
 ## 贡献指南
 
-1. Fork 项目
-2. 创建功能分支
-3. 提交代码变更
-4. 创建 Pull Request
-5. 代码审查和合并
+### 提交流程
+
+1. **Fork 项目** 并创建功能分支
+2. **遵循规范** 按照开发规范编写代码
+3. **运行检查** 确保通过所有质量检查
+4. **编写测试** 为新功能添加测试
+5. **提交代码** 使用清晰的提交信息
+6. **创建 PR** 并等待代码审查
+
+### 提交前检查清单
+
+- [ ] 代码通过 ESLint 检查 (`pnpm lint`)
+- [ ] 代码通过 TypeScript 类型检查 (`pnpm type-check`)
+- [ ] 所有测试通过 (`pnpm test`)
+- [ ] 代码格式化正确 (`pnpm format:check`)
+- [ ] 新功能有对应测试
+- [ ] 相关文档已更新
+
+### 代码审查要点
+
+- 功能正确性和边界条件处理
+- TypeScript 类型安全
+- React 组件设计和性能优化
+- 业务逻辑准确性（特别是财务计算）
+- 测试覆盖率和质量
+- 代码可读性和维护性
 
 ## 许可证
 
