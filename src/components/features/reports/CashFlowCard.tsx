@@ -16,9 +16,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import ColorManager from '@/lib/utils/color'
 import WithTranslation from '@/components/ui/data-display/WithTranslation'
-import type {
-  SimpleCurrency,
-} from '@/types/core'
+import type { SimpleCurrency } from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
 interface _CashFlowTransaction {
@@ -29,9 +27,10 @@ interface _CashFlowTransaction {
   type: 'INCOME' | 'EXPENSE'
 }
 
-
-
-import type { CashFlowCategoryWithAccounts, CashFlowCategorySummary } from '@/types/components'
+import type {
+  CashFlowCategoryWithAccounts,
+  CashFlowCategorySummary,
+} from '@/types/components'
 
 interface CurrencyTotal {
   currency: SimpleCurrency
@@ -92,7 +91,7 @@ export default function CashFlowCard() {
     setLoading(true)
     try {
       const response = await fetch(
-        `/api/reports/personal-cash-flow?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
+        `/api/reports/personal-cash-flow?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
       )
       if (response.ok) {
         const result = await response.json()
@@ -168,7 +167,9 @@ export default function CashFlowCard() {
       })
 
       // 递归计算父分类的汇总余额
-      const calculateParentTotals = (category: CashFlowCategoryWithAccounts) => {
+      const calculateParentTotals = (
+        category: CashFlowCategoryWithAccounts
+      ) => {
         // 先计算子分类
         category.children?.forEach(calculateParentTotals)
 
@@ -178,7 +179,7 @@ export default function CashFlowCard() {
             ([currency, amount]) => {
               category.totalByCurrency[currency] =
                 (category.totalByCurrency[currency] || 0) + amount
-            },
+            }
           )
           category.totalInBaseCurrency =
             (category.totalInBaseCurrency || 0) +
@@ -196,7 +197,7 @@ export default function CashFlowCard() {
               (sum, account) => {
                 return sum + (account.totalAmountInBaseCurrency || 0)
               },
-              0,
+              0
             )
           } else {
             category.totalInBaseCurrency = 0
@@ -276,7 +277,7 @@ export default function CashFlowCard() {
   const renderHierarchicalCategories = (
     categories: CashFlowCategoryWithAccounts[],
     isExpense: boolean = false,
-    level: number = 0,
+    level: number = 0
   ) => {
     return categories.map(category => (
       <div key={category.id} className='mb-4'>
@@ -319,7 +320,7 @@ export default function CashFlowCard() {
                     {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
-                    },
+                    }
                   )}
                 </span>
               </div>
@@ -336,7 +337,7 @@ export default function CashFlowCard() {
             {Object.entries(category.totalByCurrency || {}).map(
               ([currencyCode, total]) => {
                 const currencyAccounts = category.accounts.filter(
-                  account => account.currency?.code === currencyCode,
+                  account => account.currency?.code === currencyCode
                 )
                 if (currencyAccounts.length === 0) return null
 
@@ -367,14 +368,14 @@ export default function CashFlowCard() {
                                 (sum, account) =>
                                   sum +
                                   (account.totalAmountInBaseCurrency || 0),
-                                0,
+                                0
                               )
                               .toLocaleString(
                                 language === 'zh' ? 'zh-CN' : 'en-US',
                                 {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 2,
-                                },
+                                }
                               )}
                           </div>
                         )}
@@ -395,7 +396,7 @@ export default function CashFlowCard() {
                               style={{
                                 backgroundColor: (() => {
                                   const fullAccount = accounts.find(
-                                    acc => acc.id === account.id,
+                                    acc => acc.id === account.id
                                   )
                                   const accountType = fullAccount?.category
                                     ?.type as
@@ -407,7 +408,7 @@ export default function CashFlowCard() {
                                   return ColorManager.getAccountColor(
                                     account.id,
                                     fullAccount?.color,
-                                    accountType,
+                                    accountType
                                   )
                                 })(),
                               }}
@@ -429,7 +430,7 @@ export default function CashFlowCard() {
                             >
                               {formatCurrency(
                                 account.totalAmount,
-                                account.currency,
+                                account.currency
                               )}
                             </div>
                             {account.totalAmountInBaseCurrency !== undefined &&
@@ -437,13 +438,13 @@ export default function CashFlowCard() {
                                 <div className='text-xs text-gray-400 whitespace-nowrap'>
                                   ≈ {baseCurrency.symbol}
                                   {Math.abs(
-                                    account.totalAmountInBaseCurrency,
+                                    account.totalAmountInBaseCurrency
                                   ).toLocaleString(
                                     language === 'zh' ? 'zh-CN' : 'en-US',
                                     {
                                       minimumFractionDigits: 2,
                                       maximumFractionDigits: 2,
-                                    },
+                                    }
                                   )}
                                 </div>
                               )}
@@ -453,7 +454,7 @@ export default function CashFlowCard() {
                     </div>
                   </div>
                 )
-              },
+              }
             )}
           </div>
         )}
@@ -464,7 +465,7 @@ export default function CashFlowCard() {
             {renderHierarchicalCategories(
               category.children,
               isExpense,
-              level + 1,
+              level + 1
             )}
           </div>
         )}
@@ -476,7 +477,7 @@ export default function CashFlowCard() {
     title: string,
     categories: Record<string, CashFlowCategorySummary>,
     baseCurrency: SimpleCurrency,
-    isExpense: boolean = false,
+    isExpense: boolean = false
   ) => {
     if (!categories || Object.keys(categories).length === 0) {
       return (
@@ -527,13 +528,13 @@ export default function CashFlowCard() {
                             ≈ {isExpense ? '-' : '+'}
                             {baseCurrency.symbol}
                             {Math.abs(
-                              category.totalInBaseCurrency,
+                              category.totalInBaseCurrency
                             ).toLocaleString(
                               language === 'zh' ? 'zh-CN' : 'en-US',
                               {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
-                              },
+                              }
                             )}
                           </span>
                         )}
@@ -544,7 +545,7 @@ export default function CashFlowCard() {
                   <div className='ml-4 space-y-1'>
                     {(category.accounts || [])
                       .filter(
-                        account => account.currency?.code === currencyCode,
+                        account => account.currency?.code === currencyCode
                       )
                       .map(account => (
                         <div
@@ -558,7 +559,7 @@ export default function CashFlowCard() {
                               style={{
                                 backgroundColor: (() => {
                                   const fullAccount = accounts.find(
-                                    acc => acc.id === account.id,
+                                    acc => acc.id === account.id
                                   )
                                   const accountType = fullAccount?.category
                                     ?.type as
@@ -570,7 +571,7 @@ export default function CashFlowCard() {
                                   return ColorManager.getAccountColor(
                                     account.id,
                                     fullAccount?.color,
-                                    accountType,
+                                    accountType
                                   )
                                 })(),
                               }}
@@ -585,7 +586,7 @@ export default function CashFlowCard() {
                             >
                               {formatCurrency(
                                 account.totalAmount,
-                                account.currency,
+                                account.currency
                               )}
                             </span>
                             {account.totalAmountInBaseCurrency !== undefined &&
@@ -593,13 +594,13 @@ export default function CashFlowCard() {
                                 <span className='text-xs text-gray-400'>
                                   ≈ {baseCurrency.symbol}
                                   {Math.abs(
-                                    account.totalAmountInBaseCurrency,
+                                    account.totalAmountInBaseCurrency
                                   ).toLocaleString(
                                     language === 'zh' ? 'zh-CN' : 'en-US',
                                     {
                                       minimumFractionDigits: 2,
                                       maximumFractionDigits: 2,
-                                    },
+                                    }
                                   )}
                                 </span>
                               )}
@@ -608,7 +609,7 @@ export default function CashFlowCard() {
                       ))}
                   </div>
                 </div>
-              ),
+              )
             )}
           </div>
         ))}
@@ -695,13 +696,13 @@ export default function CashFlowCard() {
             {format(
               new Date(data.period.start),
               language === 'zh' ? 'yyyy年MM月dd日' : 'MMM dd, yyyy',
-              { locale: dateLocale },
+              { locale: dateLocale }
             )}{' '}
             {t('reports.cash.flow.to')}{' '}
             {format(
               new Date(data.period.end),
               language === 'zh' ? 'yyyy年MM月dd日' : 'MMM dd, yyyy',
-              { locale: dateLocale },
+              { locale: dateLocale }
             )}
           </p>
         </CardHeader>
@@ -718,13 +719,13 @@ export default function CashFlowCard() {
                 enrichedCategoryTree.income.length > 0
                   ? renderHierarchicalCategories(
                       enrichedCategoryTree.income,
-                      false,
+                      false
                     )
                   : renderCategorySection(
                       '',
                       data.cashFlow.income.categories,
                       data.baseCurrency,
-                      false,
+                      false
                     )}
               </div>
 
@@ -737,21 +738,21 @@ export default function CashFlowCard() {
                   <div>
                     {Object.entries(data.summary.currencyTotals)
                       .filter(
-                        ([, currencyTotal]) => currencyTotal.totalIncome > 0,
+                        ([, currencyTotal]) => currencyTotal.totalIncome > 0
                       )
                       .map(([currencyCode, currencyTotal]) => {
                         // 计算该币种的收入本币折算金额
                         const incomeBaseCurrencyAmount = Object.values(
-                          data.cashFlow.income.categories,
+                          data.cashFlow.income.categories
                         )
                           .flatMap(category => category.accounts)
                           .filter(
-                            account => account.currency.code === currencyCode,
+                            account => account.currency.code === currencyCode
                           )
                           .reduce(
                             (sum, account) =>
                               sum + (account.totalAmountInBaseCurrency || 0),
-                            0,
+                            0
                           )
 
                         return (
@@ -763,7 +764,7 @@ export default function CashFlowCard() {
                               +
                               {formatCurrency(
                                 currencyTotal.totalIncome,
-                                currencyTotal.currency,
+                                currencyTotal.currency
                               )}
                             </div>
                             {currencyCode !== data.baseCurrency.code &&
@@ -771,13 +772,13 @@ export default function CashFlowCard() {
                                 <div className='text-xs text-gray-400'>
                                   ≈ +{data.baseCurrency.symbol}
                                   {Math.abs(
-                                    incomeBaseCurrencyAmount,
+                                    incomeBaseCurrencyAmount
                                   ).toLocaleString(
                                     language === 'zh' ? 'zh-CN' : 'en-US',
                                     {
                                       minimumFractionDigits: 2,
                                       maximumFractionDigits: 2,
-                                    },
+                                    }
                                   )}
                                 </div>
                               )}
@@ -799,7 +800,7 @@ export default function CashFlowCard() {
                         +
                         {formatCurrency(
                           data.summary.baseCurrencyTotals.totalIncome,
-                          data.baseCurrency,
+                          data.baseCurrency
                         )}
                       </div>
                     </div>
@@ -819,13 +820,13 @@ export default function CashFlowCard() {
                 enrichedCategoryTree.expense.length > 0
                   ? renderHierarchicalCategories(
                       enrichedCategoryTree.expense,
-                      true,
+                      true
                     )
                   : renderCategorySection(
                       '',
                       data.cashFlow.expense.categories,
                       data.baseCurrency,
-                      true,
+                      true
                     )}
               </div>
 
@@ -838,21 +839,21 @@ export default function CashFlowCard() {
                   <div>
                     {Object.entries(data.summary.currencyTotals)
                       .filter(
-                        ([, currencyTotal]) => currencyTotal.totalExpense > 0,
+                        ([, currencyTotal]) => currencyTotal.totalExpense > 0
                       )
                       .map(([currencyCode, currencyTotal]) => {
                         // 计算该币种的支出本币折算金额
                         const expenseBaseCurrencyAmount = Object.values(
-                          data.cashFlow.expense.categories,
+                          data.cashFlow.expense.categories
                         )
                           .flatMap(category => category.accounts)
                           .filter(
-                            account => account.currency.code === currencyCode,
+                            account => account.currency.code === currencyCode
                           )
                           .reduce(
                             (sum, account) =>
                               sum + (account.totalAmountInBaseCurrency || 0),
-                            0,
+                            0
                           )
 
                         return (
@@ -864,7 +865,7 @@ export default function CashFlowCard() {
                               -
                               {formatCurrency(
                                 currencyTotal.totalExpense,
-                                currencyTotal.currency,
+                                currencyTotal.currency
                               )}
                             </div>
                             {currencyCode !== data.baseCurrency.code &&
@@ -872,13 +873,13 @@ export default function CashFlowCard() {
                                 <div className='text-xs text-gray-400'>
                                   ≈ -{data.baseCurrency.symbol}
                                   {Math.abs(
-                                    expenseBaseCurrencyAmount,
+                                    expenseBaseCurrencyAmount
                                   ).toLocaleString(
                                     language === 'zh' ? 'zh-CN' : 'en-US',
                                     {
                                       minimumFractionDigits: 2,
                                       maximumFractionDigits: 2,
-                                    },
+                                    }
                                   )}
                                 </div>
                               )}
@@ -900,7 +901,7 @@ export default function CashFlowCard() {
                         -
                         {formatCurrency(
                           data.summary.baseCurrencyTotals.totalExpense,
-                          data.baseCurrency,
+                          data.baseCurrency
                         )}
                       </div>
                     </div>
@@ -920,30 +921,30 @@ export default function CashFlowCard() {
                 {Object.entries(data.summary.currencyTotals)
                   .filter(
                     ([, currencyTotal]) =>
-                      Math.abs(currencyTotal.netCashFlow) > 0.01,
+                      Math.abs(currencyTotal.netCashFlow) > 0.01
                   )
                   .map(([currencyCode, currencyTotal]) => {
                     // 计算该币种的本币折算金额
                     const incomeBaseCurrencyAmount = Object.values(
-                      data.cashFlow.income.categories,
+                      data.cashFlow.income.categories
                     )
                       .flatMap(category => category.accounts)
                       .filter(account => account.currency.code === currencyCode)
                       .reduce(
                         (sum, account) =>
                           sum + (account.totalAmountInBaseCurrency || 0),
-                        0,
+                        0
                       )
 
                     const expenseBaseCurrencyAmount = Object.values(
-                      data.cashFlow.expense.categories,
+                      data.cashFlow.expense.categories
                     )
                       .flatMap(category => category.accounts)
                       .filter(account => account.currency.code === currencyCode)
                       .reduce(
                         (sum, account) =>
                           sum + (account.totalAmountInBaseCurrency || 0),
-                        0,
+                        0
                       )
 
                     const netBaseCurrencyAmount =
@@ -964,7 +965,7 @@ export default function CashFlowCard() {
                           {currencyTotal.netCashFlow >= 0 ? '+' : ''}
                           {formatCurrency(
                             currencyTotal.netCashFlow,
-                            currencyTotal.currency,
+                            currencyTotal.currency
                           )}
                         </div>
                         {currencyCode !== data.baseCurrency.code &&
@@ -977,7 +978,7 @@ export default function CashFlowCard() {
                                 {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 2,
-                                },
+                                }
                               )}
                             </div>
                           )}
@@ -1007,7 +1008,7 @@ export default function CashFlowCard() {
                       : ''}
                     {formatCurrency(
                       data.summary.baseCurrencyTotals.netCashFlow,
-                      data.baseCurrency,
+                      data.baseCurrency
                     )}
                   </div>
                 </div>
@@ -1030,21 +1031,21 @@ export default function CashFlowCard() {
                 <div className='font-semibold'>
                   {Object.entries(data.summary.currencyTotals)
                     .filter(
-                      ([, currencyTotal]) => currencyTotal.totalIncome > 0,
+                      ([, currencyTotal]) => currencyTotal.totalIncome > 0
                     )
                     .map(([currencyCode, currencyTotal]) => {
                       // 计算该币种的收入本币折算金额
                       const incomeBaseCurrencyAmount = Object.values(
-                        data.cashFlow.income.categories,
+                        data.cashFlow.income.categories
                       )
                         .flatMap(category => category.accounts)
                         .filter(
-                          account => account.currency.code === currencyCode,
+                          account => account.currency.code === currencyCode
                         )
                         .reduce(
                           (sum, account) =>
                             sum + (account.totalAmountInBaseCurrency || 0),
-                          0,
+                          0
                         )
 
                       return (
@@ -1056,7 +1057,7 @@ export default function CashFlowCard() {
                             +
                             {formatCurrency(
                               currencyTotal.totalIncome,
-                              currencyTotal.currency,
+                              currencyTotal.currency
                             )}
                           </div>
                           {currencyCode !== data.baseCurrency.code &&
@@ -1064,13 +1065,13 @@ export default function CashFlowCard() {
                               <div className='text-xs text-gray-400'>
                                 ≈ +{data.baseCurrency.symbol}
                                 {Math.abs(
-                                  incomeBaseCurrencyAmount,
+                                  incomeBaseCurrencyAmount
                                 ).toLocaleString(
                                   language === 'zh' ? 'zh-CN' : 'en-US',
                                   {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  },
+                                  }
                                 )}
                               </div>
                             )}
@@ -1086,21 +1087,21 @@ export default function CashFlowCard() {
                 <div className='font-semibold'>
                   {Object.entries(data.summary.currencyTotals)
                     .filter(
-                      ([, currencyTotal]) => currencyTotal.totalExpense > 0,
+                      ([, currencyTotal]) => currencyTotal.totalExpense > 0
                     )
                     .map(([currencyCode, currencyTotal]) => {
                       // 计算该币种的支出本币折算金额
                       const expenseBaseCurrencyAmount = Object.values(
-                        data.cashFlow.expense.categories,
+                        data.cashFlow.expense.categories
                       )
                         .flatMap(category => category.accounts)
                         .filter(
-                          account => account.currency.code === currencyCode,
+                          account => account.currency.code === currencyCode
                         )
                         .reduce(
                           (sum, account) =>
                             sum + (account.totalAmountInBaseCurrency || 0),
-                          0,
+                          0
                         )
 
                       return (
@@ -1112,7 +1113,7 @@ export default function CashFlowCard() {
                             -
                             {formatCurrency(
                               currencyTotal.totalExpense,
-                              currencyTotal.currency,
+                              currencyTotal.currency
                             )}
                           </div>
                           {currencyCode !== data.baseCurrency.code &&
@@ -1120,13 +1121,13 @@ export default function CashFlowCard() {
                               <div className='text-xs text-gray-400'>
                                 ≈ -{data.baseCurrency.symbol}
                                 {Math.abs(
-                                  expenseBaseCurrencyAmount,
+                                  expenseBaseCurrencyAmount
                                 ).toLocaleString(
                                   language === 'zh' ? 'zh-CN' : 'en-US',
                                   {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  },
+                                  }
                                 )}
                               </div>
                             )}
@@ -1143,34 +1144,34 @@ export default function CashFlowCard() {
                   {Object.entries(data.summary.currencyTotals)
                     .filter(
                       ([, currencyTotal]) =>
-                        Math.abs(currencyTotal.netCashFlow) > 0.01,
+                        Math.abs(currencyTotal.netCashFlow) > 0.01
                     )
                     .map(([currencyCode, currencyTotal]) => {
                       // 计算该币种的净现金流本币折算金额
                       const incomeBaseCurrencyAmount = Object.values(
-                        data.cashFlow.income.categories,
+                        data.cashFlow.income.categories
                       )
                         .flatMap(category => category.accounts)
                         .filter(
-                          account => account.currency.code === currencyCode,
+                          account => account.currency.code === currencyCode
                         )
                         .reduce(
                           (sum, account) =>
                             sum + (account.totalAmountInBaseCurrency || 0),
-                          0,
+                          0
                         )
 
                       const expenseBaseCurrencyAmount = Object.values(
-                        data.cashFlow.expense.categories,
+                        data.cashFlow.expense.categories
                       )
                         .flatMap(category => category.accounts)
                         .filter(
-                          account => account.currency.code === currencyCode,
+                          account => account.currency.code === currencyCode
                         )
                         .reduce(
                           (sum, account) =>
                             sum + (account.totalAmountInBaseCurrency || 0),
-                          0,
+                          0
                         )
 
                       const netBaseCurrencyAmount =
@@ -1189,7 +1190,7 @@ export default function CashFlowCard() {
                             {currencyTotal.netCashFlow >= 0 ? '+' : ''}
                             {formatCurrency(
                               currencyTotal.netCashFlow,
-                              currencyTotal.currency,
+                              currencyTotal.currency
                             )}
                           </div>
                           {currencyCode !== data.baseCurrency.code &&
@@ -1202,7 +1203,7 @@ export default function CashFlowCard() {
                                   {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  },
+                                  }
                                 )}
                               </div>
                             )}
@@ -1226,7 +1227,7 @@ export default function CashFlowCard() {
                       +
                       {formatCurrency(
                         data.summary.baseCurrencyTotals.totalIncome,
-                        data.baseCurrency,
+                        data.baseCurrency
                       )}
                     </div>
                   </div>
@@ -1239,7 +1240,7 @@ export default function CashFlowCard() {
                       -
                       {formatCurrency(
                         data.summary.baseCurrencyTotals.totalExpense,
-                        data.baseCurrency,
+                        data.baseCurrency
                       )}
                     </div>
                   </div>
@@ -1256,7 +1257,7 @@ export default function CashFlowCard() {
                         : ''}
                       {formatCurrency(
                         data.summary.baseCurrencyTotals.netCashFlow,
-                        data.baseCurrency,
+                        data.baseCurrency
                       )}
                     </div>
                   </div>

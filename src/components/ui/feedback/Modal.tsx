@@ -27,9 +27,11 @@ export default function Modal({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      // 确保点击的是背景遮罩层，而不是模态框内容
       if (
         modalRef.current &&
-        !modalRef.current.contains(event.target as Node)
+        !modalRef.current.contains(event.target as Node) &&
+        (event.target as Element)?.classList?.contains('modal-backdrop')
       ) {
         onClose()
       }
@@ -67,10 +69,7 @@ export default function Modal({
     <div className='fixed inset-0 z-50 overflow-y-auto'>
       <div className='flex min-h-screen items-center justify-center p-2 sm:p-4'>
         {/* 背景遮罩 */}
-        <div
-          className='fixed inset-0 bg-black/50 dark:bg-black/70 transition-opacity'
-          onClick={onClose}
-        />
+        <div className='modal-backdrop fixed inset-0 bg-black/50 dark:bg-black/70 transition-opacity' />
 
         {/* 模态框内容 */}
         <div

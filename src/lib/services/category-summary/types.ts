@@ -169,7 +169,9 @@ export interface FlowCategorySummary extends ServiceCategorySummaryBase {
 }
 
 // 统一的分类汇总响应类型
-export type _CategorySummaryResponse = StockCategorySummary | FlowCategorySummary
+export type _CategorySummaryResponse =
+  | StockCategorySummary
+  | FlowCategorySummary
 
 // 内部计算用的账户数据结构
 export interface AccountWithTransactions {

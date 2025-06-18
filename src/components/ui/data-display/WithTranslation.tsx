@@ -41,7 +41,7 @@ export default function WithTranslation({
  */
 export function withTranslation<P extends object>(
   Component: ComponentType<P>,
-  fallback?: ReactNode,
+  fallback?: ReactNode
 ) {
   return function WrappedComponent(props: P) {
     const { isLoading } = useLanguage()

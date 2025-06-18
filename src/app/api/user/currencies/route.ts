@@ -69,10 +69,10 @@ export async function PUT(request: NextRequest) {
 
     if (validCurrencies.length !== currencyCodes.length) {
       const invalidCodes = currencyCodes.filter(
-        code => !validCurrencies.some(c => c.code === code),
+        code => !validCurrencies.some(c => c.code === code)
       )
       return validationErrorResponse(
-        `无效的货币代码: ${invalidCodes.join(', ')}`,
+        `无效的货币代码: ${invalidCodes.join(', ')}`
       )
     }
 

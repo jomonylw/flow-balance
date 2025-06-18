@@ -13,10 +13,7 @@ import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
-import {
-  Transaction,
-  LegacyAccount,
-} from '@/types/business/transaction'
+import { Transaction, LegacyAccount } from '@/types/business/transaction'
 import type { TransactionType } from '@prisma/client'
 import type { FlowMonthlyData, FlowSummaryData } from '@/types/components'
 
@@ -70,7 +67,9 @@ export default function FlowCategoryDetailView({
     useState(false)
   const [editingTransaction, setEditingTransaction] =
     useState<EditingTransactionData | null>(null)
-  const [editingAccount, setEditingAccount] = useState<LegacyAccount | null>(null)
+  const [editingAccount, setEditingAccount] = useState<LegacyAccount | null>(
+    null
+  )
   const [summaryData, setSummaryData] = useState<FlowSummaryData | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<
@@ -96,7 +95,7 @@ export default function FlowCategoryDetailView({
 
     // 属于当前分类的子分类的账户
     const accountCategory = categories.find(
-      cat => cat.id === account.categoryId,
+      cat => cat.id === account.categoryId
     )
     return accountCategory?.parentId === category.id
   })
@@ -108,7 +107,7 @@ export default function FlowCategoryDetailView({
       handleTransactionSuccess()
     },
     undefined,
-    [category.id],
+    [category.id]
   )
 
   // 数据转换函数：将API返回的数据转换为图表需要的格式
@@ -197,7 +196,7 @@ export default function FlowCategoryDetailView({
 
       return chartData
     },
-    [],
+    []
   )
 
   // 获取分类汇总数据
@@ -214,7 +213,7 @@ export default function FlowCategoryDetailView({
           const baseCurrencyCode = user.settings?.baseCurrency?.code || 'CNY'
           const transformedData = transformDataForChart(
             summaryResult.data,
-            baseCurrencyCode,
+            baseCurrencyCode
           )
           setChartData(transformedData)
         }
@@ -249,7 +248,7 @@ export default function FlowCategoryDetailView({
         } else {
           showError(
             t('error.load.transactions'),
-            result.error || t('error.unknown'),
+            result.error || t('error.unknown')
           )
         }
       } catch (error) {
@@ -261,7 +260,7 @@ export default function FlowCategoryDetailView({
         setIsLoadingTransactions(false)
       }
     },
-    [category.id, pagination.itemsPerPage, showError, t],
+    [category.id, pagination.itemsPerPage, showError, t]
   )
 
   useEffect(() => {
@@ -290,7 +289,10 @@ export default function FlowCategoryDetailView({
       amount: transaction.amount,
       description: transaction.description,
       notes: transaction.notes || undefined,
-      date: transaction.date instanceof Date ? transaction.date.toISOString().split('T')[0] : transaction.date,
+      date:
+        transaction.date instanceof Date
+          ? transaction.date.toISOString().split('T')[0]
+          : transaction.date,
       tagIds: transaction.tags.map(t => t.tag.id),
     }
 
@@ -330,7 +332,7 @@ export default function FlowCategoryDetailView({
   const handleBatchDelete = async (transactionIds: string[]) => {
     try {
       const deletePromises = transactionIds.map(id =>
-        fetch(`/api/transactions/${id}`, { method: 'DELETE' }),
+        fetch(`/api/transactions/${id}`, { method: 'DELETE' })
       )
 
       const responses = await Promise.all(deletePromises)
@@ -344,14 +346,14 @@ export default function FlowCategoryDetailView({
           t('transaction.delete.batch.partial.error', {
             failed: failedDeletes.length,
             total: transactionIds.length,
-          }),
+          })
         )
       } else {
         showSuccess(
           t('success.deleted'),
           t('transaction.delete.batch.success', {
             count: transactionIds.length,
-          }),
+          })
         )
       }
 
@@ -371,7 +373,7 @@ export default function FlowCategoryDetailView({
         `/api/transactions/${deletingTransactionId}`,
         {
           method: 'DELETE',
-        },
+        }
       )
 
       const result = await response.json()
@@ -406,7 +408,7 @@ export default function FlowCategoryDetailView({
           const baseCurrencyCode = user.settings?.baseCurrency?.code || 'CNY'
           const transformedData = transformDataForChart(
             summaryResult.data,
-            baseCurrencyCode,
+            baseCurrencyCode
           )
           setChartData(transformedData)
         }
@@ -500,18 +502,20 @@ export default function FlowCategoryDetailView({
             category={{
               ...category,
               type: category.type,
-              transactions: (category.transactions || []).map((t: CategoryTransaction) => ({
-                ...t,
-                type: t.type,
-                date: t.date,
-                amount: t.amount,
-                notes: t.notes || undefined,
-                currency: t.currency,
-                tags: t.tags.map(tt => ({
-                  id: tt.tag.id,
-                  name: tt.tag.name,
-                })),
-              })),
+              transactions: (category.transactions || []).map(
+                (t: CategoryTransaction) => ({
+                  ...t,
+                  type: t.type,
+                  date: t.date,
+                  amount: t.amount,
+                  notes: t.notes || undefined,
+                  currency: t.currency,
+                  tags: t.tags.map(tt => ({
+                    id: tt.tag.id,
+                    name: tt.tag.name,
+                  })),
+                })
+              ),
             }}
             currencySymbol={currencySymbol}
             summaryData={summaryData}
@@ -546,7 +550,7 @@ export default function FlowCategoryDetailView({
                           {latestMonthData.childCategories.map(child => {
                             // 转换余额数据为组件需要的格式
                             const balanceInfos = Object.entries(
-                              child.balances.original,
+                              child.balances.original
                             ).map(([currencyCode, balance]) => {
                               const convertedAmount =
                                 child.balances.converted[currencyCode] ||
@@ -600,7 +604,7 @@ export default function FlowCategoryDetailView({
                           {latestMonthData.directAccounts.map(account => {
                             // 转换余额数据为组件需要的格式
                             const balanceInfos = Object.entries(
-                              account.balances.original,
+                              account.balances.original
                             ).map(([currencyCode, balance]) => {
                               const convertedAmount =
                                 account.balances.converted[currencyCode] ||
@@ -653,7 +657,7 @@ export default function FlowCategoryDetailView({
       {chartData &&
         (() => {
           const baseCurrencyForChart = currencies.find(
-            c => c.code === baseCurrency.code,
+            c => c.code === baseCurrency.code
           )
           if (!baseCurrencyForChart) return null
 

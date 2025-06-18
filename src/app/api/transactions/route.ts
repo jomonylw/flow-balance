@@ -203,8 +203,6 @@ export async function POST(request: NextRequest) {
       tagIds = [],
     } = body
 
-
-
     // 验证必填字段
     if (
       !accountId ||
@@ -252,11 +250,11 @@ export async function POST(request: NextRequest) {
       // 存量类账户（资产/负债）严格禁止创建普通交易
       if (accountType === 'ASSET' || accountType === 'LIABILITY') {
         console.error(
-          'Validation failed: Stock account cannot have regular transactions',
+          'Validation failed: Stock account cannot have regular transactions'
         )
         return errorResponse(
           `存量类账户"${account.name}"不能直接添加交易记录。请使用"更新余额"功能来管理${accountType === 'ASSET' ? '资产' : '负债'}账户的余额变化。`,
-          400,
+          400
         )
       }
 
@@ -269,11 +267,11 @@ export async function POST(request: NextRequest) {
             accountType,
             transactionType: type,
             expectedType: 'INCOME',
-          },
+          }
         )
         return errorResponse(
           '收入类账户只能记录收入交易，请选择正确的交易类型',
-          400,
+          400
         )
       }
 
@@ -285,11 +283,11 @@ export async function POST(request: NextRequest) {
             accountType,
             transactionType: type,
             expectedType: 'EXPENSE',
-          },
+          }
         )
         return errorResponse(
           '支出类账户只能记录支出交易，请选择正确的交易类型',
-          400,
+          400
         )
       }
 
@@ -300,13 +298,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-
-
     // 验证账户货币限制
     if (account.currencyCode && account.currencyCode !== currencyCode) {
       return errorResponse(
         `此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`,
-        400,
+        400
       )
     }
 

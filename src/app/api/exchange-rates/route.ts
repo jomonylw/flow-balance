@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
 
     return successResponse(
       serializedRate,
-      existingRate ? '汇率更新成功' : '汇率创建成功',
+      existingRate ? '汇率更新成功' : '汇率创建成功'
     )
   } catch (error) {
     console.error('创建/更新汇率失败:', error)
@@ -251,7 +251,7 @@ export async function PUT(request: NextRequest) {
         })
       } catch (error) {
         errors.push(
-          `第${i + 1}条记录：${error instanceof Error ? error.message : '未知错误'}`,
+          `第${i + 1}条记录：${error instanceof Error ? error.message : '未知错误'}`
         )
       }
     }
@@ -263,7 +263,7 @@ export async function PUT(request: NextRequest) {
         results,
         errorMessages: errors,
       },
-      `成功处理 ${results.length} 条汇率记录${errors.length > 0 ? `，${errors.length} 条失败` : ''}`,
+      `成功处理 ${results.length} 条汇率记录${errors.length > 0 ? `，${errors.length} 条失败` : ''}`
     )
   } catch (error) {
     console.error('批量创建汇率失败:', error)

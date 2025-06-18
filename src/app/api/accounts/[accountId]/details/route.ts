@@ -10,7 +10,7 @@ import {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ accountId: string }> },
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
     const { accountId } = await params

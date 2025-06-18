@@ -10,7 +10,10 @@ import type {
   TransactionWithBasic,
   SerializedTransactionWithBasic,
 } from '@/types/database'
-import type { LegacyCategory, LegacyCurrency } from '@/types/business/transaction'
+import type {
+  LegacyCategory,
+  LegacyCurrency,
+} from '@/types/business/transaction'
 
 // 重新导出核心类型
 /** 用户类型 - 重新导出核心类型 */
@@ -51,7 +54,10 @@ export interface SerializedCategoryWithTransactions {
 }
 
 export interface SerializedAccountWithTransactions
-  extends Omit<CoreAccount, 'transactions' | 'createdAt' | 'updatedAt' | 'category'> {
+  extends Omit<
+    CoreAccount,
+    'transactions' | 'createdAt' | 'updatedAt' | 'category'
+  > {
   createdAt: string
   updatedAt: string
   category: SerializedCategoryWithTransactions

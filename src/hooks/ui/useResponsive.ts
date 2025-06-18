@@ -102,7 +102,7 @@ export const useScreenSize = (): 'mobile' | 'tablet' | 'desktop' => {
  */
 export const useBreakpoint = (
   breakpoint: 'sm' | 'md' | 'lg' | 'xl' | '2xl',
-  direction: 'up' | 'down' = 'up',
+  direction: 'up' | 'down' = 'up'
 ): boolean => {
   const [matches, setMatches] = useState(false)
 
@@ -218,16 +218,16 @@ export const useSafeArea = () => {
 
       setSafeArea({
         top: parseInt(
-          computedStyle.getPropertyValue('env(safe-area-inset-top)') || '0',
+          computedStyle.getPropertyValue('env(safe-area-inset-top)') || '0'
         ),
         right: parseInt(
-          computedStyle.getPropertyValue('env(safe-area-inset-right)') || '0',
+          computedStyle.getPropertyValue('env(safe-area-inset-right)') || '0'
         ),
         bottom: parseInt(
-          computedStyle.getPropertyValue('env(safe-area-inset-bottom)') || '0',
+          computedStyle.getPropertyValue('env(safe-area-inset-bottom)') || '0'
         ),
         left: parseInt(
-          computedStyle.getPropertyValue('env(safe-area-inset-left)') || '0',
+          computedStyle.getPropertyValue('env(safe-area-inset-left)') || '0'
         ),
       })
     }
@@ -260,7 +260,7 @@ export const useDevicePixelRatio = (): number => {
 
     // 监听像素比变化（例如用户缩放页面）
     const mediaQuery = window.matchMedia(
-      `(resolution: ${window.devicePixelRatio}dppx)`,
+      `(resolution: ${window.devicePixelRatio}dppx)`
     )
 
     if (mediaQuery.addEventListener) {

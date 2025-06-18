@@ -10,7 +10,7 @@ import {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ accountId: string }> },
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
     const { accountId } = await params
@@ -154,7 +154,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ accountId: string }> },
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
     const { accountId } = await params
@@ -207,18 +207,18 @@ export async function DELETE(
         if (otherTransactionCount > 0) {
           return errorResponse(
             `该账户存在 ${otherTransactionCount} 条普通交易记录和 ${balanceAdjustmentCount} 条余额调整记录，无法删除。请先删除相关交易记录。`,
-            400,
+            400
           )
         } else {
           return errorResponse(
             `该账户存在 ${balanceAdjustmentCount} 条余额调整记录，无法删除。如需删除账户，请先清空余额历史记录。`,
-            400,
+            400
           )
         }
       } else {
         return errorResponse(
           `该账户存在 ${transactionCount} 条交易记录，无法删除。请先删除相关交易记录。`,
-          400,
+          400
         )
       }
     }

@@ -88,12 +88,12 @@ const OptimizedCategoryAccountTree = forwardRef<
         } catch (error) {
           console.error(
             'Error loading expanded state from localStorage:',
-            error,
+            error
           )
         }
       }
       return new Set()
-    },
+    }
   )
 
   // 保存展开状态到 localStorage
@@ -102,7 +102,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       try {
         localStorage.setItem(
           'categoryTreeExpandedState',
-          JSON.stringify([...expandedCategories]),
+          JSON.stringify([...expandedCategories])
         )
       } catch (error) {
         console.error('Error saving expanded state to localStorage:', error)
@@ -128,7 +128,7 @@ const OptimizedCategoryAccountTree = forwardRef<
     const { type, silent } = event
     console.log(
       '[OptimizedCategoryAccountTree] Received data update event:',
-      event,
+      event
     )
 
     if (silent) return
@@ -142,7 +142,7 @@ const OptimizedCategoryAccountTree = forwardRef<
           | 'full'
           | undefined
         console.log(
-          `[OptimizedCategoryAccountTree] Manual refresh event received, type: ${refreshType}`,
+          `[OptimizedCategoryAccountTree] Manual refresh event received, type: ${refreshType}`
         )
         switch (refreshType) {
           case 'category':
@@ -168,7 +168,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'transaction-delete':
         // 余额相关更新：强制刷新余额数据
         console.log(
-          '[OptimizedCategoryAccountTree] Refreshing balances for transaction/balance event',
+          '[OptimizedCategoryAccountTree] Refreshing balances for transaction/balance event'
         )
         await refreshBalances()
         break
@@ -178,7 +178,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'account-delete':
         // 账户相关更新：刷新账户数据和余额数据
         console.log(
-          '[OptimizedCategoryAccountTree] Refreshing accounts and balances for account event',
+          '[OptimizedCategoryAccountTree] Refreshing accounts and balances for account event'
         )
         await refreshAccounts()
         await refreshBalances()
@@ -189,7 +189,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'category-delete':
         // 分类相关更新：刷新分类数据和账户数据（账户的分类信息可能变化）
         console.log(
-          '[OptimizedCategoryAccountTree] Refreshing categories and accounts for category event',
+          '[OptimizedCategoryAccountTree] Refreshing categories and accounts for category event'
         )
         await refreshCategories()
         await refreshAccounts()
@@ -198,7 +198,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       default:
         // 其他更新：刷新余额数据
         console.log(
-          '[OptimizedCategoryAccountTree] Refreshing balances for unknown event',
+          '[OptimizedCategoryAccountTree] Refreshing balances for unknown event'
         )
         await refreshBalances()
         break
@@ -268,7 +268,7 @@ const OptimizedCategoryAccountTree = forwardRef<
           const hasMatchingAccounts = category.accounts?.some(
             account =>
               account.name.toLowerCase().includes(query) ||
-              account.description?.toLowerCase().includes(query),
+              account.description?.toLowerCase().includes(query)
           )
 
           return matchesName || hasMatchingChildren || hasMatchingAccounts
@@ -282,7 +282,7 @@ const OptimizedCategoryAccountTree = forwardRef<
             category.accounts?.filter(
               account =>
                 account.name.toLowerCase().includes(query) ||
-                account.description?.toLowerCase().includes(query),
+                account.description?.toLowerCase().includes(query)
             ) || [],
         }))
     }
@@ -314,7 +314,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       })
       return ids
     },
-    [],
+    []
   )
 
   // 展开所有分类
@@ -345,7 +345,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       collapseAll,
       checkAllExpanded,
     }),
-    [expandAll, collapseAll, checkAllExpanded],
+    [expandAll, collapseAll, checkAllExpanded]
   )
 
   const renderCategory = (category: EnrichedCategory, level: number = 0) => {

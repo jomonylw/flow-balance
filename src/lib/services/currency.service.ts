@@ -5,7 +5,6 @@
 
 import { prisma } from '@/lib/database/prisma'
 
-
 // 服务层专用的汇率数据类型（effectiveDate 为 Date 类型）
 export interface ServiceExchangeRateData {
   id: string
@@ -32,7 +31,7 @@ export async function getUserExchangeRate(
   userId: string,
   fromCurrency: string,
   toCurrency: string,
-  asOfDate?: Date,
+  asOfDate?: Date
 ): Promise<ServiceExchangeRateData | null> {
   try {
     // 如果源货币和目标货币相同，返回1:1汇率
@@ -96,14 +95,14 @@ export async function convertCurrency(
   amount: number,
   fromCurrency: string,
   toCurrency: string,
-  asOfDate?: Date,
+  asOfDate?: Date
 ): Promise<ConversionResult> {
   try {
     const exchangeRateData = await getUserExchangeRate(
       userId,
       fromCurrency,
       toCurrency,
-      asOfDate,
+      asOfDate
     )
 
     if (!exchangeRateData) {
@@ -160,7 +159,7 @@ export async function convertMultipleCurrencies(
   userId: string,
   amounts: Array<{ amount: number; currency: string }>,
   baseCurrency: string,
-  asOfDate?: Date,
+  asOfDate?: Date
 ): Promise<ConversionResult[]> {
   const results: ConversionResult[] = []
 
@@ -170,7 +169,7 @@ export async function convertMultipleCurrencies(
       amount,
       currency,
       baseCurrency,
-      asOfDate,
+      asOfDate
     )
     results.push(result)
   }
@@ -236,7 +235,7 @@ export async function getUserCurrencies(userId: string): Promise<string[]> {
  */
 export async function getMissingExchangeRates(
   userId: string,
-  baseCurrency: string,
+  baseCurrency: string
 ): Promise<Array<{ fromCurrency: string; toCurrency: string }>> {
   try {
     const userCurrencies = await getUserCurrencies(userId)
@@ -275,7 +274,7 @@ export function formatCurrencyDisplay(
   currency: { code: string; symbol: string },
   showOriginal?: boolean,
   originalAmount?: number,
-  originalCurrency?: { code: string; symbol: string },
+  originalCurrency?: { code: string; symbol: string }
 ): string {
   const formattedAmount = `${currency.symbol}${amount.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
@@ -288,7 +287,7 @@ export function formatCurrencyDisplay(
       {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-      },
+      }
     )}`
     return `${formattedAmount} (原: ${formattedOriginal})`
   }

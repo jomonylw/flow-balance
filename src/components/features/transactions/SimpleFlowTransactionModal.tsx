@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Modal from '@/components/ui/feedback/Modal'
 import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 import TagFormModal from '@/components/ui/feedback/TagFormModal'
+import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
+import TemplateSelector from '@/components/ui/forms/TemplateSelector'
+import TemplateUpdateConfirm from '@/components/ui/forms/TemplateUpdateConfirm'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
@@ -13,7 +16,12 @@ import {
   publishTransactionCreate,
   publishTransactionUpdate,
 } from '@/lib/services/data-update.service'
-import type { SimpleCurrency, SimpleTag, CategoryType } from '@/types/core'
+import type {
+  SimpleCurrency,
+  SimpleTag,
+  CategoryType,
+  SimpleTransactionTemplate,
+} from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
 interface SimpleFlowAccount {
@@ -59,7 +67,14 @@ export default function SimpleFlowTransactionModal({
 }: SimpleFlowTransactionModalProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
-  const { tags: userTags } = useUserData()
+  const {
+    tags: userTags,
+    getTemplates,
+    addTemplate,
+    updateTemplate: updateTemplateInContext,
+    removeTemplate,
+    isLoadingTemplates,
+  } = useUserData()
   const { resolvedTheme } = useTheme()
 
   // 简化的表单数据 - 保留必要字段包括标签
@@ -70,6 +85,19 @@ export default function SimpleFlowTransactionModal({
     notes: '',
     tagIds: [] as string[],
   })
+
+  // 模板相关状态
+  const [templateName, setTemplateName] = useState('')
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<SimpleTransactionTemplate | null>(null)
+  const [showUpdateConfirm, setShowUpdateConfirm] = useState(false)
+  const [shouldUpdateTemplate, setShouldUpdateTemplate] = useState(false)
+  const [hasTemplateDataChanged, setHasTemplateDataChanged] = useState(false)
+  const [templateJustSelected, setTemplateJustSelected] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(
+    null
+  )
 
   // 获取最新的标签颜色信息
   const getUpdatedTagColor = (tagId: string): string | undefined => {
@@ -86,6 +114,240 @@ export default function SimpleFlowTransactionModal({
   const accountCurrency = account.currencyCode || currencies[0]?.code || 'USD'
   const currencyInfo =
     currencies.find(c => c.code === accountCurrency) || currencies[0]
+
+  // 获取交易类型
+  const transactionType =
+    account.category?.type === 'INCOME' ? 'INCOME' : 'EXPENSE'
+
+  // 获取当前过滤的模板列表
+  const templates = getTemplates({
+    type: transactionType,
+    accountId: account.id,
+  })
+
+  // 检测模板数据是否发生变化
+  const checkTemplateDataChanged = useCallback(() => {
+    if (!selectedTemplate) return false
+
+    return (
+      formData.description !== selectedTemplate.description ||
+      formData.notes !== (selectedTemplate.notes || '') ||
+      JSON.stringify(formData.tagIds.sort()) !==
+        JSON.stringify((selectedTemplate.tagIds || []).sort())
+    )
+  }, [formData, selectedTemplate])
+
+  // 处理模板选择
+  const handleTemplateSelect = useCallback(
+    (templateId: string, template?: SimpleTransactionTemplate) => {
+      if (template) {
+        setSelectedTemplate(template)
+        setTemplateName(template.name)
+        setTemplateJustSelected(true) // 标记模板刚刚被选择
+
+        // 填充表单数据（除金额外）
+        setFormData(prev => ({
+          ...prev,
+          description: template.description,
+          notes: template.notes || '',
+          tagIds: template.tagIds || [],
+        }))
+
+        // 重置状态
+        setHasTemplateDataChanged(false)
+        setShowUpdateConfirm(false)
+        setShouldUpdateTemplate(false)
+
+        // 延迟重置标记，让数据填充完成
+        setTimeout(() => {
+          setTemplateJustSelected(false)
+        }, 100)
+      } else {
+        // 清空选择
+        setSelectedTemplate(null)
+        setTemplateName('')
+        setTemplateJustSelected(false)
+        setHasTemplateDataChanged(false)
+        setShowUpdateConfirm(false)
+        setShouldUpdateTemplate(false)
+      }
+    },
+    []
+  )
+
+  // 处理模板删除
+  const handleTemplateDelete = useCallback(
+    (templateId: string) => {
+      const template = templates.find(t => t.id === templateId)
+      if (!template) return
+
+      setDeletingTemplateId(templateId)
+      setShowDeleteConfirm(true)
+    },
+    [templates]
+  )
+
+  // 确认删除模板
+  const handleConfirmDeleteTemplate = useCallback(async () => {
+    if (!deletingTemplateId) return
+
+    try {
+      const response = await fetch(
+        `/api/transaction-templates/${deletingTemplateId}`,
+        {
+          method: 'DELETE',
+        }
+      )
+      const result = await response.json()
+
+      if (result.success) {
+        showSuccess(t('template.delete.success'))
+        // 从 UserDataContext 中移除模板
+        removeTemplate(deletingTemplateId)
+
+        // 如果删除的是当前选中的模板，清空表单
+        if (selectedTemplate?.id === deletingTemplateId) {
+          handleTemplateSelect('') // 清空选择
+          // 重置表单到初始状态（保持编辑模式的数据）
+          if (!transaction) {
+            setFormData({
+              amount: '',
+              description: '',
+              notes: '',
+              date: new Date().toISOString().split('T')[0],
+              tagIds: [],
+            })
+          }
+        }
+      } else {
+        showError(t('template.delete.failed'), result.error)
+      }
+    } catch (error) {
+      console.error('Delete template error:', error)
+      showError(t('template.delete.failed'), t('error.network'))
+    } finally {
+      setShowDeleteConfirm(false)
+      setDeletingTemplateId(null)
+    }
+  }, [
+    deletingTemplateId,
+    selectedTemplate,
+    transaction,
+    t,
+    showSuccess,
+    showError,
+    removeTemplate,
+    handleTemplateSelect,
+  ])
+
+  // 保存新模板
+  const saveTemplate = useCallback(async () => {
+    if (!templateName.trim()) return false
+
+    try {
+      const templateData = {
+        name: templateName.trim(),
+        accountId: account.id,
+        categoryId: account.category.id,
+        currencyCode: accountCurrency,
+        type: transactionType,
+        description: formData.description.trim(),
+        notes: formData.notes.trim(),
+        tagIds: formData.tagIds,
+      }
+
+      const response = await fetch('/api/transaction-templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(templateData),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        showSuccess(t('template.create.success'))
+        // 添加到 UserDataContext
+        addTemplate({
+          ...result.template,
+          userId: result.template.userId,
+          createdAt: new Date(result.template.createdAt),
+          updatedAt: new Date(result.template.updatedAt),
+        })
+        return true
+      } else {
+        showError(t('template.create.failed'), result.error)
+        return false
+      }
+    } catch (error) {
+      console.error('Save template error:', error)
+      showError(t('template.create.failed'), t('error.network'))
+      return false
+    }
+  }, [
+    templateName,
+    account,
+    accountCurrency,
+    transactionType,
+    formData,
+    t,
+    showSuccess,
+    showError,
+    addTemplate,
+  ])
+
+  // 更新现有模板
+  const updateTemplateData = useCallback(async () => {
+    if (!selectedTemplate) return false
+
+    try {
+      const templateData = {
+        description: formData.description.trim(),
+        notes: formData.notes.trim(),
+        tagIds: formData.tagIds,
+      }
+
+      const response = await fetch(
+        `/api/transaction-templates/${selectedTemplate.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(templateData),
+        }
+      )
+
+      const result = await response.json()
+
+      if (result.success) {
+        showSuccess(t('template.update.success'))
+        // 更新 UserDataContext 中的模板
+        updateTemplateInContext({
+          ...result.template,
+          userId: result.template.userId,
+          createdAt: new Date(result.template.createdAt),
+          updatedAt: new Date(result.template.updatedAt),
+        })
+        return true
+      } else {
+        showError(t('template.update.failed'), result.error)
+        return false
+      }
+    } catch (error) {
+      console.error('Update template error:', error)
+      showError(t('template.update.failed'), t('error.network'))
+      return false
+    }
+  }, [
+    selectedTemplate,
+    formData,
+    t,
+    showSuccess,
+    showError,
+    updateTemplateInContext,
+  ])
 
   // 初始化表单数据
   useEffect(() => {
@@ -110,16 +372,57 @@ export default function SimpleFlowTransactionModal({
         })
       }
       setErrors({})
+
+      // 重置模板相关状态（仅在新增模式下）
+      if (!transaction) {
+        setTemplateName('')
+        setSelectedTemplate(null)
+        setShowUpdateConfirm(false)
+        setShouldUpdateTemplate(false)
+        setHasTemplateDataChanged(false)
+        setTemplateJustSelected(false)
+        setShowDeleteConfirm(false)
+        setDeletingTemplateId(null)
+
+        // 不需要每次打开都刷新模板数据，使用 UserDataContext 中的缓存数据即可
+      }
     }
-  }, [isOpen, transaction])
+  }, [isOpen, transaction, isLoadingTemplates])
 
   // 更新可用标签列表
   useEffect(() => {
     setAvailableTags(tags)
   }, [tags])
 
+  // 检测模板数据变化（仅在新增模式下）
+  useEffect(() => {
+    if (!transaction) {
+      // 如果模板刚刚被选择，不检查变化
+      if (templateJustSelected) {
+        return
+      }
+
+      const hasChanged = checkTemplateDataChanged()
+      setHasTemplateDataChanged(hasChanged)
+
+      // 只有在用户修改数据且选中了模板时，才显示更新确认
+      if (hasChanged && selectedTemplate && !templateJustSelected) {
+        setShowUpdateConfirm(true)
+      } else {
+        setShowUpdateConfirm(false)
+        setShouldUpdateTemplate(false)
+      }
+    }
+  }, [
+    formData,
+    selectedTemplate,
+    transaction,
+    checkTemplateDataChanged,
+    templateJustSelected,
+  ])
+
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -212,12 +515,31 @@ export default function SimpleFlowTransactionModal({
       const result = await response.json()
 
       if (result.success) {
+        // 处理模板相关逻辑（仅在新增模式下）
+        if (!transaction) {
+          // 如果输入了新模板名称且不是选中的模板，保存新模板
+          if (
+            templateName.trim() &&
+            (!selectedTemplate || templateName.trim() !== selectedTemplate.name)
+          ) {
+            await saveTemplate()
+          }
+          // 如果选中了模板且数据有变化且用户选择更新，更新模板
+          else if (
+            selectedTemplate &&
+            hasTemplateDataChanged &&
+            shouldUpdateTemplate
+          ) {
+            await updateTemplateData()
+          }
+        }
+
         const successMessage = transaction
           ? t('transaction.modal.update.success')
           : t('transaction.modal.create.success')
         showSuccess(
           successMessage,
-          `${formData.amount} ${currencyInfo?.symbol || accountCurrency}`,
+          `${formData.amount} ${currencyInfo?.symbol || accountCurrency}`
         )
 
         // 发布交易更新事件
@@ -248,7 +570,7 @@ export default function SimpleFlowTransactionModal({
           transaction
             ? t('transaction.update.failed')
             : t('transaction.create.failed'),
-          errorMessage,
+          errorMessage
         )
       }
     } catch (error) {
@@ -260,7 +582,7 @@ export default function SimpleFlowTransactionModal({
         transaction
           ? t('transaction.update.failed')
           : t('transaction.create.failed'),
-        errorMessage,
+        errorMessage
       )
     } finally {
       setIsLoading(false)
@@ -331,6 +653,30 @@ export default function SimpleFlowTransactionModal({
             </div>
           </div>
         </div>
+
+        {/* 模板选择器 - 仅在新增模式下显示 */}
+        {!transaction && (
+          <>
+            <TemplateSelector
+              value={selectedTemplate?.id || ''}
+              templateName={templateName}
+              onChange={handleTemplateSelect}
+              onTemplateNameChange={setTemplateName}
+              onDelete={handleTemplateDelete}
+              templates={templates}
+              label={t('template.select.label')}
+              placeholder={t('template.select.placeholder')}
+            />
+
+            {/* 模板更新确认 */}
+            <TemplateUpdateConfirm
+              isVisible={showUpdateConfirm}
+              checked={shouldUpdateTemplate}
+              onChange={setShouldUpdateTemplate}
+              templateName={selectedTemplate?.name || ''}
+            />
+          </>
+        )}
 
         {/* 金额和日期 */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -566,6 +912,23 @@ export default function SimpleFlowTransactionModal({
         isOpen={showTagFormModal}
         onClose={() => setShowTagFormModal(false)}
         onSuccess={handleTagFormSuccess}
+      />
+
+      {/* 删除模板确认模态框 */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        title={t('template.delete.title')}
+        message={t('template.delete.confirm.message', {
+          name: templates.find(t => t.id === deletingTemplateId)?.name || '',
+        })}
+        confirmLabel={t('template.delete.confirm')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleConfirmDeleteTemplate}
+        onCancel={() => {
+          setShowDeleteConfirm(false)
+          setDeletingTemplateId(null)
+        }}
+        variant='danger'
       />
     </Modal>
   )

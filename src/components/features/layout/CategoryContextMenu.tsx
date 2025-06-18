@@ -15,7 +15,7 @@ interface CategoryContextMenuProps {
 // 辅助函数：获取账户类型标签
 function getAccountTypeLabel(
   t: (key: string) => string,
-  type?: string,
+  type?: string
 ): string {
   switch (type) {
     case 'ASSET':
@@ -56,7 +56,7 @@ function getDataTypeLabel(t: (key: string) => string, type?: string): string {
 // 辅助函数：获取数据类型描述
 function getDataTypeDescription(
   t: (key: string) => string,
-  type?: string,
+  type?: string
 ): string {
   const isStockCategory = type === 'ASSET' || type === 'LIABILITY'
   return isStockCategory
@@ -77,7 +77,8 @@ export default function CategoryContextMenu({
   const categoryType = category.type
   const isStockCategory =
     categoryType === 'ASSET' || categoryType === 'LIABILITY'
-  const _isFlowCategory = categoryType === 'INCOME' || categoryType === 'EXPENSE'
+  const _isFlowCategory =
+    categoryType === 'INCOME' || categoryType === 'EXPENSE'
 
   // 构建菜单项，顶层分类不显示移动选项
   const menuItems: (MenuItem | 'divider')[] = [

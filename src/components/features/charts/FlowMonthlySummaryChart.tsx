@@ -47,7 +47,7 @@ export default function FlowMonthlySummaryChart({
       // 初始化图表
       chart = echarts.init(
         chartRef.current,
-        resolvedTheme === 'dark' ? 'dark' : null,
+        resolvedTheme === 'dark' ? 'dark' : null
       )
 
       // 渲染图表
@@ -121,11 +121,11 @@ export default function FlowMonthlySummaryChart({
             return ColorManager.getAccountColor(
               account.id,
               account.color,
-              account.type as CategoryType,
+              account.type as CategoryType
             )
           }
           return null // 如果没有找到账户或账户没有自定义颜色，使用智能颜色分配
-        },
+        }
       )
 
       // 判断是收入类还是支出类（基于第一个月的数据）

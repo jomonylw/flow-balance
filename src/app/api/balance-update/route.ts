@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     if (account.currencyCode && account.currencyCode !== currencyCode) {
       return errorResponse(
         `此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`,
-        400,
+        400
       )
     }
 
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     const startOfDay = new Date(
       updateDateObj.getFullYear(),
       updateDateObj.getMonth(),
-      updateDateObj.getDate(),
+      updateDateObj.getDate()
     )
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1)
 
@@ -296,7 +296,7 @@ export async function GET(request: NextRequest) {
 
     // 按时间正序处理以计算累计余额
     const sortedTransactions = [...transactions].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     )
 
     // 对于存量类账户，需要特殊处理BALANCE
@@ -406,7 +406,7 @@ export async function GET(request: NextRequest) {
 
     // 按日期倒序排列历史记录
     balanceHistory.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
 
     return successResponse({

@@ -35,7 +35,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
     if (!chartInstance.current) {
       chartInstance.current = echarts.init(
         chartRef.current,
-        resolvedTheme === 'dark' ? 'dark' : null,
+        resolvedTheme === 'dark' ? 'dark' : null
       )
     }
 
@@ -64,7 +64,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
             seriesName: string
             value: number
             color: string
-          }[],
+          }[]
         ) {
           if (!params || params.length === 0) {
             return ''

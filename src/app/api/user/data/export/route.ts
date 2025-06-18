@@ -1,4 +1,3 @@
-
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import { unauthorizedResponse, errorResponse } from '@/lib/api/response'

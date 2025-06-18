@@ -12,12 +12,15 @@ import type {
   TransactionFormData as CoreTransactionFormData,
   User as CoreUser,
   TrendDataPoint as CoreTrendDataPoint,
-
   TransactionTagInfo,
 } from '@/types/core'
 
 // 为了完全兼容，创建适配器类型
-export interface LegacyCategory extends Omit<CoreCategory, 'transactions' | 'parent' | 'children' | 'accounts'> {
+export interface LegacyCategory
+  extends Omit<
+    CoreCategory,
+    'transactions' | 'parent' | 'children' | 'accounts'
+  > {
   transactions?: LegacyTransaction[]
   parent?: LegacyCategory | null
   children?: LegacyCategory[]

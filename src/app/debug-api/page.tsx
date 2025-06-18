@@ -51,7 +51,7 @@ export default function DebugAPIPage() {
         } else {
           const errorData = await response.json()
           setError(
-            `API错误: ${response.status} - ${errorData.error || '未知错误'}`,
+            `API错误: ${response.status} - ${errorData.error || '未知错误'}`
           )
         }
       } catch (err) {
@@ -156,7 +156,7 @@ export default function DebugAPIPage() {
                       {apiResponse.data.totalAssets.currency.symbol}
                       {apiResponse.data.totalAssets.amount.toLocaleString(
                         'zh-CN',
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
                       )}
                     </>
                   ) : (
@@ -183,7 +183,7 @@ export default function DebugAPIPage() {
                       {apiResponse.data.totalLiabilities.currency.symbol}
                       {apiResponse.data.totalLiabilities.amount.toLocaleString(
                         'zh-CN',
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
                       )}
                     </>
                   ) : (
@@ -211,7 +211,7 @@ export default function DebugAPIPage() {
                       {apiResponse.data.netWorth.currency.symbol}
                       {apiResponse.data.netWorth.amount.toLocaleString(
                         'zh-CN',
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
                       )}
                     </>
                   ) : (

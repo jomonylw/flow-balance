@@ -224,7 +224,7 @@ export default function AccountSummaryCard({
             <div className='text-xs text-gray-500 mt-1'>
               {currencySymbol}
               {Math.abs(
-                stockStats.currentBalance - stockStats.lastMonthBalance,
+                stockStats.currentBalance - stockStats.lastMonthBalance
               ).toLocaleString('zh-CN', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,

@@ -59,7 +59,7 @@ type PrismaTransaction = {
 
 // Helper function to serialize transactions
 const serializeTransactions = (
-  transactions: PrismaTransaction[],
+  transactions: PrismaTransaction[]
 ): SerializedTransactionWithBasic[] => {
   return transactions.map(transaction => ({
     ...transaction,
@@ -258,13 +258,17 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     ])
 
   // 辅助函数：序列化日期
-  const serializeCategory = (cat: Record<string, unknown>): SerializedCategoryWithTransactions => ({
-    ...cat,
-    createdAt: (cat.createdAt as Date).toISOString(),
-    updatedAt: (cat.updatedAt as Date).toISOString(),
-    parentId: (cat.parentId as string | null) || undefined,
-    transactions: (cat.transactions as SerializedTransactionWithBasic[]) || [],
-  } as SerializedCategoryWithTransactions)
+  const serializeCategory = (
+    cat: Record<string, unknown>
+  ): SerializedCategoryWithTransactions =>
+    ({
+      ...cat,
+      createdAt: (cat.createdAt as Date).toISOString(),
+      updatedAt: (cat.updatedAt as Date).toISOString(),
+      parentId: (cat.parentId as string | null) || undefined,
+      transactions:
+        (cat.transactions as SerializedTransactionWithBasic[]) || [],
+    }) as SerializedCategoryWithTransactions
 
   // 序列化 Decimal 对象
   const serializedCategory: SerializedCategoryWithTransactions = {
@@ -275,36 +279,38 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     parent: categoryData.parent
       ? serializeCategory(categoryData.parent)
       : undefined,
-    children: categoryData.children.map(child => serializeCategory({
-      ...child,
-      accounts: child.accounts.map(account => ({
-        ...account,
-        description: account.description || undefined,
-        color: account.color || undefined,
-        category: account.category
-          ? serializeCategory(account.category)
-          : serializeCategory({
-              id: 'unknown',
-              name: 'Unknown',
-              type: 'ASSET',
-              order: 0,
-              userId: user.id,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              parentId: undefined,
-            }),
-        currency: {
-          code: account.currencyCode,
-          name: account.currencyCode,
-          symbol: account.currencyCode,
-          isCustom: false,
-          createdBy: null,
-        },
-        transactions: serializeTransactions(
-          account.transactions as unknown as PrismaTransaction[],
-        ),
-      })),
-    })),
+    children: categoryData.children.map(child =>
+      serializeCategory({
+        ...child,
+        accounts: child.accounts.map(account => ({
+          ...account,
+          description: account.description || undefined,
+          color: account.color || undefined,
+          category: account.category
+            ? serializeCategory(account.category)
+            : serializeCategory({
+                id: 'unknown',
+                name: 'Unknown',
+                type: 'ASSET',
+                order: 0,
+                userId: user.id,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                parentId: undefined,
+              }),
+          currency: {
+            code: account.currencyCode,
+            name: account.currencyCode,
+            symbol: account.currencyCode,
+            isCustom: false,
+            createdBy: null,
+          },
+          transactions: serializeTransactions(
+            account.transactions as unknown as PrismaTransaction[]
+          ),
+        })),
+      })
+    ),
     accounts: categoryData.accounts.map(account => ({
       ...account,
       createdAt: account.createdAt.toISOString(),
@@ -331,11 +337,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         createdBy: null,
       },
       transactions: serializeTransactions(
-        account.transactions as unknown as PrismaTransaction[],
+        account.transactions as unknown as PrismaTransaction[]
       ),
     })),
     transactions: serializeTransactions(
-      allTransactions as unknown as PrismaTransaction[],
+      allTransactions as unknown as PrismaTransaction[]
     ),
   }
 

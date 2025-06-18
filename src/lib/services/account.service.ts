@@ -11,8 +11,6 @@ import {
   ConversionResult,
 } from '@/lib/services/currency.service'
 
-
-
 /**
  * 计算存量类账户的余额
  * 存量类账户的逻辑：使用最新的BALANCE作为基准余额，然后累加该日期之后的其他交易
@@ -20,7 +18,7 @@ import {
 function calculateStockAccountBalance(
   account: ServiceAccount,
   transactions: ServiceTransaction[],
-  options: CalculationOptions = {},
+  options: CalculationOptions = {}
 ): Record<string, ServiceAccountBalance> {
   const { validateData = true } = options
   const balances: Record<string, ServiceAccountBalance> = {}
@@ -73,7 +71,7 @@ function calculateStockAccountBalance(
 
         if (validateData) {
           console.log(
-            `账户 ${account.name} 使用余额调整基准: ${currentBalance} ${currencyCode} (${baseDate.toISOString().split('T')[0]})`,
+            `账户 ${account.name} 使用余额调整基准: ${currentBalance} ${currencyCode} (${baseDate.toISOString().split('T')[0]})`
           )
         }
       }
@@ -116,7 +114,7 @@ function calculateStockAccountBalance(
         amount: currentBalance,
         currency: currencyTransactions[0].currency,
       }
-    },
+    }
   )
 
   return balances
@@ -167,7 +165,7 @@ import type { ServiceAccountBalance } from '@/types/components'
 function calculateFlowAccountBalance(
   account: ServiceAccount,
   transactions: ServiceTransaction[],
-  options: CalculationOptions = {},
+  options: CalculationOptions = {}
 ): Record<string, ServiceAccountBalance> {
   const { validateData = true, periodStart, periodEnd } = options
   const balances: Record<string, ServiceAccountBalance> = {}
@@ -190,13 +188,13 @@ function calculateFlowAccountBalance(
       23,
       59,
       59,
-      999,
+      999
     )
   }
 
   if (validateData) {
     console.log(
-      `计算流量类账户 ${account.name} 期间余额: ${startDate.toISOString().split('T')[0]} 到 ${endDate.toISOString().split('T')[0]}`,
+      `计算流量类账户 ${account.name} 期间余额: ${startDate.toISOString().split('T')[0]} 到 ${endDate.toISOString().split('T')[0]}`
     )
   }
 
@@ -238,7 +236,7 @@ function calculateFlowAccountBalance(
           } else if (validateData && transaction.type !== 'BALANCE') {
             console.warn(
               `收入类账户 ${account.name} 中发现非收入交易:`,
-              transaction,
+              transaction
             )
           }
           break
@@ -250,7 +248,7 @@ function calculateFlowAccountBalance(
           } else if (validateData && transaction.type !== 'BALANCE') {
             console.warn(
               `支出类账户 ${account.name} 中发现非支出交易:`,
-              transaction,
+              transaction
             )
           }
           break
@@ -266,7 +264,7 @@ function calculateFlowAccountBalance(
         console.error(
           `计算流量类账户 ${account.name} 余额时发生错误:`,
           error,
-          transaction,
+          transaction
         )
       }
     }
@@ -283,7 +281,7 @@ function calculateFlowAccountBalance(
  */
 export function calculateAccountBalance(
   account: ServiceAccount,
-  options: CalculationOptions = {},
+  options: CalculationOptions = {}
 ): Record<string, ServiceAccountBalance> {
   const { asOfDate, validateData = true, usePeriodCalculation = true } = options
   const balances: Record<string, ServiceAccountBalance> = {}
@@ -441,14 +439,14 @@ export function calculateAccountBalance(
             if (validateData) {
               console.warn(
                 `收入类账户 ${account.name} 不应该有余额调整交易:`,
-                transaction,
+                transaction
               )
             }
           } else if (validateData) {
             // 对于其他类型的交易，显示警告
             console.warn(
               `收入类账户 ${account.name} 中发现非收入交易:`,
-              transaction,
+              transaction
             )
           }
           break
@@ -461,14 +459,14 @@ export function calculateAccountBalance(
             if (validateData) {
               console.warn(
                 `支出类账户 ${account.name} 不应该有余额调整交易:`,
-                transaction,
+                transaction
               )
             }
           } else if (validateData) {
             // 对于其他类型的交易，显示警告
             console.warn(
               `支出类账户 ${account.name} 中发现非支出交易:`,
-              transaction,
+              transaction
             )
           }
           break
@@ -477,7 +475,7 @@ export function calculateAccountBalance(
           // 未设置账户类型时的兜底处理 - 按资产类账户处理
           if (validateData) {
             console.warn(
-              `账户 ${account.name} 未设置账户类型，按资产类账户处理`,
+              `账户 ${account.name} 未设置账户类型，按资产类账户处理`
             )
           }
           if (transaction.type === 'INCOME') {
@@ -495,7 +493,7 @@ export function calculateAccountBalance(
         console.error(
           `计算账户 ${account.name} 余额时发生错误:`,
           error,
-          transaction,
+          transaction
         )
       }
     }
@@ -512,7 +510,7 @@ export function calculateAccountBalance(
  */
 export function calculateTotalBalance(
   accounts: ServiceAccount[],
-  options: CalculationOptions = {},
+  options: CalculationOptions = {}
 ): Record<string, ServiceAccountBalance> {
   const totalBalances: Record<string, ServiceAccountBalance> = {}
 
@@ -541,7 +539,7 @@ export function calculateTotalBalance(
       if (options.validateData !== false) {
         console.error(
           `计算账户 ${account?.name || 'Unknown'} 汇总余额时发生错误:`,
-          error,
+          error
         )
       }
     }
@@ -558,9 +556,12 @@ export function calculateTotalBalance(
  */
 export function calculateBalancesByType(
   accounts: ServiceAccount[],
-  asOfDate?: Date,
+  asOfDate?: Date
 ): Record<string, Record<string, ServiceAccountBalance>> {
-  const balancesByType: Record<string, Record<string, ServiceAccountBalance>> = {
+  const balancesByType: Record<
+    string,
+    Record<string, ServiceAccountBalance>
+  > = {
     ASSET: {},
     LIABILITY: {},
     INCOME: {},
@@ -597,7 +598,7 @@ export function calculateBalancesByType(
  */
 export function calculateNetWorth(
   accounts: ServiceAccount[],
-  asOfDate?: Date,
+  asOfDate?: Date
 ): Record<string, ServiceAccountBalance> {
   const balancesByType = calculateBalancesByType(accounts, asOfDate)
   const netWorth: Record<string, ServiceAccountBalance> = {}
@@ -649,7 +650,7 @@ export function validateAccountTypes(accounts: ServiceAccount[]): {
     if (!account.category.type) {
       issues.push(`账户 "${account.name}" 未设置账户类型`)
       suggestions.push(
-        `建议为账户 "${account.name}" 设置正确的账户类型（资产、负债、收入、支出）`,
+        `建议为账户 "${account.name}" 设置正确的账户类型（资产、负债、收入、支出）`
       )
     }
   })
@@ -688,7 +689,7 @@ export async function calculateAccountBalanceWithConversion(
   userId: string,
   account: ServiceAccount,
   baseCurrency: { code: string; symbol: string; name: string },
-  options: CalculationOptions = {},
+  options: CalculationOptions = {}
 ): Promise<Record<string, AccountBalanceWithConversion>> {
   // 先计算原始余额
   const originalBalances = calculateAccountBalance(account, options)
@@ -707,7 +708,7 @@ export async function calculateAccountBalanceWithConversion(
       userId,
       amountsToConvert,
       baseCurrency.code,
-      options.asOfDate,
+      options.asOfDate
     )
 
     // 合并转换结果
@@ -756,7 +757,7 @@ export async function calculateTotalBalanceWithConversion(
   userId: string,
   accounts: ServiceAccount[],
   baseCurrency: { code: string; symbol: string; name: string },
-  options: CalculationOptions = {},
+  options: CalculationOptions = {}
 ): Promise<{
   totalInBaseCurrency: number
   totalsByOriginalCurrency: Record<string, ServiceAccountBalance>
@@ -806,7 +807,7 @@ export async function calculateTotalBalanceWithConversion(
       userId,
       allAmountsToConvert,
       baseCurrency.code,
-      options.asOfDate,
+      options.asOfDate
     )
 
     conversionDetails.push(...conversionResults)
@@ -822,7 +823,7 @@ export async function calculateTotalBalanceWithConversion(
           totalInBaseCurrency += result.originalAmount
         } else {
           console.warn(
-            `汇率转换失败: ${result.fromCurrency} -> ${baseCurrency.code}, 金额: ${result.originalAmount}`,
+            `汇率转换失败: ${result.fromCurrency} -> ${baseCurrency.code}, 金额: ${result.originalAmount}`
           )
           // 不添加到总额中，避免数据偏差
         }
@@ -838,7 +839,7 @@ export async function calculateTotalBalanceWithConversion(
         totalInBaseCurrency += balance.amount
       } else {
         console.warn(
-          `无法转换货币 ${balance.currencyCode} 的金额: ${balance.amount}`,
+          `无法转换货币 ${balance.currencyCode} 的金额: ${balance.amount}`
         )
       }
     })

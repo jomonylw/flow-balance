@@ -23,7 +23,7 @@ export function useOptimizedNavigation() {
         replace?: boolean
         scroll?: boolean
         delay?: number
-      },
+      }
     ) => {
       // 防止重复导航
       if (isNavigatingRef.current) {
@@ -51,7 +51,7 @@ export function useOptimizedNavigation() {
         }
       }, delay)
     },
-    [router],
+    [router]
   )
 
   /**
@@ -68,7 +68,7 @@ export function useOptimizedNavigation() {
         replace?: boolean
         scroll?: boolean
         feedbackDuration?: number
-      },
+      }
     ) => {
       const { feedbackDuration = 50, ...navOptions } = options || {}
 
@@ -90,7 +90,7 @@ export function useOptimizedNavigation() {
         }, 100)
       }, feedbackDuration)
     },
-    [navigateTo],
+    [navigateTo]
   )
 
   /**
@@ -105,7 +105,7 @@ export function useOptimizedNavigation() {
         console.error('Prefetch error:', error)
       }
     },
-    [router],
+    [router]
   )
 
   return {
@@ -132,7 +132,7 @@ export function useSidebarNavigation() {
       const target = event.currentTarget
       navigateWithFeedback(target, `/categories/${categoryId}`)
     },
-    [navigateWithFeedback],
+    [navigateWithFeedback]
   )
 
   /**
@@ -142,14 +142,14 @@ export function useSidebarNavigation() {
     (
       event: React.MouseEvent<HTMLElement>,
       accountId: string,
-      onNavigate?: () => void,
+      onNavigate?: () => void
     ) => {
       event.preventDefault()
       const target = event.currentTarget
       navigateWithFeedback(target, `/accounts/${accountId}`)
       onNavigate?.()
     },
-    [navigateWithFeedback],
+    [navigateWithFeedback]
   )
 
   /**
@@ -159,7 +159,7 @@ export function useSidebarNavigation() {
     (categoryId: string) => {
       prefetchRoute(`/categories/${categoryId}`)
     },
-    [prefetchRoute],
+    [prefetchRoute]
   )
 
   /**
@@ -169,7 +169,7 @@ export function useSidebarNavigation() {
     (accountId: string) => {
       prefetchRoute(`/accounts/${accountId}`)
     },
-    [prefetchRoute],
+    [prefetchRoute]
   )
 
   return {

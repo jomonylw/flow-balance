@@ -27,6 +27,7 @@ model User {
   accounts         Account[]
   categories       Category[]
   transactions     Transaction[]
+  transactionTemplates TransactionTemplate[] // 用户的交易模板
   tags             Tag[]
   exchangeRates    ExchangeRate[]
 
@@ -67,6 +68,7 @@ model Currency {
   userCurrencies    UserCurrency[]
   accounts          Account[]      // 使用此货币的账户
   transactions      Transaction[]
+  transactionTemplates TransactionTemplate[] // 使用此货币的交易模板
   fromExchangeRates ExchangeRate[] @relation("FromCurrency")
   toExchangeRates   ExchangeRate[] @relation("ToCurrency")
   creator           User?          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
@@ -132,6 +134,7 @@ model Category {
   children     Category[]  @relation("CategoryHierarchy")
   accounts     Account[]
   transactions Transaction[]
+  transactionTemplates TransactionTemplate[] // 使用此分类的交易模板
 
   @@unique([userId, name, parentId]) // 同一用户下同一父分类中的分类名不能重复
   @@map("categories")
@@ -164,6 +167,7 @@ model Account {
   category     Category      @relation(fields: [categoryId], references: [id])
   currency     Currency      @relation(fields: [currencyCode], references: [code])
   transactions Transaction[]
+  transactionTemplates TransactionTemplate[] // 使用此账户的交易模板
 
   @@unique([userId, name]) // 同一用户下账户名不能重复
   @@map("accounts")
@@ -193,6 +197,32 @@ model Transaction {
 
   // 注意：由于Prisma不支持条件唯一约束，我们在应用层实现每天每账户只能有一笔BALANCE记录的逻辑
   @@map("transactions")
+}
+
+// 交易模板表 - 用户的交易模板
+model TransactionTemplate {
+  id           String          @id @default(cuid())
+  userId       String
+  name         String          // 模板名称
+  accountId    String
+  categoryId   String
+  currencyCode String
+  type         TransactionType // 收入、支出
+  description  String
+  notes        String?         // 备注
+  tagIds       Json?           // 标签ID数组，使用JSON类型存储
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  // 关联关系
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account      Account         @relation(fields: [accountId], references: [id])
+  category     Category        @relation(fields: [categoryId], references: [id])
+  currency     Currency        @relation(fields: [currencyCode], references: [code])
+
+  // 确保同一用户的模板名称唯一
+  @@unique([userId, name])
+  @@map("transaction_templates")
 }
 
 // 交易类型枚举

@@ -45,7 +45,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
     if (theme === 'system') {
       const systemPrefersDark = window.matchMedia(
-        '(prefers-color-scheme: dark)',
+        '(prefers-color-scheme: dark)'
       ).matches
       console.log('System prefers dark:', systemPrefersDark)
       if (systemPrefersDark) {

@@ -48,7 +48,7 @@ export default function FlowAccountTrendChart({
 
     const chart = echarts.init(
       chartRef.current,
-      resolvedTheme === 'dark' ? 'dark' : null,
+      resolvedTheme === 'dark' ? 'dark' : null
     )
     chartInstance.current = chart
 
@@ -225,7 +225,7 @@ export default function FlowAccountTrendChart({
             color: ColorManager.getAccountColor(
               account.id,
               account.color,
-              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
+              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
             ),
             borderRadius: [4, 4, 0, 0], // 流量账户交易金额都是正数，圆角在顶部
           },
@@ -235,9 +235,9 @@ export default function FlowAccountTrendChart({
                 ColorManager.getAccountColor(
                   account.id,
                   account.color,
-                  account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
+                  account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
                 ),
-                0.8,
+                0.8
               ),
             },
           },
@@ -253,8 +253,8 @@ export default function FlowAccountTrendChart({
               ColorManager.getAccountColor(
                 account.id,
                 account.color,
-                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
-              ),
+                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+              )
             ),
             width: 3,
           },
@@ -263,8 +263,8 @@ export default function FlowAccountTrendChart({
               ColorManager.getAccountColor(
                 account.id,
                 account.color,
-                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
-              ),
+                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+              )
             ),
           },
           symbol: 'circle',
@@ -275,8 +275,8 @@ export default function FlowAccountTrendChart({
                 ColorManager.getAccountColor(
                   account.id,
                   account.color,
-                  account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
-                ),
+                  account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+                )
               ),
               borderWidth: 2,
             },
@@ -341,7 +341,7 @@ export default function FlowAccountTrendChart({
                 }`}
               >
                 {t(
-                  `chart.range.${range.replace(/([A-Z])/g, '.$1').toLowerCase()}`,
+                  `chart.range.${range.replace(/([A-Z])/g, '.$1').toLowerCase()}`
                 )}
               </button>
             ))}

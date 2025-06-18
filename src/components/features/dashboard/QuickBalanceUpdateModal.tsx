@@ -77,7 +77,7 @@ export default function QuickBalanceUpdateModal({
 
   // 获取选中账户的当前余额
   const selectedAccount = stockAccounts.find(
-    account => account.id === formData.accountId,
+    account => account.id === formData.accountId
   )
   const accountBalance = accountBalances?.[formData.accountId]
   const currentBalance =
@@ -114,7 +114,7 @@ export default function QuickBalanceUpdateModal({
   }, [formData.accountId, selectedAccount])
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -188,12 +188,12 @@ export default function QuickBalanceUpdateModal({
           t('balance.update.success'),
           t('balance.update.success.message', {
             accountName: selectedAccount?.name || '',
-          }),
+          })
         )
 
         // 发布余额更新事件
         console.log(
-          `[QuickBalanceUpdateModal] Publishing balance update event for account ${formData.accountId}`,
+          `[QuickBalanceUpdateModal] Publishing balance update event for account ${formData.accountId}`
         )
         await publishBalanceUpdate(formData.accountId, {
           newBalance: parseFloat(formData.newBalance),
@@ -201,7 +201,7 @@ export default function QuickBalanceUpdateModal({
           transaction: result.transaction,
         })
         console.log(
-          '[QuickBalanceUpdateModal] Balance update event published successfully',
+          '[QuickBalanceUpdateModal] Balance update event published successfully'
         )
 
         onSuccess()

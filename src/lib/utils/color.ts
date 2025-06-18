@@ -109,7 +109,7 @@ export class ColorManager {
   static getAccountColor(
     accountId: string,
     accountColor?: string | null,
-    accountType?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
+    accountType?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
   ): string {
     // 优先使用自定义颜色
     if (accountColor) {
@@ -168,7 +168,7 @@ export class ColorManager {
    */
   static generateChartColors<T>(
     items: T[],
-    getItemColor: (item: T, index: number) => string | null | undefined,
+    getItemColor: (item: T, index: number) => string | null | undefined
   ): string[] {
     return items.map((item, index) => {
       const customColor = getItemColor(item, index)
@@ -186,7 +186,7 @@ export class ColorManager {
    */
   static generateSmartChartColors<T>(
     items: T[],
-    getItemColor: (item: T, index: number) => string | null | undefined,
+    getItemColor: (item: T, index: number) => string | null | undefined
   ): string[] {
     const colors: string[] = []
     const usedColors: string[] = []
@@ -225,7 +225,7 @@ export class ColorManager {
               CHART_COLOR_SEQUENCE.length
             const variantIndex = Math.floor(
               (attempts - CHART_COLOR_SEQUENCE.length) /
-                CHART_COLOR_SEQUENCE.length,
+                CHART_COLOR_SEQUENCE.length
             )
             const baseColor = CHART_COLOR_SEQUENCE[baseColorIndex]
             assignedColor = this.generateColorVariant(baseColor, variantIndex)
@@ -285,7 +285,7 @@ export class ColorManager {
     const b2 = parseInt(hex2.substr(4, 2), 16)
 
     return Math.sqrt(
-      Math.pow(r2 - r1, 2) + Math.pow(g2 - g1, 2) + Math.pow(b2 - b1, 2),
+      Math.pow(r2 - r1, 2) + Math.pow(g2 - g1, 2) + Math.pow(b2 - b1, 2)
     )
   }
 
@@ -398,7 +398,7 @@ export class ColorManager {
       const newB = Math.round(b + (255 - b) * factor)
 
       gradient.push(
-        `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`,
+        `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`
       )
     }
 
@@ -479,15 +479,15 @@ export class ColorManager {
         const direction = variant % 2 === 0 ? 1 : -1
         const newR = Math.max(
           0,
-          Math.min(255, r + adjustmentFactor * direction),
+          Math.min(255, r + adjustmentFactor * direction)
         )
         const newG = Math.max(
           0,
-          Math.min(255, g + adjustmentFactor * direction * 0.8),
+          Math.min(255, g + adjustmentFactor * direction * 0.8)
         )
         const newB = Math.max(
           0,
-          Math.min(255, b + adjustmentFactor * direction * 0.6),
+          Math.min(255, b + adjustmentFactor * direction * 0.6)
         )
         return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`
     }
@@ -505,7 +505,7 @@ export class ColorManager {
     color: string,
     hueShift: number,
     saturationShift: number,
-    lightnessShift: number,
+    lightnessShift: number
   ): string {
     const hex = color.replace('#', '')
     const r = parseInt(hex.substr(0, 2), 16) / 255

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const validAccountIds = userAccounts.map(acc => acc.id)
     const invalidAccountIds = accountIds.filter(
-      id => !validAccountIds.includes(id),
+      id => !validAccountIds.includes(id)
     )
 
     if (invalidAccountIds.length > 0) {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
           hasTransactions: count > 0,
           transactionCount: count,
         }
-      }),
+      })
     )
 
     // 构建结果对象
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       {} as Record<
         string,
         { hasTransactions: boolean; transactionCount: number }
-      >,
+      >
     )
 
     return successResponse(result, '批量检查完成')

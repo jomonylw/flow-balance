@@ -36,12 +36,12 @@ export default function CategoryAccountTree({
         } catch (error) {
           console.error(
             'Error loading expanded state from localStorage:',
-            error,
+            error
           )
         }
       }
       return new Set()
-    },
+    }
   )
 
   // 保存展开状态到 localStorage
@@ -51,7 +51,7 @@ export default function CategoryAccountTree({
         const expandedIds = Array.from(expandedCategories)
         localStorage.setItem(
           'categoryTreeExpandedState',
-          JSON.stringify(expandedIds),
+          JSON.stringify(expandedIds)
         )
       } catch (error) {
         console.error('Error saving expanded state to localStorage:', error)
@@ -90,7 +90,7 @@ export default function CategoryAccountTree({
 
     // 按 order 排序
     const sortCategories = (
-      cats: (SimpleCategory & { children?: SimpleCategory[] })[],
+      cats: (SimpleCategory & { children?: SimpleCategory[] })[]
     ) => {
       cats.sort((a, b) => (a.order || 0) - (b.order || 0))
       cats.forEach(cat => {
@@ -114,7 +114,7 @@ export default function CategoryAccountTree({
 
     // 过滤分类
     const filterCategories = (
-      cats: (SimpleCategory & { children?: SimpleCategory[] })[],
+      cats: (SimpleCategory & { children?: SimpleCategory[] })[]
     ): (SimpleCategory & { children?: SimpleCategory[] })[] => {
       return cats
         .filter(category => {
@@ -124,7 +124,7 @@ export default function CategoryAccountTree({
           const hasMatchingAccounts = accounts.some(
             account =>
               account.categoryId === category.id &&
-              account.name.toLowerCase().includes(query),
+              account.name.toLowerCase().includes(query)
           )
 
           return matchesName || hasMatchingChildren || hasMatchingAccounts
@@ -141,7 +141,7 @@ export default function CategoryAccountTree({
     const filteredAccounts = accounts.filter(
       account =>
         account.name.toLowerCase().includes(query) ||
-        account.description?.toLowerCase().includes(query),
+        account.description?.toLowerCase().includes(query)
     )
 
     return {
@@ -164,10 +164,10 @@ export default function CategoryAccountTree({
 
   const renderCategory = (
     category: SimpleCategory & { children?: SimpleCategory[] },
-    level: number = 0,
+    level: number = 0
   ) => {
     const categoryAccounts = filteredData.accounts.filter(
-      account => account.categoryId === category.id,
+      account => account.categoryId === category.id
     )
     const isExpanded = expandedCategories.has(category.id)
     const hasChildren =

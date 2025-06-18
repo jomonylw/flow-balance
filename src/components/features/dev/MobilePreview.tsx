@@ -8,7 +8,7 @@ interface MobilePreviewProps {
 
 export default function MobilePreview({ children }: MobilePreviewProps) {
   const [viewMode, setViewMode] = useState<'desktop' | 'tablet' | 'mobile'>(
-    'desktop',
+    'desktop'
   )
 
   const getViewportStyles = () => {

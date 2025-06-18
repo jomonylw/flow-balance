@@ -12,7 +12,7 @@ import { getFlowCategorySummary } from '@/lib/services/category-summary/flow-cat
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> },
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
     const { categoryId } = await params

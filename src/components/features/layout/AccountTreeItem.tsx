@@ -143,7 +143,7 @@ export default function AccountTreeItem({
         `/api/accounts/${account.id}/clear-balance`,
         {
           method: 'DELETE',
-        },
+        }
       )
 
       if (response.ok) {

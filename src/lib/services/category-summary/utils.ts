@@ -34,7 +34,7 @@ export function extractBalanceChangeFromNotes(notes: string): number | null {
  */
 export async function getAllCategoryIds(
   prisma: PrismaClient,
-  categoryId: string,
+  categoryId: string
 ): Promise<string[]> {
   const category = await prisma.category.findUnique({
     where: { id: categoryId },
@@ -57,7 +57,7 @@ export async function getAllCategoryIds(
  * @returns 序列化后的账户数据
  */
 export function serializeAccountData(
-  account: Account & { transactions: Transaction[] },
+  account: Account & { transactions: Transaction[] }
 ) {
   return {
     ...account,
@@ -80,12 +80,12 @@ export function calculateChildCategoryBalances(
     categoryId: string
     balances: Record<string, number>
   }>,
-  childAccountIds: string[],
+  childAccountIds: string[]
 ): Record<string, number> {
   const childBalances: Record<string, number> = {}
 
   const childAccounts = allAccountSummaries.filter(account =>
-    childAccountIds.includes(account.categoryId),
+    childAccountIds.includes(account.categoryId)
   )
 
   childAccounts.forEach(account => {
@@ -108,7 +108,7 @@ export function calculateChildCategoryBalances(
 export function calculateCategoryTotalBalances(
   allAccountSummaries: Array<{
     balances: Record<string, number>
-  }>,
+  }>
 ): Record<string, number> {
   const categoryBalanceSummary: Record<string, number> = {}
 

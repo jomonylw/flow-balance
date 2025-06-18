@@ -17,7 +17,7 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(
-  undefined,
+  undefined
 )
 
 interface LanguageProviderProps {
@@ -52,6 +52,7 @@ const namespaces = [
   'status',
   'success',
   'tag',
+  'template',
   'time',
   'transaction',
   'type',
@@ -120,12 +121,12 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
               return {} // Return empty object on failure to avoid breaking Promise.all
             }
             return res.json()
-          }),
+          })
         )
         const results = await Promise.all(promises)
         const mergedTranslations = results.reduce(
           (acc, curr) => ({ ...acc, ...curr }),
-          {},
+          {}
         )
         setTranslations(mergedTranslations)
       } catch (error) {

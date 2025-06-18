@@ -43,7 +43,7 @@ export function serializeAccount(
     category: Category
     currency: Currency
     transactions?: (Transaction & { currency: Currency })[]
-  },
+  }
 ) {
   return {
     ...account,
@@ -76,7 +76,7 @@ export function serializeAccounts(
     category: Category
     currency: Currency
     transactions?: (Transaction & { currency: Currency })[]
-  })[],
+  })[]
 ) {
   return accounts.map(account => serializeAccount(account))
 }

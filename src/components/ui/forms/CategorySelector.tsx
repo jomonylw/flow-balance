@@ -44,7 +44,7 @@ export default function CategorySelector({
   const isDescendantOf = (
     category: LocalCategory,
     ancestorId: string,
-    allCategories: LocalCategory[],
+    allCategories: LocalCategory[]
   ): boolean => {
     if (!category.parentId) return false
     if (category.parentId === ancestorId) return true
@@ -57,7 +57,7 @@ export default function CategorySelector({
 
   const findRootCategory = (
     category: LocalCategory,
-    allCategories: LocalCategory[],
+    allCategories: LocalCategory[]
   ): LocalCategory | null => {
     if (!category.parentId) {
       return category
@@ -73,7 +73,7 @@ export default function CategorySelector({
 
   const filterExcludedCategories = (
     categories: LocalCategory[],
-    excludeId: string,
+    excludeId: string
   ): LocalCategory[] => {
     return categories.filter(category => {
       if (category.id === excludeId) {
@@ -86,7 +86,7 @@ export default function CategorySelector({
 
   const filterByAccountTypeFunc = (
     categories: LocalCategory[],
-    accountType: string,
+    accountType: string
   ): LocalCategory[] => {
     return categories.filter(category => {
       // 如果分类有明确的类型，检查是否匹配
@@ -141,13 +141,13 @@ export default function CategorySelector({
     if (excludeCategoryId) {
       categoriesData = filterExcludedCategories(
         categoriesData,
-        excludeCategoryId,
+        excludeCategoryId
       )
 
       // 对于分类移动，需要确保只显示同类型的分类
       // 获取被排除分类的根分类类型
       const excludedCategory = allCategories.find(
-        cat => cat.id === excludeCategoryId,
+        cat => cat.id === excludeCategoryId
       )
       if (excludedCategory) {
         // 转换为LocalCategory类型
@@ -159,12 +159,12 @@ export default function CategorySelector({
         }
         const excludedRootCategory = findRootCategory(
           excludedLocalCategory,
-          categoriesData,
+          categoriesData
         )
         if (excludedRootCategory?.type) {
           categoriesData = filterByAccountTypeFunc(
             categoriesData,
-            excludedRootCategory.type,
+            excludedRootCategory.type
           )
         }
       }
@@ -174,7 +174,7 @@ export default function CategorySelector({
     if (filterByAccountType) {
       categoriesData = filterByAccountTypeFunc(
         categoriesData,
-        filterByAccountType,
+        filterByAccountType
       )
     }
 
@@ -191,7 +191,7 @@ export default function CategorySelector({
 
   const renderCategoryTree = (
     categories: LocalCategory[],
-    level = 0,
+    level = 0
   ): React.ReactNode => {
     return categories.map(category => (
       <div key={category.id}>

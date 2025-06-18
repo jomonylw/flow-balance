@@ -8,7 +8,6 @@ import {
 } from '@/lib/api/response'
 import { AccountType } from '@prisma/client'
 
-
 /**
  * FIRE 数据 API
  * 提供 FIRE 计算所需的基础数据
@@ -175,7 +174,7 @@ export async function GET(_request: NextRequest) {
 
     const monthlyNetInvestment = Math.max(
       0,
-      (totalIncome - totalExpensesRecent) / 6,
+      (totalIncome - totalExpensesRecent) / 6
     )
 
     // 返回 FIRE 计算基础数据

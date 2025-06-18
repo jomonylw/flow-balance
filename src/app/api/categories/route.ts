@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!validationResult.success) {
       return errorResponse(
         `验证失败: ${validationResult.errors.join(', ')}`,
-        400,
+        400
       )
     }
 

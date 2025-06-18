@@ -12,7 +12,7 @@
 export function formatCurrency(
   amount: number,
   currencyCode: string,
-  symbol?: string,
+  symbol?: string
 ): string {
   // 常见货币符号映射
   const currencySymbols: Record<string, string> = {
@@ -141,7 +141,7 @@ export function deepClone<T>(obj: T): T {
  */
 export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
-  wait: number,
+  wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | null = null
 
@@ -164,7 +164,7 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
  */
 export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
-  limit: number,
+  limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle = false
 

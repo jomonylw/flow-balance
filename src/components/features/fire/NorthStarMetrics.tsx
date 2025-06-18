@@ -30,7 +30,7 @@ export default function NorthStarMetrics({
     // NPER 计算公式
     const numerator = Math.log(
       (futureValue * monthlyRate + monthlyPayment) /
-        (presentValue * monthlyRate + monthlyPayment),
+        (presentValue * monthlyRate + monthlyPayment)
     )
     const denominator = Math.log(1 + monthlyRate)
     monthsToFire = numerator / denominator
@@ -146,7 +146,7 @@ export default function NorthStarMetrics({
             {t('fire.north.star.current.progress.description', {
               amount: formatCurrency(
                 params.currentInvestableAssets,
-                currency.code,
+                currency.code
               ),
             })}
           </p>

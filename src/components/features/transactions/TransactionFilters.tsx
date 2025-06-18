@@ -49,12 +49,12 @@ export default function TransactionFilters({
   // 筛选出收入类和支出类账户
   const flowAccounts = accounts.filter(
     account =>
-      account.category.type === 'INCOME' || account.category.type === 'EXPENSE',
+      account.category.type === 'INCOME' || account.category.type === 'EXPENSE'
   )
 
   // 筛选出收入类和支出类分类
   const flowCategories = categories.filter(
-    category => category.type === 'INCOME' || category.type === 'EXPENSE',
+    category => category.type === 'INCOME' || category.type === 'EXPENSE'
   )
 
   // 日期格式化函数，避免时区问题
@@ -66,7 +66,7 @@ export default function TransactionFilters({
   }
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
     onFilterChange({ [name]: value })
@@ -315,13 +315,13 @@ export default function TransactionFilters({
               const thisMonthStart = new Date(
                 today.getFullYear(),
                 today.getMonth(),
-                1,
+                1
               )
               // 当月最后一天
               const thisMonthEnd = new Date(
                 today.getFullYear(),
                 today.getMonth() + 1,
-                0,
+                0
               )
 
               onFilterChange({

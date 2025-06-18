@@ -38,11 +38,11 @@ async function calculateMonthlyHistoricalFlows(
   account: { id: string; transactions: FlowTransaction[] },
   allMonths: string[],
   baseCurrency: BaseCurrency,
-  userId: string,
+  userId: string
 ): Promise<Record<string, MonthlyBalance>> {
   const monthlyFlows: Record<string, Record<string, number>> = {}
   const flowTransactions = account.transactions.filter(
-    t => t.type === 'INCOME' || t.type === 'EXPENSE',
+    t => t.type === 'INCOME' || t.type === 'EXPENSE'
   )
 
   if (flowTransactions.length === 0) {
@@ -61,7 +61,7 @@ async function calculateMonthlyHistoricalFlows(
 
   Object.values(currencyGroups).forEach(transactions => {
     transactions.sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     )
   })
 
@@ -108,7 +108,7 @@ async function calculateMonthlyHistoricalFlows(
       ? await convertMultipleCurrencies(
           userId,
           conversionRequests,
-          baseCurrency.code,
+          baseCurrency.code
         )
       : []
 
@@ -141,7 +141,7 @@ async function calculateMonthlyHistoricalFlows(
  */
 export async function getFlowCategorySummary(
   categoryId: string,
-  userId: string,
+  userId: string
 ): Promise<MonthlyReport[]> {
   // 1. 获取分类和本位币信息
   const category = (await prisma.category.findFirst({
@@ -201,17 +201,17 @@ export async function getFlowCategorySummary(
   if (transactionDates.length > 0) {
     // 找到最早的日期
     const firstTransactionDate = new Date(
-      Math.min(...transactionDates.map(d => d.getTime())),
+      Math.min(...transactionDates.map(d => d.getTime()))
     )
     const startDate = new Date(
       firstTransactionDate.getFullYear(),
       firstTransactionDate.getMonth(),
-      1,
+      1
     )
 
     while (startDate <= now) {
       allMonths.push(
-        `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`,
+        `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`
       )
       startDate.setMonth(startDate.getMonth() + 1)
     }
@@ -242,10 +242,10 @@ export async function getFlowCategorySummary(
           { id: account.id, transactions: flowTransactions },
           allMonths,
           baseCurrency,
-          userId,
+          userId
         )
       }
-    }),
+    })
   )
 
   // 5. 按月聚合报告
@@ -261,13 +261,13 @@ export async function getFlowCategorySummary(
     // 聚合子分类数据
     const validChildren = category.children.filter(
       (child): child is typeof child & { type: 'INCOME' | 'EXPENSE' } =>
-        child.type === 'INCOME' || child.type === 'EXPENSE',
+        child.type === 'INCOME' || child.type === 'EXPENSE'
     )
     await Promise.all(
       validChildren.map(async child => {
         const childCategoryIds = await getAllCategoryIds(prisma, child.id)
         const childAccounts = allAccounts.filter(acc =>
-          childCategoryIds.includes(acc.categoryId),
+          childCategoryIds.includes(acc.categoryId)
         )
 
         const summary: MonthlyChildCategorySummary = {
@@ -293,12 +293,12 @@ export async function getFlowCategorySummary(
           }
         })
         report.childCategories.push(summary)
-      }),
+      })
     )
 
     // 聚合直属账户数据
     const directAccounts = allAccounts.filter(
-      acc => acc.categoryId === categoryId,
+      acc => acc.categoryId === categoryId
     )
     directAccounts.forEach(acc => {
       const balances = accountMonthlyFlows[acc.id]?.[month]
@@ -321,6 +321,6 @@ export async function getFlowCategorySummary(
 
   // 6. 格式化并返回结果
   return Object.values(monthlyReports).sort((a, b) =>
-    b.month.localeCompare(a.month),
+    b.month.localeCompare(a.month)
   )
 }

@@ -39,7 +39,6 @@ export function useRoutePreservation() {
       previousPathnameRef.current !== pathname
     ) {
       // 路由变化时的处理
-
     }
     previousPathnameRef.current = pathname
   }, [pathname])
@@ -68,7 +67,7 @@ export function useDebounceScrollSave() {
 
       timeoutRef.current = setTimeout(callback, delay)
     },
-    [],
+    []
   )
 
   useEffect(() => {

@@ -623,16 +623,20 @@ node scripts/generate-refactor-report.js
   - 保持组件功能不变
 
 #### MonthlyDataItem 类型重构 (阶段 6D) - 2024-06-17 继续
+
 - ✅ **MonthlyDataItem 统一重构** - 移除了 3 个重复类型定义 (3 → 0)
+
   - 在 `@/types/core/index.ts` 中创建统一的 MonthlyDataItem 类型定义
   - 完全消除了 MonthlyDataItem 类型的重复定义
 
 - ✅ `FlowCategoryDetailView.tsx` - 移除了 1 个重复类型定义
+
   - 移除本地 `MonthlyDataItem` 接口
   - 导入并使用统一的 MonthlyDataItem 类型
   - 保持组件功能不变
 
 - ✅ `StockCategoryDetailView.tsx` - 移除了 1 个重复类型定义
+
   - 移除本地 `MonthlyDataItem` 接口
   - 导入并使用统一的 MonthlyDataItem 类型
   - 保持组件功能不变
@@ -643,16 +647,20 @@ node scripts/generate-refactor-report.js
   - 保持组件功能不变
 
 #### RecentTransaction 类型重构 (阶段 6D) - 2024-06-17 继续
+
 - ✅ **RecentTransaction 统一重构** - 移除了 2 个重复类型定义 (3 → 1)
+
   - 在 `@/types/core/index.ts` 中创建统一的 RecentTransaction 类型定义
   - 保留服务层的 `ServiceRecentTransaction` 类型（date 为 string 类型）
 
 - ✅ `RecentActivityCard.tsx` - 移除了 1 个重复类型定义
+
   - 移除本地 `RecentTransaction` 接口
   - 导入并使用统一的 RecentTransaction 类型
   - 保持组件功能不变
 
 - ✅ `RecentTransactionsList.tsx` - 移除了 1 个重复类型定义
+
   - 移除本地 `RecentTransaction` 接口
   - 导入并使用统一的 RecentTransaction 类型
   - 保持组件功能不变
@@ -663,17 +671,21 @@ node scripts/generate-refactor-report.js
   - 保持服务功能不变
 
 #### SummaryData 类型重构 (阶段 6D) - 2024-06-17 继续
+
 - ✅ **SummaryData 统一重构** - 移除了 1 个重复类型定义 (3 → 2)
+
   - 在 `@/types/core/index.ts` 中创建统一的汇总数据类型体系
   - 创建 `BaseSummaryData`、`SmartCategorySummaryData`、`StockCategorySummaryData` 等专用类型
   - 保留两个不同用途的 SummaryData 类型别名
 
 - ✅ `SmartCategorySummaryCard.tsx` - 移除了 1 个重复类型定义
+
   - 移除本地 `SummaryData` 接口
   - 导入并使用统一的 `SmartCategorySummaryData` 类型
   - 保持组件功能不变
 
 - ✅ `StockCategoryDetailView.tsx` - 使用统一类型别名
+
   - 创建 `SummaryData` 和 `MonthlyData` 类型别名
   - 使用统一的 `StockCategorySummaryData` 和 `StockCategoryMonthlyData` 类型
   - 保持组件功能不变
@@ -684,8 +696,10 @@ node scripts/generate-refactor-report.js
   - 保持组件功能不变
 
 #### 重构总结 (阶段 7 最终) - 2024-06-17
+
 - ✅ **总体进展** - 成功移除了 22 个重复类型定义 (从 63 个减少到 41 个)
 - ✅ **类型检查通过** - 修复了所有类型错误，确保代码质量
+
   - Currency: 8 → 4 (-4 个)
   - User: 6 → 3 (-3 个)
   - Transaction: 6 → 2 (-4 个)
@@ -710,9 +724,10 @@ node scripts/generate-refactor-report.js
   - BreadcrumbItem: 3 → 0 (-3 个) ✅ **完全统一** [面包屑导航]
 
 - ✅ **类型系统增强** - 建立了完整的类型定义体系
+
   - 创建了统一的核心类型定义中心 (`@/types/core`)
   - 建立了清晰的类型导入/导出规范
-  - 添加了完整的 Simple* 接口系列
+  - 添加了完整的 Simple\* 接口系列
   - 创建了特定用途的扩展接口和类型别名
   - 保持了向后兼容性
 

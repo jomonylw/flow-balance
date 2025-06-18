@@ -222,7 +222,7 @@ export const ExportOptionsSchema = z.object({
 /** 验证数据并返回结果 */
 export function validateData<T>(
   schema: z.ZodSchema<T>,
-  data: unknown,
+  data: unknown
 ): { success: true; data: T } | { success: false; errors: string[] } {
   try {
     const result = schema.parse(data)
@@ -230,7 +230,7 @@ export function validateData<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const errors = error.errors.map(
-        err => `${err.path.join('.')}: ${err.message}`,
+        err => `${err.path.join('.')}: ${err.message}`
       )
       return { success: false, errors }
     }
@@ -241,7 +241,7 @@ export function validateData<T>(
 /** 安全解析数据（不抛出异常） */
 export function safeParseData<T>(
   schema: z.ZodSchema<T>,
-  data: unknown,
+  data: unknown
 ): { success: true; data: T } | { success: false; error: z.ZodError } {
   return schema.safeParse(data)
 }

@@ -93,18 +93,18 @@ class DataUpdateManager {
    */
   private async processEvent(event: DataUpdateEvent): Promise<void> {
     const relevantListeners = Array.from(this.listeners.values()).filter(
-      listener => listener.types.includes(event.type),
+      listener => listener.types.includes(event.type)
     )
 
     console.warn(
-      `[DataUpdateManager] Processing event ${event.type} for ${relevantListeners.length} listeners`,
+      `[DataUpdateManager] Processing event ${event.type} for ${relevantListeners.length} listeners`
     )
 
     // 并行执行所有相关监听器
     const promises = relevantListeners.map(async listener => {
       try {
         console.warn(
-          `[DataUpdateManager] Calling listener ${listener.id} for event ${event.type}`,
+          `[DataUpdateManager] Calling listener ${listener.id} for event ${event.type}`
         )
         await listener.callback(event)
       } catch (error) {
@@ -160,73 +160,73 @@ export const subscribeToDataUpdates = (listener: DataUpdateListener) =>
 // 常用事件发布方法
 export const publishBalanceUpdate = (
   accountId: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'balance-update', accountId, data })
 
 export const publishTransactionCreate = (
   accountId: string,
   categoryId?: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) =>
   publishDataUpdate({ type: 'transaction-create', accountId, categoryId, data })
 
 export const publishTransactionUpdate = (
   accountId: string,
   categoryId?: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) =>
   publishDataUpdate({ type: 'transaction-update', accountId, categoryId, data })
 
 export const publishTransactionDelete = (
   accountId: string,
   categoryId?: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) =>
   publishDataUpdate({ type: 'transaction-delete', accountId, categoryId, data })
 
 export const publishAccountCreate = (
   categoryId: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'account-create', categoryId, data })
 
 export const publishAccountUpdate = (
   accountId: string,
   categoryId?: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'account-update', accountId, categoryId, data })
 
 export const publishAccountDelete = (
   accountId: string,
   categoryId?: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'account-delete', accountId, categoryId, data })
 
 export const publishCategoryCreate = (
   categoryId?: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'category-create', categoryId, data })
 
 export const publishCategoryUpdate = (
   categoryId: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'category-update', categoryId, data })
 
 export const publishCategoryDelete = (
   categoryId: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'category-delete', categoryId, data })
 
 export const publishTagCreate = (
   tagId: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'tag-create', tagId, data })
 
 export const publishTagUpdate = (
   tagId: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'tag-update', tagId, data })
 
 export const publishTagDelete = (
   tagId: string,
-  data?: Record<string, unknown>,
+  data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'tag-delete', tagId, data })

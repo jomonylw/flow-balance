@@ -16,10 +16,12 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import ColorManager from '@/lib/utils/color'
 import WithTranslation from '@/components/ui/data-display/WithTranslation'
-import type { BalanceSheetAccountInfo, BalanceSheetData, BalanceSheetCategoryWithAccounts } from '@/types/components'
+import type {
+  BalanceSheetAccountInfo,
+  BalanceSheetData,
+  BalanceSheetCategoryWithAccounts,
+} from '@/types/components'
 import type { SimpleCurrency } from '@/types/core'
-
-
 
 interface BalanceSheetResponse {
   balanceSheet: BalanceSheetData
@@ -112,7 +114,9 @@ export default function BalanceSheetCard() {
       })
 
       // 递归计算父分类的汇总余额
-      const calculateParentTotals = (category: BalanceSheetCategoryWithAccounts) => {
+      const calculateParentTotals = (
+        category: BalanceSheetCategoryWithAccounts
+      ) => {
         // 先计算子分类
         category.children?.forEach(calculateParentTotals)
 
@@ -122,7 +126,7 @@ export default function BalanceSheetCard() {
             ([currency, amount]) => {
               category.totalByCurrency[currency] =
                 (category.totalByCurrency[currency] || 0) + amount
-            },
+            }
           )
           category.totalInBaseCurrency =
             (category.totalInBaseCurrency || 0) +
@@ -140,7 +144,7 @@ export default function BalanceSheetCard() {
               (sum, account) => {
                 return sum + (account.balanceInBaseCurrency || 0)
               },
-              0,
+              0
             )
           } else {
             category.totalInBaseCurrency = 0
@@ -174,7 +178,7 @@ export default function BalanceSheetCard() {
     setLoading(true)
     try {
       const response = await fetch(
-        `/api/reports/balance-sheet?asOfDate=${asOfDate.toISOString()}`,
+        `/api/reports/balance-sheet?asOfDate=${asOfDate.toISOString()}`
       )
       if (response.ok) {
         const result = await response.json()
@@ -240,7 +244,7 @@ export default function BalanceSheetCard() {
   // 新的层级渲染函数
   const renderHierarchicalCategories = (
     categories: BalanceSheetCategoryWithAccounts[],
-    level: number = 0,
+    level: number = 0
   ) => {
     return categories.map(category => (
       <div key={category.id} className='mb-4'>
@@ -280,7 +284,7 @@ export default function BalanceSheetCard() {
                     {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
-                    },
+                    }
                   )}
                 </span>
               </div>
@@ -297,7 +301,7 @@ export default function BalanceSheetCard() {
             {Object.entries(category.totalByCurrency || {}).map(
               ([currencyCode, total]) => {
                 const currencyAccounts = category.accounts.filter(
-                  account => account.currency?.code === currencyCode,
+                  account => account.currency?.code === currencyCode
                 )
                 if (currencyAccounts.length === 0) return null
 
@@ -319,14 +323,14 @@ export default function BalanceSheetCard() {
                               .reduce(
                                 (sum, account) =>
                                   sum + (account.balanceInBaseCurrency || 0),
-                                0,
+                                0
                               )
                               .toLocaleString(
                                 language === 'zh' ? 'zh-CN' : 'en-US',
                                 {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 2,
-                                },
+                                }
                               )}
                           </div>
                         )}
@@ -347,7 +351,7 @@ export default function BalanceSheetCard() {
                               style={{
                                 backgroundColor: (() => {
                                   const fullAccount = accounts.find(
-                                    acc => acc.id === account.id,
+                                    acc => acc.id === account.id
                                   )
                                   const accountType = fullAccount?.category
                                     ?.type as
@@ -359,7 +363,7 @@ export default function BalanceSheetCard() {
                                   return ColorManager.getAccountColor(
                                     account.id,
                                     fullAccount?.color,
-                                    accountType,
+                                    accountType
                                   )
                                 })(),
                               }}
@@ -375,7 +379,7 @@ export default function BalanceSheetCard() {
                             <div className='text-gray-900 dark:text-gray-100 whitespace-nowrap'>
                               {formatCurrency(
                                 account.balance,
-                                account.currency,
+                                account.currency
                               )}
                             </div>
                             {account.balanceInBaseCurrency !== undefined &&
@@ -383,13 +387,13 @@ export default function BalanceSheetCard() {
                                 <div className='text-xs text-gray-400 whitespace-nowrap'>
                                   ≈ {baseCurrency.symbol}
                                   {Math.abs(
-                                    account.balanceInBaseCurrency,
+                                    account.balanceInBaseCurrency
                                   ).toLocaleString(
                                     language === 'zh' ? 'zh-CN' : 'en-US',
                                     {
                                       minimumFractionDigits: 2,
                                       maximumFractionDigits: 2,
-                                    },
+                                    }
                                   )}
                                 </div>
                               )}
@@ -399,7 +403,7 @@ export default function BalanceSheetCard() {
                     </div>
                   </div>
                 )
-              },
+              }
             )}
           </div>
         )}
@@ -426,7 +430,7 @@ export default function BalanceSheetCard() {
         totalInBaseCurrency?: number
       }
     >,
-    baseCurrency: SimpleCurrency,
+    baseCurrency: SimpleCurrency
   ) => {
     if (!categories || Object.keys(categories).length === 0) {
       return (
@@ -478,13 +482,13 @@ export default function BalanceSheetCard() {
                           <span className='text-xs text-gray-400'>
                             ≈ {baseCurrency.symbol}
                             {Math.abs(
-                              category.totalInBaseCurrency,
+                              category.totalInBaseCurrency
                             ).toLocaleString(
                               language === 'zh' ? 'zh-CN' : 'en-US',
                               {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
-                              },
+                              }
                             )}
                           </span>
                         )}
@@ -495,7 +499,7 @@ export default function BalanceSheetCard() {
                   <div className='ml-4 space-y-1'>
                     {(category.accounts || [])
                       .filter(
-                        account => account.currency?.code === currencyCode,
+                        account => account.currency?.code === currencyCode
                       )
                       .map(account => (
                         <div
@@ -512,7 +516,7 @@ export default function BalanceSheetCard() {
                             <span className='text-gray-900 dark:text-gray-100'>
                               {formatCurrency(
                                 account.balance,
-                                account.currency,
+                                account.currency
                               )}
                             </span>
                             {account.balanceInBaseCurrency !== undefined &&
@@ -520,13 +524,13 @@ export default function BalanceSheetCard() {
                                 <span className='text-xs text-gray-400'>
                                   ≈ {baseCurrency.symbol}
                                   {Math.abs(
-                                    account.balanceInBaseCurrency,
+                                    account.balanceInBaseCurrency
                                   ).toLocaleString(
                                     language === 'zh' ? 'zh-CN' : 'en-US',
                                     {
                                       minimumFractionDigits: 2,
                                       maximumFractionDigits: 2,
-                                    },
+                                    }
                                   )}
                                 </span>
                               )}
@@ -535,7 +539,7 @@ export default function BalanceSheetCard() {
                       ))}
                   </div>
                 </div>
-              ),
+              )
             )}
           </div>
         ))}
@@ -613,7 +617,7 @@ export default function BalanceSheetCard() {
             {format(
               new Date(data.asOfDate),
               language === 'zh' ? 'yyyy年MM月dd日' : 'MMM dd, yyyy',
-              { locale: dateLocale },
+              { locale: dateLocale }
             )}
           </p>
         </CardHeader>
@@ -632,7 +636,7 @@ export default function BalanceSheetCard() {
                   : renderCategorySection(
                       '',
                       data.balanceSheet.assets.categories,
-                      data.baseCurrency,
+                      data.baseCurrency
                     )}
               </div>
 
@@ -643,20 +647,20 @@ export default function BalanceSheetCard() {
                   </span>
                   <div>
                     {Object.entries(
-                      data.balanceSheet.assets.totalByCurrency || {},
+                      data.balanceSheet.assets.totalByCurrency || {}
                     ).map(([currencyCode, total]) => {
                       // 计算该币种的本币折算金额
                       const baseCurrencyAmount = Object.values(
-                        data.balanceSheet.assets.categories,
+                        data.balanceSheet.assets.categories
                       ).reduce((sum, category) => {
                         const categoryTotal = category.accounts
                           .filter(
-                            account => account.currency.code === currencyCode,
+                            account => account.currency.code === currencyCode
                           )
                           .reduce(
                             (accSum, account) =>
                               accSum + (account.balanceInBaseCurrency || 0),
-                            0,
+                            0
                           )
                         return sum + categoryTotal
                       }, 0)
@@ -678,7 +682,7 @@ export default function BalanceSheetCard() {
                                   {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  },
+                                  }
                                 )}
                               </div>
                             )}
@@ -699,7 +703,7 @@ export default function BalanceSheetCard() {
                       <div className='text-gray-900 dark:text-gray-100'>
                         {formatCurrency(
                           data.summary.baseCurrencyTotals.totalAssets,
-                          data.baseCurrency,
+                          data.baseCurrency
                         )}
                       </div>
                     </div>
@@ -718,12 +722,12 @@ export default function BalanceSheetCard() {
                 {enrichedCategoryTree?.liabilities &&
                 enrichedCategoryTree.liabilities.length > 0
                   ? renderHierarchicalCategories(
-                      enrichedCategoryTree.liabilities,
+                      enrichedCategoryTree.liabilities
                     )
                   : renderCategorySection(
                       '',
                       data.balanceSheet.liabilities.categories,
-                      data.baseCurrency,
+                      data.baseCurrency
                     )}
               </div>
 
@@ -734,20 +738,20 @@ export default function BalanceSheetCard() {
                   </span>
                   <div>
                     {Object.entries(
-                      data.balanceSheet.liabilities.totalByCurrency || {},
+                      data.balanceSheet.liabilities.totalByCurrency || {}
                     ).map(([currencyCode, total]) => {
                       // 计算该币种的本币折算金额
                       const baseCurrencyAmount = Object.values(
-                        data.balanceSheet.liabilities.categories,
+                        data.balanceSheet.liabilities.categories
                       ).reduce((sum, category) => {
                         const categoryTotal = category.accounts
                           .filter(
-                            account => account.currency.code === currencyCode,
+                            account => account.currency.code === currencyCode
                           )
                           .reduce(
                             (accSum, account) =>
                               accSum + (account.balanceInBaseCurrency || 0),
-                            0,
+                            0
                           )
                         return sum + categoryTotal
                       }, 0)
@@ -769,7 +773,7 @@ export default function BalanceSheetCard() {
                                   {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  },
+                                  }
                                 )}
                               </div>
                             )}
@@ -790,7 +794,7 @@ export default function BalanceSheetCard() {
                       <div className='text-red-600 dark:text-red-400'>
                         {formatCurrency(
                           data.summary.baseCurrencyTotals.totalLiabilities,
-                          data.baseCurrency,
+                          data.baseCurrency
                         )}
                       </div>
                     </div>
@@ -811,31 +815,31 @@ export default function BalanceSheetCard() {
                       ([currencyCode, equity]) => {
                         // 计算该币种的净资产本币折算金额
                         const assetBaseCurrencyAmount = Object.values(
-                          data.balanceSheet.assets.categories,
+                          data.balanceSheet.assets.categories
                         ).reduce((sum, category) => {
                           const categoryTotal = category.accounts
                             .filter(
-                              account => account.currency.code === currencyCode,
+                              account => account.currency.code === currencyCode
                             )
                             .reduce(
                               (accSum, account) =>
                                 accSum + (account.balanceInBaseCurrency || 0),
-                              0,
+                              0
                             )
                           return sum + categoryTotal
                         }, 0)
 
                         const liabilityBaseCurrencyAmount = Object.values(
-                          data.balanceSheet.liabilities.categories,
+                          data.balanceSheet.liabilities.categories
                         ).reduce((sum, category) => {
                           const categoryTotal = category.accounts
                             .filter(
-                              account => account.currency.code === currencyCode,
+                              account => account.currency.code === currencyCode
                             )
                             .reduce(
                               (accSum, account) =>
                                 accSum + (account.balanceInBaseCurrency || 0),
-                              0,
+                              0
                             )
                           return sum + categoryTotal
                         }, 0)
@@ -862,19 +866,19 @@ export default function BalanceSheetCard() {
                                 <div className='text-xs text-gray-400'>
                                   ≈ {data.baseCurrency.symbol}
                                   {Math.abs(
-                                    netBaseCurrencyAmount,
+                                    netBaseCurrencyAmount
                                   ).toLocaleString(
                                     language === 'zh' ? 'zh-CN' : 'en-US',
                                     {
                                       minimumFractionDigits: 2,
                                       maximumFractionDigits: 2,
-                                    },
+                                    }
                                   )}
                                 </div>
                               )}
                           </div>
                         )
-                      },
+                      }
                     )}
                   </div>
                 </div>
@@ -896,7 +900,7 @@ export default function BalanceSheetCard() {
                       >
                         {formatCurrency(
                           data.summary.baseCurrencyTotals.netWorth,
-                          data.baseCurrency,
+                          data.baseCurrency
                         )}
                       </div>
                     </div>
@@ -923,16 +927,16 @@ export default function BalanceSheetCard() {
                     ([currencyCode, total]) => {
                       // 计算该币种的本币折算金额
                       const baseCurrencyAmount = Object.values(
-                        data.balanceSheet.assets.categories,
+                        data.balanceSheet.assets.categories
                       ).reduce((sum, category) => {
                         const categoryTotal = category.accounts
                           .filter(
-                            account => account.currency.code === currencyCode,
+                            account => account.currency.code === currencyCode
                           )
                           .reduce(
                             (accSum, account) =>
                               accSum + (account.balanceInBaseCurrency || 0),
-                            0,
+                            0
                           )
                         return sum + categoryTotal
                       }, 0)
@@ -951,13 +955,13 @@ export default function BalanceSheetCard() {
                                   {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  },
+                                  }
                                 )}
                               </div>
                             )}
                         </div>
                       )
-                    },
+                    }
                   )}
                 </div>
               </div>
@@ -970,16 +974,16 @@ export default function BalanceSheetCard() {
                     ([currencyCode, total]) => {
                       // 计算该币种的本币折算金额
                       const baseCurrencyAmount = Object.values(
-                        data.balanceSheet.liabilities.categories,
+                        data.balanceSheet.liabilities.categories
                       ).reduce((sum, category) => {
                         const categoryTotal = category.accounts
                           .filter(
-                            account => account.currency.code === currencyCode,
+                            account => account.currency.code === currencyCode
                           )
                           .reduce(
                             (accSum, account) =>
                               accSum + (account.balanceInBaseCurrency || 0),
-                            0,
+                            0
                           )
                         return sum + categoryTotal
                       }, 0)
@@ -998,13 +1002,13 @@ export default function BalanceSheetCard() {
                                   {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  },
+                                  }
                                 )}
                               </div>
                             )}
                         </div>
                       )
-                    },
+                    }
                   )}
                 </div>
               </div>
@@ -1017,31 +1021,31 @@ export default function BalanceSheetCard() {
                     ([currencyCode, netWorth]) => {
                       // 计算该币种的净资产本币折算金额
                       const assetBaseCurrencyAmount = Object.values(
-                        data.balanceSheet.assets.categories,
+                        data.balanceSheet.assets.categories
                       ).reduce((sum, category) => {
                         const categoryTotal = category.accounts
                           .filter(
-                            account => account.currency.code === currencyCode,
+                            account => account.currency.code === currencyCode
                           )
                           .reduce(
                             (accSum, account) =>
                               accSum + (account.balanceInBaseCurrency || 0),
-                            0,
+                            0
                           )
                         return sum + categoryTotal
                       }, 0)
 
                       const liabilityBaseCurrencyAmount = Object.values(
-                        data.balanceSheet.liabilities.categories,
+                        data.balanceSheet.liabilities.categories
                       ).reduce((sum, category) => {
                         const categoryTotal = category.accounts
                           .filter(
-                            account => account.currency.code === currencyCode,
+                            account => account.currency.code === currencyCode
                           )
                           .reduce(
                             (accSum, account) =>
                               accSum + (account.balanceInBaseCurrency || 0),
-                            0,
+                            0
                           )
                         return sum + categoryTotal
                       }, 0)
@@ -1070,13 +1074,13 @@ export default function BalanceSheetCard() {
                                   {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  },
+                                  }
                                 )}
                               </div>
                             )}
                         </div>
                       )
-                    },
+                    }
                   )}
                 </div>
               </div>
@@ -1094,7 +1098,7 @@ export default function BalanceSheetCard() {
                     <div className='font-semibold text-gray-900 dark:text-gray-100'>
                       {formatCurrency(
                         data.summary.baseCurrencyTotals.totalAssets,
-                        data.baseCurrency,
+                        data.baseCurrency
                       )}
                     </div>
                   </div>
@@ -1106,7 +1110,7 @@ export default function BalanceSheetCard() {
                     <div className='font-semibold text-red-600 dark:text-red-400'>
                       {formatCurrency(
                         data.summary.baseCurrencyTotals.totalLiabilities,
-                        data.baseCurrency,
+                        data.baseCurrency
                       )}
                     </div>
                   </div>
@@ -1120,7 +1124,7 @@ export default function BalanceSheetCard() {
                     >
                       {formatCurrency(
                         data.summary.baseCurrencyTotals.netWorth,
-                        data.baseCurrency,
+                        data.baseCurrency
                       )}
                     </div>
                   </div>

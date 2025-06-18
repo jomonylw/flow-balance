@@ -35,7 +35,7 @@ export function useSidebarWidth() {
       setWidth(clampedWidth)
       saveWidth(clampedWidth)
     },
-    [saveWidth],
+    [saveWidth]
   )
 
   // 开始拖拽
@@ -56,7 +56,7 @@ export function useSidebarWidth() {
       const newWidth = clientX - sidebarRect.left
       setSidebarWidth(newWidth)
     },
-    [isDragging, setSidebarWidth],
+    [isDragging, setSidebarWidth]
   )
 
   return {
@@ -127,7 +127,7 @@ export function useSidebarScrollPosition() {
       const scrollTop = e.currentTarget.scrollTop
       saveScrollPosition(scrollTop)
     },
-    [saveScrollPosition],
+    [saveScrollPosition]
   )
 
   // 清理定时器

@@ -12,7 +12,10 @@ import type { CurrencyCodeRouteParams } from '@/types/api'
 /**
  * 删除用户可用货币
  */
-export async function DELETE(request: NextRequest, { params }: CurrencyCodeRouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: CurrencyCodeRouteParams
+) {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -40,7 +43,7 @@ export async function DELETE(request: NextRequest, { params }: CurrencyCodeRoute
 
     if (transactionCount > 0) {
       return validationErrorResponse(
-        `该货币有 ${transactionCount} 条交易记录，不能删除`,
+        `该货币有 ${transactionCount} 条交易记录，不能删除`
       )
     }
 
@@ -54,7 +57,7 @@ export async function DELETE(request: NextRequest, { params }: CurrencyCodeRoute
 
     if (exchangeRateCount > 0) {
       return validationErrorResponse(
-        `该货币有 ${exchangeRateCount} 条汇率设置，不能删除`,
+        `该货币有 ${exchangeRateCount} 条汇率设置，不能删除`
       )
     }
 
@@ -80,7 +83,10 @@ export async function DELETE(request: NextRequest, { params }: CurrencyCodeRoute
 /**
  * 更新用户货币设置（激活/停用）
  */
-export async function PATCH(request: NextRequest, { params }: CurrencyCodeRouteParams) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: CurrencyCodeRouteParams
+) {
   try {
     const user = await getCurrentUser()
     if (!user) {

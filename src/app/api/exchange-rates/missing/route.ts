@@ -46,7 +46,7 @@ export async function GET(_request: NextRequest) {
     // 获取缺失的汇率
     const missingRates = await getMissingExchangeRates(
       user.id,
-      baseCurrency.code,
+      baseCurrency.code
     )
 
     // 获取已设置的汇率
@@ -90,7 +90,7 @@ export async function GET(_request: NextRequest) {
         const hasRate = !missingRates.some(
           missing =>
             missing.fromCurrency === currency &&
-            missing.toCurrency === baseCurrency.code,
+            missing.toCurrency === baseCurrency.code
         )
 
         return {

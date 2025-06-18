@@ -70,7 +70,7 @@ export default function BaseContextMenu({
       } else {
         // 回退方案：查找最近的带有更多操作按钮的元素
         const buttons = document.querySelectorAll(
-          'button[title="更多操作"], button:has(svg path[d*="M12 5v.01M12 12v.01M12 19v.01"])',
+          'button[title="更多操作"], button:has(svg path[d*="M12 5v.01M12 12v.01M12 19v.01"])'
         )
         const lastClickedButton = Array.from(buttons).find(button => {
           const rect = button.getBoundingClientRect()
@@ -142,11 +142,11 @@ export default function BaseContextMenu({
 
           pos.left = Math.max(
             margin,
-            Math.min(pos.left, viewportWidth - menuWidth - margin),
+            Math.min(pos.left, viewportWidth - menuWidth - margin)
           )
           pos.top = Math.max(
             margin,
-            Math.min(pos.top, viewportHeight - menuHeight - margin),
+            Math.min(pos.top, viewportHeight - menuHeight - margin)
           )
 
           bestPosition = pos

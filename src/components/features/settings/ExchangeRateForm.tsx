@@ -52,7 +52,7 @@ export default function ExchangeRateForm({
   }, [editingRate, baseCurrency])
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -153,12 +153,12 @@ export default function ExchangeRateForm({
 
   // 过滤源货币选项（排除目标货币）
   const fromCurrencyOptions = currencyOptions.filter(
-    option => option.value !== formData.toCurrency,
+    option => option.value !== formData.toCurrency
   )
 
   // 过滤目标货币选项（排除源货币）
   const toCurrencyOptions = currencyOptions.filter(
-    option => option.value !== formData.fromCurrency,
+    option => option.value !== formData.fromCurrency
   )
 
   return (

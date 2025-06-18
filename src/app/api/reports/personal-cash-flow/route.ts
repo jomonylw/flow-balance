@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
 
       // 查找或创建账户
       let accountData = categoryGroup.categories[categoryId].accounts.find(
-        acc => acc.id === accountId,
+        acc => acc.id === accountId
       )
       if (!accountData) {
         accountData = {
@@ -279,7 +279,7 @@ export async function GET(request: NextRequest) {
               })
             }
           })
-        },
+        }
       )
 
       // 收集支出类别的账户转换数据
@@ -299,7 +299,7 @@ export async function GET(request: NextRequest) {
               })
             }
           })
-        },
+        }
       )
 
       // 执行批量货币转换
@@ -309,7 +309,7 @@ export async function GET(request: NextRequest) {
           amount: item.amount,
           currency: item.currency,
         })),
-        baseCurrency.code,
+        baseCurrency.code
       )
 
       // 应用转换结果到账户
@@ -326,7 +326,7 @@ export async function GET(request: NextRequest) {
             : cashFlowByCategory.expense
         const category = categoryGroup.categories[conversionData.categoryId]
         const account = category.accounts.find(
-          acc => acc.id === conversionData.accountId,
+          acc => acc.id === conversionData.accountId
         )
 
         if (account) {
@@ -362,24 +362,24 @@ export async function GET(request: NextRequest) {
       Object.values(cashFlowByCategory.income.categories).forEach(category => {
         category.totalInBaseCurrency = category.accounts.reduce(
           (sum, account) => sum + (account.totalAmountInBaseCurrency || 0),
-          0,
+          0
         )
       })
 
       Object.values(cashFlowByCategory.expense.categories).forEach(category => {
         category.totalInBaseCurrency = category.accounts.reduce(
           (sum, account) => sum + (account.totalAmountInBaseCurrency || 0),
-          0,
+          0
         )
       })
 
       // 计算总计
       baseCurrencyTotals.totalIncome = Object.values(
-        cashFlowByCategory.income.categories,
+        cashFlowByCategory.income.categories
       ).reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
 
       baseCurrencyTotals.totalExpense = Object.values(
-        cashFlowByCategory.expense.categories,
+        cashFlowByCategory.expense.categories
       ).reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
 
       baseCurrencyTotals.netCashFlow =

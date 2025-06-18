@@ -134,7 +134,7 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
 
   const commonCurrencies = ['USD', 'EUR', 'CNY', 'JPY', 'GBP']
   const otherCurrencies = allCurrencies.filter(
-    c => !commonCurrencies.includes(c.code),
+    c => !commonCurrencies.includes(c.code)
   )
 
   return (
@@ -206,7 +206,7 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                   {allCurrencies
                     .filter(currency =>
-                      commonCurrencies.includes(currency.code),
+                      commonCurrencies.includes(currency.code)
                     )
                     .map(currency => (
                       <label
@@ -284,7 +284,7 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
               <div className='space-y-3'>
                 {selectedCurrencies.map(currencyCode => {
                   const currency = allCurrencies.find(
-                    c => c.code === currencyCode,
+                    c => c.code === currencyCode
                   )
                   if (!currency) return null
 

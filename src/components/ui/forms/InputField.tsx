@@ -35,7 +35,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
       autoFocus = false,
       step,
     },
-    ref,
+    ref
   ) => {
     return (
       <div className={`space-y-2 ${className}`}>
@@ -81,7 +81,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
         )}
       </div>
     )
-  },
+  }
 )
 
 InputField.displayName = 'InputField'

@@ -111,7 +111,9 @@ export interface ValidationSchema {
 // ============================================================================
 
 /** 通用路由参数类型 */
-export interface RouteParams<T extends Record<string, string> = Record<string, string>> {
+export interface RouteParams<
+  T extends Record<string, string> = Record<string, string>,
+> {
   params: Promise<T>
 }
 
@@ -201,7 +203,9 @@ export interface TransactionListParams
   tagIds?: string[]
 }
 
-export type TransactionListResponse = ApiSuccessResponse<PaginatedResponse<Transaction>>
+export type TransactionListResponse = ApiSuccessResponse<
+  PaginatedResponse<Transaction>
+>
 
 export type TransactionDetailResponse = ApiSuccessResponse<Transaction>
 
@@ -265,7 +269,9 @@ export type TagUpdateRequest = Partial<TagCreateRequest>
 // 图表和统计相关 API
 export type TrendChartResponse = ApiSuccessResponse<TrendDataPoint[]>
 
-export type MonthlySummaryChartResponse = ApiSuccessResponse<MonthlySummaryData[]>
+export type MonthlySummaryChartResponse = ApiSuccessResponse<
+  MonthlySummaryData[]
+>
 
 export type DashboardSummaryResponse = ApiSuccessResponse<{
   totalAssets: number

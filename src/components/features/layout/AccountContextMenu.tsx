@@ -15,7 +15,7 @@ interface AccountContextMenuProps {
 // 辅助函数：获取账户类型标签
 function getAccountTypeLabel(
   t: (key: string) => string,
-  type?: string,
+  type?: string
 ): string {
   switch (type) {
     case 'ASSET':

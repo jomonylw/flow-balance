@@ -95,7 +95,7 @@ export default function CategorySettingsModal({
     setIsCheckingType(true)
     try {
       const response = await fetch(
-        `/api/categories/${category.id}/check-type-change`,
+        `/api/categories/${category.id}/check-type-change`
       )
       if (response.ok) {
         const result = await response.json()
@@ -146,7 +146,7 @@ export default function CategorySettingsModal({
             // 如果不能安全变更，显示错误提示并阻止保存
             showError(
               t('category.type.change.error'),
-              t('category.type.change.error.message'),
+              t('category.type.change.error.message')
             )
             return
           }

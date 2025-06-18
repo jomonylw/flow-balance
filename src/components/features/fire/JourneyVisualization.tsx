@@ -44,7 +44,7 @@ export default function JourneyVisualization({
       const futureDate = new Date(today)
       futureDate.setMonth(futureDate.getMonth() + i)
       dates.push(
-        `${futureDate.getFullYear()}/${String(futureDate.getMonth() + 1).padStart(2, '0')}`,
+        `${futureDate.getFullYear()}/${String(futureDate.getMonth() + 1).padStart(2, '0')}`
       )
 
       // 计算未来价值: FV = PV * (1 + r)^n + PMT * [((1 + r)^n - 1) / r]

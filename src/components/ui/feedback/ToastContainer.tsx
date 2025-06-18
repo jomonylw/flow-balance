@@ -29,6 +29,6 @@ export default function ToastContainer({
         <Toast key={toast.id} {...toast} onClose={onRemoveToast} />
       ))}
     </div>,
-    document.body,
+    document.body
   )
 }

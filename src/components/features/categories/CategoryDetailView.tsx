@@ -3,7 +3,10 @@
 import StockCategoryDetailView from './StockCategoryDetailView'
 import FlowCategoryDetailView from './FlowCategoryDetailView'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
-import type { SerializedCategoryDetailViewProps, SerializedCategoryWithTransactions } from './types'
+import type {
+  SerializedCategoryDetailViewProps,
+  SerializedCategoryWithTransactions,
+} from './types'
 import type {
   LegacyCategory,
   LegacyCurrency,
@@ -63,12 +66,16 @@ export default function CategoryDetailView({
   const isFlowCategory = categoryType === 'INCOME' || categoryType === 'EXPENSE'
 
   // 递归转换 SerializedCategory 为 LegacyCategory
-  const convertToLegacyCategory = (cat: SerializedCategoryWithTransactions): LegacyCategory => ({
+  const convertToLegacyCategory = (
+    cat: SerializedCategoryWithTransactions
+  ): LegacyCategory => ({
     ...cat,
     createdAt: new Date(cat.createdAt),
     updatedAt: new Date(cat.updatedAt),
     parent: cat.parent ? convertToLegacyCategory(cat.parent) : null,
-    children: cat.children?.map((child: SerializedCategoryWithTransactions) => convertToLegacyCategory(child)),
+    children: cat.children?.map((child: SerializedCategoryWithTransactions) =>
+      convertToLegacyCategory(child)
+    ),
     accounts: cat.accounts?.map((account: SerializedAccount) => ({
       ...account,
       createdAt: new Date(account.createdAt),
@@ -81,20 +88,22 @@ export default function CategoryDetailView({
       currency: account.currency,
       transactions: account.transactions || [],
     })) as LegacyAccount[],
-    transactions: cat.transactions.map((transaction: SerializedTransaction) => ({
-      ...transaction,
-      date: transaction.date, // 已经是 string 类型，无需转换
-      createdAt: transaction.createdAt,
-      updatedAt: transaction.updatedAt,
-      amount: transaction.amount,
-      notes: transaction.notes || undefined,
-      tags: transaction.tags.map(tt => ({
-        tag: {
-          id: tt.tag.id,
-          name: tt.tag.name,
-        },
-      })),
-    })) as LegacyTransaction[],
+    transactions: cat.transactions.map(
+      (transaction: SerializedTransaction) => ({
+        ...transaction,
+        date: transaction.date, // 已经是 string 类型，无需转换
+        createdAt: transaction.createdAt,
+        updatedAt: transaction.updatedAt,
+        amount: transaction.amount,
+        notes: transaction.notes || undefined,
+        tags: transaction.tags.map(tt => ({
+          tag: {
+            id: tt.tag.id,
+            name: tt.tag.name,
+          },
+        })),
+      })
+    ) as LegacyTransaction[],
   })
 
   // 转换 category 数据为 Legacy 格式

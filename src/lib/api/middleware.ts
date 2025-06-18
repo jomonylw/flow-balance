@@ -81,7 +81,7 @@ export function withApiHandler(handler: ApiHandler) {
         },
         response.status,
         Date.now() - startTime,
-        requestId,
+        requestId
       )
 
       return response
@@ -112,13 +112,13 @@ export function validateRequestData(schema: ValidationSchema) {
   return function (
     target: unknown,
     propertyKey: string,
-    descriptor: PropertyDescriptor,
+    descriptor: PropertyDescriptor
   ) {
     const originalMethod = descriptor.value
 
     descriptor.value = async function (
       request: NextRequest,
-      context: ApiContext,
+      context: ApiContext
     ) {
       try {
         const body = await request.json()
@@ -151,13 +151,13 @@ export function rateLimit(maxRequests: number, windowMs: number) {
   return function (
     target: unknown,
     propertyKey: string,
-    descriptor: PropertyDescriptor,
+    descriptor: PropertyDescriptor
   ) {
     const originalMethod = descriptor.value
 
     descriptor.value = async function (
       request: NextRequest,
-      context: ApiContext,
+      context: ApiContext
     ) {
       const clientId = getClientId(request, context.user)
       const now = Date.now()
@@ -251,7 +251,7 @@ function logApiRequest(
   user: User | null,
   status: number,
   duration: number,
-  requestId: string,
+  requestId: string
 ) {
   const logData = {
     requestId,
@@ -283,7 +283,7 @@ function logApiError(
   request: NextRequest,
   error: Error,
   duration: number,
-  requestId: string,
+  requestId: string
 ) {
   const errorData = {
     requestId,
@@ -312,7 +312,7 @@ function logApiError(
  */
 function validateData(
   data: Record<string, unknown>,
-  schema: ValidationSchema,
+  schema: ValidationSchema
 ): { isValid: boolean; errors: string[] } {
   const errors: string[] = []
 
@@ -376,7 +376,7 @@ function validateData(
  */
 export async function withDatabaseOperation<T>(
   operation: () => Promise<T>,
-  operationName: string,
+  operationName: string
 ): Promise<T> {
   try {
     return await operation()
@@ -387,7 +387,7 @@ export async function withDatabaseOperation<T>(
     if (error instanceof Error) {
       if (error.message.includes('Unique constraint')) {
         throw new ValidationError(
-          'Data already exists, please check for duplicates',
+          'Data already exists, please check for duplicates'
         )
       } else if (error.message.includes('Foreign key constraint')) {
         throw new ValidationError('Related data does not exist')
@@ -405,14 +405,14 @@ export async function withDatabaseOperation<T>(
  */
 export function withCache<T>(
   key: string,
-  ttl: number = 300000, // 5分钟默认TTL
+  ttl: number = 300000 // 5分钟默认TTL
 ) {
   const cache = new Map<string, { data: T; expires: number }>()
 
   return function (
     target: unknown,
     propertyKey: string,
-    descriptor: PropertyDescriptor,
+    descriptor: PropertyDescriptor
   ) {
     const originalMethod = descriptor.value
 

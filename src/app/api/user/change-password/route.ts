@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // 验证当前密码
     const isCurrentPasswordValid = await bcrypt.compare(
       currentPassword,
-      user.password,
+      user.password
     )
     if (!isCurrentPasswordValid) {
       return errorResponse('当前密码不正确', 400)

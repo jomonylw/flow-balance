@@ -11,7 +11,7 @@ import type { Prisma, Category, AccountType } from '@prisma/client'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> },
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
     const { categoryId } = await params
@@ -47,7 +47,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> },
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
     const { categoryId } = await params
@@ -142,7 +142,7 @@ export async function PUT(
         if (!canChange) {
           return errorResponse(
             '无法变更分类类型：该分类下存在账户或交易数据，变更类型会导致数据不一致',
-            400,
+            400
           )
         }
       }
@@ -168,7 +168,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> },
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
     const { categoryId } = await params
@@ -226,7 +226,7 @@ export async function DELETE(
 // 辅助函数：检查是否是后代分类（防止循环引用）
 async function checkIfDescendant(
   categoryId: string,
-  potentialAncestorId: string,
+  potentialAncestorId: string
 ): Promise<boolean> {
   const descendants = await prisma.category.findMany({
     where: {
@@ -336,7 +336,7 @@ async function getAllCategoryIds(categoryId: string): Promise<string[]> {
 // 辅助函数：递归更新所有子分类的账户类型
 async function updateChildrenAccountType(
   parentId: string,
-  accountType: AccountType,
+  accountType: AccountType
 ): Promise<void> {
   // 获取所有直接子分类
   const children = await prisma.category.findMany({

@@ -32,7 +32,7 @@ import type { TrendDataPoint } from '@/types/core'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ accountId: string }> },
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
     const { accountId } = await params
@@ -61,7 +61,6 @@ export async function GET(
     const granularity =
       searchParams.get('granularity') ||
       (range === 'lastMonth' ? 'daily' : 'monthly')
-
 
     // 获取用户设置以确定本位币
     const userSettings = await prisma.userSettings.findUnique({
@@ -159,7 +158,7 @@ export async function GET(
         endDate,
         granularity,
         baseCurrency,
-        user.id,
+        user.id
       )
     } else {
       // 流量账户：计算交易流水趋势
@@ -170,11 +169,9 @@ export async function GET(
         endDate,
         granularity,
         baseCurrency,
-        user.id,
+        user.id
       )
     }
-
-
 
     return successResponse({
       account: {
@@ -207,7 +204,7 @@ async function generateStockAccountTrend(
   endDate: Date,
   granularity: string,
   baseCurrency: Currency | { code: string; symbol: string; name: string },
-  userId: string,
+  userId: string
 ): Promise<TrendDataPoint[]> {
   const intervals =
     granularity === 'daily'
@@ -226,8 +223,6 @@ async function generateStockAccountTrend(
     include: { currency: true },
     orderBy: { date: 'asc' },
   })
-
-
 
   // 计算初始余额
   for (const transaction of initialTransactions) {
@@ -286,7 +281,7 @@ async function generateStockAccountTrend(
     trendData.push({
       date: format(
         interval,
-        granularity === 'daily' ? 'yyyy-MM-dd' : 'yyyy-MM',
+        granularity === 'daily' ? 'yyyy-MM-dd' : 'yyyy-MM'
       ),
       originalAmount: runningBalance,
       originalCurrency: currencyCode,
@@ -301,7 +296,7 @@ async function generateStockAccountTrend(
     const conversionResults = await convertMultipleCurrencies(
       userId,
       amountsToConvert,
-      baseCurrency.code,
+      baseCurrency.code
     )
 
     trendData.forEach((item, index) => {
@@ -317,7 +312,6 @@ async function generateStockAccountTrend(
     })
   }
 
-
   return trendData
 }
 
@@ -331,7 +325,7 @@ async function generateFlowAccountTrend(
   endDate: Date,
   granularity: string,
   baseCurrency: Currency | { code: string; symbol: string; name: string },
-  userId: string,
+  userId: string
 ): Promise<TrendDataPoint[]> {
   const intervals =
     granularity === 'daily'
@@ -375,7 +369,7 @@ async function generateFlowAccountTrend(
     trendData.push({
       date: format(
         interval,
-        granularity === 'daily' ? 'yyyy-MM-dd' : 'yyyy-MM',
+        granularity === 'daily' ? 'yyyy-MM-dd' : 'yyyy-MM'
       ),
       originalAmount: totalAmount,
       originalCurrency: currencyCode,
@@ -390,7 +384,7 @@ async function generateFlowAccountTrend(
     const conversionResults = await convertMultipleCurrencies(
       userId,
       amountsToConvert,
-      baseCurrency.code,
+      baseCurrency.code
     )
 
     trendData.forEach((item, index) => {
@@ -405,7 +399,6 @@ async function generateFlowAccountTrend(
       item.hasConversionError = false
     })
   }
-
 
   return trendData
 }

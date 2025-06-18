@@ -14,6 +14,7 @@ import type {
   SimpleAccount,
   SimpleCategory,
   CategoryType,
+  SimpleTransactionTemplate,
 } from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
@@ -42,6 +43,12 @@ interface UserDataCategory extends SimpleCategory {
   order: number
   userId: string
   children?: UserDataCategory[]
+}
+
+interface UserDataTemplate extends SimpleTransactionTemplate {
+  userId: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 interface UserDataSettings {
@@ -82,6 +89,8 @@ interface UserData {
   accounts: UserDataAccount[]
   // 用户分类
   categories: UserDataCategory[]
+  // 用户交易模板
+  templates: UserDataTemplate[]
   // 用户设置
   userSettings: UserDataSettings | null
   // 账户余额
@@ -89,9 +98,11 @@ interface UserData {
   // 加载状态
   isLoading: boolean
   isLoadingBalances: boolean
+  isLoadingTemplates: boolean
   // 错误状态
   error: string | null
   balancesError: string | null
+  templatesError: string | null
   // 最后更新时间
   lastUpdated: Date | null
 }
@@ -105,6 +116,7 @@ interface UserDataContextType extends UserData {
   refreshAccounts: () => Promise<void>
   refreshCategories: () => Promise<void>
   refreshUserSettings: () => Promise<void>
+  refreshTemplates: () => Promise<void>
   fetchBalances: (force?: boolean) => Promise<void>
   refreshBalances: () => Promise<void>
   // 更新数据（用于同步修改）
@@ -118,8 +130,17 @@ interface UserDataContextType extends UserData {
   addCategory: (category: UserDataCategory) => void
   removeCategory: (categoryId: string) => void
   updateUserSettings: (settings: UserDataSettings) => void
+  updateTemplate: (template: UserDataTemplate) => void
+  addTemplate: (template: UserDataTemplate) => void
+  removeTemplate: (templateId: string) => void
   // 获取基础货币
   getBaseCurrency: () => SimpleCurrency | null
+  // 获取模板（支持过滤）
+  getTemplates: (filters?: {
+    type?: 'INCOME' | 'EXPENSE'
+    accountId?: string
+    categoryId?: string
+  }) => UserDataTemplate[]
   // 检查账户是否有交易记录的缓存
   accountTransactionCache: Record<string, boolean>
   setAccountHasTransactions: (
@@ -135,7 +156,7 @@ interface UserDataContextType extends UserData {
 }
 
 const UserDataContext = createContext<UserDataContextType | undefined>(
-  undefined,
+  undefined
 )
 
 export const useUserData = () => {
@@ -152,12 +173,15 @@ const defaultUserData: UserData = {
   tags: [],
   accounts: [],
   categories: [],
+  templates: [],
   userSettings: null,
   accountBalances: null,
   isLoading: true,
   isLoadingBalances: true,
+  isLoadingTemplates: false,
   error: null,
   balancesError: null,
+  templatesError: null,
   lastUpdated: null,
 }
 
@@ -209,6 +233,13 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
     return result.data?.userSettings || null
   }
 
+  const fetchTemplates = async (): Promise<UserDataTemplate[]> => {
+    const response = await fetch('/api/transaction-templates')
+    if (!response.ok) throw new Error('获取模板数据失败')
+    const result = await response.json()
+    return result.templates || []
+  }
+
   const fetchBalancesData = async (): Promise<{
     accountBalances: UserDataAccountBalances
     baseCurrency: SimpleCurrency
@@ -225,13 +256,14 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
     try {
       setUserData(prev => ({ ...prev, isLoading: true, error: null }))
 
-      const [currencies, tags, accounts, categories, userSettings] =
+      const [currencies, tags, accounts, categories, userSettings, templates] =
         await Promise.all([
           fetchCurrencies(),
           fetchTags(),
           fetchAccounts(),
           fetchCategories(),
           fetchUserSettings(),
+          fetchTemplates(),
         ])
 
       setUserData(prev => ({
@@ -241,6 +273,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
         accounts,
         categories,
         userSettings,
+        templates,
         isLoading: false,
         error: null,
         lastUpdated: new Date(),
@@ -301,6 +334,31 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
     }
   }, [])
 
+  const refreshTemplates = useCallback(async () => {
+    try {
+      setUserData(prev => ({
+        ...prev,
+        isLoadingTemplates: true,
+        templatesError: null,
+      }))
+      const templates = await fetchTemplates()
+      setUserData(prev => ({
+        ...prev,
+        templates,
+        isLoadingTemplates: false,
+        lastUpdated: new Date(),
+      }))
+    } catch (error) {
+      console.error('Error refreshing templates:', error)
+      setUserData(prev => ({
+        ...prev,
+        isLoadingTemplates: false,
+        templatesError:
+          error instanceof Error ? error.message : '获取模板数据失败',
+      }))
+    }
+  }, [])
+
   const fetchBalances = useCallback(
     async (force = false) => {
       // 如果已经有余额数据且不是强制刷新，则不重新获取，避免不必要的加载状态
@@ -330,7 +388,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
         }))
       }
     },
-    [userData.accountBalances],
+    [userData.accountBalances]
   )
 
   // 强制刷新余额数据
@@ -382,7 +440,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
         }
       })
     },
-    [],
+    []
   )
 
   // 初始化数据
@@ -449,7 +507,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
     setUserData(prev => ({
       ...prev,
       categories: prev.categories.map(c =>
-        c.id === category.id ? category : c,
+        c.id === category.id ? category : c
       ),
       lastUpdated: new Date(),
     }))
@@ -479,10 +537,67 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
     }))
   }, [])
 
+  // 模板相关的更新函数
+  const updateTemplate = useCallback((template: UserDataTemplate) => {
+    setUserData(prev => ({
+      ...prev,
+      templates: prev.templates.map(t => (t.id === template.id ? template : t)),
+      lastUpdated: new Date(),
+    }))
+  }, [])
+
+  const addTemplate = useCallback((template: UserDataTemplate) => {
+    setUserData(prev => ({
+      ...prev,
+      templates: [...prev.templates, template],
+      lastUpdated: new Date(),
+    }))
+  }, [])
+
+  const removeTemplate = useCallback((templateId: string) => {
+    setUserData(prev => ({
+      ...prev,
+      templates: prev.templates.filter(t => t.id !== templateId),
+      lastUpdated: new Date(),
+    }))
+  }, [])
+
   // 获取基础货币
   const getBaseCurrency = useCallback((): SimpleCurrency | null => {
     return userData.userSettings?.baseCurrency || null
   }, [userData.userSettings])
+
+  // 获取模板（支持过滤）
+  const getTemplates = useCallback(
+    (filters?: {
+      type?: 'INCOME' | 'EXPENSE'
+      accountId?: string
+      categoryId?: string
+    }) => {
+      let filteredTemplates = userData.templates
+
+      if (filters?.type) {
+        filteredTemplates = filteredTemplates.filter(
+          t => t.type === filters.type
+        )
+      }
+
+      if (filters?.accountId) {
+        filteredTemplates = filteredTemplates.filter(
+          t => t.accountId === filters.accountId
+        )
+      }
+
+      if (filters?.categoryId) {
+        filteredTemplates = filteredTemplates.filter(
+          t => t.categoryId === filters.categoryId
+        )
+      }
+
+      return filteredTemplates
+    },
+    [userData.templates]
+  )
 
   // 设置账户交易记录缓存
   const setAccountHasTransactions = useCallback(
@@ -492,7 +607,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
         [accountId]: hasTransactions,
       }))
     },
-    [],
+    []
   )
 
   const contextValue = useMemo(
@@ -504,6 +619,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
       refreshAccounts,
       refreshCategories,
       refreshUserSettings,
+      refreshTemplates,
       fetchBalances,
       refreshBalances,
       updateTag,
@@ -516,7 +632,11 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
       addCategory,
       removeCategory,
       updateUserSettings,
+      updateTemplate,
+      addTemplate,
+      removeTemplate,
       getBaseCurrency,
+      getTemplates,
       accountTransactionCache,
       setAccountHasTransactions,
       updateAccountBalance,
@@ -529,6 +649,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
       refreshAccounts,
       refreshCategories,
       refreshUserSettings,
+      refreshTemplates,
       fetchBalances,
       refreshBalances,
       updateTag,
@@ -541,11 +662,15 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
       addCategory,
       removeCategory,
       updateUserSettings,
+      updateTemplate,
+      addTemplate,
+      removeTemplate,
       getBaseCurrency,
+      getTemplates,
       accountTransactionCache,
       setAccountHasTransactions,
       updateAccountBalance,
-    ],
+    ]
   )
 
   return (

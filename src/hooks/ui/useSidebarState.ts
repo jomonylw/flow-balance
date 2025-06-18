@@ -25,7 +25,6 @@ export function useSidebarState() {
     if (hasRouteChanged) {
       // 路由变化时的处理逻辑
 
-
       // 这里可以添加路由变化时的特殊处理
       // 比如保存当前状态、准备恢复状态等
 

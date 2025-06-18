@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     // 目前只是模拟邮件发送
     console.warn(`Password reset token for ${email}: ${resetToken}`)
     console.warn(
-      `Reset link: ${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`,
+      `Reset link: ${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`
     )
 
     return successResponse({

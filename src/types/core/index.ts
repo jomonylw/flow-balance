@@ -147,6 +147,61 @@ export interface TransactionTagInfo {
 }
 
 // ============================================================================
+// 交易模板类型
+// ============================================================================
+
+/** 交易模板信息 */
+export interface TransactionTemplate {
+  id: string
+  userId: string
+  name: string
+  accountId: string
+  categoryId: string
+  currencyCode: string
+  type: TransactionType
+  description: string
+  notes?: string | null
+  tagIds?: string[]
+  createdAt: Date
+  updatedAt: Date
+  account?: Account
+  category?: Category
+  currency?: Currency
+}
+
+/** 简化的交易模板信息（用于选择器） */
+export interface SimpleTransactionTemplate {
+  id: string
+  name: string
+  accountId: string
+  categoryId: string
+  currencyCode: string
+  type: TransactionType
+  description: string
+  notes?: string | null
+  tagIds?: string[]
+  account?: {
+    id: string
+    name: string
+  }
+  category?: {
+    id: string
+    name: string
+  }
+  currency?: {
+    code: string
+    symbol: string
+  }
+}
+
+/** 模板选择器选项 */
+export interface TemplateOption {
+  value: string
+  label: string
+  template: SimpleTransactionTemplate
+}
+
+// ============================================================================
 // 表单数据类型
 // ============================================================================
 
@@ -190,6 +245,18 @@ export interface TagFormData {
   id?: string
   name: string
   color?: string | null
+}
+
+/** 交易模板表单数据 */
+export interface TransactionTemplateFormData {
+  name: string
+  accountId: string
+  categoryId: string
+  currencyCode: string
+  type: TransactionType
+  description: string
+  notes?: string | null
+  tagIds?: string[]
 }
 
 // ============================================================================
@@ -529,10 +596,16 @@ export interface StockCategorySummaryData {
 
 /** 存量分类月度数据（用于图表显示） */
 export interface StockCategoryMonthlyData {
-  monthlyData: Record<string, Record<string, {
-    accounts: Record<string, { balance: number; name: string }>
-    totalBalance: number
-  }>>
+  monthlyData: Record<
+    string,
+    Record<
+      string,
+      {
+        accounts: Record<string, { balance: number; name: string }>
+        totalBalance: number
+      }
+    >
+  >
   baseCurrency: string
 }
 

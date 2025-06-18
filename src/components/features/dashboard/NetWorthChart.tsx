@@ -76,7 +76,7 @@ export default function NetWorthChart({
         series.data.forEach((value, dataIndex) => {
           if (typeof value !== 'number' || isNaN(value)) {
             throw new Error(
-              `数据系列 ${index} 第 ${dataIndex} 个数据点无效: ${value}`,
+              `数据系列 ${index} 第 ${dataIndex} 个数据点无效: ${value}`
             )
           }
         })
@@ -86,12 +86,12 @@ export default function NetWorthChart({
       if (!chartInstance.current) {
         chartInstance.current = echarts.init(
           chartRef.current,
-          resolvedTheme === 'dark' ? 'dark' : null,
+          resolvedTheme === 'dark' ? 'dark' : null
         )
       }
 
       const hasBarChart = data.series.some(
-        s => s.name === 'total_assets' || s.name === 'total_liabilities',
+        s => s.name === 'total_assets' || s.name === 'total_liabilities'
       )
 
       const option = {
@@ -120,7 +120,7 @@ export default function NetWorthChart({
               name: string
               seriesName: string
               color: string
-            }>,
+            }>
           ) {
             if (!params || params.length === 0) {
               return ''

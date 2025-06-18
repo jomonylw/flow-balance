@@ -25,7 +25,7 @@ import {
 export async function getCategorySummary(
   categoryId: string,
   userId: string,
-  categoryType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
+  categoryType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
 ): Promise<MonthlyReport[] | StockCategorySummary | FlowCategorySummary> {
   if (categoryType === 'ASSET' || categoryType === 'LIABILITY') {
     return await getStockCategorySummary(categoryId, userId)

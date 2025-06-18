@@ -80,8 +80,6 @@ export default function BalanceUpdateModal({
           account.currencyCode ||
           currencyCode
 
-
-
         setFormData({
           newBalance: editingTransaction.amount.toString(),
           currencyCode: editCurrencyCode,
@@ -118,7 +116,6 @@ export default function BalanceUpdateModal({
       const correctCurrencyCode =
         editingTransaction.currencyCode || account.currencyCode || currencyCode
 
-
       setFormData(prev => ({
         ...prev,
         currencyCode: correctCurrencyCode,
@@ -135,7 +132,7 @@ export default function BalanceUpdateModal({
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
+    >
   ) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -164,8 +161,6 @@ export default function BalanceUpdateModal({
       newErrors.updateDate = t('balance.update.select.date')
     }
 
-
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -173,18 +168,18 @@ export default function BalanceUpdateModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-
     // 在提交前再次确保币种值正确
     if (!formData.currencyCode && account.currencyCode) {
-      setFormData(prev => ({ ...prev, currencyCode: account.currencyCode || '' }))
+      setFormData(prev => ({
+        ...prev,
+        currencyCode: account.currencyCode || '',
+      }))
       return
     }
 
     if (!validateForm()) {
-
       return
     }
-
 
     setIsLoading(true)
 
@@ -204,9 +199,6 @@ export default function BalanceUpdateModal({
           tagIds: [], // 余额更新记录通常不需要标签
         }
 
-
-
-
         const response = await fetch(
           `/api/transactions/${editingTransaction.id}`,
           {
@@ -215,17 +207,15 @@ export default function BalanceUpdateModal({
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(requestData),
-          },
+          }
         )
 
         const result = await response.json()
 
-
         if (result.success) {
-
           showSuccess(
             t('balance.update.modal.update.success'),
-            `${account.name} ${t('balance.update.modal.balance.updated')}`,
+            `${account.name} ${t('balance.update.modal.balance.updated')}`
           )
 
           // 发布余额更新事件
@@ -260,7 +250,7 @@ export default function BalanceUpdateModal({
         })
 
         console.log(
-          '[BalanceUpdateModal] Sending POST request to /api/balance-update',
+          '[BalanceUpdateModal] Sending POST request to /api/balance-update'
         )
         const response = await fetch('/api/balance-update', {
           method: 'POST',
@@ -280,7 +270,7 @@ export default function BalanceUpdateModal({
         const result = await response.json()
         console.log(
           '[BalanceUpdateModal] Create balance update response:',
-          result,
+          result
         )
 
         if (result.success) {
@@ -288,13 +278,13 @@ export default function BalanceUpdateModal({
             result.data?.message ||
             `${account.name} ${t('balance.update.modal.balance.updated')}`
           console.log(
-            `[BalanceUpdateModal] Balance update successful for account ${account.id}`,
+            `[BalanceUpdateModal] Balance update successful for account ${account.id}`
           )
           showSuccess(t('balance.update.modal.update.success'), message)
 
           // 发布余额更新事件
           console.log(
-            `[BalanceUpdateModal] Publishing balance update event for account ${account.id}`,
+            `[BalanceUpdateModal] Publishing balance update event for account ${account.id}`
           )
           await publishBalanceUpdate(account.id, {
             newBalance: parseFloat(formData.newBalance),
@@ -302,7 +292,7 @@ export default function BalanceUpdateModal({
             transaction: result.transaction,
           })
           console.log(
-            '[BalanceUpdateModal] Balance update event published successfully',
+            '[BalanceUpdateModal] Balance update event published successfully'
           )
 
           onSuccess()
@@ -310,7 +300,7 @@ export default function BalanceUpdateModal({
         } else {
           console.log(
             '[BalanceUpdateModal] Create balance update failed:',
-            result,
+            result
           )
           const errorMessage =
             result.error || t('balance.update.modal.update.failed')
@@ -325,7 +315,7 @@ export default function BalanceUpdateModal({
       showError(t('balance.update.modal.update.failed'), errorMessage)
     } finally {
       console.log(
-        '[BalanceUpdateModal] Balance update completed, setting isLoading to false',
+        '[BalanceUpdateModal] Balance update completed, setting isLoading to false'
       )
       setIsLoading(false)
     }
@@ -363,7 +353,7 @@ export default function BalanceUpdateModal({
     !currencyOptions.find(opt => opt.value === editingTransaction.currencyCode)
   ) {
     const transactionCurrency = currencies.find(
-      c => c.code === editingTransaction.currencyCode,
+      c => c.code === editingTransaction.currencyCode
     )
     currencyOptions.push({
       value: editingTransaction.currencyCode,
@@ -373,7 +363,7 @@ export default function BalanceUpdateModal({
 
   // 当前余额显示的货币符号（基于传入的 currencyCode 参数）
   const currentBalanceCurrency = (currencies || []).find(
-    c => c.code === currencyCode,
+    c => c.code === currencyCode
   )
   const currentBalanceCurrencySymbol = currentBalanceCurrency?.symbol || '$'
 

@@ -9,7 +9,7 @@ export interface ApiResponse<T = unknown> {
 
 export function successResponse<T>(
   data: T,
-  message?: string,
+  message?: string
 ): NextResponse<ApiResponse<T>> {
   return NextResponse.json({
     success: true,
@@ -20,14 +20,14 @@ export function successResponse<T>(
 
 export function errorResponse(
   error: string,
-  status: number = 400,
+  status: number = 400
 ): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
       success: false,
       error,
     },
-    { status },
+    { status }
   )
 }
 
@@ -37,30 +37,30 @@ export function unauthorizedResponse(): NextResponse<ApiResponse> {
       success: false,
       error: '未授权访问',
     },
-    { status: 401 },
+    { status: 401 }
   )
 }
 
 export function notFoundResponse(
-  message: string = '资源未找到',
+  message: string = '资源未找到'
 ): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
       success: false,
       error: message,
     },
-    { status: 404 },
+    { status: 404 }
   )
 }
 
 export function validationErrorResponse(
-  message: string,
+  message: string
 ): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
       success: false,
       error: message,
     },
-    { status: 422 },
+    { status: 422 }
   )
 }

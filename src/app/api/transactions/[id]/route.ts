@@ -11,7 +11,7 @@ import { TransactionType } from '@prisma/client'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
@@ -65,7 +65,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
@@ -143,7 +143,7 @@ export async function PUT(
     if (account.currencyCode && account.currencyCode !== currencyCode) {
       return errorResponse(
         `此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`,
-        400,
+        400
       )
     }
 
@@ -165,7 +165,7 @@ export async function PUT(
         if (existingTransaction.type !== 'BALANCE') {
           return errorResponse(
             `存量类账户"${account.name}"不能编辑普通交易记录。请使用"更新余额"功能来管理${accountType === 'ASSET' ? '资产' : '负债'}账户的余额变化。`,
-            400,
+            400
           )
         }
         // 如果是余额调整交易，也不允许通过普通交易API编辑
@@ -178,14 +178,14 @@ export async function PUT(
       if (accountType === 'INCOME' && type !== 'INCOME') {
         return errorResponse(
           '收入类账户只能记录收入交易，请选择正确的交易类型',
-          400,
+          400
         )
       }
 
       if (accountType === 'EXPENSE' && type !== 'EXPENSE') {
         return errorResponse(
           '支出类账户只能记录支出交易，请选择正确的交易类型',
-          400,
+          400
         )
       }
 
@@ -253,7 +253,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params

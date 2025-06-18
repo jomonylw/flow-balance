@@ -13,7 +13,7 @@ import {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ tagId: string }> },
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
   try {
     const { tagId } = await params
@@ -52,7 +52,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ tagId: string }> },
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
   try {
     const { tagId } = await params
@@ -127,7 +127,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ tagId: string }> },
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
   try {
     const { tagId } = await params
@@ -158,7 +158,7 @@ export async function DELETE(
     if (transactionCount > 0) {
       return errorResponse(
         `该标签正在被 ${transactionCount} 笔交易使用，无法删除`,
-        400,
+        400
       )
     }
 

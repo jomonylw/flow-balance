@@ -20,10 +20,7 @@ import {
   publishCategoryUpdate,
 } from '@/lib/services/data-update.service'
 import type { CategoryTreeItemProps } from '@/types/components'
-import type {
-  SimpleAccount,
-  SimpleCategory,
-} from '@/types/core'
+import type { SimpleAccount, SimpleCategory } from '@/types/core'
 
 // 用于余额计算的分类类型
 interface CategoryWithBalance {
@@ -179,7 +176,7 @@ export default function CategoryTreeItem({
         setShowDeleteConfirm(false)
         showSuccess(
           t('success.deleted'),
-          t('category.deleted', { name: category.name }),
+          t('category.deleted', { name: category.name })
         )
 
         // 发布分类删除事件
@@ -267,7 +264,7 @@ export default function CategoryTreeItem({
         const error = await response.json()
         showError(
           t('error.create.failed'),
-          error.message || t('category.add.subcategory.failed'),
+          error.message || t('category.add.subcategory.failed')
         )
       }
     } catch (error) {
@@ -333,7 +330,7 @@ export default function CategoryTreeItem({
         const error = await response.json()
         showError(
           t('error.save.failed'),
-          error.message || t('category.settings.save.failed'),
+          error.message || t('category.settings.save.failed')
         )
       }
     } catch (error) {

@@ -6,9 +6,7 @@ import {
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
-import {
-  calculateTotalBalanceWithConversion,
-} from '@/lib/services/account.service'
+import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
 
@@ -79,13 +77,13 @@ export async function GET(request: NextRequest) {
         const stockAccounts = accountsForCalculation.filter(
           account =>
             account.category.type === 'ASSET' ||
-            account.category.type === 'LIABILITY',
+            account.category.type === 'LIABILITY'
         )
 
         const flowAccounts = accountsForCalculation.filter(
           account =>
             account.category.type === 'INCOME' ||
-            account.category.type === 'EXPENSE',
+            account.category.type === 'EXPENSE'
         )
 
         // 计算该月末的净资产（只包含存量类账户）
@@ -93,7 +91,7 @@ export async function GET(request: NextRequest) {
           user.id,
           stockAccounts,
           baseCurrency,
-          { asOfDate: monthEnd },
+          { asOfDate: monthEnd }
         )
 
         // 计算当月现金流（收入和支出）
@@ -145,13 +143,13 @@ export async function GET(request: NextRequest) {
             user.id,
             monthlyIncomeAmounts,
             baseCurrency.code,
-            monthEnd,
+            monthEnd
           ),
           convertMultipleCurrencies(
             user.id,
             monthlyExpenseAmounts,
             baseCurrency.code,
-            monthEnd,
+            monthEnd
           ),
         ])
 
@@ -164,12 +162,12 @@ export async function GET(request: NextRequest) {
               return sum + result.originalAmount
             } else {
               console.warn(
-                `收入汇率转换失败: ${result.originalCurrency} -> ${baseCurrency.code}`,
+                `收入汇率转换失败: ${result.originalCurrency} -> ${baseCurrency.code}`
               )
               return sum // 不添加转换失败的金额
             }
           },
-          0,
+          0
         )
 
         const monthlyExpenseInBaseCurrency = expenseConversions.reduce(
@@ -181,12 +179,12 @@ export async function GET(request: NextRequest) {
               return sum + result.originalAmount
             } else {
               console.warn(
-                `支出汇率转换失败: ${result.originalCurrency} -> ${baseCurrency.code}`,
+                `支出汇率转换失败: ${result.originalCurrency} -> ${baseCurrency.code}`
               )
               return sum // 不添加转换失败的金额
             }
           },
-          0,
+          0
         )
 
         const netCashFlow =
@@ -200,15 +198,15 @@ export async function GET(request: NextRequest) {
           ([_currencyCode, _balance]) => {
             // 这里需要根据账户类型来分离资产和负债
             // 由于我们已经过滤了账户，这里的逻辑需要重新计算
-          },
+          }
         )
 
         // 使用已经过滤的存量类账户分别计算资产和负债
         const assetAccounts = stockAccounts.filter(
-          account => account.category.type === 'ASSET',
+          account => account.category.type === 'ASSET'
         )
         const liabilityAccounts = stockAccounts.filter(
-          account => account.category.type === 'LIABILITY',
+          account => account.category.type === 'LIABILITY'
         )
 
         const [assetResult, liabilityResult] = await Promise.all([
@@ -216,13 +214,13 @@ export async function GET(request: NextRequest) {
             user.id,
             assetAccounts,
             baseCurrency,
-            { asOfDate: monthEnd },
+            { asOfDate: monthEnd }
           ),
           calculateTotalBalanceWithConversion(
             user.id,
             liabilityAccounts,
             baseCurrency,
-            { asOfDate: monthEnd },
+            { asOfDate: monthEnd }
           ),
         ])
 
@@ -319,7 +317,7 @@ export async function GET(request: NextRequest) {
 
     // 检查是否有转换错误
     const hasAnyConversionErrors = monthlyData.some(
-      data => data.hasConversionErrors,
+      data => data.hasConversionErrors
     )
 
     return successResponse({

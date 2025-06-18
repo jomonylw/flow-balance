@@ -48,7 +48,7 @@ export default function StockAccountTrendChart({
 
     const chart = echarts.init(
       chartRef.current,
-      resolvedTheme === 'dark' ? 'dark' : null,
+      resolvedTheme === 'dark' ? 'dark' : null
     )
     chartInstance.current = chart
 
@@ -74,7 +74,6 @@ export default function StockAccountTrendChart({
     }
     const dates = trendData.map(item => item.date)
     const balances = trendData.map(item => item.originalAmount || 0)
-
 
     // 获取原币种信息，优先使用第一个数据点的原币种
     const originalCurrency =
@@ -138,7 +137,7 @@ export default function StockAccountTrendChart({
           const dataIndex = param.dataIndex
           const item = trendData[dataIndex]
           const itemCurrencySymbol = getCurrencySymbol(
-            item?.originalCurrency || originalCurrency,
+            item?.originalCurrency || originalCurrency
           )
 
           return `
@@ -224,7 +223,7 @@ export default function StockAccountTrendChart({
             color: ColorManager.getAccountColor(
               account.id,
               account.color,
-              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
+              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
             ),
             width: 3,
           },
@@ -232,7 +231,7 @@ export default function StockAccountTrendChart({
             color: ColorManager.getAccountColor(
               account.id,
               account.color,
-              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
+              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
             ),
           },
           areaStyle: {
@@ -253,9 +252,9 @@ export default function StockAccountTrendChart({
                         | 'ASSET'
                         | 'LIABILITY'
                         | 'INCOME'
-                        | 'EXPENSE',
+                        | 'EXPENSE'
                     ),
-                    0.3,
+                    0.3
                   ),
                 },
                 {
@@ -268,9 +267,9 @@ export default function StockAccountTrendChart({
                         | 'ASSET'
                         | 'LIABILITY'
                         | 'INCOME'
-                        | 'EXPENSE',
+                        | 'EXPENSE'
                     ),
-                    0.05,
+                    0.05
                   ),
                 },
               ],
@@ -283,7 +282,7 @@ export default function StockAccountTrendChart({
               borderColor: ColorManager.getAccountColor(
                 account.id,
                 account.color,
-                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
+                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
               ),
               borderWidth: 2,
             },
@@ -348,7 +347,7 @@ export default function StockAccountTrendChart({
                 }`}
               >
                 {t(
-                  `chart.range.${range.replace(/([A-Z])/g, '.$1').toLowerCase()}`,
+                  `chart.range.${range.replace(/([A-Z])/g, '.$1').toLowerCase()}`
                 )}
               </button>
             ))}

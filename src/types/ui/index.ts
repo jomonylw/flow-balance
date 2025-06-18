@@ -281,7 +281,9 @@ export interface AsyncState<T = unknown> {
 export type { Breakpoint } from '@/lib/utils/responsive'
 
 /** 响应式值类型 */
-export type ResponsiveValue<T> = T | Partial<Record<import('@/lib/utils/responsive').Breakpoint, T>>
+export type ResponsiveValue<T> =
+  | T
+  | Partial<Record<import('@/lib/utils/responsive').Breakpoint, T>>
 
 // ============================================================================
 // 事件处理器类型
@@ -346,5 +348,3 @@ export interface PageContainerProps extends BaseComponentProps {
   loading?: boolean
   error?: string
 }
-
-

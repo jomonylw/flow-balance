@@ -20,7 +20,7 @@ interface BatchTransactionCheckResponse {
  */
 export const useAccountTransactions = (
   accountId: string,
-  autoCheck: boolean = false,
+  autoCheck: boolean = false
 ) => {
   const { accountTransactionCache, setAccountHasTransactions } = useUserData()
   const [isLoading, setIsLoading] = useState(false)
@@ -39,7 +39,7 @@ export const useAccountTransactions = (
       setError(null)
 
       const response = await fetch(
-        `/api/accounts/${accountId}/transactions?limit=1`,
+        `/api/accounts/${accountId}/transactions?limit=1`
       )
       if (!response.ok) {
         throw new Error('获取交易记录失败')
@@ -96,7 +96,7 @@ export const useBatchAccountTransactions = (accountIds: string[]) => {
 
   // 检查哪些账户需要获取数据
   const uncachedAccountIds = accountIds.filter(
-    id => !(id in accountTransactionCache),
+    id => !(id in accountTransactionCache)
   )
 
   // 批量获取账户交易记录状态 - 使用新的批量API
@@ -129,7 +129,7 @@ export const useBatchAccountTransactions = (accountIds: string[]) => {
       Object.entries(batchResults).forEach(
         ([accountId, data]: [string, { hasTransactions: boolean }]) => {
           setAccountHasTransactions(accountId, data.hasTransactions)
-        },
+        }
       )
     } catch (err) {
       console.error('Error in batch checking account transactions:', err)
@@ -154,7 +154,7 @@ export const useBatchAccountTransactions = (accountIds: string[]) => {
         isCached: accountId in accountTransactionCache,
       }
     },
-    [accountTransactionCache],
+    [accountTransactionCache]
   )
 
   return {

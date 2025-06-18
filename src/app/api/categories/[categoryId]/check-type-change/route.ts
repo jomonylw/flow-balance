@@ -10,7 +10,7 @@ import {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> },
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
     const { categoryId } = await params
@@ -130,7 +130,7 @@ export async function GET(
           acc[stat.type] = stat._count.id
           return acc
         },
-        {} as Record<string, number>,
+        {} as Record<string, number>
       ),
       riskLevel: getRiskLevel(accountCount, transactionCount, transactionStats),
     }
@@ -167,7 +167,7 @@ async function getAllCategoryIds(categoryId: string): Promise<string[]> {
 function getRiskLevel(
   accountCount: number,
   transactionCount: number,
-  transactionStats: Array<{ type: string; _count: { id: number } }>,
+  transactionStats: Array<{ type: string; _count: { id: number } }>
 ): 'safe' | 'warning' | 'danger' {
   if (accountCount === 0 && transactionCount === 0) {
     return 'safe'
@@ -175,7 +175,7 @@ function getRiskLevel(
 
   // 检查是否有余额调整记录
   const hasBalanceRecords = transactionStats.some(
-    stat => stat.type === 'BALANCE' && stat._count.id > 0,
+    stat => stat.type === 'BALANCE' && stat._count.id > 0
   )
 
   if (hasBalanceRecords) {

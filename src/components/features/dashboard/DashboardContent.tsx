@@ -122,18 +122,18 @@ export default function DashboardContent({
           if (!chartValidation.isValid) {
             console.warn(
               'Chart data validation failed:',
-              chartValidation.errors,
+              chartValidation.errors
             )
             setChartError(
               t('dashboard.chart.data.validation.failed', {
                 errors: chartValidation.errors.join(', '),
-              }),
+              })
             )
           }
         } else {
           const errorData = await response.json()
           setChartError(
-            errorData.error || t('dashboard.chart.data.fetch.failed'),
+            errorData.error || t('dashboard.chart.data.fetch.failed')
           )
         }
       } catch (error) {
@@ -223,7 +223,7 @@ export default function DashboardContent({
                           {validationResult.errors.map(
                             (error: string, index: number) => (
                               <li key={index}>{error}</li>
-                            ),
+                            )
                           )}
                         </ul>
                       </div>
@@ -259,7 +259,7 @@ export default function DashboardContent({
                           {validationResult.warnings.map(
                             (warning: string, index: number) => (
                               <li key={index}>{warning}</li>
-                            ),
+                            )
                           )}
                         </ul>
                       </div>
@@ -295,7 +295,7 @@ export default function DashboardContent({
                           {validationResult.suggestions.map(
                             (suggestion: string, index: number) => (
                               <li key={index}>{suggestion}</li>
-                            ),
+                            )
                           )}
                         </ul>
                       </div>
@@ -378,7 +378,7 @@ export default function DashboardContent({
                         {summaryData.totalAssets.currency.symbol}
                         {summaryData.totalAssets.amount.toLocaleString(
                           'zh-CN',
-                          { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                          { minimumFractionDigits: 2, maximumFractionDigits: 2 }
                         )}
                       </>
                     ) : (
@@ -440,7 +440,7 @@ export default function DashboardContent({
                         {summaryData.totalLiabilities.currency.symbol}
                         {summaryData.totalLiabilities.amount.toLocaleString(
                           'zh-CN',
-                          { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                          { minimumFractionDigits: 2, maximumFractionDigits: 2 }
                         )}
                       </>
                     ) : (
@@ -533,7 +533,7 @@ export default function DashboardContent({
                     {summaryData.netWorth.currency.symbol}
                     {Math.abs(summaryData.netWorth.amount).toLocaleString(
                       'zh-CN',
-                      { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                      { minimumFractionDigits: 2, maximumFractionDigits: 2 }
                     )}
                   </p>
                   <p
@@ -597,7 +597,7 @@ export default function DashboardContent({
                       : '-'}
                     {summaryData.recentActivity.baseCurrency.symbol}
                     {Math.abs(
-                      summaryData.recentActivity.summaryInBaseCurrency.net,
+                      summaryData.recentActivity.summaryInBaseCurrency.net
                     ).toLocaleString('zh-CN', {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
@@ -622,7 +622,7 @@ export default function DashboardContent({
                       +{summaryData.recentActivity.baseCurrency.symbol}
                       {summaryData.recentActivity.summaryInBaseCurrency.income.toLocaleString(
                         'zh-CN',
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
                       )}
                     </span>
                   </div>
@@ -638,7 +638,7 @@ export default function DashboardContent({
                       -{summaryData.recentActivity.baseCurrency.symbol}
                       {summaryData.recentActivity.summaryInBaseCurrency.expense.toLocaleString(
                         'zh-CN',
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
                       )}
                     </span>
                   </div>

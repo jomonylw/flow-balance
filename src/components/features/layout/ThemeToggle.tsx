@@ -35,7 +35,7 @@ export default function ThemeToggle({ className = '' }: ThemeToggleProps) {
     console.log('Current theme before:', theme)
     console.log(
       'Current DOM classes before:',
-      document.documentElement.classList.toString(),
+      document.documentElement.classList.toString()
     )
 
     setTheme(selectedTheme)
@@ -46,7 +46,7 @@ export default function ThemeToggle({ className = '' }: ThemeToggleProps) {
       console.log('Theme after setTheme:', selectedTheme)
       console.log(
         'DOM classes after:',
-        document.documentElement.classList.toString(),
+        document.documentElement.classList.toString()
       )
       console.log('=== ThemeToggle handleThemeSelect END ===')
     }, 100)

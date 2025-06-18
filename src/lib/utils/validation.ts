@@ -55,7 +55,7 @@ interface ValidationDetails {
  */
 export function validateAccountDataWithI18n(
   accounts: ValidationAccount[],
-  t: TranslationFunction,
+  t: TranslationFunction
 ): ValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
@@ -66,7 +66,7 @@ export function validateAccountDataWithI18n(
     if (!account.category.type) {
       errors.push(`账户 "${account.name}" 未设置账户类型`)
       suggestions.push(
-        `请为账户 "${account.name}" 设置正确的账户类型（资产、负债、收入、支出）`,
+        `请为账户 "${account.name}" 设置正确的账户类型（资产、负债、收入、支出）`
       )
     }
 
@@ -75,7 +75,7 @@ export function validateAccountDataWithI18n(
       // 验证交易金额
       if (transaction.amount <= 0) {
         errors.push(
-          `账户 "${account.name}" 中存在无效的交易金额: ${transaction.amount}`,
+          `账户 "${account.name}" 中存在无效的交易金额: ${transaction.amount}`
         )
       }
 
@@ -83,7 +83,7 @@ export function validateAccountDataWithI18n(
       if (account.category.type) {
         const isValidCombination = validateTransactionAccountType(
           transaction.type,
-          account.category.type,
+          account.category.type
         )
         if (!isValidCombination) {
           warnings.push(
@@ -91,7 +91,7 @@ export function validateAccountDataWithI18n(
               accountName: account.name,
               accountType: account.category.type,
               transactionType: transaction.type,
-            }),
+            })
           )
         }
       }
@@ -100,7 +100,7 @@ export function validateAccountDataWithI18n(
       const transactionDate = new Date(transaction.date)
       if (isNaN(transactionDate.getTime())) {
         errors.push(
-          `账户 "${account.name}" 中存在无效的交易日期: ${transaction.date}`,
+          `账户 "${account.name}" 中存在无效的交易日期: ${transaction.date}`
         )
       }
 
@@ -131,7 +131,7 @@ export function validateAccountDataWithI18n(
       const relevantTransactions = account.transactions.filter(
         t =>
           (account.category.type === 'INCOME' && t.type === 'INCOME') ||
-          (account.category.type === 'EXPENSE' && t.type === 'EXPENSE'),
+          (account.category.type === 'EXPENSE' && t.type === 'EXPENSE')
       )
 
       if (relevantTransactions.length !== account.transactions.length) {
@@ -145,19 +145,19 @@ export function validateAccountDataWithI18n(
     accountsChecked: accounts.length,
     transactionsChecked: accounts.reduce(
       (sum, acc) => sum + (acc.transactions?.length || 0),
-      0,
+      0
     ),
     categoriesWithoutType: accounts.filter(acc => !acc.category?.type).length,
     invalidTransactions: 0, // 这里简化处理
     businessLogicViolations: warnings.filter(
-      w => w.includes('不匹配') || w.includes('mismatched'),
+      w => w.includes('不匹配') || w.includes('mismatched')
     ).length,
   }
 
   const score = calculateDataQualityScore(
     details,
     errors.length,
-    warnings.length,
+    warnings.length
   )
 
   return {
@@ -174,7 +174,7 @@ export function validateAccountDataWithI18n(
  * 验证账户数据的完整性和一致性（原版本，保持向后兼容）
  */
 export function validateAccountData(
-  accounts: ValidationAccount[],
+  accounts: ValidationAccount[]
 ): ValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
@@ -185,7 +185,7 @@ export function validateAccountData(
     if (!account.category.type) {
       errors.push(`账户 "${account.name}" 未设置账户类型`)
       suggestions.push(
-        `请为账户 "${account.name}" 设置正确的账户类型（资产、负债、收入、支出）`,
+        `请为账户 "${account.name}" 设置正确的账户类型（资产、负债、收入、支出）`
       )
     }
 
@@ -194,7 +194,7 @@ export function validateAccountData(
       // 验证交易金额
       if (transaction.amount <= 0) {
         errors.push(
-          `账户 "${account.name}" 中存在无效的交易金额: ${transaction.amount}`,
+          `账户 "${account.name}" 中存在无效的交易金额: ${transaction.amount}`
         )
       }
 
@@ -202,11 +202,11 @@ export function validateAccountData(
       if (account.category.type) {
         const isValidCombination = validateTransactionAccountType(
           transaction.type,
-          account.category.type,
+          account.category.type
         )
         if (!isValidCombination) {
           warnings.push(
-            `账户 "${account.name}" (${account.category.type}) 中存在不匹配的交易类型: ${transaction.type}`,
+            `账户 "${account.name}" (${account.category.type}) 中存在不匹配的交易类型: ${transaction.type}`
           )
         }
       }
@@ -215,7 +215,7 @@ export function validateAccountData(
       const transactionDate = new Date(transaction.date)
       if (isNaN(transactionDate.getTime())) {
         errors.push(
-          `账户 "${account.name}" 中存在无效的交易日期: ${transaction.date}`,
+          `账户 "${account.name}" 中存在无效的交易日期: ${transaction.date}`
         )
       }
 
@@ -246,7 +246,7 @@ export function validateAccountData(
       const relevantTransactions = account.transactions.filter(
         t =>
           (account.category.type === 'INCOME' && t.type === 'INCOME') ||
-          (account.category.type === 'EXPENSE' && t.type === 'EXPENSE'),
+          (account.category.type === 'EXPENSE' && t.type === 'EXPENSE')
       )
 
       if (relevantTransactions.length !== account.transactions.length) {
@@ -260,7 +260,7 @@ export function validateAccountData(
     accountsChecked: accounts.length,
     transactionsChecked: accounts.reduce(
       (sum, acc) => sum + (acc.transactions?.length || 0),
-      0,
+      0
     ),
     categoriesWithoutType: accounts.filter(acc => !acc.category?.type).length,
     invalidTransactions: 0, // 这里简化处理
@@ -270,7 +270,7 @@ export function validateAccountData(
   const score = calculateDataQualityScore(
     details,
     errors.length,
-    warnings.length,
+    warnings.length
   )
 
   return {
@@ -288,7 +288,7 @@ export function validateAccountData(
  */
 function validateTransactionAccountType(
   transactionType: 'INCOME' | 'EXPENSE' | 'BALANCE',
-  accountType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
+  accountType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
 ): boolean {
   switch (accountType) {
     case 'ASSET':
@@ -345,7 +345,7 @@ export function validateChartData(data: ValidationChartData): ValidationResult {
         serie.data.forEach((value: unknown, dataIndex: number) => {
           if (typeof value !== 'number' || isNaN(value)) {
             errors.push(
-              `净资产图表系列 ${index} 数据点 ${dataIndex} 不是有效数字: ${value}`,
+              `净资产图表系列 ${index} 数据点 ${dataIndex} 不是有效数字: ${value}`
             )
           }
         })
@@ -365,7 +365,7 @@ export function validateChartData(data: ValidationChartData): ValidationResult {
         serie.data.forEach((value: unknown, dataIndex: number) => {
           if (typeof value !== 'number' || isNaN(value)) {
             errors.push(
-              `现金流图表系列 ${index} 数据点 ${dataIndex} 不是有效数字: ${value}`,
+              `现金流图表系列 ${index} 数据点 ${dataIndex} 不是有效数字: ${value}`
             )
           }
 
@@ -389,7 +389,7 @@ export function validateChartData(data: ValidationChartData): ValidationResult {
   const score = calculateDataQualityScore(
     details,
     errors.length,
-    warnings.length,
+    warnings.length
   )
 
   return {
@@ -408,7 +408,7 @@ export function validateChartData(data: ValidationChartData): ValidationResult {
 function calculateDataQualityScore(
   details: ValidationDetails,
   errorCount: number,
-  warningCount: number,
+  warningCount: number
 ): number {
   if (details.accountsChecked === 0) return 0
 
@@ -447,7 +447,7 @@ interface CategorySummaryData {
  */
 export function validateCategorySummary(
   category: CategoryData,
-  summaryData: CategorySummaryData,
+  summaryData: CategorySummaryData
 ): ValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
@@ -483,7 +483,7 @@ export function validateCategorySummary(
 
     if (summaryData.transactionCount === 0) {
       suggestions.push(
-        `存量类分类 "${category.name}" 暂无交易记录，建议添加账户并更新余额`,
+        `存量类分类 "${category.name}" 暂无交易记录，建议添加账户并更新余额`
       )
     }
   }
@@ -496,7 +496,7 @@ export function validateCategorySummary(
 
     if (summaryData.transactionCount === 0) {
       suggestions.push(
-        `流量类分类 "${category.name}" 暂无交易记录，建议添加相关交易`,
+        `流量类分类 "${category.name}" 暂无交易记录，建议添加相关交易`
       )
     }
   }
@@ -512,7 +512,7 @@ export function validateCategorySummary(
   const score = calculateDataQualityScore(
     details,
     errors.length,
-    warnings.length,
+    warnings.length
   )
 
   return {
@@ -537,7 +537,7 @@ interface ValidationTransactionFormData {
  * 验证交易表单数据
  */
 export function validateTransactionForm(
-  formData: ValidationTransactionFormData,
+  formData: ValidationTransactionFormData
 ): ValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
@@ -588,7 +588,7 @@ export function validateTransactionForm(
   const score = calculateDataQualityScore(
     details,
     errors.length,
-    warnings.length,
+    warnings.length
   )
 
   return {

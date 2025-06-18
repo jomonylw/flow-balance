@@ -66,7 +66,7 @@ export default function StockMonthlySummaryChart({
     if (!chartInstance.current) {
       chartInstance.current = echarts.init(
         chartRef.current,
-        resolvedTheme === 'dark' ? 'dark' : null,
+        resolvedTheme === 'dark' ? 'dark' : null
       )
     }
 
@@ -124,11 +124,11 @@ export default function StockMonthlySummaryChart({
           return ColorManager.getAccountColor(
             account.id,
             account.color,
-            account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE',
+            account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
           )
         }
         return null // 如果没有找到账户或账户没有自定义颜色，使用智能颜色分配
-      },
+      }
     )
 
     // 为每个账户准备柱状图数据
@@ -138,7 +138,7 @@ export default function StockMonthlySummaryChart({
         const currencyData = monthData[baseCurrency.code]
         if (currencyData?.accounts) {
           const account = Object.values(currencyData.accounts).find(
-            acc => acc.name === accountName,
+            acc => acc.name === accountName
           )
           return account?.balance || 0
         }
@@ -278,7 +278,7 @@ export default function StockMonthlySummaryChart({
                 {
                   minimumFractionDigits: 1,
                   maximumFractionDigits: 1,
-                },
+                }
               )}k`
             }
             return `${baseCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`

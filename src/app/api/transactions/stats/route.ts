@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
     // 货币转换函数
     const convertToBaseCurrency = (
       amount: number,
-      fromCurrency: string,
+      fromCurrency: string
     ): number => {
       if (fromCurrency === baseCurrency.code) {
         return amount
@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
         return amount * rate
       } else {
         console.warn(
-          `No exchange rate found for ${fromCurrency} to ${baseCurrency.code}, using original amount`,
+          `No exchange rate found for ${fromCurrency} to ${baseCurrency.code}, using original amount`
         )
         return amount
       }
@@ -207,7 +207,7 @@ export async function GET(request: NextRequest) {
       const originalAmount = parseFloat(String(transaction.amount)) || 0
       const amount = convertToBaseCurrency(
         originalAmount,
-        transaction.currencyCode,
+        transaction.currencyCode
       )
 
       if (transaction.type === 'INCOME') {

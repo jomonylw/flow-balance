@@ -17,14 +17,9 @@ import {
   useBalanceUpdateListener,
   useTransactionListener,
 } from '@/hooks/business/useDataUpdateListener'
-import {
-  Transaction,
-} from '@/types/business/transaction'
+import { Transaction } from '@/types/business/transaction'
 import type { TransactionType } from '@prisma/client'
-import type {
-  MonthlyDataItem,
-  StockCategoryMonthlyData,
-} from '@/types/core'
+import type { MonthlyDataItem, StockCategoryMonthlyData } from '@/types/core'
 import type { StockMonthlyData, StockSummaryData } from '@/types/components'
 
 // 新的 API 数据格式 - 使用统一的 MonthlyDataItem 类型
@@ -92,7 +87,7 @@ export default function StockCategoryDetailView({
 
     // 属于当前分类的子分类的账户
     const accountCategory = categories.find(
-      cat => cat.id === account.categoryId,
+      cat => cat.id === account.categoryId
     )
     return accountCategory?.parentId === category.id
   })
@@ -108,7 +103,7 @@ export default function StockCategoryDetailView({
         handleBalanceUpdateSuccess()
       }
     },
-    categoryAccounts.map(account => account.id),
+    categoryAccounts.map(account => account.id)
   )
 
   // 监听交易相关事件
@@ -118,7 +113,7 @@ export default function StockCategoryDetailView({
       handleBalanceUpdateSuccess()
     },
     categoryAccounts.map(account => account.id),
-    [category.id],
+    [category.id]
   )
 
   // 获取分类汇总数据
@@ -136,7 +131,7 @@ export default function StockCategoryDetailView({
           // 根据新的数据格式生成图表数据
           const chartData = generateChartData(
             summaryResult.data,
-            user.settings?.baseCurrency?.code || 'CNY',
+            user.settings?.baseCurrency?.code || 'CNY'
           )
           setMonthlyData({
             monthlyData: chartData,
@@ -154,7 +149,7 @@ export default function StockCategoryDetailView({
   // 根据新的 API 数据格式生成图表所需的数据
   const generateChartData = (
     monthlyData: MonthlyDataItem[],
-    baseCurrencyCode: string,
+    baseCurrencyCode: string
   ): StockMonthlyData => {
     const chartData: StockMonthlyData = {}
 
@@ -235,7 +230,7 @@ export default function StockCategoryDetailView({
         } else {
           showError(
             t('error.load.transactions'),
-            result.error || t('error.unknown'),
+            result.error || t('error.unknown')
           )
         }
       } catch (error) {
@@ -247,7 +242,7 @@ export default function StockCategoryDetailView({
         setIsLoadingTransactions(false)
       }
     },
-    [category.id, pagination.itemsPerPage, showError, t],
+    [category.id, pagination.itemsPerPage, showError, t]
   )
 
   useEffect(() => {
@@ -280,7 +275,7 @@ export default function StockCategoryDetailView({
   const handleBatchDelete = async (transactionIds: string[]) => {
     try {
       const deletePromises = transactionIds.map(id =>
-        fetch(`/api/transactions/${id}`, { method: 'DELETE' }),
+        fetch(`/api/transactions/${id}`, { method: 'DELETE' })
       )
 
       const responses = await Promise.all(deletePromises)
@@ -294,14 +289,14 @@ export default function StockCategoryDetailView({
           t('transaction.delete.batch.partial.error', {
             failed: failedDeletes.length,
             total: transactionIds.length,
-          }),
+          })
         )
       } else {
         showSuccess(
           t('success.deleted'),
           t('transaction.delete.batch.success', {
             count: transactionIds.length,
-          }),
+          })
         )
       }
 
@@ -322,7 +317,7 @@ export default function StockCategoryDetailView({
         `/api/transactions/${deletingTransactionId}`,
         {
           method: 'DELETE',
-        },
+        }
       )
 
       if (response.ok) {
@@ -333,7 +328,7 @@ export default function StockCategoryDetailView({
         const error = await response.json()
         showError(
           t('common.delete.failed'),
-          error.message || t('error.unknown'),
+          error.message || t('error.unknown')
         )
       }
     } catch (error) {
@@ -358,7 +353,7 @@ export default function StockCategoryDetailView({
           })
           const chartData = generateChartData(
             summaryResult.data,
-            user.settings?.baseCurrency?.code || 'CNY',
+            user.settings?.baseCurrency?.code || 'CNY'
           )
           setMonthlyData({
             monthlyData: chartData,
@@ -443,18 +438,20 @@ export default function StockCategoryDetailView({
             category={{
               ...category,
               type: category.type,
-              transactions: (category.transactions || []).map((t: CategoryTransaction) => ({
-                ...t,
-                type: t.type,
-                date: t.date,
-                amount: Number(t.amount),
-                notes: t.notes || undefined,
-                currency: t.currency,
-                tags: t.tags.map(tt => ({
-                  id: tt.tag.id,
-                  name: tt.tag.name,
-                })),
-              })),
+              transactions: (category.transactions || []).map(
+                (t: CategoryTransaction) => ({
+                  ...t,
+                  type: t.type,
+                  date: t.date,
+                  amount: Number(t.amount),
+                  notes: t.notes || undefined,
+                  currency: t.currency,
+                  tags: t.tags.map(tt => ({
+                    id: tt.tag.id,
+                    name: tt.tag.name,
+                  })),
+                })
+              ),
             }}
             currencySymbol={currencySymbol}
             summaryData={summaryData}
@@ -490,7 +487,7 @@ export default function StockCategoryDetailView({
                           {latestMonthData.childCategories.map(child => {
                             // 转换余额数据为组件需要的格式
                             const balanceInfos = Object.entries(
-                              child.balances.original,
+                              child.balances.original
                             ).map(([currencyCode, balance]) => {
                               const convertedAmount =
                                 child.balances.converted[currencyCode] ||
@@ -540,7 +537,7 @@ export default function StockCategoryDetailView({
                           {latestMonthData.directAccounts.map(account => {
                             // 转换余额数据为组件需要的格式
                             const balanceInfos = Object.entries(
-                              account.balances.original,
+                              account.balances.original
                             ).map(([currencyCode, balance]) => {
                               const convertedAmount =
                                 account.balances.converted[currencyCode] ||
@@ -589,7 +586,7 @@ export default function StockCategoryDetailView({
       {monthlyData &&
         (() => {
           const baseCurrencyForChart = currencies.find(
-            c => c.code === monthlyData.baseCurrency,
+            c => c.code === monthlyData.baseCurrency
           )
           if (!baseCurrencyForChart) return null
 
@@ -694,7 +691,10 @@ export default function StockCategoryDetailView({
             editingTransaction
               ? {
                   ...editingTransaction,
-                  date: editingTransaction.date instanceof Date ? editingTransaction.date.toISOString().split('T')[0] : editingTransaction.date,
+                  date:
+                    editingTransaction.date instanceof Date
+                      ? editingTransaction.date.toISOString().split('T')[0]
+                      : editingTransaction.date,
                   notes: editingTransaction.notes || undefined,
                 }
               : undefined

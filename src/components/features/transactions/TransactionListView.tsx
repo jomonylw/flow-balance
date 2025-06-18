@@ -20,8 +20,6 @@ interface TransactionListViewProps {
   user: User
 }
 
-
-
 export default function TransactionListView({
   user,
 }: TransactionListViewProps) {
@@ -88,7 +86,7 @@ export default function TransactionListView({
         console.error('Failed to load transaction stats:', result.error)
         showError(
           t('error.load.transactions'),
-          result.error || t('error.unknown'),
+          result.error || t('error.unknown')
         )
       }
     } catch (error) {
@@ -136,7 +134,7 @@ export default function TransactionListView({
         console.error('Failed to load transactions:', result.error)
         showError(
           t('error.load.transactions'),
-          result.error || t('error.unknown'),
+          result.error || t('error.unknown')
         )
       }
     } catch (error) {
@@ -192,7 +190,7 @@ export default function TransactionListView({
   const handleBatchDelete = async (transactionIds: string[]) => {
     try {
       const deletePromises = transactionIds.map(id =>
-        fetch(`/api/transactions/${id}`, { method: 'DELETE' }),
+        fetch(`/api/transactions/${id}`, { method: 'DELETE' })
       )
 
       const responses = await Promise.all(deletePromises)
@@ -206,14 +204,14 @@ export default function TransactionListView({
           t('transaction.delete.batch.partial.error', {
             failed: failedDeletes.length,
             total: transactionIds.length,
-          }),
+          })
         )
       } else {
         showSuccess(
           t('success.deleted'),
           t('transaction.delete.batch.success', {
             count: transactionIds.length,
-          }),
+          })
         )
       }
 
@@ -233,7 +231,7 @@ export default function TransactionListView({
         `/api/transactions/${deletingTransactionId}`,
         {
           method: 'DELETE',
-        },
+        }
       )
 
       const result = await response.json()
@@ -358,7 +356,10 @@ export default function TransactionListView({
               amount: editingTransaction.amount,
               description: editingTransaction.description,
               notes: editingTransaction.notes || undefined,
-              date: editingTransaction.date instanceof Date ? editingTransaction.date.toISOString().split('T')[0] : editingTransaction.date,
+              date:
+                editingTransaction.date instanceof Date
+                  ? editingTransaction.date.toISOString().split('T')[0]
+                  : editingTransaction.date,
               tagIds: editingTransaction.tags.map(t => t.tag.id),
             }}
             account={editingTransaction.account}

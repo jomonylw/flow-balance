@@ -12,7 +12,7 @@ import {
 export function useDataUpdateListener(
   types: DataUpdateType[],
   callback: (event: DataUpdateEvent) => void | Promise<void>,
-  deps: DependencyList = [],
+  deps: DependencyList = []
 ) {
   const callbackRef = useRef(callback)
   const listenerIdRef = useRef<string | undefined>(undefined)
@@ -44,7 +44,7 @@ export function useDataUpdateListener(
  */
 export function useBalanceUpdateListener(
   callback: (event: DataUpdateEvent) => void | Promise<void>,
-  accountIds?: string[],
+  accountIds?: string[]
 ) {
   return useDataUpdateListener(
     ['balance-update'],
@@ -60,9 +60,9 @@ export function useBalanceUpdateListener(
         }
         callback(event)
       },
-      [callback, accountIds?.join(',')],
+      [callback, accountIds?.join(',')]
     ),
-    [accountIds?.join(',')],
+    [accountIds?.join(',')]
   )
 }
 
@@ -72,7 +72,7 @@ export function useBalanceUpdateListener(
 export function useTransactionListener(
   callback: (event: DataUpdateEvent) => void | Promise<void>,
   accountIds?: string[],
-  categoryIds?: string[],
+  categoryIds?: string[]
 ) {
   return useDataUpdateListener(
     ['transaction-create', 'transaction-update', 'transaction-delete'],
@@ -95,9 +95,9 @@ export function useTransactionListener(
         }
         callback(event)
       },
-      [callback, accountIds?.join(','), categoryIds?.join(',')],
+      [callback, accountIds?.join(','), categoryIds?.join(',')]
     ),
-    [accountIds?.join(','), categoryIds?.join(',')],
+    [accountIds?.join(','), categoryIds?.join(',')]
   )
 }
 
@@ -106,7 +106,7 @@ export function useTransactionListener(
  */
 export function useAccountListener(
   callback: (event: DataUpdateEvent) => void | Promise<void>,
-  categoryIds?: string[],
+  categoryIds?: string[]
 ) {
   return useDataUpdateListener(
     ['account-create', 'account-update', 'account-delete'],
@@ -122,9 +122,9 @@ export function useAccountListener(
         }
         callback(event)
       },
-      [callback, categoryIds?.join(',')],
+      [callback, categoryIds?.join(',')]
     ),
-    [categoryIds?.join(',')],
+    [categoryIds?.join(',')]
   )
 }
 
@@ -133,7 +133,7 @@ export function useAccountListener(
  */
 export function useCategoryListener(
   callback: (event: DataUpdateEvent) => void | Promise<void>,
-  categoryIds?: string[],
+  categoryIds?: string[]
 ) {
   return useDataUpdateListener(
     ['category-create', 'category-update', 'category-delete'],
@@ -149,9 +149,9 @@ export function useCategoryListener(
         }
         callback(event)
       },
-      [callback, categoryIds?.join(',')],
+      [callback, categoryIds?.join(',')]
     ),
-    [categoryIds?.join(',')],
+    [categoryIds?.join(',')]
   )
 }
 
@@ -160,7 +160,7 @@ export function useCategoryListener(
  */
 export function useTagListener(
   callback: (event: DataUpdateEvent) => void | Promise<void>,
-  tagIds?: string[],
+  tagIds?: string[]
 ) {
   return useDataUpdateListener(
     ['tag-create', 'tag-update', 'tag-delete'],
@@ -172,9 +172,9 @@ export function useTagListener(
         }
         callback(event)
       },
-      [callback, tagIds?.join(',')],
+      [callback, tagIds?.join(',')]
     ),
-    [tagIds?.join(',')],
+    [tagIds?.join(',')]
   )
 }
 
@@ -182,7 +182,7 @@ export function useTagListener(
  * 监听所有数据更新事件
  */
 export function useAllDataListener(
-  callback: (event: DataUpdateEvent) => void | Promise<void>,
+  callback: (event: DataUpdateEvent) => void | Promise<void>
 ) {
   return useDataUpdateListener(
     [
@@ -201,6 +201,6 @@ export function useAllDataListener(
       'tag-delete',
       'manual-refresh',
     ],
-    callback,
+    callback
   )
 }

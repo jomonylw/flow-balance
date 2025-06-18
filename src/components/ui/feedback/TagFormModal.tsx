@@ -70,21 +70,21 @@ export default function TagFormModal({
       if (result.success) {
         showSuccess(
           editingTag ? t('tag.update.success') : t('tag.create.success'),
-          editingTag ? t('tag.updated') : t('tag.created'),
+          editingTag ? t('tag.updated') : t('tag.created')
         )
         onSuccess(result.data)
         onClose()
       } else {
         showError(
           editingTag ? t('tag.update.failed') : t('tag.create.failed'),
-          result.error || t('tag.operation.failed'),
+          result.error || t('tag.operation.failed')
         )
       }
     } catch (error) {
       console.error('Error saving tag:', error)
       showError(
         editingTag ? t('tag.update.failed') : t('tag.create.failed'),
-        t('error.network'),
+        t('error.network')
       )
     } finally {
       setIsSubmitting(false)

@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
           }
 
           balanceSheet.liabilities.categories[categoryId].accounts.push(
-            accountInfo,
+            accountInfo
           )
 
           if (
@@ -258,7 +258,7 @@ export async function GET(request: NextRequest) {
               })
             }
           })
-        },
+        }
       )
 
       // 收集负债账户的转换数据
@@ -278,7 +278,7 @@ export async function GET(request: NextRequest) {
               })
             }
           })
-        },
+        }
       )
 
       // 执行批量货币转换
@@ -289,7 +289,7 @@ export async function GET(request: NextRequest) {
           currency: item.currency,
         })),
         baseCurrency.code,
-        targetDate,
+        targetDate
       )
 
       // 应用转换结果到账户
@@ -304,7 +304,7 @@ export async function GET(request: NextRequest) {
           const category =
             balanceSheet.assets.categories[conversionData.categoryId]
           const account = category.accounts.find(
-            acc => acc.id === conversionData.accountId,
+            acc => acc.id === conversionData.accountId
           )
           if (account) {
             account.balanceInBaseCurrency = convertedAmount
@@ -317,7 +317,7 @@ export async function GET(request: NextRequest) {
           const category =
             balanceSheet.liabilities.categories[conversionData.categoryId]
           const account = category.accounts.find(
-            acc => acc.id === conversionData.accountId,
+            acc => acc.id === conversionData.accountId
           )
           if (account) {
             account.balanceInBaseCurrency = convertedAmount
@@ -353,24 +353,24 @@ export async function GET(request: NextRequest) {
       Object.values(balanceSheet.assets.categories).forEach(category => {
         category.totalInBaseCurrency = category.accounts.reduce(
           (sum, account) => sum + (account.balanceInBaseCurrency || 0),
-          0,
+          0
         )
       })
 
       Object.values(balanceSheet.liabilities.categories).forEach(category => {
         category.totalInBaseCurrency = category.accounts.reduce(
           (sum, account) => sum + (account.balanceInBaseCurrency || 0),
-          0,
+          0
         )
       })
 
       // 计算总计
       baseCurrencyTotals.totalAssets = Object.values(
-        balanceSheet.assets.categories,
+        balanceSheet.assets.categories
       ).reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
 
       baseCurrencyTotals.totalLiabilities = Object.values(
-        balanceSheet.liabilities.categories,
+        balanceSheet.liabilities.categories
       ).reduce((sum, category) => sum + (category.totalInBaseCurrency || 0), 0)
 
       baseCurrencyTotals.netWorth =

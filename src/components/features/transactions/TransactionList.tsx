@@ -114,7 +114,7 @@ export default function TransactionList({
   const { t } = useLanguage()
   const { tags: userTags } = useUserData()
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(
-    new Set(),
+    new Set()
   )
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false)
   const [showSingleDeleteConfirm, setShowSingleDeleteConfirm] = useState(false)
@@ -255,7 +255,7 @@ export default function TransactionList({
     const normalizedTransactionDate = new Date(
       transactionDate.getFullYear(),
       transactionDate.getMonth(),
-      transactionDate.getDate(),
+      transactionDate.getDate()
     )
     return normalizedTransactionDate > today
   }
@@ -268,7 +268,7 @@ export default function TransactionList({
     const normalizedTransactionDate = new Date(
       transactionDate.getFullYear(),
       transactionDate.getMonth(),
-      transactionDate.getDate(),
+      transactionDate.getDate()
     )
 
     const diffTime = normalizedTransactionDate.getTime() - today.getTime()
@@ -761,7 +761,7 @@ export default function TransactionList({
                       1,
                     end: Math.min(
                       pagination.currentPage * pagination.itemsPerPage,
-                      pagination.totalItems,
+                      pagination.totalItems
                     ),
                     total: pagination.totalItems,
                   })}
@@ -794,7 +794,7 @@ export default function TransactionList({
                   </button>
                   {Array.from(
                     { length: pagination.totalPages },
-                    (_, i) => i + 1,
+                    (_, i) => i + 1
                   ).map(page => (
                     <button
                       key={page}

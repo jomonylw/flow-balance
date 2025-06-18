@@ -7,9 +7,10 @@ import React, {
   useEffect,
   useCallback,
 } from 'react'
-import type { BalanceCategorySummary, ContextAccountBalance } from '@/types/components'
-
-
+import type {
+  BalanceCategorySummary,
+  ContextAccountBalance,
+} from '@/types/components'
 
 // Context 数据结构
 interface BalanceContextType {
@@ -146,7 +147,7 @@ export function BalanceProvider({
     // 递归计算分类汇总
     const calculateCategorySummary = (
       categoryId: string,
-      currencyCode: string = 'CNY',
+      currencyCode: string = 'CNY'
     ): BalanceCategorySummary => {
       if (summaries[`${categoryId}-${currencyCode}`]) {
         return summaries[`${categoryId}-${currencyCode}`]
@@ -214,7 +215,7 @@ export function BalanceProvider({
       }
       return accountBalance.balanceInBaseCurrency
     },
-    [accountBalances],
+    [accountBalances]
   )
 
   // 获取账户原始余额的便捷方法（指定货币）
@@ -226,7 +227,7 @@ export function BalanceProvider({
       }
       return accountBalance.balances[currencyCode].amount
     },
-    [accountBalances],
+    [accountBalances]
   )
 
   // 获取分类汇总的便捷方法
@@ -237,7 +238,7 @@ export function BalanceProvider({
         null
       )
     },
-    [categorySummaries, baseCurrency],
+    [categorySummaries, baseCurrency]
   )
 
   // 更新单个账户余额
@@ -251,7 +252,7 @@ export function BalanceProvider({
         },
       }))
     },
-    [],
+    []
   )
 
   const value: BalanceContextType = {

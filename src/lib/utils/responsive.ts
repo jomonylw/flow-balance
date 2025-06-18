@@ -111,7 +111,7 @@ export const getChartHeight = (): number => {
  * 获取响应式的模态框尺寸
  */
 export const getModalSize = (
-  size: 'sm' | 'md' | 'lg' | 'xl' = 'md',
+  size: 'sm' | 'md' | 'lg' | 'xl' = 'md'
 ): string => {
   const sizeMap = {
     sm: responsive({
@@ -174,7 +174,7 @@ export const getSpacing = (type: 'padding' | 'margin' = 'padding'): string => {
  * 获取响应式的文本大小类名
  */
 export const getTextSize = (
-  level: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' = 'base',
+  level: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' = 'base'
 ): string => {
   const sizeMap = {
     xs: responsive({ mobile: 'text-xs', desktop: 'text-xs' }),
@@ -223,7 +223,7 @@ export const getSafeAreaClasses = (): string => {
  */
 export const debounce = <T extends (...args: unknown[]) => unknown>(
   func: T,
-  wait: number,
+  wait: number
 ): ((...args: Parameters<T>) => void) => {
   let timeout: NodeJS.Timeout | null = null
 

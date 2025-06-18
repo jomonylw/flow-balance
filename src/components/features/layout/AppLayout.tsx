@@ -5,8 +5,6 @@ import AppLayoutClient from './AppLayoutClient'
 
 import type { AppLayoutProps } from '@/types/components'
 
-
-
 export default async function AppLayout({ children }: AppLayoutProps) {
   // 强制执行身份验证
   const user = await getCurrentUser()

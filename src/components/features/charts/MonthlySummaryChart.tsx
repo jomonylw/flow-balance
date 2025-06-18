@@ -256,7 +256,7 @@ export default function MonthlySummaryChart({
         const currencyData = monthData[baseCurrency.code]
         if (currencyData?.accounts) {
           const account = Object.values(currencyData.accounts).find(
-            acc => acc.name === accountName,
+            acc => acc.name === accountName
           )
           return account?.balance || 0
         }

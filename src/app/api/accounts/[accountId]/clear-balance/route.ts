@@ -10,7 +10,7 @@ import {
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ accountId: string }> },
+  { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
     const { accountId } = await params
@@ -53,7 +53,7 @@ export async function DELETE(
     if (otherTransactionCount > 0) {
       return errorResponse(
         `该账户存在 ${otherTransactionCount} 条普通交易记录，请先删除这些交易记录后再清空余额历史`,
-        400,
+        400
       )
     }
 

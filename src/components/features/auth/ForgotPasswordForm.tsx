@@ -58,7 +58,7 @@ export default function ForgotPasswordForm() {
       if (response.ok) {
         setSuccessMessage(
           data.data.message ||
-            '如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱。',
+            '如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱。'
         )
         setEmail('')
       } else {

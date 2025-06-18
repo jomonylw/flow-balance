@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
           user.id,
           categoryId,
           months,
-          baseCurrency,
+          baseCurrency
         )
       }
     }
@@ -75,7 +75,7 @@ async function getStockCategoryMonthlyData(
   userId: string,
   categoryId: string,
   months: number,
-  baseCurrency: { code: string; symbol: string; name: string },
+  baseCurrency: { code: string; symbol: string; name: string }
 ) {
   // 计算日期范围
   const endDate = new Date()
@@ -123,8 +123,6 @@ async function getStockCategoryMonthlyData(
       },
     },
   })
-
-
 
   // 按月计算每个账户的余额
   const monthlyData: Record<
@@ -175,7 +173,7 @@ async function getStockCategoryMonthlyData(
         23,
         59,
         59,
-        999,
+        999
       ) // 月末最后一刻
 
       // 计算截止到该月末的余额
@@ -205,12 +203,10 @@ async function getStockCategoryMonthlyData(
           }
 
           monthlyData[monthKey][currencyCode].totalBalance += balanceData.amount
-        },
+        }
       )
     })
   }
-
-
 
   return successResponse({
     monthlyData,
@@ -231,7 +227,7 @@ async function getFlowMonthlyData(
   userId: string,
   categoryId: string | null,
   months: number,
-  baseCurrency: { code: string; symbol: string; name: string },
+  baseCurrency: { code: string; symbol: string; name: string }
 ) {
   // 计算日期范围
   const endDate = new Date()
