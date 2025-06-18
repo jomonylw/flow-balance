@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import SimpleFlowTransactionModal from '@/components/features/transactions/SimpleFlowTransactionModal'
+import FlowTransactionModal from '@/components/features/accounts/FlowTransactionModal'
 import TransactionList from '@/components/features/transactions/TransactionList'
 import FlowAccountSummaryCard from './FlowAccountSummaryCard'
 import FlowAccountTrendChart from '@/components/features/charts/FlowAccountTrendChart'
@@ -115,7 +115,7 @@ export default function FlowAccountDetailView({
   }
 
   const handleEditTransaction = (transaction: Transaction) => {
-    // 转换为SimpleFlowTransactionModal期望的格式
+    // 转换为FlowTransactionModal期望的格式
     const formTransaction = {
       id: transaction.id,
       accountId: account.id,
@@ -460,7 +460,7 @@ export default function FlowAccountDetailView({
       </div>
 
       {/* 简化的交易表单模态框 */}
-      <SimpleFlowTransactionModal
+      <FlowTransactionModal
         isOpen={isTransactionModalOpen}
         onClose={() => setIsTransactionModalOpen(false)}
         onSuccess={handleTransactionSuccess}

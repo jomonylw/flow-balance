@@ -12,7 +12,7 @@
 
 ### 1. 创建简化的流量交易表单
 
-新建 `SimpleFlowTransactionModal` 组件，参考存量账户更新余额的设计理念：
+新建 `FlowTransactionModal` 组件，参考存量账户更新余额的设计理念：
 
 **简化前（TransactionFormModal）需要用户填写：**
 
@@ -26,7 +26,7 @@
 8. 备注
 9. 标签选择
 
-**简化后（SimpleFlowTransactionModal）只需要用户填写：**
+**简化后（FlowTransactionModal）只需要用户填写：**
 
 1. 金额 ⭐
 2. 描述 ⭐
@@ -55,7 +55,7 @@
 
 ### 组件文件
 
-- `src/components/transactions/SimpleFlowTransactionModal.tsx` - 新的简化交易表单
+- `src/components/transactions/FlowTransactionModal.tsx` - 新的简化交易表单
 - `src/components/ui/TagFormModal.tsx` - 独立的标签添加/编辑模态框
 - `src/components/accounts/FlowAccountDetailView.tsx` - 修改为使用简化表单
 - `src/components/layout/AccountTreeItem.tsx` - 修改为使用简化表单

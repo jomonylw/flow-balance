@@ -85,7 +85,7 @@ await publishBalanceUpdate(accountId, {
 
 **触发场景**：
 
-- SimpleFlowTransactionModal 创建/更新交易
+- FlowTransactionModal 创建/更新交易
 - TransactionFormModal 创建/更新交易
 
 **联动效果**：

@@ -37,7 +37,7 @@
 - 显示模板创建成功的提示
 - 模板保存到数据库
 
-#### 1.2 SimpleFlowTransactionModal 模板创建
+#### 1.2 FlowTransactionModal 模板创建
 
 **测试步骤**:
 

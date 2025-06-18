@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import QuickFlowTransactionModal from '@/components/features/dashboard/QuickFlowTransactionModal'
-import SimpleFlowTransactionModal from './SimpleFlowTransactionModal'
+import FlowTransactionModal from '../accounts/FlowTransactionModal'
 import TransactionList from './TransactionList'
 import TransactionFiltersComponent from './TransactionFilters'
 import TransactionStats from './TransactionStats'
@@ -346,7 +346,7 @@ export default function TransactionListView({
 
         {/* 编辑交易模态框 */}
         {editingTransaction && editingTransaction.account && (
-          <SimpleFlowTransactionModal
+          <FlowTransactionModal
             isOpen={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
             onSuccess={handleTransactionSuccess}

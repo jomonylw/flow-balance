@@ -46,7 +46,7 @@ interface SimpleFlowTransaction {
   tagIds?: string[]
 }
 
-interface SimpleFlowTransactionModalProps {
+interface FlowTransactionModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
@@ -56,7 +56,7 @@ interface SimpleFlowTransactionModalProps {
   tags: SimpleTag[]
 }
 
-export default function SimpleFlowTransactionModal({
+export default function FlowTransactionModal({
   isOpen,
   onClose,
   onSuccess,
@@ -64,7 +64,7 @@ export default function SimpleFlowTransactionModal({
   account,
   currencies,
   tags,
-}: SimpleFlowTransactionModalProps) {
+}: FlowTransactionModalProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const {

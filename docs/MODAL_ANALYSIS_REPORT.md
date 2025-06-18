@@ -82,9 +82,9 @@
 
 ---
 
-### 5. SimpleFlowTransactionModal - 简化流量交易
+### 5. FlowTransactionModal - 简化流量交易
 
-**文件路径**: `src/components/transactions/SimpleFlowTransactionModal.tsx`
+**文件路径**: `src/components/transactions/FlowTransactionModal.tsx`
 
 **国际化处理**: ✅ **已处理**
 
@@ -297,7 +297,7 @@
 ### 已完善的组件 (9个):
 
 1. ❌ BalanceUpdateModal
-2. ❌ SimpleFlowTransactionModal
+2. ❌ FlowTransactionModal
 3. ❌ TransactionFormModal
 4. ❌ UserMenuDropdown
 5. ❌ ExchangeRateForm
@@ -341,7 +341,7 @@
 8. ✅ QuickBalanceUpdateModal - 国际化
 9. ✅ AccountSettingsModal - 明暗主题细节
 10. ✅ BalanceUpdateModal - 已完善
-11. ✅ SimpleFlowTransactionModal - 已完善
+11. ✅ FlowTransactionModal - 已完善
 12. ✅ TransactionFormModal - 已完善
 13. ✅ UserMenuDropdown - 已完善
 14. ✅ ExchangeRateForm - 已完善

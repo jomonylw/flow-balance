@@ -30,7 +30,7 @@
         "src/components/features/accounts/AccountSummaryCard.tsx",
         "src/components/features/accounts/FlowAccountSummaryCard.tsx",
         "src/components/features/accounts/StockAccountSummaryCard.tsx",
-        "src/components/features/transactions/SimpleFlowTransactionModal.tsx",
+        "src/components/features/transactions/FlowTransactionModal.tsx",
         "src/components/features/accounts/BalanceUpdateModal.tsx",
         "src/components/features/charts/FlowAccountTrendChart.tsx",
         "src/components/features/charts/FlowMonthlySummaryChart.tsx",
@@ -168,7 +168,7 @@
           "line": 11
         },
         {
-          "file": "src/components/features/transactions/SimpleFlowTransactionModal.tsx",
+          "file": "src/components/features/transactions/FlowTransactionModal.tsx",
           "line": 33
         },
         {
@@ -278,7 +278,7 @@
           "line": 28
         },
         {
-          "file": "src/components/features/transactions/SimpleFlowTransactionModal.tsx",
+          "file": "src/components/features/transactions/FlowTransactionModal.tsx",
           "line": 17
         },
         {
@@ -458,7 +458,7 @@
           "line": 22
         },
         {
-          "file": "src/components/features/transactions/SimpleFlowTransactionModal.tsx",
+          "file": "src/components/features/transactions/FlowTransactionModal.tsx",
           "line": 45
         },
         {
@@ -496,7 +496,7 @@
           "line": 14
         },
         {
-          "file": "src/components/features/transactions/SimpleFlowTransactionModal.tsx",
+          "file": "src/components/features/transactions/FlowTransactionModal.tsx",
           "line": 39
         },
         {

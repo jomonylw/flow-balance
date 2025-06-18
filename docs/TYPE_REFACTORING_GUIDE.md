@@ -281,7 +281,7 @@ node scripts/generate-refactor-report.js
 - [x] `SmartCategorySummaryCard.tsx` - 3 个重复定义
 - [x] `BalanceUpdateModal.tsx` - 2 个重复定义
 - [x] `StockCategoryBalanceCard.tsx` - 1 个重复定义
-- [x] `SimpleFlowTransactionModal.tsx` - 4 个重复定义
+- [x] `FlowTransactionModal.tsx` - 4 个重复定义
 - [x] `UserDataContext.tsx` - 5 个重复定义
 
 ### 🚀 第六阶段重构计划 (优先级 6) - 剩余 55 个重复定义

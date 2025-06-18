@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import SimpleFlowTransactionModal from '@/components/features/transactions/SimpleFlowTransactionModal'
+import FlowTransactionModal from '@/components/features/accounts/FlowTransactionModal'
 import QuickFlowTransactionModal from '@/components/features/dashboard/QuickFlowTransactionModal'
 import TransactionList from '@/components/features/transactions/TransactionList'
 import FlowCategorySummaryCard from './FlowCategorySummaryCard'
@@ -20,8 +20,8 @@ import type { FlowMonthlyData, FlowSummaryData } from '@/types/components'
 // 使用统一的 TimeRange 类型，但限制为此组件支持的值
 type LocalTimeRange = 'lastYear' | 'all'
 
-// 简化的编辑交易数据类型，适配 SimpleFlowTransactionModal
-// 与 SimpleFlowTransactionModal 内部的 Transaction 接口保持一致
+// 简化的编辑交易数据类型，适配 FlowTransactionModal
+// 与 FlowTransactionModal 内部的 Transaction 接口保持一致
 interface EditingTransactionData {
   id: string
   accountId: string
@@ -762,7 +762,7 @@ export default function FlowCategoryDetailView({
 
       {/* 简化交易表单模态框 - 用于编辑交易 */}
       {editingAccount && (
-        <SimpleFlowTransactionModal
+        <FlowTransactionModal
           isOpen={isEditTransactionModalOpen}
           onClose={() => {
             setIsEditTransactionModalOpen(false)

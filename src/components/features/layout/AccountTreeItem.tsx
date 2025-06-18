@@ -7,7 +7,7 @@ import DeleteConfirmModal from '@/components/ui/feedback/DeleteConfirmModal'
 import CategorySelector from '@/components/ui/forms/CategorySelector'
 import AccountSettingsModal from '@/components/ui/feedback/AccountSettingsModal'
 import BalanceUpdateModal from '@/components/features/accounts/BalanceUpdateModal'
-import SimpleFlowTransactionModal from '@/components/features/transactions/SimpleFlowTransactionModal'
+import FlowTransactionModal from '@/components/features/accounts/FlowTransactionModal'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
@@ -201,7 +201,7 @@ export default function AccountTreeItem({
   }
 
   const handleTransactionSuccess = () => {
-    // SimpleFlowTransactionModal 内部会发布 transaction-create/update 事件
+    // FlowTransactionModal 内部会发布 transaction-create/update 事件
     setShowTransactionModal(false)
   }
 
@@ -397,7 +397,7 @@ export default function AccountTreeItem({
       />
 
       {/* 简化的流量账户交易表单模态框 */}
-      <SimpleFlowTransactionModal
+      <FlowTransactionModal
         isOpen={showTransactionModal}
         onClose={() => setShowTransactionModal(false)}
         onSuccess={handleTransactionSuccess}

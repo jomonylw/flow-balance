@@ -2,7 +2,7 @@
 
 ## 📋 项目概述
 
-在 `QuickFlowTransactionModal` 和 `SimpleFlowTransactionModal`
+在 `QuickFlowTransactionModal` 和 `FlowTransactionModal`
 两个交易录入模态框中增加交易模板功能，实现模板保存、选择、删除和更新功能。
 
 ## 🎯 功能需求
@@ -34,7 +34,7 @@
 ### 阶段二：组件集成（已完成 ✅）
 
 - [x] QuickFlowTransactionModal 集成
-- [x] SimpleFlowTransactionModal 集成
+- [x] FlowTransactionModal 集成
 - [x] ESLint 错误修复
 
 ### 阶段三：优化和测试（已完成 ✅）
@@ -140,9 +140,9 @@ model TransactionTemplate {
 - 保持现有功能不变
 - 确保布局和样式一致性
 
-### 随后：修改 SimpleFlowTransactionModal
+### 随后：修改 FlowTransactionModal
 
-**目标文件**: `src/components/features/transactions/SimpleFlowTransactionModal.tsx`
+**目标文件**: `src/components/features/transactions/FlowTransactionModal.tsx`
 
 **修改要点**: 与 QuickFlowTransactionModal 相同的集成方案
 
@@ -241,7 +241,7 @@ const [hasTemplateDataChanged, setHasTemplateDataChanged] = useState(false)
 - ✅ 完成基础 UI 组件开发
 - ✅ 完成国际化翻译
 - ✅ 完成 QuickFlowTransactionModal 组件集成
-- ✅ 完成 SimpleFlowTransactionModal 组件集成
+- ✅ 完成 FlowTransactionModal 组件集成
 - ✅ 修复 ESLint 错误
 - ✅ 修复认证系统集成问题
 - ✅ 修复变量初始化顺序问题
@@ -266,7 +266,7 @@ const [hasTemplateDataChanged, setHasTemplateDataChanged] = useState(false)
 - 添加了数据变化检测逻辑
 - 修改了表单提交流程以支持模板操作
 
-#### SimpleFlowTransactionModal 修改
+#### FlowTransactionModal 修改
 
 - 添加了相同的模板功能（仅在新增模式下显示）
 - 保持了与 QuickFlowTransactionModal 一致的用户体验
