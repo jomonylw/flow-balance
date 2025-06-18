@@ -283,35 +283,35 @@ export function SettingsContentSkeleton() {
 export function SettingsFormSkeleton() {
   return (
     <div className='space-y-6'>
-      {/* 表单卡片 */}
-      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6'>
-        <div className='mb-4'>
-          <div className='flex items-center mb-2'>
-            <Skeleton
-              width='20px'
-              height='20px'
-              rounded='sm'
-              className='mr-2'
-            />
-            <Skeleton height='1.125rem' width='120px' />
+      {/* 标题和描述 */}
+      <div>
+        <Skeleton height='1.125rem' width='150px' className='mb-2' />
+        <Skeleton height='0.875rem' width='250px' />
+      </div>
+
+      {/* 表单字段 */}
+      <div className='space-y-4'>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i}>
+            <Skeleton height='1rem' width='80px' className='mb-2' />
+            <Skeleton height='2.5rem' rounded='md' />
+            <Skeleton height='0.75rem' width='180px' className='mt-1' />
           </div>
-          <Skeleton height='0.875rem' width='250px' />
+        ))}
+
+        {/* 提交按钮 */}
+        <div className='pt-4'>
+          <Skeleton height='1.75rem' width='80px' rounded='md' />
         </div>
+      </div>
 
-        <div className='space-y-4'>
-          {/* 表单字段 */}
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i}>
-              <Skeleton height='1rem' width='80px' className='mb-2' />
-              <Skeleton height='2.5rem' rounded='md' />
-              <Skeleton height='0.75rem' width='180px' className='mt-1' />
-            </div>
-          ))}
-
-          {/* 提交按钮 */}
-          <div className='pt-4'>
-            <Skeleton height='2.5rem' width='120px' rounded='md' />
-          </div>
+      {/* 说明信息 */}
+      <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4'>
+        <Skeleton height='1rem' width='120px' className='mb-3' />
+        <div className='space-y-2'>
+          <Skeleton height='0.875rem' width='100%' />
+          <Skeleton height='0.875rem' width='85%' />
+          <Skeleton height='0.875rem' width='70%' />
         </div>
       </div>
     </div>
@@ -394,14 +394,10 @@ export function SettingsPageDesktopSkeleton() {
 export function ProfileFormSkeleton() {
   return (
     <div className='space-y-6'>
-      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6'>
-        <div className='mb-4'>
-          <div className='flex items-center mb-2'>
-            <span className='mr-2'>👤</span>
-            <Skeleton height='1.125rem' width='100px' />
-          </div>
-          <Skeleton height='0.875rem' width='200px' />
-        </div>
+      {/* 基本信息表单 */}
+      <div>
+        <Skeleton height='1.125rem' width='100px' className='mb-2' />
+        <Skeleton height='0.875rem' width='200px' className='mb-4' />
 
         <div className='space-y-4'>
           {/* 邮箱字段 */}
@@ -420,7 +416,29 @@ export function ProfileFormSkeleton() {
 
           {/* 提交按钮 */}
           <div className='pt-4'>
-            <Skeleton height='2.5rem' width='100px' rounded='md' />
+            <Skeleton height='1.75rem' width='80px' rounded='md' />
+          </div>
+        </div>
+      </div>
+
+      {/* 头像设置 */}
+      <div>
+        <Skeleton height='1rem' width='80px' className='mb-3' />
+        <Skeleton height='0.875rem' width='180px' className='mb-4' />
+        <Skeleton height='1.75rem' width='80px' rounded='md' />
+      </div>
+
+      {/* 账户统计 */}
+      <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4'>
+        <Skeleton height='1rem' width='80px' className='mb-3' />
+        <div className='grid grid-cols-2 gap-4'>
+          <div>
+            <Skeleton height='0.875rem' width='80px' className='mb-1' />
+            <Skeleton height='0.875rem' width='100px' />
+          </div>
+          <div>
+            <Skeleton height='0.875rem' width='70px' className='mb-1' />
+            <Skeleton height='0.875rem' width='60px' />
           </div>
         </div>
       </div>
@@ -434,14 +452,10 @@ export function ProfileFormSkeleton() {
 export function PasswordFormSkeleton() {
   return (
     <div className='space-y-6'>
-      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6'>
-        <div className='mb-4'>
-          <div className='flex items-center mb-2'>
-            <span className='mr-2'>🔒</span>
-            <Skeleton height='1.125rem' width='80px' />
-          </div>
-          <Skeleton height='0.875rem' width='220px' />
-        </div>
+      {/* 密码修改表单 */}
+      <div>
+        <Skeleton height='1.125rem' width='80px' className='mb-2' />
+        <Skeleton height='0.875rem' width='220px' className='mb-4' />
 
         <div className='space-y-4'>
           {/* 密码字段 */}
@@ -461,8 +475,18 @@ export function PasswordFormSkeleton() {
 
           {/* 提交按钮 */}
           <div className='pt-4'>
-            <Skeleton height='2.5rem' width='100px' rounded='md' />
+            <Skeleton height='1.75rem' width='80px' rounded='md' />
           </div>
+        </div>
+      </div>
+
+      {/* 安全提示 */}
+      <div className='bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4'>
+        <Skeleton height='1rem' width='80px' className='mb-3' />
+        <div className='space-y-1'>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} height='0.875rem' width={`${80 + i * 10}%`} />
+          ))}
         </div>
       </div>
     </div>
@@ -475,40 +499,43 @@ export function PasswordFormSkeleton() {
 export function PreferencesFormSkeleton() {
   return (
     <div className='space-y-6'>
-      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6'>
-        <div className='mb-4'>
-          <div className='flex items-center mb-2'>
-            <span className='mr-2'>⚙️</span>
-            <Skeleton height='1.125rem' width='120px' />
-          </div>
-          <Skeleton height='0.875rem' width='250px' />
-        </div>
+      {/* 外观设置 */}
+      <div>
+        <Skeleton height='1.125rem' width='120px' className='mb-2' />
+        <Skeleton height='0.875rem' width='250px' className='mb-4' />
 
-        <div className='space-y-6'>
-          {/* 基础货币 */}
-          <div>
-            <Skeleton height='1rem' width='80px' className='mb-2' />
-            <Skeleton height='2.5rem' rounded='md' />
-          </div>
-
+        <div className='space-y-4'>
           {/* 主题设置 */}
           <div>
             <Skeleton height='1rem' width='60px' className='mb-2' />
-            <div className='flex gap-2'>
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} height='2.5rem' width='80px' rounded='md' />
-              ))}
-            </div>
+            <Skeleton height='2.5rem' rounded='md' />
+            <Skeleton height='0.75rem' width='150px' className='mt-1' />
           </div>
 
           {/* 语言设置 */}
           <div>
             <Skeleton height='1rem' width='60px' className='mb-2' />
             <Skeleton height='2.5rem' rounded='md' />
+            <Skeleton height='0.75rem' width='120px' className='mt-1' />
+          </div>
+
+          {/* 货币设置 */}
+          <div className='pt-6'>
+            <Skeleton height='1rem' width='80px' className='mb-3' />
+            <Skeleton height='0.875rem' width='200px' className='mb-4' />
+
+            <div>
+              <Skeleton height='1rem' width='80px' className='mb-2' />
+              <Skeleton height='2.5rem' rounded='md' />
+              <Skeleton height='0.75rem' width='180px' className='mt-1' />
+            </div>
           </div>
 
           {/* FIRE设置 */}
-          <div>
+          <div className='pt-6'>
+            <Skeleton height='1rem' width='100px' className='mb-3' />
+            <Skeleton height='0.875rem' width='220px' className='mb-4' />
+
             <div className='flex items-center justify-between mb-4'>
               <Skeleton height='1rem' width='100px' />
               <Skeleton height='1.5rem' width='40px' rounded='full' />
@@ -521,8 +548,18 @@ export function PreferencesFormSkeleton() {
 
           {/* 提交按钮 */}
           <div className='pt-4'>
-            <Skeleton height='2.5rem' width='100px' rounded='md' />
+            <Skeleton height='1.75rem' width='80px' rounded='md' />
           </div>
+        </div>
+      </div>
+
+      {/* 说明信息 */}
+      <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4'>
+        <Skeleton height='1rem' width='120px' className='mb-3' />
+        <div className='space-y-2'>
+          <Skeleton height='0.875rem' width='100%' />
+          <Skeleton height='0.875rem' width='85%' />
+          <Skeleton height='0.875rem' width='90%' />
         </div>
       </div>
     </div>
@@ -535,54 +572,70 @@ export function PreferencesFormSkeleton() {
 export function CurrencyManagementSkeleton() {
   return (
     <div className='space-y-6'>
-      {/* 已选择的货币 */}
-      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6'>
-        <div className='mb-4'>
-          <Skeleton height='1.125rem' width='120px' className='mb-2' />
-          <Skeleton height='0.875rem' width='200px' />
-        </div>
+      {/* 标题和描述 */}
+      <div>
+        <Skeleton height='1.125rem' width='120px' className='mb-2' />
+        <Skeleton height='0.875rem' width='250px' />
+      </div>
 
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
+      {/* 已选择的货币 */}
+      <div>
+        <Skeleton height='1rem' width='120px' className='mb-3' />
+
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'>
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className='flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg'
+              className='flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-blue-50 dark:bg-blue-900/20'
             >
-              <div className='flex items-center space-x-2'>
+              <div className='flex items-center space-x-3'>
                 <Skeleton width='20px' height='20px' rounded='sm' />
                 <div>
                   <Skeleton height='0.875rem' width='40px' className='mb-1' />
                   <Skeleton height='0.75rem' width='60px' />
                 </div>
               </div>
-              <Skeleton width='20px' height='20px' rounded='sm' />
+              <Skeleton width='24px' height='24px' rounded='sm' />
             </div>
           ))}
         </div>
       </div>
 
       {/* 可用货币 */}
-      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6'>
-        <div className='mb-4'>
-          <Skeleton height='1.125rem' width='100px' className='mb-2' />
-          <Skeleton height='0.875rem' width='180px' />
+      <div>
+        <div className='flex items-center justify-between mb-3'>
+          <Skeleton height='1rem' width='100px' />
+          <Skeleton height='1.75rem' width='120px' rounded='md' />
         </div>
 
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'>
           {Array.from({ length: 9 }).map((_, i) => (
             <div
               key={i}
               className='flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg'
             >
-              <div className='flex items-center space-x-2'>
+              <div className='flex items-center space-x-3'>
                 <Skeleton width='20px' height='20px' rounded='sm' />
                 <div>
                   <Skeleton height='0.875rem' width='40px' className='mb-1' />
                   <Skeleton height='0.75rem' width='80px' />
                 </div>
               </div>
-              <Skeleton width='60px' height='24px' rounded='md' />
+              <div className='flex space-x-1'>
+                <Skeleton width='24px' height='24px' rounded='sm' />
+                <Skeleton width='24px' height='24px' rounded='sm' />
+              </div>
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 说明信息 */}
+      <div className='bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4'>
+        <Skeleton height='0.875rem' width='120px' className='mb-2' />
+        <div className='space-y-1'>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} height='0.875rem' width={`${70 + i * 10}%`} />
           ))}
         </div>
       </div>
@@ -596,33 +649,37 @@ export function CurrencyManagementSkeleton() {
 export function TagManagementSkeleton() {
   return (
     <div className='space-y-6'>
-      {/* 操作按钮 */}
+      {/* 标题和操作按钮 */}
+      <div>
+        <Skeleton height='1.125rem' width='100px' className='mb-2' />
+        <Skeleton height='0.875rem' width='200px' />
+      </div>
+
       <div className='flex justify-between items-center'>
-        <Skeleton height='1.5rem' width='100px' />
-        <Skeleton height='2.5rem' width='100px' rounded='md' />
+        <Skeleton height='1rem' width='80px' />
+        <Skeleton height='1.75rem' width='80px' rounded='md' />
       </div>
 
       {/* 标签列表 */}
-      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden'>
-        <div className='divide-y divide-gray-200 dark:divide-gray-700'>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className='p-4'>
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center space-x-3'>
-                  <Skeleton width='16px' height='16px' rounded='full' />
-                  <div>
-                    <Skeleton height='1rem' width='80px' className='mb-1' />
-                    <Skeleton height='0.75rem' width='60px' />
-                  </div>
-                </div>
-                <div className='flex items-center space-x-2'>
-                  <Skeleton width='60px' height='24px' rounded='md' />
-                  <Skeleton width='60px' height='24px' rounded='md' />
-                </div>
+      <div className='space-y-3'>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className='flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg'
+          >
+            <div className='flex items-center space-x-3'>
+              <Skeleton width='16px' height='16px' rounded='full' />
+              <div>
+                <Skeleton height='0.875rem' width='80px' className='mb-1' />
+                <Skeleton height='0.75rem' width='60px' />
               </div>
             </div>
-          ))}
-        </div>
+            <div className='flex items-center space-x-1'>
+              <Skeleton width='24px' height='24px' rounded='sm' />
+              <Skeleton width='24px' height='24px' rounded='sm' />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -653,8 +710,8 @@ export function ExchangeRateManagementSkeleton() {
 
       {/* 操作按钮 */}
       <div className='flex justify-between items-center'>
-        <Skeleton height='1.5rem' width='120px' />
-        <Skeleton height='2.5rem' width='120px' rounded='md' />
+        <Skeleton height='0.875rem' width='120px' />
+        <Skeleton height='1.75rem' width='80px' rounded='md' />
       </div>
 
       {/* 汇率表格 */}
@@ -685,9 +742,9 @@ export function ExchangeRateManagementSkeleton() {
                 </div>
                 <Skeleton height='1rem' width='50px' />
                 <Skeleton height='1rem' width='70px' />
-                <div className='flex items-center space-x-2'>
-                  <Skeleton width='50px' height='24px' rounded='md' />
-                  <Skeleton width='50px' height='24px' rounded='md' />
+                <div className='flex items-center space-x-1'>
+                  <Skeleton width='24px' height='24px' rounded='sm' />
+                  <Skeleton width='24px' height='24px' rounded='sm' />
                 </div>
               </div>
             </div>
@@ -710,35 +767,38 @@ export function DataManagementSkeleton() {
   return (
     <div className='space-y-6'>
       {/* 数据导出 */}
-      <div className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6'>
-        <div className='mb-4'>
-          <div className='flex items-center mb-2'>
-            <span className='mr-2'>📊</span>
-            <Skeleton height='1.125rem' width='100px' />
+      <div>
+        <Skeleton height='1rem' width='100px' className='mb-3' />
+        <Skeleton height='0.875rem' width='250px' className='mb-4' />
+
+        <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-4'>
+          <Skeleton height='0.875rem' width='120px' className='mb-2' />
+          <div className='space-y-1'>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} height='0.875rem' width={`${60 + i * 15}px`} />
+            ))}
           </div>
-          <Skeleton height='0.875rem' width='250px' />
         </div>
 
-        <div className='space-y-4'>
-          <Skeleton height='0.875rem' width='300px' />
-          <Skeleton height='2.5rem' width='120px' rounded='md' />
-        </div>
+        <Skeleton height='1.75rem' width='80px' rounded='md' />
       </div>
 
       {/* 数据删除 */}
-      <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 sm:p-6'>
-        <div className='mb-4'>
-          <div className='flex items-center mb-2'>
-            <span className='mr-2'>⚠️</span>
-            <Skeleton height='1.125rem' width='120px' />
+      <div>
+        <Skeleton height='1rem' width='120px' className='mb-3' />
+
+        <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3 mb-4'>
+          <Skeleton height='0.875rem' width='150px' className='mb-2' />
+          <Skeleton height='0.875rem' width='120px' className='mb-3' />
+          <div className='space-y-1 mb-3'>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} height='0.875rem' width={`${80 + i * 20}px`} />
+            ))}
           </div>
-          <Skeleton height='0.875rem' width='280px' />
+          <Skeleton height='0.875rem' width='180px' />
         </div>
 
-        <div className='space-y-4'>
-          <Skeleton height='0.875rem' width='350px' />
-          <Skeleton height='2.5rem' width='100px' rounded='md' />
-        </div>
+        <Skeleton height='1.75rem' width='80px' rounded='md' />
       </div>
     </div>
   )

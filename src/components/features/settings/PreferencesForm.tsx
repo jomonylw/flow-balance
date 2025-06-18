@@ -192,22 +192,13 @@ export default function PreferencesForm({
       )}
 
       {/* 外观设置 */}
-      <div className='bg-gradient-to-br from-white to-gray-50/30 dark:from-gray-800 dark:to-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm backdrop-blur-sm'>
-        <div className='mb-6'>
-          <div className='flex items-center space-x-3 mb-2'>
-            <div className='flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30'>
-              <span className='text-lg'>🎨</span>
-            </div>
-            <div>
-              <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
-                {t('preferences.appearance.settings')}
-              </h3>
-              <p className='text-sm text-gray-600 dark:text-gray-400'>
-                {t('preferences.appearance.description')}
-              </p>
-            </div>
-          </div>
-        </div>
+      <div>
+        <h3 className='text-lg font-medium text-gray-900 dark:text-gray-100'>
+          {t('preferences.appearance.settings')}
+        </h3>
+        <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+          {t('preferences.appearance.description')}
+        </p>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
           <SelectField
@@ -227,22 +218,15 @@ export default function PreferencesForm({
             options={languageOptions}
             help={t('preferences.language.help')}
           />
+
           {/* 货币设置 */}
-          <div className='border-t border-gray-100 dark:border-gray-700 mt-8 pt-6'></div>
-          <div className='mb-6'>
-            <div className='flex items-center space-x-3 mb-2'>
-              <div className='flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30'>
-                <span className='text-lg'>💰</span>
-              </div>
-              <div>
-                <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
-                  {t('preferences.currency.settings')}
-                </h3>
-                <p className='text-sm text-gray-600 dark:text-gray-400'>
-                  {t('preferences.currency.settings.description')}
-                </p>
-              </div>
-            </div>
+          <div className='pt-6'>
+            <h4 className='text-md font-medium text-gray-900 dark:text-gray-100 mb-3'>
+              {t('preferences.currency.settings')}
+            </h4>
+            <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+              {t('preferences.currency.settings.description')}
+            </p>
           </div>
 
           <div className='space-y-4'>
@@ -292,21 +276,13 @@ export default function PreferencesForm({
           </div>
 
           {/* FIRE 设置 */}
-          <div className='border-t border-gray-100 dark:border-gray-700 mt-8 pt-6'></div>
-          <div className='mb-6'>
-            <div className='flex items-center space-x-3 mb-2'>
-              <div className='flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30'>
-                <span className='text-lg'>🔥</span>
-              </div>
-              <div>
-                <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
-                  {t('preferences.fire.settings')}
-                </h3>
-                <p className='text-sm text-gray-600 dark:text-gray-400'>
-                  {t('preferences.fire.settings.description')}
-                </p>
-              </div>
-            </div>
+          <div className='pt-6'>
+            <h4 className='text-md font-medium text-gray-900 dark:text-gray-100 mb-3'>
+              {t('preferences.fire.settings')}
+            </h4>
+            <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+              {t('preferences.fire.settings.description')}
+            </p>
           </div>
 
           <div className='space-y-4'>
@@ -334,17 +310,14 @@ export default function PreferencesForm({
           </div>
 
           {/* 本位币说明 */}
-          <div className='bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/10 border border-blue-200 dark:border-blue-800/30 rounded-xl p-6 shadow-sm backdrop-blur-sm'>
-            <h4 className='text-sm font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center'>
-              <div className='flex items-center justify-center w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-800/50 mr-3'>
-                <span className='text-xs'>ℹ️</span>
-              </div>
+          <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4'>
+            <h4 className='text-sm font-medium text-blue-800 dark:text-blue-200 mb-3'>
               {t('preferences.about.base.currency')}
             </h4>
-            <div className='text-sm text-blue-700 dark:text-blue-300 space-y-3'>
+            <div className='text-sm text-blue-700 dark:text-blue-300 space-y-2'>
               <p>{t('preferences.base.currency.description')}</p>
               <p>{t('preferences.multi.currency.note')}</p>
-              <p className='font-medium bg-blue-100/50 dark:bg-blue-800/20 rounded-lg p-3'>
+              <p className='font-medium'>
                 {t('preferences.base.currency.recommendation')}
               </p>
             </div>
@@ -352,59 +325,29 @@ export default function PreferencesForm({
 
           {/* FIRE 说明 */}
           {formData.fireEnabled && (
-            <div className='bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-800/10 border border-orange-200 dark:border-orange-800/30 rounded-xl p-6 shadow-sm backdrop-blur-sm'>
-              <h4 className='text-sm font-semibold text-orange-800 dark:text-orange-200 mb-3 flex items-center'>
-                <div className='flex items-center justify-center w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-800/50 mr-3'>
-                  <span className='text-xs'>🔥</span>
-                </div>
+            <div className='bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4'>
+              <h4 className='text-sm font-medium text-orange-800 dark:text-orange-200 mb-3'>
                 {t('preferences.fire.about')}
               </h4>
-              <div className='text-sm text-orange-700 dark:text-orange-300 space-y-3'>
+              <div className='text-sm text-orange-700 dark:text-orange-300 space-y-2'>
                 <p>{t('preferences.fire.description')}</p>
                 <p>{t('preferences.fire.swr.description')}</p>
                 <p>{t('preferences.fire.swr.default.explanation')}</p>
-                <p className='font-medium bg-orange-100/50 dark:bg-orange-800/20 rounded-lg p-3'>
+                <p className='font-medium'>
                   {t('preferences.fire.swr.range.note')}
                 </p>
               </div>
             </div>
           )}
 
-          {/* 设置说明 */}
-          <div className='bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-700/30 border border-gray-200 dark:border-gray-700/50 rounded-xl p-6 shadow-sm backdrop-blur-sm'>
-            <h4 className='text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center'>
-              <div className='flex items-center justify-center w-6 h-6 rounded-lg bg-gray-100 dark:bg-gray-700 mr-3'>
-                <span className='text-xs'>ℹ️</span>
-              </div>
-              {t('preferences.settings.note')}
-            </h4>
-            <div className='text-sm text-gray-700 dark:text-gray-300 space-y-3'>
-              <p>
-                <strong>{t('preferences.theme.setting')}：</strong>
-                {t('preferences.theme.description')}
-              </p>
-              <p>
-                <strong>{t('preferences.language.setting')}：</strong>
-                {t('preferences.language.description')}
-              </p>
-              <p>
-                <strong>{t('preferences.base.currency')}：</strong>
-                {t('preferences.currency.description')}
-              </p>
-              <p className='font-medium bg-gray-100/50 dark:bg-gray-700/30 rounded-lg p-3'>
-                {t('preferences.default.note')}
-              </p>
-            </div>
-          </div>
-
-          <div className='pt-6 border-t border-gray-100 dark:border-gray-700'>
+          <div className='pt-4'>
             <button
               type='submit'
               disabled={isLoading}
-              className='w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 rounded-xl font-medium shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]'
+              className='px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
             >
               {isLoading ? (
-                <span className='flex items-center justify-center'>
+                <span className='flex items-center'>
                   <svg
                     className='animate-spin -ml-1 mr-2 h-4 w-4 text-white'
                     fill='none'
@@ -427,22 +370,7 @@ export default function PreferencesForm({
                   {t('common.loading')}
                 </span>
               ) : (
-                <span className='flex items-center'>
-                  <span>{t('common.save')}</span>
-                  <svg
-                    className='ml-2 w-4 h-4'
-                    fill='none'
-                    stroke='currentColor'
-                    viewBox='0 0 24 24'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M5 13l4 4L19 7'
-                    />
-                  </svg>
-                </span>
+                t('common.save')
               )}
             </button>
           </div>

@@ -107,22 +107,13 @@ export default function ProfileSettingsForm({
       )}
 
       {/* 基本信息表单 */}
-      <div className='bg-gradient-to-br from-white to-gray-50/30 dark:from-gray-800 dark:to-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm backdrop-blur-sm'>
-        <div className='mb-6'>
-          <div className='flex items-center space-x-3 mb-2'>
-            <div className='flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30'>
-              <span className='text-lg'>👤</span>
-            </div>
-            <div>
-              <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
-                {t('settings.basic.info')}
-              </h3>
-              <p className='text-sm text-gray-600 dark:text-gray-400'>
-                {t('settings.basic.info.description')}
-              </p>
-            </div>
-          </div>
-        </div>
+      <div>
+        <h3 className='text-lg font-medium text-gray-900 dark:text-gray-100'>
+          {t('settings.basic.info')}
+        </h3>
+        <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+          {t('settings.basic.info.description')}
+        </p>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
           <InputField
@@ -145,14 +136,14 @@ export default function ProfileSettingsForm({
             help={t('settings.name.help')}
           />
 
-          <div className='pt-4 border-t border-gray-200 dark:border-gray-600'>
+          <div className='pt-4'>
             <button
               type='submit'
               disabled={isLoading}
-              className='w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+              className='px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
             >
               {isLoading ? (
-                <span className='flex items-center justify-center'>
+                <span className='flex items-center'>
                   <svg
                     className='animate-spin -ml-1 mr-2 h-4 w-4 text-white'
                     fill='none'
@@ -183,46 +174,24 @@ export default function ProfileSettingsForm({
       </div>
 
       {/* 头像设置 */}
-      <div className='bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6'>
-        <div className='flex items-start space-x-4'>
-          <div className='flex-shrink-0'>
-            <div className='w-16 h-16 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center'>
-              <svg
-                className='w-8 h-8 text-gray-500 dark:text-gray-400'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
-                />
-              </svg>
-            </div>
-          </div>
-          <div className='flex-1 min-w-0'>
-            <h4 className='text-sm font-medium text-gray-900 dark:text-gray-100 mb-2'>
-              {t('settings.avatar.settings')}
-            </h4>
-            <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-              {t('settings.avatar.description')}
-            </p>
-            <button
-              disabled
-              className='bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-4 py-2 rounded-lg cursor-not-allowed text-sm'
-            >
-              {t('settings.avatar.upload')}
-            </button>
-          </div>
-        </div>
+      <div>
+        <h4 className='text-md font-medium text-gray-900 dark:text-gray-100 mb-3'>
+          {t('settings.avatar.settings')}
+        </h4>
+        <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+          {t('settings.avatar.description')}
+        </p>
+        <button
+          disabled
+          className='px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 text-sm font-medium rounded-md cursor-not-allowed'
+        >
+          {t('settings.avatar.upload')}
+        </button>
       </div>
 
       {/* 账户统计 */}
-      <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 sm:p-6'>
-        <h4 className='text-sm font-medium text-blue-900 dark:text-blue-200 mb-3 flex items-center'>
-          <span className='mr-2'>📊</span>
+      <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4'>
+        <h4 className='text-sm font-medium text-blue-900 dark:text-blue-200 mb-3'>
           {t('settings.account.stats')}
         </h4>
         <div className='grid grid-cols-2 gap-4 text-sm'>

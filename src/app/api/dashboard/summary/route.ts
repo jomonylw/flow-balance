@@ -1,4 +1,3 @@
-
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import {
@@ -9,7 +8,6 @@ import {
 import {
   calculateTotalBalanceWithConversion,
   calculateAccountBalance,
-
   validateAccountTypes,
 } from '@/lib/services/account.service'
 
@@ -62,31 +60,37 @@ export async function GET() {
     const stockAccounts = accountsForCalculation.filter(
       account =>
         account.category?.type === 'ASSET' ||
-        account.category?.type === 'LIABILITY',
+        account.category?.type === 'LIABILITY'
     )
     const flowAccounts = accountsForCalculation.filter(
       account =>
         account.category?.type === 'INCOME' ||
-        account.category?.type === 'EXPENSE',
+        account.category?.type === 'EXPENSE'
     )
+
+    // 获取当前日期，确保不包含未来的交易记录
+    const now = new Date()
 
     // 计算净资产（只包含存量类账户）
     const _totalBalanceResult = await calculateTotalBalanceWithConversion(
       user.id,
       stockAccounts,
       baseCurrency,
+      { asOfDate: now }
     )
 
     // 计算各账户余额（包含转换信息）
     const accountBalances = []
 
-    // 计算存量类账户余额（当前时点）
+    // 计算存量类账户余额（当前时点，截止到当前日期）
     for (const account of stockAccounts) {
-      const balances = calculateAccountBalance(account)
+      const balances = calculateAccountBalance(account, {
+        asOfDate: now,
+      })
 
       // 只显示有余额的账户
       const hasBalance = Object.values(balances).some(
-        balance => Math.abs(balance.amount) > 0.01,
+        balance => Math.abs(balance.amount) > 0.01
       )
       if (hasBalance) {
         const balancesRecord: Record<string, number> = {}
@@ -103,21 +107,26 @@ export async function GET() {
       }
     }
 
-    // 计算流量类账户余额（当前月份期间）
-    const now = new Date()
+    // 计算流量类账户余额（当前月份期间，但不超过当前日期）
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
     const periodEnd = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
+      Math.min(
+        now.getTime(),
+        new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999
+        ).getTime()
+      )
     )
 
     for (const account of flowAccounts) {
       const balances = calculateAccountBalance(account, {
+        asOfDate: now, // 添加截止日期，确保不包含未来交易
         periodStart,
         periodEnd,
         usePeriodCalculation: true,
@@ -125,7 +134,7 @@ export async function GET() {
 
       // 只显示有余额的账户
       const hasBalance = Object.values(balances).some(
-        balance => Math.abs(balance.amount) > 0.01,
+        balance => Math.abs(balance.amount) > 0.01
       )
       if (hasBalance) {
         const balancesRecord: Record<string, number> = {}
@@ -203,15 +212,15 @@ export async function GET() {
           module.convertMultipleCurrencies(
             user.id,
             incomeAmounts,
-            baseCurrency.code,
-          ),
+            baseCurrency.code
+          )
         ),
         import('@/lib/services/currency.service').then(module =>
           module.convertMultipleCurrencies(
             user.id,
             expenseAmounts,
-            baseCurrency.code,
-          ),
+            baseCurrency.code
+          )
         ),
       ])
 
@@ -219,46 +228,48 @@ export async function GET() {
         (sum, result) =>
           sum +
           (result.success ? result.convertedAmount : result.originalAmount),
-        0,
+        0
       )
 
       totalExpenseInBaseCurrency = expenseConversions.reduce(
         (sum, result) =>
           sum +
           (result.success ? result.convertedAmount : result.originalAmount),
-        0,
+        0
       )
     } catch (error) {
       console.error('转换收支金额失败:', error)
       // 转换失败时使用原始金额作为近似值
       totalIncomeInBaseCurrency = Object.values(activitySummary).reduce(
         (sum, activity) => sum + activity.income,
-        0,
+        0
       )
       totalExpenseInBaseCurrency = Object.values(activitySummary).reduce(
         (sum, activity) => sum + activity.expense,
-        0,
+        0
       )
     }
 
     // 计算总资产和总负债（本位币）
     const assetAccountsForTotal = stockAccounts.filter(
-      account => account.category?.type === 'ASSET',
+      account => account.category?.type === 'ASSET'
     )
     const liabilityAccountsForTotal = stockAccounts.filter(
-      account => account.category?.type === 'LIABILITY',
+      account => account.category?.type === 'LIABILITY'
     )
 
     const totalAssetsResult = await calculateTotalBalanceWithConversion(
       user.id,
       assetAccountsForTotal,
       baseCurrency,
+      { asOfDate: now }
     )
 
     const totalLiabilitiesResult = await calculateTotalBalanceWithConversion(
       user.id,
       liabilityAccountsForTotal,
       baseCurrency,
+      { asOfDate: now }
     )
 
     // 验证账户类型设置
@@ -273,11 +284,14 @@ export async function GET() {
       totalLiabilitiesResult.hasConversionErrors
 
     // 合并资产和负债的原币种余额
-    const combinedByCurrency: Record<string, {
-      currencyCode: string
-      amount: number
-      currency: { code: string; symbol: string; name: string }
-    }> = {}
+    const combinedByCurrency: Record<
+      string,
+      {
+        currencyCode: string
+        amount: number
+        currency: { code: string; symbol: string; name: string }
+      }
+    > = {}
 
     // 添加资产余额（正数）
     Object.entries(totalAssetsResult.totalsByOriginalCurrency).forEach(
@@ -287,7 +301,7 @@ export async function GET() {
           amount: balance.amount,
           currency: balance.currency,
         }
-      },
+      }
     )
 
     // 减去负债余额（从净资产角度）
@@ -302,7 +316,7 @@ export async function GET() {
             currency: balance.currency,
           }
         }
-      },
+      }
     )
 
     return successResponse({

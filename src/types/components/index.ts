@@ -20,7 +20,6 @@ import type {
   StockCategorySummaryData,
 } from '@/types/core'
 
-
 // 重新导出核心类型以便组件使用
 export type {
   ValidationResult,
@@ -49,18 +48,6 @@ export interface DashboardContentProps {
     categoryCount: number
   }
   accounts: AccountWithTransactions[]
-}
-
-/** 净资产卡片 Props */
-export interface NetWorthCardProps {
-  accounts: AccountWithTransactions[]
-  baseCurrency?: SimpleCurrency
-}
-
-/** 账户余额卡片 Props */
-export interface AccountBalancesCardProps {
-  accounts: AccountWithTransactions[]
-  currency: SimpleCurrency
 }
 
 // ============================================================================
@@ -174,7 +161,10 @@ export interface CategoryTreeItemProps {
   onToggle: () => void
   onCategoryClick?: (category: SimpleCategory) => void
   onAccountClick?: (account: SimpleAccount) => void
-  onDataChange?: (options?: { type?: 'account' | 'category' | 'full'; silent?: boolean }) => void
+  onDataChange?: (options?: {
+    type?: 'account' | 'category' | 'full'
+    silent?: boolean
+  }) => void
   baseCurrency?: SimpleCurrency
 }
 
@@ -185,21 +175,16 @@ export interface AccountTreeItemProps {
   isSelected?: boolean
   onClick?: () => void
   onNavigate?: () => void
-  onDataChange?: (options?: { type?: 'account' | 'category' | 'full'; silent?: boolean }) => void
+  onDataChange?: (options?: {
+    type?: 'account' | 'category' | 'full'
+    silent?: boolean
+  }) => void
   baseCurrency?: SimpleCurrency
 }
 
 // ============================================================================
 // 交易组件类型
 // ============================================================================
-
-/** 快速交易按钮 Props */
-export interface QuickTransactionButtonProps {
-  type: 'INCOME' | 'EXPENSE'
-  accounts: SimpleAccount[]
-  categories: SimpleCategory[]
-  onSuccess?: () => void
-}
 
 /** 交易列表项 */
 export interface TransactionListItem {
@@ -452,8 +437,6 @@ export interface ContextAccountBalance {
 export interface CurrencyManagementProps {
   onCurrenciesUpdated?: () => void
 }
-
-
 
 /** 汇率表单数据 */
 export interface ExchangeRateFormData {

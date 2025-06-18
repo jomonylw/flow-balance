@@ -7,7 +7,10 @@ import {
   unauthorizedResponse,
 } from '@/lib/api/response'
 import { calculateAccountBalance } from '@/lib/services/account.service'
-import { convertMultipleCurrencies, type ConversionResult } from '@/lib/services/currency.service'
+import {
+  convertMultipleCurrencies,
+  type ConversionResult,
+} from '@/lib/services/currency.service'
 import type { Prisma } from '@prisma/client'
 
 // 这个函数已经不需要了，因为我们现在使用统一的 calculateAccountBalance 函数
@@ -119,25 +122,35 @@ export async function GET(request: NextRequest) {
         }
       > = {}
 
+      // 获取当前日期，确保不包含未来的交易记录
+      const now = new Date()
+
       if (accountType === 'ASSET' || accountType === 'LIABILITY') {
-        // 存量账户：获取最新余额
-        balances = calculateAccountBalance(serializedAccount)
+        // 存量账户：获取最新余额（截止到当前日期）
+        balances = calculateAccountBalance(serializedAccount, {
+          asOfDate: now,
+        })
       } else {
         // 流量账户：计算当前月份的流量汇总
-        // 使用期间计算，默认为当前月份
-        const now = new Date()
+        // 使用期间计算，默认为当前月份，但不超过当前日期
         const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
         const periodEnd = new Date(
-          now.getFullYear(),
-          now.getMonth() + 1,
-          0,
-          23,
-          59,
-          59,
-          999,
+          Math.min(
+            now.getTime(),
+            new Date(
+              now.getFullYear(),
+              now.getMonth() + 1,
+              0,
+              23,
+              59,
+              59,
+              999
+            ).getTime()
+          )
         )
 
         balances = calculateAccountBalance(serializedAccount, {
+          asOfDate: now, // 添加截止日期，确保不包含未来交易
           periodStart,
           periodEnd,
           usePeriodCalculation: true,
@@ -189,7 +202,7 @@ export async function GET(request: NextRequest) {
         conversionResults = await convertMultipleCurrencies(
           user.id,
           amountsToConvert,
-          baseCurrency.code,
+          baseCurrency.code
         )
       } catch (error) {
         console.error('Currency conversion error:', error)
@@ -210,7 +223,7 @@ export async function GET(request: NextRequest) {
             const conversionResult = conversionResults.find(
               result =>
                 result.originalAmount === balanceData.amount &&
-                result.fromCurrency === currencyCode,
+                result.fromCurrency === currencyCode
             )
 
             if (conversionResult && conversionResult.success) {
@@ -218,11 +231,11 @@ export async function GET(request: NextRequest) {
             } else {
               // 转换失败时，记录警告但不影响其他数据
               console.warn(
-                `Failed to convert ${balanceData.amount} ${currencyCode} to ${baseCurrency.code} for account ${account.name}`,
+                `Failed to convert ${balanceData.amount} ${currencyCode} to ${baseCurrency.code} for account ${account.name}`
               )
             }
           }
-        },
+        }
       )
 
       account.balanceInBaseCurrency = totalInBaseCurrency

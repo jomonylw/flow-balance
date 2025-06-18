@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Currency } from '@prisma/client'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
@@ -10,10 +10,6 @@ import type { CurrencyManagementProps } from '@/types/components'
 interface CurrencyWithStatus extends Currency {
   isSelected: boolean
 }
-
-
-
-
 
 export default function CurrencyManagement({
   onCurrenciesUpdated,
@@ -33,9 +29,9 @@ export default function CurrencyManagement({
 
   useEffect(() => {
     fetchAllCurrencies()
-  }, [])
+  }, [fetchAllCurrencies])
 
-  const fetchAllCurrencies = async () => {
+  const fetchAllCurrencies = useCallback(async () => {
     try {
       setIsLoading(true)
       setError('')
@@ -55,7 +51,7 @@ export default function CurrencyManagement({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [t])
 
   const handleAddCurrency = async (currencyCode: string) => {
     try {
@@ -264,9 +260,22 @@ export default function CurrencyManagement({
                 </div>
                 <button
                   onClick={() => handleRemoveCurrency(currency.code)}
-                  className='text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium'
+                  className='p-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors'
+                  title={t('currency.remove')}
                 >
-                  {t('currency.remove')}
+                  <svg
+                    className='w-4 h-4'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M6 18L18 6M6 6l12 12'
+                    />
+                  </svg>
                 </button>
               </div>
             ))}
@@ -291,9 +300,23 @@ export default function CurrencyManagement({
           </h4>
           <button
             onClick={() => setShowCustomForm(true)}
-            className='px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors'
+            className='flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors'
+            title={t('currency.custom.create')}
           >
-            + {t('currency.custom.create')}
+            <svg
+              className='w-4 h-4 mr-1'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M12 6v6m0 0v6m0-6h6m-6 0H6'
+              />
+            </svg>
+            {t('currency.custom.create')}
           </button>
         </div>
 
@@ -407,19 +430,45 @@ export default function CurrencyManagement({
                     </div>
                   </div>
                 </div>
-                <div className='flex space-x-2'>
+                <div className='flex space-x-1'>
                   <button
                     onClick={() => handleAddCurrency(currency.code)}
-                    className='text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium'
+                    className='p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors'
+                    title={t('currency.add')}
                   >
-                    {t('currency.add')}
+                    <svg
+                      className='w-4 h-4'
+                      fill='none'
+                      stroke='currentColor'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M12 6v6m0 0v6m0-6h6m-6 0H6'
+                      />
+                    </svg>
                   </button>
                   {currency.isCustom && (
                     <button
                       onClick={() => handleDeleteCustomCurrency(currency.code)}
-                      className='text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium'
+                      className='p-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors'
+                      title={t('common.delete')}
                     >
-                      {t('common.delete')}
+                      <svg
+                        className='w-4 h-4'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
+                        />
+                      </svg>
                     </button>
                   )}
                 </div>
