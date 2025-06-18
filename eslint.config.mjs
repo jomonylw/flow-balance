@@ -64,7 +64,7 @@ const eslintConfig = [
       ],
       'object-curly-spacing': ['error', 'always'],
       'array-bracket-spacing': ['error', 'never'],
-      'comma-dangle': ['error', 'always-multiline'],
+      'comma-dangle': 'off',
       semi: ['error', 'never'],
       quotes: ['error', 'single', { avoidEscape: true }],
 
