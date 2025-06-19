@@ -436,7 +436,7 @@ const OptimizedCategoryAccountTree = forwardRef<
     return filteredGroups
   }, [groupedTreeData, searchQuery])
 
-  // 搜索时自动展开有匹配结果的分组（仅在客户端）
+  // 搜索时自动展开有匹配结果的分组和分类（仅在客户端）
   useEffect(() => {
     if (!isMounted || !searchQuery.trim() || !filteredData) return
 
@@ -445,6 +445,61 @@ const OptimizedCategoryAccountTree = forwardRef<
       setExpandedTypeGroups(prev => {
         const newSet = new Set(prev)
         typesToExpand.forEach(type => newSet.add(type))
+        return newSet
+      })
+    }
+
+    // 自动展开包含搜索结果的分类
+    const categoriesToExpand: string[] = []
+
+    const collectExpandableCategories = (categories: EnrichedCategory[]) => {
+      categories.forEach(category => {
+        const query = searchQuery.toLowerCase()
+        const hasMatchingAccounts = category.accounts?.some(
+          account =>
+            account.name.toLowerCase().includes(query) ||
+            account.description?.toLowerCase().includes(query)
+        )
+        const hasMatchingChildren =
+          category.children && category.children.length > 0
+
+        // 如果分类本身匹配或有匹配的账户，展开它
+        if (
+          category.name.toLowerCase().includes(query) ||
+          hasMatchingAccounts
+        ) {
+          categoriesToExpand.push(category.id)
+        }
+
+        // 如果有子分类，递归检查
+        if (hasMatchingChildren) {
+          collectExpandableCategories(category.children!)
+          // 如果子分类有匹配结果，也展开父分类
+          const hasMatchingDescendants = category.children!.some(child => {
+            const childMatches =
+              child.name.toLowerCase().includes(query) ||
+              child.accounts?.some(
+                account =>
+                  account.name.toLowerCase().includes(query) ||
+                  account.description?.toLowerCase().includes(query)
+              )
+            return childMatches
+          })
+          if (hasMatchingDescendants) {
+            categoriesToExpand.push(category.id)
+          }
+        }
+      })
+    }
+
+    filteredData.forEach(group => {
+      collectExpandableCategories(group.categories)
+    })
+
+    if (categoriesToExpand.length > 0) {
+      setExpandedCategories(prev => {
+        const newSet = new Set(prev)
+        categoriesToExpand.forEach(id => newSet.add(id))
         return newSet
       })
     }

@@ -42,6 +42,7 @@ export default function QuickFlowTransactionModal({
     addTemplate,
     updateTemplate: updateTemplateInContext,
     removeTemplate,
+    addTag,
     isLoadingTemplates,
   } = useUserData()
   const { resolvedTheme } = useTheme()
@@ -463,15 +464,22 @@ export default function QuickFlowTransactionModal({
     }))
   }
 
-  const handleTagFormSuccess = (newTag: {
-    id: string
-    name: string
-    color?: string
-  }) => {
+  const handleTagFormSuccess = (newTag: any) => {
+    // 更新表单数据，添加新标签到选中列表
     setFormData(prev => ({
       ...prev,
       tagIds: [...prev.tagIds, newTag.id],
     }))
+
+    // 更新 UserDataContext 中的全局标签数据
+    // 确保传递的数据符合 UserDataTag 类型
+    const userDataTag = {
+      ...newTag,
+      userId: newTag.userId, // API 返回的数据应该包含 userId
+      _count: { transactions: 0 }, // 新标签的交易数量为 0
+    }
+    addTag(userDataTag)
+
     setShowTagFormModal(false)
     showSuccess(
       t('transaction.quick.tag.create.success'),
