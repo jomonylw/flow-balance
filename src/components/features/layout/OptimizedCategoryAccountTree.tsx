@@ -11,6 +11,7 @@ import {
 } from 'react'
 import CategoryTreeItem from './CategoryTreeItem'
 import AccountTreeItem from './AccountTreeItem'
+import TypeGroupHeader from './TypeGroupHeader'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useAllDataListener } from '@/hooks/business/useDataUpdateListener'
@@ -21,6 +22,15 @@ interface EnrichedCategory extends SimpleCategory {
   type: CategoryType
   children?: EnrichedCategory[]
   accounts?: EnrichedAccount[]
+}
+
+// 账户类型分组
+interface TypeGroup {
+  type: CategoryType
+  label: string
+  categories: EnrichedCategory[]
+  totalBalance: number
+  currencySymbol: string
 }
 
 interface EnrichedAccount extends SimpleAccount {
@@ -126,10 +136,13 @@ const OptimizedCategoryAccountTree = forwardRef<
   // 使用新的数据更新监听系统
   useAllDataListener(async event => {
     const { type, silent } = event
-    console.log(
-      '[OptimizedCategoryAccountTree] Received data update event:',
-      event
-    )
+    // 调试信息 - 仅在开发环境输出
+    if (process.env.NODE_ENV === 'development') {
+      console.error(
+        '[OptimizedCategoryAccountTree] Received data update event:',
+        event
+      )
+    }
 
     if (silent) return
 
@@ -141,9 +154,11 @@ const OptimizedCategoryAccountTree = forwardRef<
           | 'account'
           | 'full'
           | undefined
-        console.log(
-          `[OptimizedCategoryAccountTree] Manual refresh event received, type: ${refreshType}`
-        )
+        if (process.env.NODE_ENV === 'development') {
+          console.error(
+            `[OptimizedCategoryAccountTree] Manual refresh event received, type: ${refreshType}`
+          )
+        }
         switch (refreshType) {
           case 'category':
             await refreshCategories()
@@ -167,9 +182,11 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'transaction-update':
       case 'transaction-delete':
         // 余额相关更新：强制刷新余额数据
-        console.log(
-          '[OptimizedCategoryAccountTree] Refreshing balances for transaction/balance event'
-        )
+        if (process.env.NODE_ENV === 'development') {
+          console.error(
+            '[OptimizedCategoryAccountTree] Refreshing balances for transaction/balance event'
+          )
+        }
         await refreshBalances()
         break
 
@@ -177,9 +194,11 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'account-update':
       case 'account-delete':
         // 账户相关更新：刷新账户数据和余额数据
-        console.log(
-          '[OptimizedCategoryAccountTree] Refreshing accounts and balances for account event'
-        )
+        if (process.env.NODE_ENV === 'development') {
+          console.error(
+            '[OptimizedCategoryAccountTree] Refreshing accounts and balances for account event'
+          )
+        }
         await refreshAccounts()
         await refreshBalances()
         break
@@ -188,25 +207,63 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'category-update':
       case 'category-delete':
         // 分类相关更新：刷新分类数据和账户数据（账户的分类信息可能变化）
-        console.log(
-          '[OptimizedCategoryAccountTree] Refreshing categories and accounts for category event'
-        )
+        if (process.env.NODE_ENV === 'development') {
+          console.error(
+            '[OptimizedCategoryAccountTree] Refreshing categories and accounts for category event'
+          )
+        }
         await refreshCategories()
         await refreshAccounts()
         break
 
       default:
         // 其他更新：刷新余额数据
-        console.log(
-          '[OptimizedCategoryAccountTree] Refreshing balances for unknown event'
-        )
+        if (process.env.NODE_ENV === 'development') {
+          console.error(
+            '[OptimizedCategoryAccountTree] Refreshing balances for unknown event'
+          )
+        }
         await refreshBalances()
         break
     }
   })
 
-  // 构建树状结构并合并余额数据
-  const enrichedTreeData = useMemo(() => {
+  // 计算账户类型汇总余额的函数
+  const calculateTypeBalance = useCallback(
+    (categories: EnrichedCategory[]): number => {
+      let total = 0
+
+      const calculateCategoryBalance = (cat: EnrichedCategory): number => {
+        let balance = 0
+
+        // 累加直属账户余额
+        if (cat.accounts) {
+          cat.accounts.forEach(account => {
+            balance += account.balanceInBaseCurrency || 0
+          })
+        }
+
+        // 递归累加子分类余额
+        if (cat.children) {
+          cat.children.forEach(child => {
+            balance += calculateCategoryBalance(child)
+          })
+        }
+
+        return balance
+      }
+
+      categories.forEach(category => {
+        total += calculateCategoryBalance(category)
+      })
+
+      return total
+    },
+    []
+  )
+
+  // 构建按类型分组的树状结构
+  const groupedTreeData = useMemo(() => {
     if (!categories || !accounts || !accountBalances) return null
 
     // 构建分类映射
@@ -247,14 +304,96 @@ const OptimizedCategoryAccountTree = forwardRef<
       }
     })
 
-    return rootCategories
-  }, [categories, accounts, accountBalances])
+    // 按账户类型分组
+    const typeGroups: TypeGroup[] = []
+    const baseCurrency = getBaseCurrency()
+    const currencySymbol = baseCurrency?.symbol || '¥'
+
+    // 定义账户类型顺序和标签
+    const typeOrder: { type: CategoryType; labelKey: string }[] = [
+      { type: 'ASSET', labelKey: 'type.asset' },
+      { type: 'LIABILITY', labelKey: 'type.liability' },
+      { type: 'INCOME', labelKey: 'type.income' },
+      { type: 'EXPENSE', labelKey: 'type.expense' },
+    ]
+
+    typeOrder.forEach(({ type, labelKey }) => {
+      const categoriesOfType = rootCategories.filter(cat => cat.type === type)
+      if (categoriesOfType.length > 0) {
+        // 计算该类型的汇总余额
+        const totalBalance = calculateTypeBalance(categoriesOfType)
+
+        typeGroups.push({
+          type,
+          label: t(labelKey),
+          categories: categoriesOfType,
+          totalBalance,
+          currencySymbol,
+        })
+      }
+    })
+
+    return typeGroups
+  }, [
+    categories,
+    accounts,
+    accountBalances,
+    getBaseCurrency,
+    t,
+    calculateTypeBalance,
+  ])
+
+  // 分组展开状态管理 - 从 localStorage 初始化
+  const [expandedTypeGroups, setExpandedTypeGroups] = useState<
+    Set<CategoryType>
+  >(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedState = localStorage.getItem('typeGroupExpandedState')
+        if (savedState) {
+          const expandedTypes = JSON.parse(savedState)
+          return new Set(expandedTypes)
+        }
+      } catch (error) {
+        console.error(
+          'Error loading type group expanded state from localStorage:',
+          error
+        )
+      }
+    }
+    // 默认全部展开
+    return new Set(['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE'])
+  })
+
+  // 客户端挂载状态
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // 保存分组展开状态到 localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(
+          'typeGroupExpandedState',
+          JSON.stringify([...expandedTypeGroups])
+        )
+      } catch (error) {
+        console.error(
+          'Error saving type group expanded state to localStorage:',
+          error
+        )
+      }
+    }
+  }, [expandedTypeGroups])
 
   // 过滤数据
   const filteredData = useMemo(() => {
-    if (!enrichedTreeData) return null
+    if (!groupedTreeData) return null
     if (!searchQuery.trim()) {
-      return enrichedTreeData
+      return groupedTreeData
     }
 
     const query = searchQuery.toLowerCase()
@@ -287,8 +426,42 @@ const OptimizedCategoryAccountTree = forwardRef<
         }))
     }
 
-    return filterCategories(enrichedTreeData)
-  }, [enrichedTreeData, searchQuery])
+    const filteredGroups = groupedTreeData
+      .map(group => ({
+        ...group,
+        categories: filterCategories(group.categories),
+      }))
+      .filter(group => group.categories.length > 0)
+
+    return filteredGroups
+  }, [groupedTreeData, searchQuery])
+
+  // 搜索时自动展开有匹配结果的分组（仅在客户端）
+  useEffect(() => {
+    if (!isMounted || !searchQuery.trim() || !filteredData) return
+
+    const typesToExpand = filteredData.map(group => group.type)
+    if (typesToExpand.length > 0) {
+      setExpandedTypeGroups(prev => {
+        const newSet = new Set(prev)
+        typesToExpand.forEach(type => newSet.add(type))
+        return newSet
+      })
+    }
+  }, [searchQuery, filteredData, isMounted])
+
+  // 切换分组展开状态
+  const toggleTypeGroup = (type: CategoryType) => {
+    setExpandedTypeGroups(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(type)) {
+        newSet.delete(type)
+      } else {
+        newSet.add(type)
+      }
+      return newSet
+    })
+  }
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories(prev => {
@@ -303,39 +476,59 @@ const OptimizedCategoryAccountTree = forwardRef<
   }
 
   // 获取所有分类ID的递归函数
-  const getAllCategoryIds = useCallback(
-    (categories: EnrichedCategory[]): string[] => {
-      const ids: string[] = []
+  const getAllCategoryIds = useCallback((typeGroups: TypeGroup[]): string[] => {
+    const ids: string[] = []
+
+    const extractCategoryIds = (categories: EnrichedCategory[]): string[] => {
+      const categoryIds: string[] = []
       categories.forEach(category => {
-        ids.push(category.id)
+        categoryIds.push(category.id)
         if (category.children && category.children.length > 0) {
-          ids.push(...getAllCategoryIds(category.children))
+          categoryIds.push(...extractCategoryIds(category.children))
         }
       })
-      return ids
-    },
-    []
-  )
+      return categoryIds
+    }
 
-  // 展开所有分类
+    typeGroups.forEach(group => {
+      ids.push(...extractCategoryIds(group.categories))
+    })
+
+    return ids
+  }, [])
+
+  // 展开所有分类和分组
   const expandAll = useCallback(() => {
     if (filteredData) {
+      // 展开所有分组
+      setExpandedTypeGroups(
+        new Set(['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE'])
+      )
+      // 展开所有分类
       const allIds = getAllCategoryIds(filteredData)
       setExpandedCategories(new Set(allIds))
     }
   }, [filteredData, getAllCategoryIds])
 
-  // 收起所有分类
+  // 收起所有分类和分组
   const collapseAll = useCallback(() => {
+    setExpandedTypeGroups(new Set())
     setExpandedCategories(new Set())
   }, [])
 
   // 检查是否所有分类都已展开
   const checkAllExpanded = useCallback(() => {
     if (!filteredData) return false
+    const allTypeGroupsExpanded = [
+      'ASSET',
+      'LIABILITY',
+      'INCOME',
+      'EXPENSE',
+    ].every(type => expandedTypeGroups.has(type as CategoryType))
     const allIds = getAllCategoryIds(filteredData)
-    return allIds.every(id => expandedCategories.has(id))
-  }, [filteredData, expandedCategories, getAllCategoryIds])
+    const allCategoriesExpanded = allIds.every(id => expandedCategories.has(id))
+    return allTypeGroupsExpanded && allCategoriesExpanded
+  }, [filteredData, expandedCategories, expandedTypeGroups, getAllCategoryIds])
 
   // 暴露方法给父组件
   useImperativeHandle(
@@ -387,7 +580,8 @@ const OptimizedCategoryAccountTree = forwardRef<
     )
   }
 
-  if (userDataLoading || isLoadingBalances) {
+  // 避免 hydration 错误 - 在客户端挂载前显示加载状态
+  if (!isMounted || userDataLoading || isLoadingBalances) {
     return (
       <div className='flex items-center justify-center py-8'>
         <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400'></div>
@@ -426,8 +620,25 @@ const OptimizedCategoryAccountTree = forwardRef<
   }
 
   return (
-    <div className='space-y-1'>
-      {filteredData.map(category => renderCategory(category))}
+    <div className='space-y-3'>
+      {filteredData.map(group => (
+        <div key={group.type} className='space-y-1'>
+          <TypeGroupHeader
+            type={group.type}
+            label={group.label}
+            totalBalance={group.totalBalance}
+            currencySymbol={group.currencySymbol}
+            isExpanded={expandedTypeGroups.has(group.type)}
+            onToggle={() => toggleTypeGroup(group.type)}
+          />
+
+          {expandedTypeGroups.has(group.type) && (
+            <div className='ml-1 space-y-1'>
+              {group.categories.map(category => renderCategory(category))}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 })

@@ -104,39 +104,6 @@ export default function CategoryTreeItem({
     }
   }
 
-  // 获取分类类型标签的颜色和样式
-  const getTypeTagStyle = () => {
-    const categoryType = category.type
-    if (categoryType === 'LIABILITY' || categoryType === 'EXPENSE') {
-      return {
-        backgroundColor: '#dc2626', // red-600
-        textColor: '#ffffff',
-      }
-    } else {
-      return {
-        backgroundColor: '#16a34a', // green-600
-        textColor: '#ffffff',
-      }
-    }
-  }
-
-  // 获取分类类型的国际化文本
-  const getTypeLabel = () => {
-    const categoryType = category.type
-    switch (categoryType) {
-      case 'ASSET':
-        return t('type.asset')
-      case 'LIABILITY':
-        return t('type.liability')
-      case 'INCOME':
-        return t('type.income')
-      case 'EXPENSE':
-        return t('type.expense')
-      default:
-        return ''
-    }
-  }
-
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
     setShowContextMenu(true)
@@ -408,34 +375,17 @@ export default function CategoryTreeItem({
 
         {/* 分类名称和余额 */}
         <div className='flex-1 py-3 min-w-0'>
-          <div className='flex items-center gap-2'>
-            <div
-              className={`
-                text-sm font-semibold truncate transition-colors duration-200
-                ${
-                  isActive
-                    ? 'text-blue-700 dark:text-blue-300'
-                    : 'text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-gray-100'
-                }
-              `}
-            >
-              {category.name}
-            </div>
-            {/* 顶层分类类型标签 */}
-            {level === 0 && category.type && (
-              <span
-                className='inline-flex items-center justify-center px-1 py-px rounded-md text-[10px] font-semibold border shadow-sm transition-all duration-200 hover:shadow-md flex-shrink-0 opacity-80 hover:opacity-100 hover:scale-105'
-                style={{
-                  backgroundColor: getTypeTagStyle().backgroundColor,
-                  borderColor: getTypeTagStyle().backgroundColor,
-                  color: getTypeTagStyle().textColor,
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-                }}
-                title={`分类类型: ${getTypeLabel()}`}
-              >
-                {getTypeLabel()}
-              </span>
-            )}
+          <div
+            className={`
+              text-sm font-semibold truncate transition-colors duration-200
+              ${
+                isActive
+                  ? 'text-blue-700 dark:text-blue-300'
+                  : 'text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-gray-100'
+              }
+            `}
+          >
+            {category.name}
           </div>
           <div
             className={`text-xs mt-1.5 font-semibold transition-colors duration-200 ${getAmountColor()}`}
