@@ -36,6 +36,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // 计算过去12个月的总开销
+    const now = new Date()
     const twelveMonthsAgo = new Date()
     twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1)
 
@@ -44,6 +45,7 @@ export async function GET(_request: NextRequest) {
         userId: user.id,
         date: {
           gte: twelveMonthsAgo,
+          lte: now, // 确保不包含未来交易
         },
         category: {
           type: AccountType.EXPENSE,
@@ -145,6 +147,7 @@ export async function GET(_request: NextRequest) {
         userId: user.id,
         date: {
           gte: sixMonthsAgo,
+          lte: now, // 确保不包含未来交易
         },
         category: {
           type: {

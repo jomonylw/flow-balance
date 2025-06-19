@@ -10,6 +10,7 @@
   "time.last.3.months": "近3个月",
   "time.last.6.months": "近6个月",
   "time.last.12.months": "近一年",
+  "time.last.days": "最近{{days}}天",
   "time.all": "全部",
   "time.date.from": "开始日期",
   "time.date.to": "结束日期",

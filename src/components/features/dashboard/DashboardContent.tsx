@@ -606,7 +606,9 @@ export default function DashboardContent({
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}
                   >
-                    {summaryData.recentActivity.period}
+                    {t('time.last.days', {
+                      days: summaryData.recentActivity.period,
+                    })}
                   </p>
                 </div>
                 <div className='mt-3 space-y-1 text-xs'>

@@ -153,7 +153,12 @@ export async function GET() {
 
     // 获取最近的交易
     const recentTransactions = await prisma.transaction.findMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        date: {
+          lte: now, // 确保不包含未来交易
+        },
+      },
       include: {
         account: true,
         category: true,
@@ -172,10 +177,19 @@ export async function GET() {
         userId: user.id,
         date: {
           gte: thirtyDaysAgo,
+          lte: now, // 添加结束日期限制，确保不包含未来交易
+        },
+        type: {
+          in: ['INCOME', 'EXPENSE'], // 只统计收入和支出交易，排除余额调整
         },
       },
       include: {
         currency: true,
+        account: {
+          include: {
+            category: true,
+          },
+        },
       },
     })
 
@@ -196,6 +210,9 @@ export async function GET() {
       }
 
       const amount = parseFloat(transaction.amount.toString())
+      // const accountType = transaction.account.category.type // 旧逻辑：根据账户类别类型
+
+      // 根据交易类型判断是收入还是支出 (与 personal-cash-flow API 的核心统计逻辑保持一致)
       if (transaction.type === 'INCOME') {
         activitySummary[currencyCode].income += amount
         incomeAmounts.push({ amount, currency: currencyCode })
@@ -346,7 +363,7 @@ export async function GET() {
           expense: totalExpenseInBaseCurrency,
           net: totalIncomeInBaseCurrency - totalExpenseInBaseCurrency,
         },
-        period: '最近30天',
+        period: 30,
         baseCurrency,
       },
       recentTransactions: recentTransactions.slice(0, 5),
