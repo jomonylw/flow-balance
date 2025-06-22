@@ -10,6 +10,8 @@
   "loan.payment.frequency": "还款频率",
   "loan.start.date": "开始日期",
   "loan.end.date": "结束日期",
+  "loan.payment.account": "还款账户",
+  "loan.payment.account.click.to.view": "点击查看账户详情",
   "loan.monthly.payment": "月还款额",
   "loan.contract.name": "合约名称",
   "loan.contract.description": "合约描述",

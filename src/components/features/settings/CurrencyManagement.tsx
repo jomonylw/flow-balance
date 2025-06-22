@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Currency } from '@prisma/client'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useToast } from '@/contexts/providers/ToastContext'
 import { CurrencyManagementSkeleton } from '@/components/ui/data-display/page-skeletons'
 import type { CurrencyManagementProps } from '@/types/components'
 
@@ -15,6 +16,7 @@ export default function CurrencyManagement({
   onCurrenciesUpdated,
 }: CurrencyManagementProps) {
   const { t } = useLanguage()
+  const { showSuccess, showError } = useToast()
   const { currencies: userCurrencies, refreshCurrencies } = useUserData()
   const [allCurrencies, setAllCurrencies] = useState<CurrencyWithStatus[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -71,16 +73,22 @@ export default function CurrencyManagement({
       const data = await response.json()
 
       if (response.ok) {
-        setSuccessMessage(data.message)
+        const successMsg = data.message || t('currency.add.success')
+        setSuccessMessage(successMsg)
+        showSuccess(t('currency.add.success'), successMsg)
         await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(data.error || t('currency.add.failed'))
+        const errorMessage = data.error || t('currency.add.failed')
+        setError(errorMessage)
+        showError(t('currency.add.failed'), errorMessage)
       }
     } catch (error) {
       console.error('添加货币失败:', error)
-      setError(t('error.network'))
+      const errorMessage = t('error.network')
+      setError(errorMessage)
+      showError(t('currency.add.failed'), errorMessage)
     }
   }
 
@@ -96,16 +104,22 @@ export default function CurrencyManagement({
       const data = await response.json()
 
       if (response.ok) {
-        setSuccessMessage(data.message)
+        const successMsg = data.message || t('currency.remove.success')
+        setSuccessMessage(successMsg)
+        showSuccess(t('currency.remove.success'), successMsg)
         await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(data.error || t('currency.remove.failed'))
+        const errorMessage = data.error || t('currency.remove.failed')
+        setError(errorMessage)
+        showError(t('currency.remove.failed'), errorMessage)
       }
     } catch (error) {
       console.error('删除货币失败:', error)
-      setError(t('error.network'))
+      const errorMessage = t('error.network')
+      setError(errorMessage)
+      showError(t('currency.remove.failed'), errorMessage)
     }
   }
 
@@ -189,7 +203,22 @@ export default function CurrencyManagement({
       const data = await response.json()
 
       if (response.ok) {
-        setSuccessMessage(data.message)
+        const successMsg =
+          data.message ||
+          t(
+            isEditing
+              ? 'currency.custom.update.success'
+              : 'currency.custom.create.success'
+          )
+        setSuccessMessage(successMsg)
+        showSuccess(
+          t(
+            isEditing
+              ? 'currency.custom.update.success'
+              : 'currency.custom.create.success'
+          ),
+          successMsg
+        )
         setShowCustomForm(false)
         setEditingCurrency(null)
         setCustomCurrencyForm({
@@ -202,18 +231,35 @@ export default function CurrencyManagement({
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(
+        const errorMessage =
           data.error ||
-            t(
-              isEditing
-                ? 'currency.custom.update.failed'
-                : 'currency.custom.create.failed'
-            )
+          t(
+            isEditing
+              ? 'currency.custom.update.failed'
+              : 'currency.custom.create.failed'
+          )
+        setError(errorMessage)
+        showError(
+          t(
+            isEditing
+              ? 'currency.custom.update.failed'
+              : 'currency.custom.create.failed'
+          ),
+          errorMessage
         )
       }
     } catch (error) {
       console.error('创建自定义货币失败:', error)
-      setError(t('error.network'))
+      const errorMessage = t('error.network')
+      setError(errorMessage)
+      showError(
+        t(
+          editingCurrency
+            ? 'currency.custom.update.failed'
+            : 'currency.custom.create.failed'
+        ),
+        errorMessage
+      )
     }
   }
 
@@ -229,16 +275,22 @@ export default function CurrencyManagement({
       const data = await response.json()
 
       if (response.ok) {
-        setSuccessMessage(data.message)
+        const successMsg = data.message || t('currency.custom.delete.success')
+        setSuccessMessage(successMsg)
+        showSuccess(t('currency.custom.delete.success'), successMsg)
         await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(data.error || t('currency.custom.delete.failed'))
+        const errorMessage = data.error || t('currency.custom.delete.failed')
+        setError(errorMessage)
+        showError(t('currency.custom.delete.failed'), errorMessage)
       }
     } catch (error) {
       console.error('删除自定义货币失败:', error)
-      setError(t('error.network'))
+      const errorMessage = t('error.network')
+      setError(errorMessage)
+      showError(t('currency.custom.delete.failed'), errorMessage)
     }
   }
 

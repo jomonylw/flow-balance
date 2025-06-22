@@ -5,8 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
+import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useToast } from '@/contexts/providers/ToastContext'
 
 export default function SignupForm() {
+  const { t } = useLanguage()
+  const { showSuccess, showError } = useToast()
   const router = useRouter()
   const [formData, setFormData] = useState({
     email: '',
@@ -40,25 +44,25 @@ export default function SignupForm() {
     const newErrors: Record<string, string> = {}
 
     if (!formData.email) {
-      newErrors.email = '请输入邮箱'
+      newErrors.email = t('form.required')
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = '邮箱格式不正确'
+      newErrors.email = t('form.invalid.email')
     }
 
     if (!formData.password) {
-      newErrors.password = '请输入密码'
+      newErrors.password = t('form.required')
     } else if (formData.password.length < 6) {
-      newErrors.password = '密码至少需要6个字符'
+      newErrors.password = t('auth.password.min.length')
     } else if (!/(?=.*[a-z])/.test(formData.password)) {
-      newErrors.password = '密码需要包含至少一个小写字母'
+      newErrors.password = t('auth.password.lowercase.required')
     } else if (!/(?=.*\d)/.test(formData.password)) {
-      newErrors.password = '密码需要包含至少一个数字'
+      newErrors.password = t('auth.password.number.required')
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = '请确认密码'
+      newErrors.confirmPassword = t('auth.confirm.password.required')
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = '两次输入的密码不一致'
+      newErrors.confirmPassword = t('auth.password.mismatch')
     }
 
     setErrors(newErrors)
@@ -88,17 +92,24 @@ export default function SignupForm() {
       const result = await response.json()
 
       if (result.success) {
-        setSuccessMessage('注册成功！正在跳转到初始设置...')
+        const successMsg = t('auth.signup.success')
+        setSuccessMessage(successMsg)
+        showSuccess(t('auth.signup.success'), t('auth.signup.success.message'))
+
         // 2秒后自动跳转到登录页
         setTimeout(() => {
           router.push('/login?redirect=setup')
         }, 2000)
       } else {
-        setGeneralError(result.error || '注册失败')
+        const errorMessage = result.error || t('auth.signup.failed')
+        setGeneralError(errorMessage)
+        showError(t('auth.signup.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Signup error:', error)
-      setGeneralError('网络错误，请稍后重试')
+      const errorMessage = t('error.network')
+      setGeneralError(errorMessage)
+      showError(t('auth.signup.failed'), errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -121,8 +132,8 @@ export default function SignupForm() {
       <InputField
         type='email'
         name='email'
-        label='邮箱'
-        placeholder='请输入您的邮箱'
+        label={t('auth.email')}
+        placeholder={t('auth.email.placeholder')}
         value={formData.email}
         onChange={handleChange}
         error={errors.email}
@@ -132,8 +143,8 @@ export default function SignupForm() {
       <InputField
         type='password'
         name='password'
-        label='密码'
-        placeholder='至少6个字符，包含字母和数字'
+        label={t('auth.password')}
+        placeholder={t('auth.password.placeholder')}
         value={formData.password}
         onChange={handleChange}
         error={errors.password}
@@ -143,8 +154,8 @@ export default function SignupForm() {
       <InputField
         type='password'
         name='confirmPassword'
-        label='确认密码'
-        placeholder='请再次输入密码'
+        label={t('auth.confirm.password')}
+        placeholder={t('auth.confirm.password.placeholder')}
         value={formData.confirmPassword}
         onChange={handleChange}
         error={errors.confirmPassword}
@@ -153,19 +164,19 @@ export default function SignupForm() {
 
       <AuthButton
         type='submit'
-        label='注册'
+        label={t('auth.signup')}
         isLoading={isLoading}
         disabled={isLoading || !!successMessage}
       />
 
       <div className='text-center'>
         <div className='text-sm text-gray-600'>
-          已有账户？{' '}
+          {t('auth.have.account')}？{' '}
           <Link
             href='/login'
             className='text-blue-600 hover:text-blue-500 font-medium'
           >
-            立即登录
+            {t('auth.login.now')}
           </Link>
         </div>
       </div>

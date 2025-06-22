@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useToast } from '@/contexts/providers/ToastContext'
 import InputField from '@/components/ui/forms/InputField'
 import SelectField from '@/components/ui/forms/SelectField'
 import type { SimpleCurrency, ExchangeRateData } from '@/types/core'
@@ -23,6 +24,7 @@ export default function ExchangeRateForm({
   onClose,
 }: ExchangeRateFormProps) {
   const { t } = useLanguage()
+  const { showSuccess, showError } = useToast()
   const [formData, setFormData] = useState({
     fromCurrency: '',
     toCurrency: baseCurrency?.code || '',
@@ -133,13 +135,40 @@ export default function ExchangeRateForm({
       const data = await response.json()
 
       if (response.ok) {
+        const isEditing = editingRate && editingRate.id
+        showSuccess(
+          t(
+            isEditing
+              ? 'exchange.rate.update.success'
+              : 'exchange.rate.create.success'
+          ),
+          t(isEditing ? 'exchange.rate.updated' : 'exchange.rate.created')
+        )
         onRateCreated(data.data)
       } else {
-        setError(data.error || t('error.operation.failed'))
+        const errorMessage = data.error || t('error.operation.failed')
+        setError(errorMessage)
+        showError(
+          t(
+            editingRate && editingRate.id
+              ? 'exchange.rate.update.failed'
+              : 'exchange.rate.create.failed'
+          ),
+          errorMessage
+        )
       }
     } catch (error) {
       console.error('提交汇率失败:', error)
-      setError(t('error.network'))
+      const errorMessage = t('error.network')
+      setError(errorMessage)
+      showError(
+        t(
+          editingRate && editingRate.id
+            ? 'exchange.rate.update.failed'
+            : 'exchange.rate.create.failed'
+        ),
+        errorMessage
+      )
     } finally {
       setIsLoading(false)
     }

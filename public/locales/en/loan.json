@@ -10,6 +10,8 @@
   "loan.payment.frequency": "Payment Frequency",
   "loan.start.date": "Start Date",
   "loan.end.date": "End Date",
+  "loan.payment.account": "Payment Account",
+  "loan.payment.account.click.to.view": "Click to view account details",
   "loan.monthly.payment": "Monthly Payment",
   "loan.contract.name": "Contract Name",
   "loan.contract.description": "Contract Description",

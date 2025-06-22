@@ -7,11 +7,13 @@ import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useAuth } from '@/contexts/providers/AuthContext'
+import { useToast } from '@/contexts/providers/ToastContext'
 
 export default function LoginForm() {
   const { t } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { showSuccess, showError } = useToast()
   const {
     login,
     error: authError,
@@ -76,6 +78,8 @@ export default function LoginForm() {
       const success = await login(formData.email, formData.password)
 
       if (success) {
+        showSuccess(t('auth.login.success'), t('auth.login.success.message'))
+
         // 检查是否需要跳转到初始设置
         const redirect = searchParams.get('redirect')
         if (redirect === 'setup') {
@@ -84,10 +88,16 @@ export default function LoginForm() {
           // 登录成功，重定向到 dashboard
           router.push('/dashboard')
         }
+      } else {
+        // 登录失败，显示toast错误提示
+        const errorMessage = authError || t('auth.login.failed')
+        showError(t('auth.login.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Login error:', error)
-      setGeneralError(t('error.network'))
+      const errorMessage = t('error.network')
+      setGeneralError(errorMessage)
+      showError(t('auth.login.failed'), errorMessage)
     }
   }
 

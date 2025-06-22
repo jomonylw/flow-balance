@@ -328,6 +328,11 @@ export class LoanContractService {
         updateData.transactionTagIds = data.transactionTagIds
       }
 
+      // 确保 paymentAccountId 字段被正确处理，包括 null 值
+      if (data.paymentAccountId !== undefined) {
+        updateData.paymentAccountId = data.paymentAccountId
+      }
+
       // 更新贷款合约
       const updatedContract = await tx.loanContract.update({
         where: { id },
@@ -931,6 +936,9 @@ export class LoanContractService {
           include: { category: true, currency: true },
         },
         currency: true,
+        paymentAccount: {
+          include: { category: true, currency: true },
+        },
         payments: {
           orderBy: { period: 'asc' },
         },

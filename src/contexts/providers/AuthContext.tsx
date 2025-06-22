@@ -52,6 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     '/reset-password',
   ]
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+  const isRootRoute = pathname === '/'
 
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
@@ -185,6 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setHasInitialized(true)
         }
       } else {
+        // 对于根路径和其他需要认证的路径，都进行认证检查
         try {
           const response = await fetch('/api/auth/me', {
             method: 'GET',
@@ -234,10 +236,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       isMounted = false
     }
-  }, [isPublicRoute, hasInitialized])
+  }, [isPublicRoute, isRootRoute, hasInitialized])
 
   useEffect(() => {
     if (authState.isLoading || !hasInitialized) return
+
+    // 不干预根路径的重定向逻辑，让根页面组件自己处理
+    if (isRootRoute) return
 
     if (
       isPublicRoute &&
@@ -256,6 +261,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     authState.isAuthenticated,
     authState.isLoading,
     isPublicRoute,
+    isRootRoute,
     router,
     hasInitialized,
     pathname,
@@ -308,7 +314,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     clearError,
   }
 
-  if (authState.isLoading && !isPublicRoute) {
+  if (authState.isLoading && !isPublicRoute && !isRootRoute) {
     return <LoadingScreen messageType='auth-checking' variant='pulse' />
   }
 

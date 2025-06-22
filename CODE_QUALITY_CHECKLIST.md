@@ -42,7 +42,6 @@
 - [ ] 所有货币显示使用useUserCurrencyFormatter Hook
 - [ ] 无硬编码货币符号映射 - `grep -r "CNY.*¥\|USD.*\$" src/`
 - [ ] 无重复的formatCurrency函数定义 - `grep -r "formatCurrency.*=" src/`
-- [ ] 金额计算使用Decimal.js处理精度问题
 
 ### 颜色管理统一性
 

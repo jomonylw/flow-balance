@@ -189,7 +189,10 @@ export default function LoanContractModal({
         transactionDescription:
           formData.transactionDescription?.trim() || undefined,
         transactionNotes: formData.transactionNotes?.trim() || undefined,
-        paymentAccountId: formData.paymentAccountId || undefined,
+        paymentAccountId:
+          formData.paymentAccountId === ''
+            ? undefined
+            : formData.paymentAccountId,
       }
 
       await onSave(contractData)

@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useToast } from '@/contexts/providers/ToastContext'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
 
 export default function DataManagementSection() {
   const { t } = useLanguage()
+  const { showSuccess, showError } = useToast()
   const [isExporting, setIsExporting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
@@ -34,16 +36,22 @@ export default function DataManagementSection() {
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
 
-        setMessage(t('data.export.success'))
+        const successMsg = t('data.export.success')
+        setMessage(successMsg)
+        showSuccess(t('data.export.success'), t('data.export.success.message'))
       } else {
         const data = await response.json()
-        setMessage(
-          t('data.export.failed', { error: data.error || t('error.unknown') })
-        )
+        const errorMessage = t('data.export.failed', {
+          error: data.error || t('error.unknown'),
+        })
+        setMessage(errorMessage)
+        showError(t('data.export.failed'), data.error || t('error.unknown'))
       }
     } catch (error) {
       console.error('Export data error:', error)
-      setMessage(t('data.export.network.error'))
+      const errorMessage = t('data.export.network.error')
+      setMessage(errorMessage)
+      showError(t('data.export.failed'), errorMessage)
     } finally {
       setIsExporting(false)
     }
@@ -67,14 +75,21 @@ export default function DataManagementSection() {
       const data = await response.json()
 
       if (response.ok) {
+        showSuccess(t('data.delete.success'), t('data.delete.success.message'))
         // 删除成功，重定向到登录页
-        window.location.href = '/login'
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 2000)
       } else {
-        setDeleteError(data.error || t('data.delete.failed'))
+        const errorMessage = data.error || t('data.delete.failed')
+        setDeleteError(errorMessage)
+        showError(t('data.delete.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Delete account error:', error)
-      setDeleteError(t('data.delete.network.error'))
+      const errorMessage = t('data.delete.network.error')
+      setDeleteError(errorMessage)
+      showError(t('data.delete.failed'), errorMessage)
     }
   }
 

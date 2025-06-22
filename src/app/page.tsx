@@ -1,26 +1,56 @@
-import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+'use client'
 
-export default async function Home() {
-  // 检查用户是否已登录
-  const user = await getCurrentUser()
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/providers/AuthContext'
+import { useUserData } from '@/contexts/providers/UserDataContext'
+import LoadingScreen from '@/components/ui/feedback/LoadingScreen'
 
-  if (user) {
+export default function Home() {
+  const router = useRouter()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { userSettings, isLoading: userDataLoading } = useUserData()
+
+  useEffect(() => {
+    // 等待认证检查完成
+    if (authLoading) return
+
+    if (!isAuthenticated) {
+      // 如果未登录，重定向到登录页
+      router.replace('/login')
+      return
+    }
+
+    // 如果已认证，等待用户数据加载完成
+    if (userDataLoading) return
+
     // 检查用户是否已完成初始设置
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId: user.id },
-    })
-
     if (!userSettings?.baseCurrencyId) {
       // 如果未设置本位币，重定向到初始设置页面
-      redirect('/setup')
+      router.replace('/setup')
     } else {
       // 如果已完成设置，重定向到 dashboard
-      redirect('/dashboard')
+      router.replace('/dashboard')
     }
-  } else {
-    // 如果未登录，重定向到登录页
-    redirect('/login')
+  }, [isAuthenticated, authLoading, userSettings, userDataLoading, router])
+
+  // 显示加载状态
+  if (authLoading) {
+    return <LoadingScreen messageType='auth-checking' variant='pulse' />
   }
+
+  if (!isAuthenticated) {
+    return <LoadingScreen messageType='redirecting' variant='spin' />
+  }
+
+  if (userDataLoading) {
+    return <LoadingScreen messageType='loading-data' variant='spin' />
+  }
+
+  // 根据设置状态显示相应的重定向加载
+  if (!userSettings?.baseCurrencyId) {
+    return <LoadingScreen messageType='redirecting' variant='spin' />
+  }
+
+  return <LoadingScreen messageType='redirecting' variant='spin' />
 }

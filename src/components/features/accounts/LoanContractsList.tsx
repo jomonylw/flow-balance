@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useRouter } from 'next/navigation'
 import LoanPaymentHistory from './LoanPaymentHistory'
 import LoanContractDeleteModal from './LoanContractDeleteModal'
 import type { LoanContract } from '@/types/core'
@@ -23,6 +24,7 @@ export default function LoanContractsList({
   currencyCode = 'CNY',
 }: LoanContractsListProps) {
   const { t } = useLanguage()
+  const router = useRouter()
   const [contracts, setContracts] = useState<LoanContract[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +38,7 @@ export default function LoanContractsList({
   )
 
   // 获取贷款合约列表
-  const fetchContracts = async () => {
+  const fetchContracts = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -59,11 +61,11 @@ export default function LoanContractsList({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [accountId])
 
   useEffect(() => {
     fetchContracts()
-  }, [accountId])
+  }, [fetchContracts])
 
   // 显示删除确认模态框
   const handleDeleteClick = (contract: LoanContract) => {
@@ -118,6 +120,11 @@ export default function LoanContractsList({
   const handleDeleteCancel = () => {
     setShowDeleteModal(false)
     setDeletingContract(null)
+  }
+
+  // 处理还款账户点击跳转
+  const handlePaymentAccountClick = (paymentAccountId: string) => {
+    router.push(`/accounts/${paymentAccountId}`)
   }
 
   // 获取状态颜色
@@ -375,6 +382,25 @@ export default function LoanContractsList({
                       {format(new Date(contract.startDate), 'yyyy-MM-dd')}
                     </span>
                   </div>
+                  {contract.paymentAccount && (
+                    <div className='flex items-center justify-between'>
+                      <span>{t('loan.payment.account')}:</span>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation()
+                          if (contract.paymentAccount) {
+                            handlePaymentAccountClick(
+                              contract.paymentAccount.id
+                            )
+                          }
+                        }}
+                        className='font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors'
+                        title={t('loan.payment.account.click.to.view')}
+                      >
+                        {contract.paymentAccount.name}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className='mt-2 text-xs text-gray-600 dark:text-gray-300'>
