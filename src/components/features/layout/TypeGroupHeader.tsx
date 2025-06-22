@@ -1,5 +1,6 @@
 'use client'
 
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import type { CategoryType } from '@/types/core'
 
 interface TypeGroupHeaderProps {
@@ -19,6 +20,7 @@ export default function TypeGroupHeader({
   isExpanded,
   onToggle,
 }: TypeGroupHeaderProps) {
+  const { getUserLocale } = useUserCurrencyFormatter()
   // 根据账户类型获取样式
   const getTypeStyle = () => {
     switch (type) {
@@ -75,7 +77,8 @@ export default function TypeGroupHeader({
     } else if (absAmount >= 1000) {
       return `${(amount / 1000).toFixed(1)}k`
     } else {
-      return amount.toLocaleString('zh-CN', {
+      const locale = getUserLocale()
+      return amount.toLocaleString(locale, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })

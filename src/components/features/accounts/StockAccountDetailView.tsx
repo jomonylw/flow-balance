@@ -8,6 +8,9 @@ import StockAccountSummaryCard from './StockAccountSummaryCard'
 import StockAccountTrendChart from '@/components/features/charts/StockAccountTrendChart'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import DetailPageLayout from '@/components/ui/layout/DetailPageLayout'
+import LoanContractsList from './LoanContractsList'
+import LoanContractModal from './LoanContractModal'
+
 import { calculateAccountBalance } from '@/lib/services/account.service'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
@@ -17,13 +20,17 @@ import {
   useTransactionListener,
 } from '@/hooks/business/useDataUpdateListener'
 import {
-  Transaction,
   User,
   LegacyAccount,
   LegacyCurrency,
   TrendDataPoint,
   TimeRange,
 } from '@/types/business/transaction'
+import type {
+  LoanContract,
+  LoanContractFormData,
+  ExtendedTransaction,
+} from '@/types/core'
 
 interface StockAccountDetailViewProps {
   account: LegacyAccount
@@ -44,14 +51,20 @@ export default function StockAccountDetailView({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [editingTransaction, setEditingTransaction] =
-    useState<Transaction | null>(null)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+    useState<ExtendedTransaction | null>(null)
+  const [transactions, setTransactions] = useState<ExtendedTransaction[]>([])
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
     itemsPerPage: 10,
   })
+
+  // 贷款合约相关状态
+  const [isLoanModalOpen, setIsLoanModalOpen] = useState(false)
+  const [editingLoanContract, setEditingLoanContract] =
+    useState<LoanContract | null>(null)
+  const [loanContractsKey, setLoanContractsKey] = useState(0) // 用于强制刷新贷款合约列表
   const [isLoading, setIsLoading] = useState(true)
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([])
   const [timeRange, setTimeRange] = useState<TimeRange>('lastYear')
@@ -168,8 +181,8 @@ export default function StockAccountDetailView({
           result.message || t('account.balance.history.cleared')
         )
 
-        // 清空成功后，直接删除账户
-        await handleDeleteAccount()
+        // 清空成功后，重新加载交易记录
+        loadTransactions(pagination.currentPage)
       } else {
         const error = await response.json()
         showError(
@@ -247,7 +260,7 @@ export default function StockAccountDetailView({
     }
   }
 
-  const handleEditTransaction = (transaction: Transaction) => {
+  const handleEditTransaction = (transaction: ExtendedTransaction) => {
     setEditingTransaction(transaction)
     setIsBalanceUpdateModalOpen(true)
   }
@@ -281,6 +294,76 @@ export default function StockAccountDetailView({
       console.error('Batch delete error:', error)
       showError(t('error.batch.delete.failed'), t('error.network'))
     }
+  }
+
+  // 贷款合约相关处理函数
+  const handleCreateLoanContract = async () => {
+    // 检查是否已有贷款合约（一个账户最多只能有一个贷款合约）
+    try {
+      const response = await fetch(`/api/accounts/${account.id}/loan-contracts`)
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data?.loanContracts?.length > 0) {
+          showError(
+            t('loan.contract.limit.title'),
+            t('loan.contract.limit.message')
+          )
+          return
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check existing loan contracts:', error)
+    }
+
+    setEditingLoanContract(null)
+    setIsLoanModalOpen(true)
+  }
+
+  const handleEditLoanContract = (contract: LoanContract) => {
+    setEditingLoanContract(contract)
+    setIsLoanModalOpen(true)
+  }
+
+  const handleSaveLoanContract = async (contractData: LoanContractFormData) => {
+    try {
+      const url = editingLoanContract
+        ? `/api/loan-contracts/${editingLoanContract.id}`
+        : '/api/loan-contracts'
+
+      const method = editingLoanContract ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contractData),
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || '保存贷款合约失败')
+      }
+
+      showSuccess(
+        editingLoanContract
+          ? t('loan.contract.updated')
+          : t('loan.contract.created'),
+        editingLoanContract ? '贷款合约已更新' : '贷款合约已创建'
+      )
+
+      // 刷新贷款合约列表
+      setLoanContractsKey(prev => prev + 1)
+    } catch (error) {
+      console.error('Failed to save loan contract:', error)
+      showError('保存失败', error instanceof Error ? error.message : '未知错误')
+      throw error // 重新抛出错误，让模态框处理
+    }
+  }
+
+  const handleDeleteLoanContract = (_contractId: string) => {
+    // 刷新贷款合约列表
+    setLoanContractsKey(prev => prev + 1)
+    showSuccess('删除成功', '贷款合约已删除')
   }
 
   // 使用专业的余额计算服务，计算截止至当前日期的余额
@@ -445,7 +528,7 @@ export default function StockAccountDetailView({
               transactions: account.transactions || [],
             }}
             balance={balance}
-            currencySymbol={currencySymbol}
+            currencyCode={account.currency?.code || 'USD'}
           />
         )}
       </div>
@@ -457,13 +540,23 @@ export default function StockAccountDetailView({
           account={{
             ...account,
             type: account.category.type || 'ASSET',
+            currency: account.currency ||
+              user.settings?.baseCurrency || {
+                id: 'default-usd-for-account-prop',
+                code: 'USD',
+                symbol: '$',
+                name: 'US Dollar',
+                decimalPlaces: 2,
+              },
           }}
           displayCurrency={
             account.currency ||
             user.settings?.baseCurrency || {
-              code: 'CNY',
-              symbol: '¥',
-              name: '人民币',
+              id: 'default-display-usd',
+              code: 'USD',
+              symbol: '$',
+              name: 'US Dollar',
+              decimalPlaces: 2,
             }
           }
           height={400}
@@ -473,15 +566,29 @@ export default function StockAccountDetailView({
         />
       </div>
 
-      {/* 余额变化记录 */}
+      {/* 贷款合约卡片 - 仅负债账户显示 */}
+      {account.category.type === 'LIABILITY' && (
+        <LoanContractsList
+          key={loanContractsKey}
+          accountId={account.id}
+          onEdit={handleEditLoanContract}
+          onDelete={handleDeleteLoanContract}
+          onCreateNew={handleCreateLoanContract}
+          currencyCode={
+            account.currency?.code || user.settings?.baseCurrency?.code || 'CNY'
+          }
+        />
+      )}
+
+      {/* 余额历史记录 */}
       <div className='bg-white dark:bg-gray-800 shadow rounded-lg'>
         <div className='px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700'>
           <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0'>
             <div>
-              <h2 className='text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100'>
+              <h3 className='text-lg font-medium text-gray-900 dark:text-gray-100'>
                 {t('account.balance.history')}
-              </h2>
-              <p className='text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1'>
+              </h3>
+              <p className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
                 {t('account.balance.history.description')}
               </p>
             </div>
@@ -550,7 +657,10 @@ export default function StockAccountDetailView({
             ? {
                 id: editingTransaction.id,
                 amount: editingTransaction.amount,
-                currencyCode: editingTransaction.currencyCode,
+                currencyCode:
+                  editingTransaction.currency?.code ||
+                  account.currency?.code ||
+                  'USD',
                 date:
                   editingTransaction.date instanceof Date
                     ? editingTransaction.date.toISOString().split('T')[0]
@@ -586,6 +696,21 @@ export default function StockAccountDetailView({
         }}
         onCancel={() => setShowClearConfirm(false)}
         variant='warning'
+      />
+
+      {/* 贷款合约模态框 */}
+      <LoanContractModal
+        isOpen={isLoanModalOpen}
+        onClose={() => {
+          setIsLoanModalOpen(false)
+          setEditingLoanContract(null)
+        }}
+        onSave={handleSaveLoanContract}
+        accountId={account.id}
+        accountCurrency={
+          account.currency?.code || user.settings?.baseCurrency?.code || 'CNY'
+        }
+        editingContract={editingLoanContract}
       />
     </DetailPageLayout>
   )

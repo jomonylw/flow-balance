@@ -1,7 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
-import { formatCurrency } from '@/lib/utils/format'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import type { SimpleCurrency, FireParams } from '@/types/core'
 
 interface NorthStarMetricsProps {
@@ -14,6 +14,7 @@ export default function NorthStarMetrics({
   currency,
 }: NorthStarMetricsProps) {
   const { t } = useLanguage()
+  const { formatCurrency } = useUserCurrencyFormatter()
 
   // FIRE 计算逻辑
   const fireTargetAmount =

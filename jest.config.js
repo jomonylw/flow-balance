@@ -11,7 +11,7 @@ const customJestConfig = {
   testEnvironment: 'jsdom',
 
   // 模块路径映射
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@/components/(.*)$': '<rootDir>/src/components/$1',
     '^@/lib/(.*)$': '<rootDir>/src/lib/$1',

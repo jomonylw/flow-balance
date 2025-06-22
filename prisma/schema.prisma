@@ -30,6 +30,10 @@ model User {
   transactionTemplates TransactionTemplate[] // 用户的交易模板
   tags             Tag[]
   exchangeRates    ExchangeRate[]
+  recurringTransactions RecurringTransaction[] // 用户的定期交易
+  recurringProcessingLogs RecurringProcessingLog[] // 定期交易处理日志
+  loanContracts    LoanContract[] // 用户的贷款合约
+  loanPayments     LoanPayment[]  // 用户的贷款还款记录
 
   @@map("users")
 }
@@ -38,30 +42,37 @@ model User {
 model UserSettings {
   id               String @id @default(cuid())
   userId           String @unique
-  baseCurrencyCode String? // 本位币代码，可为空（初始设置时）
+  baseCurrencyId   String? // 本位币ID，可为空（初始设置时）
   dateFormat       String @default("YYYY-MM-DD")
   theme            String @default("system") // 主题设置：light, dark, system
   language         String @default("zh") // 语言设置：zh, en
   // FIRE 设置
   fireEnabled      Boolean @default(false) // 是否显示 FIRE 面板
   fireSWR          Float @default(4.0) // 安全提取率 (Safe Withdrawal Rate)，默认 4.0%
+  // 定期交易同步设置
+  lastRecurringSync DateTime? // 最后一次定期交易同步时间
+  recurringProcessingStatus String @default("idle") // 定期交易处理状态：idle, processing, completed, failed
+  // 未来数据生成设置
+  futureDataDays Int @default(7) // 提前生成未来数据的天数，0表示不生成未来数据，默认7天
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   // 关联关系
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  baseCurrency Currency? @relation(fields: [baseCurrencyCode], references: [code])
+  baseCurrency Currency? @relation(fields: [baseCurrencyId], references: [id])
 
   @@map("user_settings")
 }
 
-// 币种表 - 全局币种信息
+// 币种表 - 支持用户级别的货币隔离
 model Currency {
-  code      String  @id // 例如: USD, EUR, CNY
-  name      String  // 例如: US Dollar, Euro, Chinese Yuan
-  symbol    String  // 例如: $, €, ¥
-  isCustom  Boolean @default(false) // 是否为用户自定义货币
-  createdBy String? // 创建者用户ID（仅自定义货币）
+  id            String  @id @default(cuid()) // 使用 id 作为主键
+  createdBy     String? // null = 全局货币, 非null = 用户自定义货币
+  code          String  // 例如: USD, EUR, CNY
+  name          String  // 例如: US Dollar, Euro, Chinese Yuan
+  symbol        String  // 例如: $, €, ¥
+  decimalPlaces Int     @default(2) // 货币小数位数（0-10），默认2位
+  isCustom      Boolean @default(false) // 是否为用户自定义货币
 
   // 关联关系
   userSettings      UserSettings[]
@@ -72,48 +83,56 @@ model Currency {
   fromExchangeRates ExchangeRate[] @relation("FromCurrency")
   toExchangeRates   ExchangeRate[] @relation("ToCurrency")
   creator           User?          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  recurringTransactions RecurringTransaction[] // 使用此货币的定期交易
+  loanContracts     LoanContract[] // 使用此货币的贷款合约
 
+  // 复合唯一约束：[createdBy, code] - 同一用户不能创建相同代码的货币
+  @@unique([createdBy, code])
   @@map("currencies")
 }
 
 // 用户可用货币表 - 管理用户可以使用的货币
 model UserCurrency {
-  id           String   @id @default(cuid())
-  userId       String
-  currencyCode String
-  isActive     Boolean  @default(true) // 是否启用
-  order        Int      @default(0) // 显示顺序
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String
+  currencyId String
+  isActive   Boolean  @default(true) // 是否启用
+  order      Int      @default(0) // 显示顺序
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // 关联关系
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  currency Currency @relation(fields: [currencyCode], references: [code])
+  currency Currency @relation(fields: [currencyId], references: [id])
 
   // 确保同一用户的同一货币只有一条记录
-  @@unique([userId, currencyCode])
+  @@unique([userId, currencyId])
   @@map("user_currencies")
 }
 
 // 汇率表 - 用户自定义汇率管理
 model ExchangeRate {
-  id           String   @id @default(cuid())
-  userId       String
-  fromCurrency String   // 源货币代码
-  toCurrency   String   // 目标货币代码
-  rate         Decimal  // 汇率，使用 Decimal 类型确保精度
-  effectiveDate DateTime // 汇率生效日期
-  notes        String?  // 备注
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  userId         String
+  fromCurrencyId String   // 源货币ID
+  toCurrencyId   String   // 目标货币ID
+  rate           Decimal  // 汇率，使用 Decimal 类型确保精度
+  effectiveDate  DateTime // 汇率生效日期
+  type           String   @default("USER") // 汇率类型：USER（用户输入）, AUTO（自动生成）
+  sourceRateId   String?  // 源汇率ID（用于自动生成的汇率）
+  notes          String?  // 备注
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // 关联关系
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fromCurrencyRef Currency @relation("FromCurrency", fields: [fromCurrency], references: [code])
-  toCurrencyRef   Currency @relation("ToCurrency", fields: [toCurrency], references: [code])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromCurrencyRef Currency @relation("FromCurrency", fields: [fromCurrencyId], references: [id])
+  toCurrencyRef   Currency @relation("ToCurrency", fields: [toCurrencyId], references: [id])
+  sourceRate      ExchangeRate? @relation("SourceRate", fields: [sourceRateId], references: [id], onDelete: Cascade)
+  derivedRates    ExchangeRate[] @relation("SourceRate") // 由此汇率派生的汇率
 
   // 确保同一用户的同一货币对在同一日期只有一个汇率
-  @@unique([userId, fromCurrency, toCurrency, effectiveDate])
+  @@unique([userId, fromCurrencyId, toCurrencyId, effectiveDate])
   @@map("exchange_rates")
 }
 
@@ -136,6 +155,7 @@ model Category {
   transactions Transaction[]
   transactionTemplates TransactionTemplate[] // 使用此分类的交易模板
 
+
   @@unique([userId, name, parentId]) // 同一用户下同一父分类中的分类名不能重复
   @@map("categories")
 }
@@ -152,22 +172,25 @@ enum AccountType {
 
 // 账户表 - 用户的各种账户
 model Account {
-  id           String   @id @default(cuid())
-  userId       String
-  categoryId   String
-  currencyCode String   // 账户货币，每个账户必须指定货币，该账户的所有交易都必须使用此货币
-  name         String
-  description  String?
-  color        String?  // 账户颜色，用于图表展示等
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  categoryId  String
+  currencyId  String   // 账户货币，每个账户必须指定货币，该账户的所有交易都必须使用此货币
+  name        String
+  description String?
+  color       String?  // 账户颜色，用于图表展示等
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // 关联关系
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   category     Category      @relation(fields: [categoryId], references: [id])
-  currency     Currency      @relation(fields: [currencyCode], references: [code])
+  currency     Currency      @relation(fields: [currencyId], references: [id])
   transactions Transaction[]
   transactionTemplates TransactionTemplate[] // 使用此账户的交易模板
+  recurringTransactions RecurringTransaction[] // 使用此账户的定期交易
+  loanContracts LoanContract[] // 此账户的贷款合约
+  paymentLoanContracts LoanContract[] @relation("LoanPaymentAccount") // 作为还款账户的贷款合约
 
   @@unique([userId, name]) // 同一用户下账户名不能重复
   @@map("accounts")
@@ -179,12 +202,15 @@ model Transaction {
   userId       String
   accountId    String
   categoryId   String
-  currencyCode String
+  currencyId   String
   type         TransactionType   // 收入、支出、转账
   amount       Decimal           // 金额，使用 Decimal 类型确保精度
   description  String
   notes        String?           // 备注
   date         DateTime          // 交易日期
+  recurringTransactionId String? // 关联的定期交易ID
+  loanContractId String?         // 关联的贷款合约ID
+  loanPaymentId String?          // 关联的贷款还款记录ID
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
@@ -192,8 +218,15 @@ model Transaction {
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   account      Account           @relation(fields: [accountId], references: [id])
   category     Category          @relation(fields: [categoryId], references: [id])
-  currency     Currency          @relation(fields: [currencyCode], references: [code])
+  currency     Currency          @relation(fields: [currencyId], references: [id])
   tags         TransactionTag[]  // 多对多关系
+  recurringTransaction RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id], onDelete: SetNull)
+  loanContract LoanContract?     @relation(fields: [loanContractId], references: [id], onDelete: SetNull)
+  loanPayment  LoanPayment?      @relation(fields: [loanPaymentId], references: [id], onDelete: SetNull)
+  // 贷款还款的特定交易类型关联
+  principalPayments LoanPayment[] @relation("PrincipalTransaction")
+  interestPayments  LoanPayment[] @relation("InterestTransaction")
+  balancePayments   LoanPayment[] @relation("BalanceTransaction")
 
   // 注意：由于Prisma不支持条件唯一约束，我们在应用层实现每天每账户只能有一笔BALANCE记录的逻辑
   @@map("transactions")
@@ -201,24 +234,24 @@ model Transaction {
 
 // 交易模板表 - 用户的交易模板
 model TransactionTemplate {
-  id           String          @id @default(cuid())
-  userId       String
-  name         String          // 模板名称
-  accountId    String
-  categoryId   String
-  currencyCode String
-  type         TransactionType // 收入、支出
-  description  String
-  notes        String?         // 备注
-  tagIds       Json?           // 标签ID数组，使用JSON类型存储
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  id          String          @id @default(cuid())
+  userId      String
+  name        String          // 模板名称
+  accountId   String
+  categoryId  String
+  currencyId  String
+  type        TransactionType // 收入、支出
+  description String
+  notes       String?         // 备注
+  tagIds      Json?           // 标签ID数组，使用JSON类型存储
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   // 关联关系
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  account      Account         @relation(fields: [accountId], references: [id])
-  category     Category        @relation(fields: [categoryId], references: [id])
-  currency     Currency        @relation(fields: [currencyCode], references: [code])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account  Account  @relation(fields: [accountId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+  currency Currency @relation(fields: [currencyId], references: [id])
 
   // 确保同一用户的模板名称唯一
   @@unique([userId, name])
@@ -263,4 +296,150 @@ model TransactionTag {
 
   @@unique([transactionId, tagId]) // 同一交易不能重复添加同一标签
   @@map("transaction_tags")
+}
+
+// 定期交易表 - 用户的定期交易设置
+model RecurringTransaction {
+  id         String   @id @default(cuid())
+  userId     String
+  accountId  String
+  currencyId String
+  type       TransactionType // 收入、支出（跟随账户类型）
+  amount     Decimal         // 金额
+  description String
+  notes      String?         // 备注
+  tagIds     Json?           // 标签ID数组，参考TransactionTemplate
+
+  // 重复设置
+  frequency    String          // 频率：DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY
+  interval     Int             @default(1) // 间隔：每N个周期
+  dayOfMonth   Int?            // 月中的第几天（月度/季度/年度）
+  dayOfWeek    Int?            // 周中的第几天（周度）
+  monthOfYear  Int?            // 年中的第几月（年度）
+
+  // 时间范围
+  startDate    DateTime        // 开始日期
+  endDate      DateTime?       // 结束日期（可选）
+  nextDate     DateTime        // 下次执行日期
+
+  // 状态控制
+  isActive     Boolean         @default(true) // 是否启用
+  maxOccurrences Int?          // 最大执行次数（可选）
+  currentCount Int             @default(0) // 当前已执行次数
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  // 关联关系
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account      Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  currency     Currency        @relation(fields: [currencyId], references: [id], onDelete: Restrict)
+  transactions Transaction[]   // 生成的交易记录
+
+  @@map("recurring_transactions")
+}
+
+
+
+// 定期交易处理日志表
+model RecurringProcessingLog {
+  id                String    @id @default(cuid())
+  userId            String
+  startTime         DateTime
+  endTime           DateTime?
+  status            String    @default("processing") // processing, completed, failed
+  processedRecurring Int      @default(0)
+  processedLoans    Int       @default(0)
+  failedCount       Int       @default(0)
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // 关联关系
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("recurring_processing_logs")
+}
+
+// 贷款合约表 - 用户的贷款合约信息
+model LoanContract {
+  id         String   @id @default(cuid())
+  userId     String
+  accountId  String   // 贷款账户ID (负债账户)
+  currencyId String
+
+  // 贷款基本信息
+  contractName String   // 合约名称
+  loanAmount   Decimal  // 贷款金额
+  interestRate Decimal  // 年利率（小数形式，如0.05表示5%）
+  totalPeriods Int      // 总期数
+
+  // 还款信息
+  repaymentType String  // 还款类型：EQUAL_PAYMENT, EQUAL_PRINCIPAL, INTEREST_ONLY
+  startDate    DateTime // 贷款开始日期
+  paymentDay   Int      // 每月还款日期（1-31号）
+
+  // 还款账户信息
+  paymentAccountId String? // 还款账户ID (支出类型账户，货币需一致)
+
+  // 交易模板信息
+  transactionDescription String? // 交易描述模板
+  transactionNotes       String? // 交易备注模板
+  transactionTagIds      Json?   // 交易标签ID列表 (JSON格式)
+
+  // 状态信息
+  isActive     Boolean  @default(true) // 是否活跃
+  currentPeriod Int     @default(0) // 当前期数
+  nextPaymentDate DateTime? // 下次还款日期
+
+
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 关联关系
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account      Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  paymentAccount Account? @relation("LoanPaymentAccount", fields: [paymentAccountId], references: [id], onDelete: SetNull)
+  currency     Currency  @relation(fields: [currencyId], references: [id], onDelete: Restrict)
+
+  payments     LoanPayment[] // 还款记录
+  transactions Transaction[] // 相关交易记录
+
+  @@map("loan_contracts")
+}
+
+// 贷款还款记录表
+model LoanPayment {
+  id             String   @id @default(cuid())
+  loanContractId String
+  userId         String
+  period         Int      // 期数
+  paymentDate    DateTime // 还款日期
+
+  principalAmount   Decimal // 本金金额
+  interestAmount    Decimal // 利息金额
+  totalAmount       Decimal // 总金额
+  remainingBalance  Decimal // 剩余余额
+
+  // 关联的交易记录ID
+  principalTransactionId String? // 本金还款交易ID
+  interestTransactionId  String? // 利息支出交易ID
+  balanceTransactionId   String? // 余额调整交易ID
+
+  // 状态和时间戳
+  status        String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  processedAt   DateTime? // 处理时间
+  createdAt     DateTime @default(now())
+
+  // 关联关系
+  loanContract   LoanContract @relation(fields: [loanContractId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  principalTransaction Transaction? @relation("PrincipalTransaction", fields: [principalTransactionId], references: [id], onDelete: SetNull)
+  interestTransaction  Transaction? @relation("InterestTransaction", fields: [interestTransactionId], references: [id], onDelete: SetNull)
+  balanceTransaction   Transaction? @relation("BalanceTransaction", fields: [balanceTransactionId], references: [id], onDelete: SetNull)
+  transactions   Transaction[] // 所有相关交易
+
+  @@unique([loanContractId, period]) // 每个合约的每期只能有一条记录
+  @@map("loan_payments")
 }

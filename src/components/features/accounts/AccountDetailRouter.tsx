@@ -33,7 +33,7 @@ export default function AccountDetailRouter({
   // 转换 account 数据为 Legacy 格式
   const legacyAccount: LegacyAccount = {
     ...account,
-    currencyCode: account.currencyCode,
+    currencyCode: account.currency?.code || 'USD',
     category: {
       id: account.category.id,
       name: account.category.name,
@@ -61,7 +61,8 @@ export default function AccountDetailRouter({
         name: account.name,
         description: account.description,
         color: account.color,
-        currencyCode: account.currencyCode,
+        currencyId: account.currencyId,
+        currencyCode: account.currency?.code || '',
         categoryId: account.categoryId,
         userId: account.userId,
         createdAt: account.createdAt,
@@ -78,11 +79,21 @@ export default function AccountDetailRouter({
             }
           : undefined,
       },
-      category: transaction.category,
+      category: {
+        id: transaction.category.id,
+        name: transaction.category.name,
+        type: transaction.category.type,
+        order: 0, // 默认值
+        userId: transaction.userId,
+        createdAt: new Date(transaction.createdAt),
+        updatedAt: new Date(transaction.updatedAt),
+      },
       currency: {
+        id: transaction.currency.id,
         code: transaction.currency.code,
         name: transaction.currency.name,
         symbol: transaction.currency.symbol,
+        decimalPlaces: transaction.currency.decimalPlaces,
         isCustom: transaction.currency.isCustom,
         createdBy: transaction.currency.createdBy,
       },

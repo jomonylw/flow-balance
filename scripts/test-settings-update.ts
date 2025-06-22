@@ -25,10 +25,21 @@ async function testSettingsUpdate() {
 
     if (!userSettings) {
       console.log('📝 Creating new user settings...')
+
+      // 获取USD货币
+      const usdCurrency = await prisma.currency.findFirst({
+        where: { code: 'USD', createdBy: null },
+      })
+
+      if (!usdCurrency) {
+        console.log('❌ USD currency not found')
+        return
+      }
+
       userSettings = await prisma.userSettings.create({
         data: {
           userId: user.id,
-          baseCurrencyCode: 'USD',
+          baseCurrencyId: usdCurrency.id,
           dateFormat: 'YYYY-MM-DD',
           theme: 'system',
           language: 'zh',
@@ -38,7 +49,7 @@ async function testSettingsUpdate() {
     }
 
     console.log('✅ Current settings:')
-    console.log(`   - Base Currency: ${userSettings.baseCurrencyCode}`)
+    console.log(`   - Base Currency: ${userSettings.baseCurrency?.code}`)
     console.log(`   - Date Format: ${userSettings.dateFormat}`)
     console.log(`   - Theme: ${userSettings.theme}`)
     console.log(`   - Language: ${userSettings.language}`)
@@ -56,7 +67,7 @@ async function testSettingsUpdate() {
     })
 
     console.log('✅ Updated settings:')
-    console.log(`   - Base Currency: ${updatedSettings.baseCurrencyCode}`)
+    console.log(`   - Base Currency: ${updatedSettings.baseCurrency?.code}`)
     console.log(`   - Date Format: ${updatedSettings.dateFormat}`)
     console.log(`   - Theme: ${updatedSettings.theme}`)
     console.log(`   - Language: ${updatedSettings.language}`)

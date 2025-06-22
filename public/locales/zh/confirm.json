@@ -6,5 +6,6 @@
   "confirm.clear.data": "这将永久删除所有相关数据。",
   "confirm.cannot.undo": "此操作无法撤销。",
   "confirm.delete.account.message": "确定要删除账户“{{name}}”吗？此操作不可撤销。",
-  "confirm.clear.balance.records": "确定要清空所有余额记录吗？此操作不可撤销。"
+  "confirm.clear.balance.records": "确定要清空所有余额记录吗？此操作不可撤销。",
+  "confirm.clear.transactions": "确定要清空所有交易记录吗？此操作不可撤销。"
 }

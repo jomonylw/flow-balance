@@ -87,7 +87,11 @@ export async function GET(
       select: {
         id: true,
         name: true,
-        currencyCode: true,
+        currency: {
+          select: {
+            code: true,
+          },
+        },
         category: {
           select: {
             name: true,

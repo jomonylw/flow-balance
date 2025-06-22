@@ -2,84 +2,19 @@
 
 import { useState } from 'react'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
+import CircularCheckbox from '@/components/ui/forms/CircularCheckbox'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
-import { Transaction } from '@/types/business/transaction'
-
-// 自定义圆形复选框组件
-interface CircularCheckboxProps {
-  checked: boolean
-  onChange: () => void
-  className?: string
-  size?: 'sm' | 'md'
-}
-
-function CircularCheckbox({
-  checked,
-  onChange,
-  className = '',
-  size = 'md',
-}: CircularCheckboxProps) {
-  const sizeClasses = {
-    sm: 'h-5 w-5', // 移动端使用更小尺寸
-    md: 'h-6 w-6', // 桌面端使用更大尺寸
-  }
-
-  const iconSizeClasses = {
-    sm: 'h-5 w-5',
-    md: 'h-4 w-4',
-  }
-
-  return (
-    <button
-      type='button'
-      onClick={onChange}
-      className={`
-        ${sizeClasses[size]} rounded-full border-2 transition-all duration-200 ease-out
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800
-        hover:scale-105 active:scale-95 transform relative
-        ${
-          checked
-            ? 'bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500'
-            : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
-        }
-        ${className}
-      `}
-      aria-checked={checked}
-      role='checkbox'
-    >
-      {/* 选中状态的勾选图标 */}
-      {checked && (
-        <div className='absolute inset-0 flex items-center justify-center'>
-          <svg
-            className={`${iconSizeClasses[size]} text-white`}
-            fill='currentColor'
-            viewBox='0 0 20 20'
-          >
-            <path
-              fillRule='evenodd'
-              d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-              clipRule='evenodd'
-            />
-          </svg>
-        </div>
-      )}
-
-      {/* 未选中状态的内圈 */}
-      {!checked && (
-        <div className='absolute inset-1 rounded-full bg-gray-50 dark:bg-gray-600 opacity-40' />
-      )}
-    </button>
-  )
-}
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { ExtendedTransaction } from '@/types/core'
 
 interface TransactionListProps {
-  transactions: Transaction[]
-  onEdit: (transaction: Transaction) => void
+  transactions: ExtendedTransaction[]
+  onEdit: (transaction: ExtendedTransaction) => void
   onDelete?: (transactionId: string) => void
   onBatchEdit?: (transactionIds: string[]) => void // 批量编辑回调
   onBatchDelete?: (transactionIds: string[]) => void // 批量删除回调
-  currencySymbol: string
+  currencySymbol?: string // 保持向后兼容，但不再使用
   showAccount?: boolean
   readOnly?: boolean
 
@@ -102,7 +37,7 @@ export default function TransactionList({
   onDelete,
   // onBatchEdit,
   onBatchDelete,
-  currencySymbol,
+  currencySymbol: _currencySymbol, // 保持向后兼容但不使用
   showAccount = true,
   readOnly = false,
 
@@ -113,6 +48,8 @@ export default function TransactionList({
 }: TransactionListProps) {
   const { t } = useLanguage()
   const { tags: userTags } = useUserData()
+  const { formatCurrency, getUserLocale: _getUserLocale } =
+    useUserCurrencyFormatter()
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(
     new Set()
   )
@@ -128,7 +65,7 @@ export default function TransactionList({
     return userTag?.color
   }
 
-  const getTypeIcon = (transaction: Transaction) => {
+  const getTypeIcon = (transaction: ExtendedTransaction) => {
     const type = transaction.type
 
     switch (type) {
@@ -207,40 +144,36 @@ export default function TransactionList({
     }
   }
 
-  const getAmountDisplay = (transaction: Transaction) => {
-    const amount = Number(transaction.amount).toLocaleString('zh-CN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-    const symbol = transaction.currency.symbol || currencySymbol
+  const getAmountDisplay = (transaction: ExtendedTransaction) => {
+    // 使用统一的货币格式化，基于用户语言设置
+    const formattedAmount = formatCurrency(
+      Number(transaction.amount),
+      transaction.currency.code
+    )
 
     switch (transaction.type) {
       case 'INCOME':
         return (
           <span className='text-green-600 dark:text-green-400 font-medium'>
-            +{symbol}
-            {amount}
+            +{formattedAmount}
           </span>
         )
       case 'EXPENSE':
         return (
           <span className='text-red-600 dark:text-red-400 font-medium'>
-            -{symbol}
-            {amount}
+            -{formattedAmount}
           </span>
         )
       case 'BALANCE':
         return (
           <span className='text-purple-600 dark:text-purple-400 font-medium'>
-            {symbol}
-            {amount}
+            {formattedAmount}
           </span>
         )
       default:
         return (
           <span className='text-gray-600 dark:text-gray-400 font-medium'>
-            {symbol}
-            {amount}
+            {formattedAmount}
           </span>
         )
     }
@@ -258,6 +191,57 @@ export default function TransactionList({
       transactionDate.getDate()
     )
     return normalizedTransactionDate > today
+  }
+
+  // 获取关联类型标签
+  const getRelationshipTags = (transaction: ExtendedTransaction) => {
+    const tags = []
+
+    // 未来交易标签
+    if (isFutureTransaction(transaction.date)) {
+      tags.push({
+        key: 'future',
+        text: t('common.date.future'),
+        className:
+          'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800',
+      })
+    }
+
+    // 定期交易标签
+    if (transaction.recurringTransactionId) {
+      tags.push({
+        key: 'recurring',
+        text: t('transaction.tag.recurring'),
+        className:
+          'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800',
+      })
+    }
+
+    // 贷款合约标签
+    if (transaction.loanContractId) {
+      tags.push({
+        key: 'loan',
+        text: t('transaction.tag.loan'),
+        className:
+          'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800',
+      })
+    }
+
+    // 贷款还款标签
+    if (transaction.loanPaymentId) {
+      // 根据交易类型显示不同标签：EXPENSE 显示"还款"，BALANCE 显示"本金"
+      const isExpenseType = transaction.type === 'EXPENSE'
+      tags.push({
+        key: 'loan-payment',
+        text: isExpenseType
+          ? t('transaction.tag.loan.payment')
+          : t('transaction.tag.loan.principal'),
+        className:
+          'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800',
+      })
+    }
+
+    return tags
   }
 
   const formatDate = (date: string | Date) => {
@@ -351,7 +335,7 @@ export default function TransactionList({
   }
 
   // 处理单个删除
-  const handleSingleDelete = (transaction: Transaction) => {
+  const handleSingleDelete = (transaction: ExtendedTransaction) => {
     setDeletingTransactionId(transaction.id)
     setShowSingleDeleteConfirm(true)
   }
@@ -496,11 +480,15 @@ export default function TransactionList({
                         <p className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
                           {transaction.description}
                         </p>
-                        {isFutureTransaction(transaction.date) && (
-                          <span className='inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800'>
-                            {t('common.date.future')}
+                        {/* 关联类型标签 */}
+                        {getRelationshipTags(transaction).map(tag => (
+                          <span
+                            key={tag.key}
+                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${tag.className}`}
+                          >
+                            {tag.text}
                           </span>
-                        )}
+                        ))}
                       </div>
                       <div className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
                         <div>{transaction.category.name}</div>
@@ -600,11 +588,15 @@ export default function TransactionList({
                       <p className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
                         {transaction.description}
                       </p>
-                      {isFutureTransaction(transaction.date) && (
-                        <span className='inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800'>
-                          {t('common.date.future')}
+                      {/* 关联类型标签 */}
+                      {getRelationshipTags(transaction).map(tag => (
+                        <span
+                          key={tag.key}
+                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${tag.className}`}
+                        >
+                          {tag.text}
                         </span>
-                      )}
+                      ))}
                     </div>
                     <div className='flex items-center space-x-2 mt-1 text-xs text-gray-500 dark:text-gray-400'>
                       <span>{transaction.category.name}</span>

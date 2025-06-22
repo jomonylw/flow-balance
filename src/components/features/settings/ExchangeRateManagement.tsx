@@ -63,18 +63,9 @@ export default function ExchangeRateManagement({
     fetchData()
   }, [fetchData])
 
-  const handleRateCreated = (newRate: ExchangeRateData) => {
-    setExchangeRates(prev => {
-      // 如果是更新现有汇率，替换它；否则添加新汇率
-      const existingIndex = prev.findIndex(rate => rate.id === newRate.id)
-      if (existingIndex >= 0) {
-        const updated = [...prev]
-        updated[existingIndex] = newRate
-        return updated
-      } else {
-        return [...prev, newRate]
-      }
-    })
+  const handleRateCreated = async (newRate: ExchangeRateData) => {
+    // 重新获取所有汇率数据，包括新生成的自动汇率
+    await fetchData()
 
     // 从缺失列表中移除
     setMissingRates(prev =>
@@ -91,10 +82,11 @@ export default function ExchangeRateManagement({
     setEditingRate(null)
   }
 
-  const handleRateDeleted = (deletedRateId: string) => {
+  const handleRateDeleted = async (deletedRateId: string) => {
     const deletedRate = exchangeRates.find(rate => rate.id === deletedRateId)
 
-    setExchangeRates(prev => prev.filter(rate => rate.id !== deletedRateId))
+    // 重新获取所有汇率数据，包括重新生成的自动汇率
+    await fetchData()
 
     // 如果删除的汇率对应某个货币对，将其重新添加到缺失列表
     if (deletedRate) {
@@ -126,6 +118,8 @@ export default function ExchangeRateManagement({
   const handleAddMissingRate = (missing: MissingRateInfo) => {
     setEditingRate({
       id: '',
+      fromCurrencyId: missing.fromCurrencyInfo.id,
+      toCurrencyId: missing.toCurrencyInfo.id,
       fromCurrency: missing.fromCurrency,
       toCurrency: missing.toCurrency,
       rate: 1,

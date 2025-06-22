@@ -304,6 +304,7 @@ export default function FlowCategoryDetailView({
       color: undefined,
       userId: user.id,
       categoryId: transaction.category.id,
+      currencyId: transaction.currency.id,
       currencyCode: transaction.currency.code,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -445,11 +446,13 @@ export default function FlowCategoryDetailView({
   }, [chartData, timeRange])
 
   const baseCurrency = user.settings?.baseCurrency || {
-    code: 'CNY',
-    symbol: '¥',
-    name: '人民币',
+    id: 'default-usd',
+    code: 'USD',
+    symbol: '$',
+    name: 'US Dollar',
+    decimalPlaces: 2,
   }
-  const currencySymbol = baseCurrency.symbol
+  const currencyCode = baseCurrency.code
 
   return (
     <DetailPageLayout
@@ -509,7 +512,11 @@ export default function FlowCategoryDetailView({
                   date: t.date,
                   amount: t.amount,
                   notes: t.notes || undefined,
-                  currency: t.currency,
+                  currency: {
+                    ...t.currency,
+                    id: 'default-id',
+                    decimalPlaces: 2,
+                  },
                   tags: t.tags.map(tt => ({
                     id: tt.tag.id,
                     name: tt.tag.name,
@@ -517,7 +524,7 @@ export default function FlowCategoryDetailView({
                 })
               ),
             }}
-            currencySymbol={currencySymbol}
+            currencyCode={currencyCode}
             summaryData={summaryData}
             baseCurrency={baseCurrency}
           />
@@ -741,7 +748,7 @@ export default function FlowCategoryDetailView({
             onEdit={handleEditTransaction}
             onDelete={handleDeleteTransaction}
             onBatchDelete={handleBatchDelete}
-            currencySymbol={currencySymbol}
+            currencySymbol={baseCurrency.symbol}
             showAccount={true}
             readOnly={false}
             pagination={{

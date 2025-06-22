@@ -1,43 +1,43 @@
 {
-  "timestamp": "2025-06-18T01:42:40.549Z",
+  "timestamp": "2025-06-22T05:47:40.182Z",
   "summary": {
-    "totalFiles": 356,
-    "duplicateTypes": 3,
+    "totalFiles": 423,
+    "duplicateTypes": 8,
     "coreTypeStats": [
       {
         "name": "User",
         "definitions": 1,
-        "imports": 11
+        "imports": 10
       },
       {
         "name": "Account",
-        "definitions": 1,
-        "imports": 8
+        "definitions": 2,
+        "imports": 4
       },
       {
         "name": "Transaction",
         "definitions": 1,
-        "imports": 11
+        "imports": 6
       },
       {
         "name": "Category",
         "definitions": 1,
-        "imports": 8
+        "imports": 4
       },
       {
         "name": "Currency",
-        "definitions": 2,
-        "imports": 17
+        "definitions": 1,
+        "imports": 11
       },
       {
         "name": "Tag",
-        "definitions": 2,
-        "imports": 3
+        "definitions": 1,
+        "imports": 4
       },
       {
         "name": "UserSettings",
-        "definitions": 2,
-        "imports": 2
+        "definitions": 1,
+        "imports": 3
       },
       {
         "name": "ExchangeRate",
@@ -58,49 +58,134 @@
   },
   "duplicates": [
     {
-      "typeName": "UserSettings",
-      "count": 2,
+      "typeName": "PrismaTransaction",
+      "count": 3,
       "locations": [
         {
-          "file": "src/lib/validation/schemas.ts",
-          "line": 265,
+          "file": "src/app/categories/[id]/page.tsx",
+          "line": 15,
           "type": "type"
         },
         {
+          "file": "src/lib/services/duplicate-check.service.ts",
+          "line": 9,
+          "type": "type"
+        },
+        {
+          "file": "src/lib/services/loan-contract.service.ts",
+          "line": 13,
+          "type": "type"
+        }
+      ]
+    },
+    {
+      "typeName": "DashboardSummaryResponse",
+      "count": 2,
+      "locations": [
+        {
+          "file": "src/app/debug-api/page.tsx",
+          "line": 5,
+          "type": "interface"
+        },
+        {
+          "file": "src/types/api/index.ts",
+          "line": 276,
+          "type": "type"
+        }
+      ]
+    },
+    {
+      "typeName": "Account",
+      "count": 2,
+      "locations": [
+        {
+          "file": "src/app/dev/create-test-recurring/page.tsx",
+          "line": 5,
+          "type": "interface"
+        },
+        {
           "file": "src/types/core/index.ts",
-          "line": 21,
+          "line": 95,
           "type": "interface"
         }
       ]
     },
     {
-      "typeName": "Currency",
+      "typeName": "AuthState",
       "count": 2,
       "locations": [
         {
-          "file": "src/lib/validation/schemas.ts",
-          "line": 266,
-          "type": "type"
+          "file": "src/components/auth/AuthGuard.tsx",
+          "line": 11,
+          "type": "interface"
         },
         {
-          "file": "src/types/core/index.ts",
-          "line": 34,
+          "file": "src/contexts/providers/AuthContext.tsx",
+          "line": 15,
           "type": "interface"
         }
       ]
     },
     {
-      "typeName": "Tag",
+      "typeName": "CategoryTransaction",
       "count": 2,
       "locations": [
         {
-          "file": "src/lib/validation/schemas.ts",
-          "line": 267,
+          "file": "src/components/features/categories/FlowCategoryDetailView.tsx",
+          "line": 36,
+          "type": "interface"
+        },
+        {
+          "file": "src/components/features/categories/StockCategoryDetailView.tsx",
+          "line": 31,
+          "type": "interface"
+        }
+      ]
+    },
+    {
+      "typeName": "FlowCategory",
+      "count": 2,
+      "locations": [
+        {
+          "file": "src/components/features/categories/FlowCategorySummaryCard.tsx",
+          "line": 9,
+          "type": "interface"
+        },
+        {
+          "file": "src/components/features/categories/types.ts",
+          "line": 71,
+          "type": "type"
+        }
+      ]
+    },
+    {
+      "typeName": "StockCategory",
+      "count": 2,
+      "locations": [
+        {
+          "file": "src/components/features/categories/StockCategorySummaryCard.tsx",
+          "line": 9,
+          "type": "interface"
+        },
+        {
+          "file": "src/components/features/categories/types.ts",
+          "line": 68,
+          "type": "type"
+        }
+      ]
+    },
+    {
+      "typeName": "FlowAccount",
+      "count": 2,
+      "locations": [
+        {
+          "file": "src/components/features/categories/types.ts",
+          "line": 77,
           "type": "type"
         },
         {
-          "file": "src/types/core/index.ts",
-          "line": 56,
+          "file": "src/components/features/charts/FlowMonthlySummaryChart.tsx",
+          "line": 13,
           "type": "interface"
         }
       ]

@@ -1,7 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
-import { formatCurrency } from '@/lib/utils/format'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import type { SimpleCurrency } from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
@@ -24,6 +24,7 @@ export default function RealitySnapshot({
   onCalibrate: _onCalibrate,
 }: RealitySnapshotProps) {
   const { t } = useLanguage()
+  const { formatCurrency } = useUserCurrencyFormatter()
 
   const handleCalibrate = (param: string) => {
     // 滚动到对应的控制面板参数

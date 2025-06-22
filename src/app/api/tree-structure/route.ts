@@ -41,6 +41,11 @@ export async function GET() {
               type: true,
             },
           },
+          currency: {
+            select: {
+              code: true,
+            },
+          },
         },
         orderBy: {
           name: 'asc',
@@ -85,7 +90,7 @@ export async function GET() {
           name: account.name,
           description: account.description,
           color: account.color,
-          currencyCode: account.currencyCode,
+          currencyCode: account.currency.code,
           categoryId: account.categoryId,
           category: account.category,
         }

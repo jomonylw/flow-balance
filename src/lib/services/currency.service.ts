@@ -48,12 +48,39 @@ export async function getUserExchangeRate(
 
     const targetDate = asOfDate || new Date()
 
+    // 首先查找货币 ID
+    const fromCurrencyRecord = await prisma.currency.findFirst({
+      where: {
+        code: fromCurrency,
+        OR: [
+          { createdBy: userId }, // 用户自定义货币
+          { createdBy: null }, // 全局货币
+        ],
+      },
+      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+    })
+
+    const toCurrencyRecord = await prisma.currency.findFirst({
+      where: {
+        code: toCurrency,
+        OR: [
+          { createdBy: userId }, // 用户自定义货币
+          { createdBy: null }, // 全局货币
+        ],
+      },
+      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+    })
+
+    if (!fromCurrencyRecord || !toCurrencyRecord) {
+      return null
+    }
+
     // 查找最近的有效汇率
     const exchangeRate = await prisma.exchangeRate.findFirst({
       where: {
         userId,
-        fromCurrency,
-        toCurrency,
+        fromCurrencyId: fromCurrencyRecord.id,
+        toCurrencyId: toCurrencyRecord.id,
         effectiveDate: {
           lte: targetDate,
         },
@@ -69,8 +96,8 @@ export async function getUserExchangeRate(
 
     return {
       id: exchangeRate.id,
-      fromCurrency: exchangeRate.fromCurrency,
-      toCurrency: exchangeRate.toCurrency,
+      fromCurrency,
+      toCurrency,
       rate: parseFloat(exchangeRate.rate.toString()),
       effectiveDate: exchangeRate.effectiveDate,
       notes: exchangeRate.notes || undefined,
@@ -190,34 +217,46 @@ export async function getUserCurrencies(userId: string): Promise<string[]> {
         userId,
         isActive: true,
       },
-      select: { currencyCode: true },
+      include: {
+        currency: {
+          select: { code: true },
+        },
+      },
     })
 
     if (userCurrencies.length > 0) {
-      return userCurrencies.map(uc => uc.currencyCode)
+      return userCurrencies.map(uc => uc.currency.code)
     }
 
     // 如果用户没有设置可用货币，则回退到从交易记录中获取
     const transactions = await prisma.transaction.findMany({
       where: { userId },
-      select: { currencyCode: true },
-      distinct: ['currencyCode'],
+      select: {
+        currency: {
+          select: { code: true },
+        },
+      },
+      distinct: ['currencyId'],
     })
 
     // 获取用户的本位币
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId },
-      select: { baseCurrencyCode: true },
+      include: {
+        baseCurrency: {
+          select: { code: true },
+        },
+      },
     })
 
     const currencyCodes = new Set<string>()
 
     // 添加交易中的货币
-    transactions.forEach(t => currencyCodes.add(t.currencyCode))
+    transactions.forEach(t => currencyCodes.add(t.currency.code))
 
     // 添加本位币
-    if (userSettings?.baseCurrencyCode) {
-      currencyCodes.add(userSettings.baseCurrencyCode)
+    if (userSettings?.baseCurrency?.code) {
+      currencyCodes.add(userSettings.baseCurrency.code)
     }
 
     return Array.from(currencyCodes)
@@ -276,6 +315,8 @@ export function formatCurrencyDisplay(
   originalAmount?: number,
   originalCurrency?: { code: string; symbol: string }
 ): string {
+  // 注意：这个函数已被弃用，请使用 useUserCurrencyFormatter Hook
+  // 这里保留硬编码的 'zh-CN' 是为了向后兼容，但建议迁移到新的Hook
   const formattedAmount = `${currency.symbol}${amount.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

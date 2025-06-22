@@ -21,12 +21,12 @@ export async function GET(_request: NextRequest) {
     const currencies = await prisma.currency.findMany({
       where: {
         OR: [
-          { isCustom: false }, // 全局货币
-          { isCustom: true, createdBy: user.id }, // 用户的自定义货币
+          { createdBy: null }, // 全局货币
+          { createdBy: user.id }, // 用户的自定义货币
         ],
       },
       orderBy: [
-        { isCustom: 'asc' }, // 全局货币在前
+        { createdBy: 'asc' }, // 全局货币在前（null 值排在前面）
         { code: 'asc' },
       ],
     })
@@ -37,15 +37,15 @@ export async function GET(_request: NextRequest) {
         userId: user.id,
         isActive: true,
       },
-      select: { currencyCode: true },
+      select: { currencyId: true },
     })
 
-    const userCurrencyCodes = new Set(userCurrencies.map(uc => uc.currencyCode))
+    const userCurrencyIds = new Set(userCurrencies.map(uc => uc.currencyId))
 
     // 标记哪些货币已被用户选择
     const currenciesWithStatus = currencies.map(currency => ({
       ...currency,
-      isSelected: userCurrencyCodes.has(currency.code),
+      isSelected: userCurrencyIds.has(currency.id),
     }))
 
     return successResponse({

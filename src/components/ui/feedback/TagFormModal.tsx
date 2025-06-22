@@ -15,6 +15,7 @@ export default function TagFormModal({
   onClose,
   onSuccess,
   editingTag,
+  zIndex = 'z-50',
 }: TagFormModalProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
@@ -96,6 +97,7 @@ export default function TagFormModal({
       isOpen={isOpen}
       onClose={onClose}
       title={editingTag ? t('tag.edit') : t('tag.add')}
+      zIndex={zIndex}
     >
       <form onSubmit={handleSubmit} className='space-y-4'>
         <InputField

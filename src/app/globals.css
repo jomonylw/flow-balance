@@ -73,6 +73,28 @@
   --color-ring: #3b82f6 !important;
 }
 
+/* Loading Spinner 自定义动画 */
+@keyframes loading-bars {
+  0%,
+  40%,
+  100% {
+    transform: scaleY(0.4);
+  }
+  20% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes loading-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 body {
   background-color: var(--color-background) !important;
   color: var(--color-foreground) !important;

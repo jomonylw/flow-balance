@@ -15,6 +15,7 @@ interface ConfirmationModalProps {
   children?: React.ReactNode
   variant?: 'danger' | 'warning' | 'info'
   icon?: React.ReactNode
+  zIndex?: string
 }
 
 export default function ConfirmationModal({
@@ -29,6 +30,7 @@ export default function ConfirmationModal({
   children,
   variant = 'danger',
   icon,
+  zIndex = 'z-[10000]',
 }: ConfirmationModalProps) {
   const { t } = useLanguage()
   // 根据变体设置默认样式
@@ -110,7 +112,7 @@ export default function ConfirmationModal({
   const displayIcon = icon || getDefaultIcon()
 
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title=''>
+    <Modal isOpen={isOpen} onClose={onCancel} title='' zIndex={zIndex}>
       <div className='text-center'>
         {displayIcon}
 

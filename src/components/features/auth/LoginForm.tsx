@@ -6,17 +6,23 @@ import Link from 'next/link'
 import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 
 export default function LoginForm() {
   const { t } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const {
+    login,
+    error: authError,
+    isLoading: authLoading,
+    clearError,
+  } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isLoading, setIsLoading] = useState(false)
   const [generalError, setGeneralError] = useState('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,6 +37,11 @@ export default function LoginForm() {
     // 清除通用错误
     if (generalError) {
       setGeneralError('')
+    }
+
+    // 清除认证错误
+    if (authError) {
+      clearError()
     }
   }
 
@@ -58,21 +69,13 @@ export default function LoginForm() {
       return
     }
 
-    setIsLoading(true)
     setGeneralError('')
+    clearError()
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
+      const success = await login(formData.email, formData.password)
 
-      const result = await response.json()
-
-      if (result.success) {
+      if (success) {
         // 检查是否需要跳转到初始设置
         const redirect = searchParams.get('redirect')
         if (redirect === 'setup') {
@@ -81,23 +84,18 @@ export default function LoginForm() {
           // 登录成功，重定向到 dashboard
           router.push('/dashboard')
         }
-        router.refresh()
-      } else {
-        setGeneralError(result.error || t('auth.login.failed'))
       }
     } catch (error) {
       console.error('Login error:', error)
       setGeneralError(t('error.network'))
-    } finally {
-      setIsLoading(false)
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className='space-y-6'>
-      {generalError && (
+      {(generalError || authError) && (
         <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded'>
-          {generalError}
+          {generalError || authError}
         </div>
       )}
 
@@ -126,8 +124,8 @@ export default function LoginForm() {
       <AuthButton
         type='submit'
         label={t('auth.login')}
-        isLoading={isLoading}
-        disabled={isLoading}
+        isLoading={authLoading}
+        disabled={authLoading}
       />
 
       <div className='text-center space-y-2'>

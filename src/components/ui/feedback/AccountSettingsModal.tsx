@@ -29,7 +29,7 @@ export default function AccountSettingsModal({
       setName(account.name)
       setDescription(account.description || '')
       setSelectedColor(account.color || COLOR_OPTIONS[0].value)
-      setSelectedCurrency(account.currencyCode)
+      setSelectedCurrency(account.currency?.code || '')
     }
   }, [isOpen, account])
 
@@ -40,7 +40,7 @@ export default function AccountSettingsModal({
         name: name.trim(),
         description: description.trim() || undefined,
         color: selectedColor,
-        currencyCode: selectedCurrency || undefined,
+        currencyId: selectedCurrency || undefined,
       }
 
       await onSave(updates)

@@ -129,10 +129,10 @@ export async function GET(request: NextRequest) {
       include: { baseCurrency: true },
     })
 
-    const baseCurrency = userSettings?.baseCurrency || {
-      code: 'CNY',
-      symbol: '¥',
-      name: '人民币',
+    const baseCurrency = userSettings?.baseCurrency
+
+    if (!baseCurrency) {
+      return errorResponse('请先设置本位币', 400)
     }
 
     // 获取所有符合条件的交易用于统计
@@ -142,17 +142,26 @@ export async function GET(request: NextRequest) {
         type: true,
         amount: true,
         date: true,
-        currencyCode: true,
+        currencyId: true,
+        currency: {
+          select: {
+            code: true,
+          },
+        },
       },
     })
 
-    // 获取所有涉及的货币汇率
-    const currencyCodes = [...new Set(transactions.map(t => t.currencyCode))]
+    // 获取所有涉及的货币ID和代码
+    const currencyIds = [...new Set(transactions.map(t => t.currencyId))]
     const exchangeRates = await prisma.exchangeRate.findMany({
       where: {
         userId: user.id,
-        fromCurrency: { in: currencyCodes },
-        toCurrency: baseCurrency.code,
+        fromCurrencyId: { in: currencyIds },
+        toCurrencyId: baseCurrency.id,
+      },
+      include: {
+        fromCurrencyRef: { select: { code: true } },
+        toCurrencyRef: { select: { code: true } },
       },
       orderBy: { effectiveDate: 'desc' },
     })
@@ -160,7 +169,7 @@ export async function GET(request: NextRequest) {
     // 创建汇率映射
     const rateMap = new Map<string, number>()
     exchangeRates.forEach(rate => {
-      const key = `${rate.fromCurrency}-${rate.toCurrency}`
+      const key = `${rate.fromCurrencyRef.code}-${rate.toCurrencyRef.code}`
       if (!rateMap.has(key)) {
         rateMap.set(key, parseFloat(rate.rate.toString()))
       }
@@ -207,7 +216,7 @@ export async function GET(request: NextRequest) {
       const originalAmount = parseFloat(String(transaction.amount)) || 0
       const amount = convertToBaseCurrency(
         originalAmount,
-        transaction.currencyCode
+        transaction.currency.code
       )
 
       if (transaction.type === 'INCOME') {

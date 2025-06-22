@@ -1,6 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import type { SimpleTransaction, SimpleCurrency } from '@/types/core'
 import type { FlowSummaryData } from '@/types/components'
 
@@ -12,52 +13,21 @@ interface FlowCategory {
   transactions: SimpleTransaction[]
 }
 
-// 货币符号映射函数
-const getCurrencySymbol = (currencyCode: string) => {
-  const symbolMap: Record<string, string> = {
-    CNY: '¥',
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    JPY: '¥',
-    HKD: 'HK$',
-    TWD: 'NT$',
-    KRW: '₩',
-    SGD: 'S$',
-    AUD: 'A$',
-    CAD: 'C$',
-    CHF: 'CHF',
-    SEK: 'kr',
-    NOK: 'kr',
-    DKK: 'kr',
-    RUB: '₽',
-    INR: '₹',
-    BRL: 'R$',
-    MXN: '$',
-    ZAR: 'R',
-    THB: '฿',
-    MYR: 'RM',
-    IDR: 'Rp',
-    PHP: '₱',
-    VND: '₫',
-  }
-  return symbolMap[currencyCode] || currencyCode
-}
-
 interface FlowCategorySummaryCardProps {
   category: FlowCategory
-  currencySymbol: string
+  currencyCode: string
   summaryData?: FlowSummaryData | null
   baseCurrency?: SimpleCurrency
 }
 
 export default function FlowCategorySummaryCard({
   // category,
-  currencySymbol,
+  currencyCode,
   summaryData,
   baseCurrency,
 }: FlowCategorySummaryCardProps) {
   const { t } = useLanguage()
+  const { formatCurrency, getCurrencySymbol } = useUserCurrencyFormatter()
   // const accountType = category.type
 
   // 流量类分类统计（基于月度数据）
@@ -263,11 +233,10 @@ export default function FlowCategorySummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {baseCurrency?.symbol || currencySymbol}
-            {Math.abs(flowStats.thisMonthNet).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(
+              Math.abs(flowStats.thisMonthNet),
+              baseCurrency?.code || currencyCode
+            )}
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
             {flowStats.thisMonthTransactionCount}{' '}
@@ -287,18 +256,16 @@ export default function FlowCategorySummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {baseCurrency?.symbol || currencySymbol}
-            {Math.abs(flowStats.thisYearNet).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(
+              Math.abs(flowStats.thisYearNet),
+              baseCurrency?.code || currencyCode
+            )}
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
             {t('category.monthly.average.flow')}:{' '}
-            {baseCurrency?.symbol || currencySymbol}
-            {Math.abs(flowStats.thisYearMonthlyAverage).toLocaleString(
-              'zh-CN',
-              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            {formatCurrency(
+              Math.abs(flowStats.thisYearMonthlyAverage),
+              baseCurrency?.code || currencyCode
             )}
           </div>
         </div>
@@ -315,18 +282,16 @@ export default function FlowCategorySummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {baseCurrency?.symbol || currencySymbol}
-            {Math.abs(flowStats.lastYearNet).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(
+              Math.abs(flowStats.lastYearNet),
+              baseCurrency?.code || currencyCode
+            )}
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
             {t('category.monthly.average.flow')}:{' '}
-            {baseCurrency?.symbol || currencySymbol}
-            {Math.abs(flowStats.lastYearMonthlyAverage).toLocaleString(
-              'zh-CN',
-              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            {formatCurrency(
+              Math.abs(flowStats.lastYearMonthlyAverage),
+              baseCurrency?.code || currencyCode
             )}
           </div>
         </div>
@@ -357,18 +322,11 @@ export default function FlowCategorySummaryCard({
                           : 'text-red-600 dark:text-red-400'
                       }`}
                     >
-                      {data.symbol}
-                      {Math.abs(data.thisMonth).toLocaleString('zh-CN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatCurrency(Math.abs(data.thisMonth), currencyCode)}
                     </div>
                     <div className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
-                      {t('common.this.year')}: {data.symbol}
-                      {Math.abs(data.thisYear).toLocaleString('zh-CN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {t('common.this.year')}:{' '}
+                      {formatCurrency(Math.abs(data.thisYear), currencyCode)}
                     </div>
                   </div>
                 )

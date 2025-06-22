@@ -63,7 +63,7 @@ export async function GET(_request: NextRequest) {
         typeof transaction.amount === 'number'
           ? transaction.amount
           : parseFloat(transaction.amount.toString())
-      if (transaction.currencyCode === baseCurrency.code) {
+      if (transaction.currency.code === baseCurrency.code) {
         totalExpenses += amount
       } else {
         // 这里应该使用汇率转换，暂时使用1:1

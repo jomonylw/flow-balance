@@ -25,16 +25,15 @@ export async function DELETE(
     const { currencyCode } = await params
 
     // 检查货币是否存在且为用户创建的自定义货币
-    const currency = await prisma.currency.findUnique({
-      where: { code: currencyCode },
+    const currency = await prisma.currency.findFirst({
+      where: {
+        createdBy: user.id,
+        code: currencyCode,
+      },
     })
 
     if (!currency) {
-      return validationErrorResponse('货币不存在')
-    }
-
-    if (!currency.isCustom || currency.createdBy !== user.id) {
-      return validationErrorResponse('只能删除您创建的自定义货币')
+      return validationErrorResponse('货币不存在或您无权删除')
     }
 
     // 检查是否是本位币
@@ -42,7 +41,7 @@ export async function DELETE(
       where: { userId: user.id },
     })
 
-    if (userSettings?.baseCurrencyCode === currencyCode) {
+    if (userSettings?.baseCurrencyId === currency.id) {
       return validationErrorResponse('不能删除本位币，请先更改本位币设置')
     }
 
@@ -50,7 +49,7 @@ export async function DELETE(
     const transactionCount = await prisma.transaction.count({
       where: {
         userId: user.id,
-        currencyCode,
+        currencyId: currency.id,
       },
     })
 
@@ -64,7 +63,7 @@ export async function DELETE(
     const exchangeRateCount = await prisma.exchangeRate.count({
       where: {
         userId: user.id,
-        OR: [{ fromCurrency: currencyCode }, { toCurrency: currencyCode }],
+        OR: [{ fromCurrencyId: currency.id }, { toCurrencyId: currency.id }],
       },
     })
 
@@ -80,13 +79,13 @@ export async function DELETE(
       await tx.userCurrency.deleteMany({
         where: {
           userId: user.id,
-          currencyCode,
+          currencyId: currency.id,
         },
       })
 
       // 删除自定义货币
       await tx.currency.delete({
-        where: { code: currencyCode },
+        where: { id: currency.id },
       })
     })
 
@@ -112,32 +111,47 @@ export async function PUT(
 
     const { currencyCode } = await params
     const body = await request.json()
-    const { name, symbol } = body
+    const { name, symbol, decimalPlaces } = body
 
     // 验证输入
     if (!name || !symbol) {
       return validationErrorResponse('名称和符号都不能为空')
     }
 
+    // 验证小数位数（如果提供）
+    let decimalPlacesValue: number | undefined
+    if (decimalPlaces !== undefined) {
+      decimalPlacesValue = parseInt(decimalPlaces)
+      if (
+        isNaN(decimalPlacesValue) ||
+        decimalPlacesValue < 0 ||
+        decimalPlacesValue > 10
+      ) {
+        return validationErrorResponse('小数位数必须是0-10之间的整数')
+      }
+    }
+
     // 检查货币是否存在且为用户创建的自定义货币
-    const currency = await prisma.currency.findUnique({
-      where: { code: currencyCode },
+    const currency = await prisma.currency.findFirst({
+      where: {
+        createdBy: user.id,
+        code: currencyCode,
+      },
     })
 
     if (!currency) {
-      return validationErrorResponse('货币不存在')
-    }
-
-    if (!currency.isCustom || currency.createdBy !== user.id) {
-      return validationErrorResponse('只能修改您创建的自定义货币')
+      return validationErrorResponse('货币不存在或您无权修改')
     }
 
     // 更新自定义货币
     const updatedCurrency = await prisma.currency.update({
-      where: { code: currencyCode },
+      where: { id: currency.id },
       data: {
         name: name.trim(),
         symbol: symbol.trim(),
+        ...(decimalPlacesValue !== undefined && {
+          decimalPlaces: decimalPlacesValue,
+        }),
       },
     })
 

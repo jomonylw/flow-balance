@@ -50,6 +50,26 @@ export function CardTitle({
   )
 }
 
+interface CardDescriptionProps
+  extends React.HTMLAttributes<HTMLParagraphElement> {
+  children: React.ReactNode
+}
+
+export function CardDescription({
+  className = '',
+  children,
+  ...props
+}: CardDescriptionProps) {
+  return (
+    <p
+      className={`text-sm text-gray-600 dark:text-gray-400 ${className}`}
+      {...props}
+    >
+      {children}
+    </p>
+  )
+}
+
 interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
 }

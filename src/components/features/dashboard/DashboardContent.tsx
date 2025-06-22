@@ -6,6 +6,7 @@ import QuickBalanceUpdateModal from '@/components/features/dashboard/QuickBalanc
 import NetWorthChart from './NetWorthChart'
 import CashFlowChart from './CashFlowChart'
 import ExchangeRateAlert from './ExchangeRateAlert'
+import SystemUpdateCard from './SystemUpdateCard'
 import PageContainer from '@/components/ui/layout/PageContainer'
 import TranslationLoader from '@/components/ui/data-display/TranslationLoader'
 import { DashboardSkeleton } from '@/components/ui/data-display/page-skeletons'
@@ -16,6 +17,7 @@ import {
 } from '@/lib/utils/validation'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useAllDataListener } from '@/hooks/business/useDataUpdateListener'
 import type {
   DashboardContentProps,
@@ -33,6 +35,7 @@ export default function DashboardContent({
 }: DashboardContentProps) {
   const { t } = useLanguage()
   const { resolvedTheme } = useTheme()
+  const { formatCurrency } = useUserCurrencyFormatter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] =
     useState(false)
@@ -145,7 +148,7 @@ export default function DashboardContent({
     }
 
     fetchChartData()
-  }, [])
+  }, [t])
 
   // 验证账户数据
   useEffect(() => {
@@ -190,6 +193,9 @@ export default function DashboardContent({
       >
         {/* 汇率设置提醒 */}
         <ExchangeRateAlert className='mb-4 sm:mb-6' />
+
+        {/* 系统更新状态卡片 */}
+        <SystemUpdateCard />
 
         {/* 数据验证提示 */}
         {validationResult &&
@@ -373,20 +379,12 @@ export default function DashboardContent({
                   <p
                     className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-blue-100' : 'text-blue-900'}`}
                   >
-                    {summaryData.totalAssets ? (
-                      <>
-                        {summaryData.totalAssets.currency.symbol}
-                        {summaryData.totalAssets.amount.toLocaleString(
-                          'zh-CN',
-                          { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {summaryData.netWorth.currency.symbol}
-                        0.00
-                      </>
-                    )}
+                    {summaryData.totalAssets
+                      ? formatCurrency(
+                          summaryData.totalAssets.amount,
+                          summaryData.totalAssets.currency.code
+                        )
+                      : formatCurrency(0, summaryData.netWorth.currency.code)}
                   </p>
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
@@ -435,20 +433,12 @@ export default function DashboardContent({
                   <p
                     className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900'}`}
                   >
-                    {summaryData.totalLiabilities ? (
-                      <>
-                        {summaryData.totalLiabilities.currency.symbol}
-                        {summaryData.totalLiabilities.amount.toLocaleString(
-                          'zh-CN',
-                          { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {summaryData.netWorth.currency.symbol}
-                        0.00
-                      </>
-                    )}
+                    {summaryData.totalLiabilities
+                      ? formatCurrency(
+                          summaryData.totalLiabilities.amount,
+                          summaryData.totalLiabilities.currency.code
+                        )
+                      : formatCurrency(0, summaryData.netWorth.currency.code)}
                   </p>
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600'}`}
@@ -530,10 +520,9 @@ export default function DashboardContent({
                     }`}
                   >
                     {summaryData.netWorth.amount >= 0 ? '+' : '-'}
-                    {summaryData.netWorth.currency.symbol}
-                    {Math.abs(summaryData.netWorth.amount).toLocaleString(
-                      'zh-CN',
-                      { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+                    {formatCurrency(
+                      Math.abs(summaryData.netWorth.amount),
+                      summaryData.netWorth.currency.code
                     )}
                   </p>
                   <p
@@ -595,13 +584,12 @@ export default function DashboardContent({
                     {summaryData.recentActivity.summaryInBaseCurrency.net >= 0
                       ? '+'
                       : '-'}
-                    {summaryData.recentActivity.baseCurrency.symbol}
-                    {Math.abs(
-                      summaryData.recentActivity.summaryInBaseCurrency.net
-                    ).toLocaleString('zh-CN', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatCurrency(
+                      Math.abs(
+                        summaryData.recentActivity.summaryInBaseCurrency.net
+                      ),
+                      summaryData.recentActivity.baseCurrency.code
+                    )}
                   </p>
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}
@@ -621,10 +609,10 @@ export default function DashboardContent({
                     <span
                       className={`font-medium ${resolvedTheme === 'dark' ? 'text-green-300' : 'text-green-800'}`}
                     >
-                      +{summaryData.recentActivity.baseCurrency.symbol}
-                      {summaryData.recentActivity.summaryInBaseCurrency.income.toLocaleString(
-                        'zh-CN',
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+                      +
+                      {formatCurrency(
+                        summaryData.recentActivity.summaryInBaseCurrency.income,
+                        summaryData.recentActivity.baseCurrency.code
                       )}
                     </span>
                   </div>
@@ -637,10 +625,11 @@ export default function DashboardContent({
                     <span
                       className={`font-medium ${resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-800'}`}
                     >
-                      -{summaryData.recentActivity.baseCurrency.symbol}
-                      {summaryData.recentActivity.summaryInBaseCurrency.expense.toLocaleString(
-                        'zh-CN',
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+                      -
+                      {formatCurrency(
+                        summaryData.recentActivity.summaryInBaseCurrency
+                          .expense,
+                        summaryData.recentActivity.baseCurrency.code
                       )}
                     </span>
                   </div>

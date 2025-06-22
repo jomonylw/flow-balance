@@ -1,3 +1,9 @@
+'use client'
+
+import { useLanguage } from '@/contexts/providers/LanguageContext'
+import LanguageToggle from '@/components/features/layout/LanguageToggle'
+import ThemeToggle from '@/components/features/layout/ThemeToggle'
+
 interface AuthLayoutProps {
   children: React.ReactNode
   title: string
@@ -9,14 +15,22 @@ export default function AuthLayout({
   title,
   subtitle,
 }: AuthLayoutProps) {
+  const { t: _t } = useLanguage()
+
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-50 py-6 sm:py-12 px-4 sm:px-6 lg:px-8 safe-area-inset-top safe-area-inset-bottom'>
+    <div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-6 sm:py-12 px-4 sm:px-6 lg:px-8 safe-area-inset-top safe-area-inset-bottom transition-colors duration-200'>
+      {/* 顶部工具栏 */}
+      <div className='absolute top-4 right-4 flex items-center space-x-2'>
+        <LanguageToggle />
+        <ThemeToggle />
+      </div>
+
       <div className='max-w-md w-full space-y-6 sm:space-y-8'>
         {/* Logo and Title */}
         <div className='text-center'>
-          <div className='mx-auto h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-blue-100'>
+          <div className='mx-auto h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 transition-colors duration-200'>
             <svg
-              className='h-6 w-6 sm:h-8 sm:w-8 text-blue-600'
+              className='h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400'
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'
@@ -29,17 +43,21 @@ export default function AuthLayout({
               />
             </svg>
           </div>
-          <h1 className='mt-4 sm:mt-6 text-2xl sm:text-3xl font-extrabold text-gray-900'>
+          <h1 className='mt-4 sm:mt-6 text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-gray-100 transition-colors duration-200'>
             Flow Balance
           </h1>
-          <h2 className='mt-2 text-lg sm:text-xl font-bold text-gray-900'>
+          <h2 className='mt-2 text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-200'>
             {title}
           </h2>
-          {subtitle && <p className='mt-2 text-sm text-gray-600'>{subtitle}</p>}
+          {subtitle && (
+            <p className='mt-2 text-sm text-gray-600 dark:text-gray-400 transition-colors duration-200'>
+              {subtitle}
+            </p>
+          )}
         </div>
 
         {/* Form Content */}
-        <div className='bg-white py-6 sm:py-8 px-4 sm:px-6 shadow-lg rounded-lg'>
+        <div className='bg-white dark:bg-gray-800 py-6 sm:py-8 px-4 sm:px-6 shadow-lg dark:shadow-gray-900/20 rounded-lg transition-colors duration-200'>
           {children}
         </div>
       </div>

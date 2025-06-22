@@ -1,6 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import type { SimpleTransaction, SimpleCurrency } from '@/types/core'
 import type { StockSummaryData } from '@/types/components'
 
@@ -14,7 +15,7 @@ interface StockCategory {
 
 interface StockCategorySummaryCardProps {
   category: StockCategory
-  currencySymbol: string
+  currencyCode: string
   summaryData?: StockSummaryData | null
   baseCurrency?: SimpleCurrency
   currencies?: SimpleCurrency[]
@@ -22,12 +23,13 @@ interface StockCategorySummaryCardProps {
 
 export default function StockCategorySummaryCard({
   category,
-  currencySymbol,
+  currencyCode,
   summaryData,
   baseCurrency,
   currencies = [],
 }: StockCategorySummaryCardProps) {
   const { t } = useLanguage()
+  const { formatCurrency, formatNumber } = useUserCurrencyFormatter()
   // const accountType = category.type
 
   // 存量类分类统计（资产/负债）
@@ -188,11 +190,10 @@ export default function StockCategorySummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {baseCurrency?.symbol || currencySymbol}
-            {Math.abs(stockStats.currentNetValue).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(
+              Math.abs(stockStats.currentNetValue),
+              baseCurrency?.code || currencyCode
+            )}
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
             {stockStats.transactionCount} {t('category.transaction.count')}
@@ -212,18 +213,14 @@ export default function StockCategorySummaryCard({
             }`}
           >
             {stockStats.monthlyChange >= 0 ? '+' : ''}
-            {stockStats.monthlyChange.toLocaleString('zh-CN', {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            })}
-            %
+            {formatNumber(stockStats.monthlyChange, 1)}%
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-            {t('category.last.month')}: {baseCurrency?.symbol || currencySymbol}
-            {Math.abs(stockStats.lastMonthNetValue).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {t('category.last.month')}:{' '}
+            {formatCurrency(
+              Math.abs(stockStats.lastMonthNetValue),
+              baseCurrency?.code || currencyCode
+            )}
           </div>
         </div>
 
@@ -240,18 +237,14 @@ export default function StockCategorySummaryCard({
             }`}
           >
             {stockStats.yearToDateChange >= 0 ? '+' : ''}
-            {stockStats.yearToDateChange.toLocaleString('zh-CN', {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            })}
-            %
+            {formatNumber(stockStats.yearToDateChange, 1)}%
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-            {t('category.year.start')}: {baseCurrency?.symbol || currencySymbol}
-            {Math.abs(stockStats.yearStartNetValue).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {t('category.year.start')}:{' '}
+            {formatCurrency(
+              Math.abs(stockStats.yearStartNetValue),
+              baseCurrency?.code || currencyCode
+            )}
           </div>
         </div>
       </div>
@@ -387,18 +380,14 @@ export default function StockCategorySummaryCard({
                               : 'text-red-600 dark:text-red-400'
                           }`}
                         >
-                          {data.symbol}
-                          {Math.abs(data.current).toLocaleString('zh-CN', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {formatCurrency(Math.abs(data.current), currencyCode)}
                         </div>
                         <div className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
-                          {t('category.last.month')}: {data.symbol}
-                          {Math.abs(data.lastMonth).toLocaleString('zh-CN', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {t('category.last.month')}:{' '}
+                          {formatCurrency(
+                            Math.abs(data.lastMonth),
+                            currencyCode
+                          )}
                           <span
                             className={`ml-2 ${
                               changePercent >= 0
@@ -407,11 +396,7 @@ export default function StockCategorySummaryCard({
                             }`}
                           >
                             {changePercent >= 0 ? '+' : ''}
-                            {changePercent.toLocaleString('zh-CN', {
-                              minimumFractionDigits: 1,
-                              maximumFractionDigits: 1,
-                            })}
-                            %
+                            {formatNumber(changePercent, 1)}%
                           </span>
                         </div>
                       </div>

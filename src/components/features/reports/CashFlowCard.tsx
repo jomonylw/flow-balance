@@ -14,6 +14,7 @@ import { format } from 'date-fns'
 import { zhCN, enUS } from 'date-fns/locale'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import ColorManager from '@/lib/utils/color'
 import WithTranslation from '@/components/ui/data-display/WithTranslation'
 import type { SimpleCurrency } from '@/types/core'
@@ -67,6 +68,7 @@ interface PersonalCashFlowResponse {
 export default function CashFlowCard() {
   const { t, language } = useLanguage()
   const { categories, accounts, getBaseCurrency } = useUserData()
+  const { formatCurrency } = useUserCurrencyFormatter()
   const [data, setData] = useState<PersonalCashFlowResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [startDate, setStartDate] = useState<Date>(() => {
@@ -81,12 +83,9 @@ export default function CashFlowCard() {
 
   // Get the appropriate locale for date formatting
   const dateLocale = language === 'zh' ? zhCN : enUS
-  const baseCurrency = getBaseCurrency() || {
-    code: 'CNY',
-    symbol: '¥',
-    name: '人民币',
-  }
+  const baseCurrency = getBaseCurrency()
 
+  // 将所有 hooks 移到条件判断之前
   const fetchCashFlow = useCallback(async () => {
     setLoading(true)
     try {
@@ -105,8 +104,10 @@ export default function CashFlowCard() {
   }, [startDate, endDate, t])
 
   useEffect(() => {
-    fetchCashFlow()
-  }, [fetchCashFlow])
+    if (baseCurrency) {
+      fetchCashFlow()
+    }
+  }, [fetchCashFlow, baseCurrency])
 
   // 构建分类树并汇总余额数据
   const enrichedCategoryTree = useMemo(() => {
@@ -227,50 +228,16 @@ export default function CashFlowCard() {
     }
   }, [data, categories, accounts])
 
-  const formatCurrency = (amount: number, currency: SimpleCurrency) => {
-    const locale = language === 'zh' ? 'zh-CN' : 'en-US'
-    return `${currency.symbol}${amount.toLocaleString(locale, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
+  // 使用统一的格式化函数
+  const formatCurrencyWithSymbol = (
+    amount: number,
+    currency: SimpleCurrency
+  ) => {
+    return formatCurrency(amount, currency.code)
   }
 
   const formatCurrencyWithCode = (amount: number, currencyCode: string) => {
-    const locale = language === 'zh' ? 'zh-CN' : 'en-US'
-    const symbol = getCurrencySymbol(currencyCode)
-    return `${symbol}${amount.toLocaleString(locale, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
-  }
-
-  // 货币符号映射函数（与BalanceSheetCard保持一致）
-  const getCurrencySymbol = (currencyCode: string) => {
-    const symbolMap: Record<string, string> = {
-      CNY: '¥',
-      USD: '$',
-      EUR: '€',
-      GBP: '£',
-      JPY: '¥',
-      HKD: 'HK$',
-      TWD: 'NT$',
-      SGD: 'S$',
-      AUD: 'A$',
-      CAD: 'C$',
-      CHF: 'CHF',
-      SEK: 'kr',
-      NOK: 'kr',
-      DKK: 'kr',
-      RUB: '₽',
-      INR: '₹',
-      KRW: '₩',
-      THB: '฿',
-      MYR: 'RM',
-      IDR: 'Rp',
-      PHP: '₱',
-      VND: '₫',
-    }
-    return symbolMap[currencyCode] || currencyCode
+    return formatCurrency(amount, currencyCode)
   }
 
   // 新的层级渲染函数
@@ -314,13 +281,9 @@ export default function CashFlowCard() {
                   }`}
                 >
                   {isExpense ? '-' : '+'}
-                  {baseCurrency.symbol}
-                  {Math.abs(category.totalInBaseCurrency).toLocaleString(
-                    language === 'zh' ? 'zh-CN' : 'en-US',
-                    {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }
+                  {formatCurrency(
+                    Math.abs(category.totalInBaseCurrency),
+                    baseCurrency.code
                   )}
                 </span>
               </div>
@@ -362,21 +325,15 @@ export default function CashFlowCard() {
                         {currencyCode !== baseCurrency.code && (
                           <div className='text-xs text-gray-400 whitespace-nowrap'>
                             ≈ {isExpense ? '-' : '+'}
-                            {baseCurrency.symbol}
-                            {currencyAccounts
-                              .reduce(
+                            {formatCurrency(
+                              currencyAccounts.reduce(
                                 (sum, account) =>
                                   sum +
                                   (account.totalAmountInBaseCurrency || 0),
                                 0
-                              )
-                              .toLocaleString(
-                                language === 'zh' ? 'zh-CN' : 'en-US',
-                                {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                }
-                              )}
+                              ),
+                              baseCurrency.code
+                            )}
                           </div>
                         )}
                       </div>
@@ -428,7 +385,7 @@ export default function CashFlowCard() {
                                   : 'text-green-600 dark:text-green-400'
                               }`}
                             >
-                              {formatCurrency(
+                              {formatCurrencyWithSymbol(
                                 account.totalAmount,
                                 account.currency
                               )}
@@ -436,15 +393,10 @@ export default function CashFlowCard() {
                             {account.totalAmountInBaseCurrency !== undefined &&
                               account.currency.code !== baseCurrency.code && (
                                 <div className='text-xs text-gray-400 whitespace-nowrap'>
-                                  ≈ {baseCurrency.symbol}
-                                  {Math.abs(
-                                    account.totalAmountInBaseCurrency
-                                  ).toLocaleString(
-                                    language === 'zh' ? 'zh-CN' : 'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
+                                  ≈{' '}
+                                  {formatCurrency(
+                                    Math.abs(account.totalAmountInBaseCurrency),
+                                    baseCurrency.code
                                   )}
                                 </div>
                               )}
@@ -526,15 +478,9 @@ export default function CashFlowCard() {
                         currencyCode !== baseCurrency.code && (
                           <span className='text-xs text-gray-400'>
                             ≈ {isExpense ? '-' : '+'}
-                            {baseCurrency.symbol}
-                            {Math.abs(
-                              category.totalInBaseCurrency
-                            ).toLocaleString(
-                              language === 'zh' ? 'zh-CN' : 'en-US',
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }
+                            {formatCurrency(
+                              Math.abs(category.totalInBaseCurrency),
+                              baseCurrency.code
                             )}
                           </span>
                         )}
@@ -584,7 +530,7 @@ export default function CashFlowCard() {
                             <span
                               className={`${isExpense ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
                             >
-                              {formatCurrency(
+                              {formatCurrencyWithSymbol(
                                 account.totalAmount,
                                 account.currency
                               )}
@@ -592,15 +538,10 @@ export default function CashFlowCard() {
                             {account.totalAmountInBaseCurrency !== undefined &&
                               account.currency.code !== baseCurrency.code && (
                                 <span className='text-xs text-gray-400'>
-                                  ≈ {baseCurrency.symbol}
-                                  {Math.abs(
-                                    account.totalAmountInBaseCurrency
-                                  ).toLocaleString(
-                                    language === 'zh' ? 'zh-CN' : 'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
+                                  ≈{' '}
+                                  {formatCurrency(
+                                    Math.abs(account.totalAmountInBaseCurrency),
+                                    baseCurrency.code
                                   )}
                                 </span>
                               )}
@@ -614,6 +555,29 @@ export default function CashFlowCard() {
           </div>
         ))}
       </div>
+    )
+  }
+
+  // 如果没有设置本位币，显示提示
+  if (!baseCurrency) {
+    return (
+      <WithTranslation>
+        <Card className='mt-4'>
+          <CardHeader>
+            <CardTitle>{t('reports.cash.flow.title')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className='text-center py-8'>
+              <p className='text-gray-500 dark:text-gray-400 mb-4'>
+                {t('currency.setup.required')}
+              </p>
+              <p className='text-sm text-gray-400'>
+                {t('currency.setup.description')}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </WithTranslation>
     )
   }
 
@@ -762,7 +726,7 @@ export default function CashFlowCard() {
                           >
                             <div className='text-green-600 dark:text-green-400'>
                               +
-                              {formatCurrency(
+                              {formatCurrencyWithSymbol(
                                 currencyTotal.totalIncome,
                                 currencyTotal.currency
                               )}
@@ -770,15 +734,10 @@ export default function CashFlowCard() {
                             {currencyCode !== data.baseCurrency.code &&
                               incomeBaseCurrencyAmount > 0 && (
                                 <div className='text-xs text-gray-400'>
-                                  ≈ +{data.baseCurrency.symbol}
-                                  {Math.abs(
-                                    incomeBaseCurrencyAmount
-                                  ).toLocaleString(
-                                    language === 'zh' ? 'zh-CN' : 'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
+                                  ≈ +
+                                  {formatCurrency(
+                                    Math.abs(incomeBaseCurrencyAmount),
+                                    data.baseCurrency.code
                                   )}
                                 </div>
                               )}
@@ -798,7 +757,7 @@ export default function CashFlowCard() {
                       </span>
                       <div className='text-green-600 dark:text-green-400'>
                         +
-                        {formatCurrency(
+                        {formatCurrencyWithSymbol(
                           data.summary.baseCurrencyTotals.totalIncome,
                           data.baseCurrency
                         )}
@@ -863,7 +822,7 @@ export default function CashFlowCard() {
                           >
                             <div className='text-red-600 dark:text-red-400'>
                               -
-                              {formatCurrency(
+                              {formatCurrencyWithSymbol(
                                 currencyTotal.totalExpense,
                                 currencyTotal.currency
                               )}
@@ -871,15 +830,10 @@ export default function CashFlowCard() {
                             {currencyCode !== data.baseCurrency.code &&
                               expenseBaseCurrencyAmount > 0 && (
                                 <div className='text-xs text-gray-400'>
-                                  ≈ -{data.baseCurrency.symbol}
-                                  {Math.abs(
-                                    expenseBaseCurrencyAmount
-                                  ).toLocaleString(
-                                    language === 'zh' ? 'zh-CN' : 'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
+                                  ≈ -
+                                  {formatCurrency(
+                                    Math.abs(expenseBaseCurrencyAmount),
+                                    data.baseCurrency.code
                                   )}
                                 </div>
                               )}
@@ -899,7 +853,7 @@ export default function CashFlowCard() {
                       </span>
                       <div className='text-red-600 dark:text-red-400'>
                         -
-                        {formatCurrency(
+                        {formatCurrencyWithSymbol(
                           data.summary.baseCurrencyTotals.totalExpense,
                           data.baseCurrency
                         )}
@@ -963,7 +917,7 @@ export default function CashFlowCard() {
                           }
                         >
                           {currencyTotal.netCashFlow >= 0 ? '+' : ''}
-                          {formatCurrency(
+                          {formatCurrencyWithSymbol(
                             currencyTotal.netCashFlow,
                             currencyTotal.currency
                           )}
@@ -972,13 +926,9 @@ export default function CashFlowCard() {
                           Math.abs(netBaseCurrencyAmount) > 0.01 && (
                             <div className='text-xs text-gray-400'>
                               ≈ {netBaseCurrencyAmount >= 0 ? '+' : '-'}
-                              {data.baseCurrency.symbol}
-                              {Math.abs(netBaseCurrencyAmount).toLocaleString(
-                                language === 'zh' ? 'zh-CN' : 'en-US',
-                                {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                }
+                              {formatCurrency(
+                                Math.abs(netBaseCurrencyAmount),
+                                data.baseCurrency.code
                               )}
                             </div>
                           )}
@@ -1006,7 +956,7 @@ export default function CashFlowCard() {
                     {data.summary.baseCurrencyTotals.netCashFlow >= 0
                       ? '+'
                       : ''}
-                    {formatCurrency(
+                    {formatCurrencyWithSymbol(
                       data.summary.baseCurrencyTotals.netCashFlow,
                       data.baseCurrency
                     )}
@@ -1055,7 +1005,7 @@ export default function CashFlowCard() {
                         >
                           <div>
                             +
-                            {formatCurrency(
+                            {formatCurrencyWithSymbol(
                               currencyTotal.totalIncome,
                               currencyTotal.currency
                             )}
@@ -1063,15 +1013,10 @@ export default function CashFlowCard() {
                           {currencyCode !== data.baseCurrency.code &&
                             incomeBaseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
-                                ≈ +{data.baseCurrency.symbol}
-                                {Math.abs(
-                                  incomeBaseCurrencyAmount
-                                ).toLocaleString(
-                                  language === 'zh' ? 'zh-CN' : 'en-US',
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
+                                ≈ +
+                                {formatCurrency(
+                                  Math.abs(incomeBaseCurrencyAmount),
+                                  data.baseCurrency.code
                                 )}
                               </div>
                             )}
@@ -1111,7 +1056,7 @@ export default function CashFlowCard() {
                         >
                           <div>
                             -
-                            {formatCurrency(
+                            {formatCurrencyWithSymbol(
                               currencyTotal.totalExpense,
                               currencyTotal.currency
                             )}
@@ -1119,15 +1064,10 @@ export default function CashFlowCard() {
                           {currencyCode !== data.baseCurrency.code &&
                             expenseBaseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
-                                ≈ -{data.baseCurrency.symbol}
-                                {Math.abs(
-                                  expenseBaseCurrencyAmount
-                                ).toLocaleString(
-                                  language === 'zh' ? 'zh-CN' : 'en-US',
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
+                                ≈ -
+                                {formatCurrency(
+                                  Math.abs(expenseBaseCurrencyAmount),
+                                  data.baseCurrency.code
                                 )}
                               </div>
                             )}
@@ -1188,7 +1128,7 @@ export default function CashFlowCard() {
                         >
                           <div>
                             {currencyTotal.netCashFlow >= 0 ? '+' : ''}
-                            {formatCurrency(
+                            {formatCurrencyWithSymbol(
                               currencyTotal.netCashFlow,
                               currencyTotal.currency
                             )}
@@ -1197,13 +1137,9 @@ export default function CashFlowCard() {
                             Math.abs(netBaseCurrencyAmount) > 0.01 && (
                               <div className='text-xs text-gray-400'>
                                 ≈ {netBaseCurrencyAmount >= 0 ? '+' : '-'}
-                                {data.baseCurrency.symbol}
-                                {Math.abs(netBaseCurrencyAmount).toLocaleString(
-                                  language === 'zh' ? 'zh-CN' : 'en-US',
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
+                                {formatCurrency(
+                                  Math.abs(netBaseCurrencyAmount),
+                                  data.baseCurrency.code
                                 )}
                               </div>
                             )}
@@ -1225,7 +1161,7 @@ export default function CashFlowCard() {
                     </span>
                     <div className='font-semibold text-green-600 dark:text-green-400'>
                       +
-                      {formatCurrency(
+                      {formatCurrencyWithSymbol(
                         data.summary.baseCurrencyTotals.totalIncome,
                         data.baseCurrency
                       )}
@@ -1238,7 +1174,7 @@ export default function CashFlowCard() {
                     </span>
                     <div className='font-semibold text-red-600 dark:text-red-400'>
                       -
-                      {formatCurrency(
+                      {formatCurrencyWithSymbol(
                         data.summary.baseCurrencyTotals.totalExpense,
                         data.baseCurrency
                       )}
@@ -1255,7 +1191,7 @@ export default function CashFlowCard() {
                       {data.summary.baseCurrencyTotals.netCashFlow >= 0
                         ? '+'
                         : ''}
-                      {formatCurrency(
+                      {formatCurrencyWithSymbol(
                         data.summary.baseCurrencyTotals.netCashFlow,
                         data.baseCurrency
                       )}

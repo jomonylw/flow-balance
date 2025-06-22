@@ -21,10 +21,11 @@ export interface User {
 export interface UserSettings {
   id: string
   userId: string
-  baseCurrencyCode: string
+  baseCurrencyId: string | null
   language: 'zh' | 'en'
   theme: 'light' | 'dark' | 'system'
   fireSWR: number
+  futureDataDays: number
   createdAt: Date
   updatedAt: Date
   baseCurrency?: Currency
@@ -32,19 +33,21 @@ export interface UserSettings {
 
 /** 货币信息 */
 export interface Currency {
+  id: string
   code: string
   name: string
   symbol: string
+  decimalPlaces: number
   isCustom: boolean
-  isActive?: boolean
   createdBy?: string | null
+  isActive?: boolean
 }
 
 /** 用户货币设置 */
 export interface UserCurrency {
   id: string
   userId: string
-  currencyCode: string
+  currencyId: string
   isActive: boolean
   order: number
   createdAt: Date
@@ -94,7 +97,7 @@ export interface Account {
   name: string
   description?: string | null
   color?: string | null
-  currencyCode: string
+  currencyId: string
   categoryId: string
   userId: string
   createdAt: Date
@@ -121,7 +124,7 @@ export interface Transaction {
   date: Date
   accountId: string
   categoryId: string
-  currencyCode: string
+  currencyId: string
   userId: string
   createdAt: Date
   updatedAt: Date
@@ -157,7 +160,7 @@ export interface TransactionTemplate {
   name: string
   accountId: string
   categoryId: string
-  currencyCode: string
+  currencyId: string
   type: TransactionType
   description: string
   notes?: string | null
@@ -210,7 +213,7 @@ export interface TransactionFormData {
   id?: string
   accountId: string
   categoryId: string
-  currencyCode: string
+  currencyCode: string // 保留 currencyCode 用于表单，内部转换为 currencyId
   type: TransactionType
   amount: number
   description: string
@@ -225,7 +228,7 @@ export interface AccountFormData {
   name: string
   description?: string | null
   color?: string | null
-  currencyCode: string
+  currencyCode: string // 保留 currencyCode 用于表单，内部转换为 currencyId
   categoryId: string
 }
 
@@ -323,22 +326,29 @@ export interface CategorySummaryBase {
 /** 汇率信息 */
 export interface ExchangeRate {
   id: string
-  fromCurrency: string
-  toCurrency: string
+  fromCurrencyId: string
+  toCurrencyId: string
   rate: number
-  date: Date
+  effectiveDate: Date
+  type: string
   userId: string
   createdAt: Date
   updatedAt: Date
+  fromCurrencyRef?: Currency
+  toCurrencyRef?: Currency
 }
 
 /** 汇率数据（用于表单和API） */
 export interface ExchangeRateData {
   id: string
-  fromCurrency: string
-  toCurrency: string
+  fromCurrencyId: string
+  toCurrencyId: string
+  fromCurrency: string // 源货币代码（用于表单）
+  toCurrency: string // 目标货币代码（用于表单）
   rate: number
   effectiveDate: string
+  type?: string // 汇率类型：USER（用户输入）, AUTO（自动生成）
+  sourceRateId?: string | null // 源汇率ID（用于自动生成的汇率）
   notes?: string | null
   fromCurrencyRef: SimpleCurrency
   toCurrencyRef: SimpleCurrency
@@ -389,17 +399,21 @@ export interface SimpleUser {
 
 /** 简化的用户设置信息（用于显示） */
 export interface SimpleUserSettings {
-  baseCurrencyCode: string
+  baseCurrencyId: string | null
   language: 'zh' | 'en'
   theme: 'light' | 'dark' | 'system'
   fireSWR: number
+  futureDataDays: number
+  baseCurrency?: SimpleCurrency
 }
 
 /** 简化的货币信息（用于显示） */
 export interface SimpleCurrency {
+  id: string
   code: string
   name: string
   symbol: string
+  decimalPlaces: number
   isCustom?: boolean
   createdBy?: string | null
 }
@@ -418,9 +432,10 @@ export interface SimpleCategory {
 export interface SimpleAccount {
   id: string
   name: string
-  currencyCode: string
+  currencyId: string
   categoryId: string
   category: SimpleCategory
+  currency: SimpleCurrency
   description?: string | null
   color?: string | null
   balanceInBaseCurrency?: number
@@ -607,6 +622,238 @@ export interface StockCategoryMonthlyData {
     >
   >
   baseCurrency: string
+}
+
+// ============================================================================
+// 定期交易相关类型
+// ============================================================================
+
+/** 定期交易频率枚举 */
+export enum RecurrenceFrequency {
+  DAILY = 'DAILY',
+  WEEKLY = 'WEEKLY',
+  MONTHLY = 'MONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  YEARLY = 'YEARLY',
+}
+
+/** 定期交易信息 */
+export interface RecurringTransaction {
+  id: string
+  userId: string
+  accountId: string
+  currencyCode: string
+  type: 'INCOME' | 'EXPENSE'
+  amount: number
+  description: string
+  notes?: string | null
+  tagIds?: string[] // 标签ID数组
+
+  frequency: RecurrenceFrequency
+  interval: number
+  dayOfMonth?: number | null
+  dayOfWeek?: number | null
+  monthOfYear?: number | null
+
+  startDate: Date
+  endDate?: Date | null
+  nextDate: Date
+
+  isActive: boolean
+  maxOccurrences?: number | null
+  currentCount: number
+
+  createdAt: Date
+  updatedAt: Date
+
+  // 关联数据
+  account?: Account
+  currency?: Currency
+  tags?: Tag[]
+}
+
+/** 定期交易表单数据 */
+export interface RecurringTransactionFormData {
+  id?: string
+  accountId: string
+  currencyCode: string
+  type: 'INCOME' | 'EXPENSE'
+  amount: number
+  description: string
+  notes?: string | null
+
+  frequency: RecurrenceFrequency
+  interval: number
+  dayOfMonth?: number | null
+  dayOfWeek?: number | null
+  monthOfYear?: number | null
+
+  startDate: string
+  endDate?: string | null
+
+  isActive: boolean
+  maxOccurrences?: number | null
+
+  tagIds?: string[]
+}
+
+// ============================================================================
+// 贷款合约相关类型
+// ============================================================================
+
+/** 还款类型枚举 */
+export enum RepaymentType {
+  EQUAL_PAYMENT = 'EQUAL_PAYMENT', // 等额本息
+  EQUAL_PRINCIPAL = 'EQUAL_PRINCIPAL', // 等额本金
+  INTEREST_ONLY = 'INTEREST_ONLY', // 只还利息
+}
+
+/** 贷款合约信息 */
+export interface LoanContract {
+  id: string
+  userId: string
+  accountId: string // 贷款账户ID (负债账户)
+  currencyCode: string
+  contractName: string
+  loanAmount: number // 贷款金额
+  interestRate: number // 年利率
+  totalPeriods: number // 总期数
+  repaymentType: RepaymentType
+  startDate: Date // 贷款开始日期
+  paymentDay: number // 每月还款日期（1-31号）
+
+  // 还款账户信息
+  paymentAccountId?: string // 还款账户ID (支出类型账户，货币需一致)
+
+  // 交易模板信息
+  transactionDescription?: string // 交易描述模板
+  transactionNotes?: string // 交易备注模板
+  transactionTagIds?: string[] // 交易标签ID列表
+
+  isActive: boolean
+  currentPeriod: number
+  nextPaymentDate?: Date // 下次还款日期
+  createdAt: Date
+  updatedAt: Date
+
+  // 关联数据
+  account?: Account
+  paymentAccount?: Account
+  currency?: Currency
+  payments?: LoanPayment[]
+}
+
+/** 贷款还款记录 */
+export interface LoanPayment {
+  id: string
+  loanContractId: string
+  userId: string
+  period: number
+  paymentDate: Date
+
+  principalAmount: number
+  interestAmount: number
+  totalAmount: number
+  remainingBalance: number
+
+  principalTransactionId?: string
+  interestTransactionId?: string
+  balanceTransactionId?: string
+
+  status: 'PENDING' | 'COMPLETED' | 'FAILED'
+  processedAt?: Date
+  createdAt: Date
+
+  // 关联数据
+  loanContract?: LoanContract
+  principalTransaction?: Transaction
+  interestTransaction?: Transaction
+  balanceTransaction?: Transaction
+}
+
+/** 贷款合约表单数据 */
+export interface LoanContractFormData {
+  id?: string
+  accountId: string
+  currencyCode: string
+  contractName: string
+  loanAmount: number
+  interestRate: number
+  totalPeriods: number
+  repaymentType: RepaymentType
+  startDate: string
+  paymentDay: number // 每月还款日期（1-31号）
+
+  // 还款账户信息
+  paymentAccountId?: string
+
+  // 交易模板信息
+  transactionDescription?: string
+  transactionNotes?: string
+  transactionTagIds?: string[] // 标签ID数组
+
+  // 状态信息
+  isActive?: boolean
+}
+
+/** 贷款计算结果 */
+export interface LoanCalculationResult {
+  monthlyPayment: number
+  totalInterest: number
+  totalPayment: number
+  schedule: LoanPaymentSchedule[]
+}
+
+/** 贷款还款计划项 */
+export interface LoanPaymentSchedule {
+  period: number
+  paymentDate: Date
+  principalAmount: number
+  interestAmount: number
+  totalAmount: number
+  remainingBalance: number
+}
+
+// ============================================================================
+// 同步状态相关类型
+// ============================================================================
+
+/** 同步状态 */
+export interface SyncStatus {
+  status: 'idle' | 'processing' | 'completed' | 'failed'
+  lastSyncTime?: Date
+  processedRecurring?: number
+  processedLoans?: number
+  failedCount?: number
+  errorMessage?: string
+  futureDataGenerated?: boolean
+  futureDataUntil?: Date
+}
+
+/** 定期交易处理日志 */
+export interface RecurringProcessingLog {
+  id: string
+  userId: string
+  startTime: Date
+  endTime?: Date
+  status: 'processing' | 'completed' | 'failed'
+  processedRecurring: number
+  processedLoans: number
+  failedCount: number
+  errorMessage?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+// ============================================================================
+// 交易扩展
+// ============================================================================
+
+/** 扩展的交易信息（包含新字段） */
+export interface ExtendedTransaction extends Transaction {
+  recurringTransactionId?: string | null
+  loanContractId?: string | null
+  loanPaymentId?: string | null
 }
 
 // ============================================================================

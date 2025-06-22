@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Modal from '@/components/ui/feedback/Modal'
 import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
+import TagSelector from '@/components/ui/forms/TagSelector'
 import TagFormModal from '@/components/ui/feedback/TagFormModal'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import TemplateSelector from '@/components/ui/forms/TemplateSelector'
@@ -12,6 +13,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import {
   publishTransactionCreate,
   publishTransactionUpdate,
@@ -67,12 +69,14 @@ export default function FlowTransactionModal({
 }: FlowTransactionModalProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { user } = useAuth()
   const {
     tags: userTags,
     getTemplates,
     addTemplate,
     updateTemplate: updateTemplateInContext,
     removeTemplate,
+    addTag,
     isLoadingTemplates,
   } = useUserData()
   const { resolvedTheme } = useTheme()
@@ -100,7 +104,7 @@ export default function FlowTransactionModal({
   )
 
   // 获取最新的标签颜色信息
-  const getUpdatedTagColor = (tagId: string): string | undefined => {
+  const _getUpdatedTagColor = (tagId: string): string | undefined => {
     const userTag = userTags.find(tag => tag.id === tagId)
     return userTag?.color
   }
@@ -111,7 +115,7 @@ export default function FlowTransactionModal({
   const [showTagFormModal, setShowTagFormModal] = useState(false)
 
   // 获取账户的货币信息
-  const accountCurrency = account.currencyCode || currencies[0]?.code || 'USD'
+  const accountCurrency = account.currency?.code || currencies[0]?.code || 'USD'
   const currencyInfo =
     currencies.find(c => c.code === accountCurrency) || currencies[0]
 
@@ -442,7 +446,7 @@ export default function FlowTransactionModal({
     }))
   }
 
-  const handleTagFormSuccess = (newTag: any) => {
+  const handleTagFormSuccess = (newTag: SimpleTag) => {
     // 更新本地状态
     setAvailableTags(prev => [...prev, newTag])
     setFormData(prev => ({
@@ -454,7 +458,7 @@ export default function FlowTransactionModal({
     // 确保传递的数据符合 UserDataTag 类型
     const userDataTag = {
       ...newTag,
-      userId: newTag.userId, // API 返回的数据应该包含 userId
+      userId: user?.id || '', // 从当前用户获取 userId
       _count: { transactions: 0 }, // 新标签的交易数量为 0
     }
     addTag(userDataTag)
@@ -728,144 +732,15 @@ export default function FlowTransactionModal({
         />
 
         {/* 标签选择 */}
-        <div>
-          <label
-            className={`block text-sm font-medium mb-2 ${resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
-          >
-            {t('tag.label.optional')}
-          </label>
-          <div className='space-y-3'>
-            {/* 已选标签显示 */}
-            {formData.tagIds.length > 0 && (
-              <div className='flex flex-wrap gap-2'>
-                {formData.tagIds.map(tagId => {
-                  const tag = availableTags.find(t => t.id === tagId)
-                  if (!tag) return null
-
-                  // 从 UserDataContext 获取标签颜色信息
-                  const currentColor = getUpdatedTagColor(tag.id)
-
-                  return (
-                    <span
-                      key={tagId}
-                      className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium'
-                      style={
-                        currentColor
-                          ? {
-                              backgroundColor: currentColor + '20',
-                              color: currentColor,
-                              border: `1px solid ${currentColor}40`,
-                            }
-                          : {
-                              backgroundColor: '#E5E7EB',
-                              color: '#374151',
-                              border: '1px solid #D1D5DB',
-                            }
-                      }
-                    >
-                      {tag.name}
-                      <button
-                        type='button'
-                        onClick={() => handleTagToggle(tagId)}
-                        className='ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-black hover:bg-opacity-10 focus:outline-none'
-                      >
-                        <svg
-                          className='w-2 h-2'
-                          stroke='currentColor'
-                          fill='none'
-                          viewBox='0 0 8 8'
-                        >
-                          <path
-                            strokeLinecap='round'
-                            strokeWidth='1.5'
-                            d='m1 1 6 6m0-6L1 7'
-                          />
-                        </svg>
-                      </button>
-                    </span>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* 可选标签列表 */}
-            {availableTags.length > 0 && (
-              <div
-                className={`border rounded-md p-3 max-h-32 overflow-y-auto ${
-                  resolvedTheme === 'dark'
-                    ? 'border-gray-600'
-                    : 'border-gray-200'
-                }`}
-              >
-                <div className='flex flex-wrap gap-2'>
-                  {availableTags.map(tag => {
-                    // 从 UserDataContext 获取标签颜色信息
-                    const currentColor = getUpdatedTagColor(tag.id)
-
-                    return (
-                      <button
-                        key={tag.id}
-                        type='button'
-                        onClick={() => handleTagToggle(tag.id)}
-                        className={`
-                          inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-colors
-                          ${formData.tagIds.includes(tag.id) ? 'ring-2 ring-offset-1' : resolvedTheme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}
-                        `}
-                        style={
-                          formData.tagIds.includes(tag.id) && currentColor
-                            ? {
-                                backgroundColor: currentColor + '20',
-                                color: currentColor,
-                                borderColor: currentColor + '40',
-                              }
-                            : formData.tagIds.includes(tag.id)
-                              ? {
-                                  backgroundColor: '#DBEAFE',
-                                  color: '#1E40AF',
-                                  borderColor: '#93C5FD',
-                                }
-                              : {
-                                  backgroundColor: '#F9FAFB',
-                                  color: '#374151',
-                                  borderColor: '#E5E7EB',
-                                }
-                        }
-                      >
-                        {tag.name}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* 创建新标签 */}
-            <div
-              className={`border-t pt-3 ${resolvedTheme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}
-            >
-              <button
-                type='button'
-                onClick={() => setShowTagFormModal(true)}
-                className='inline-flex items-center text-sm text-blue-600 hover:text-blue-500'
-              >
-                <svg
-                  className='mr-1 h-4 w-4'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M12 6v6m0 0v6m0-6h6m-6 0H6'
-                  />
-                </svg>
-                {t('tag.create.new')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <TagSelector
+          tags={availableTags}
+          selectedTagIds={formData.tagIds}
+          onTagToggle={handleTagToggle}
+          label={t('transaction.tags')}
+          showCreateButton={true}
+          onCreateClick={() => setShowTagFormModal(true)}
+          createButtonText={t('tag.create.new')}
+        />
 
         {/* 备注 */}
         <div>
@@ -923,6 +798,7 @@ export default function FlowTransactionModal({
         isOpen={showTagFormModal}
         onClose={() => setShowTagFormModal(false)}
         onSuccess={handleTagFormSuccess}
+        zIndex='z-[60]'
       />
 
       {/* 删除模板确认模态框 */}

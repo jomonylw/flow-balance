@@ -1,0 +1,304 @@
+/**
+ * 统一同步服务
+ * 处理定期交易和贷款合约的统一同步逻辑
+ */
+
+import { SyncStatusService } from './sync-status.service'
+import { FutureDataGenerationService } from './future-data-generation.service'
+import { RecurringTransactionService } from './recurring-transaction.service'
+import { LoanContractService } from './loan-contract.service'
+
+export class UnifiedSyncService {
+  /**
+   * 触发用户同步（非轮询方式）
+   */
+  static async triggerUserSync(userId: string, force: boolean = false) {
+    // 检查是否需要同步
+    if (!force && !(await SyncStatusService.needsSync(userId))) {
+      return {
+        success: true,
+        status: 'already_synced',
+        message: '数据已是最新状态',
+      }
+    }
+
+    // 检查是否正在处理中
+    const currentStatus = await SyncStatusService.getSyncStatus(userId)
+    if (currentStatus.status === 'processing') {
+      return {
+        success: true,
+        status: 'processing',
+        message: '同步正在进行中',
+      }
+    }
+
+    // 开始异步处理
+    setImmediate(() => this.processUserData(userId))
+
+    return {
+      success: true,
+      status: 'started',
+      message: '同步已开始',
+    }
+  }
+
+  /**
+   * 处理用户数据（定期交易 + 贷款合约 + 未来数据生成）
+   */
+  private static async processUserData(userId: string): Promise<void> {
+    // 更新状态为处理中
+    await SyncStatusService.updateSyncStatus(userId, 'processing')
+
+    const log = await SyncStatusService.createProcessingLog(userId)
+
+    let processedRecurring = 0
+    let processedLoans = 0
+    let failedCount = 0
+    const errorMessages: string[] = []
+
+    try {
+      // 1. 处理到期的PENDING交易（转为COMPLETED）
+      const _processedDue =
+        await FutureDataGenerationService.processDueTransactions(userId)
+
+      // 2. 清理过期的未来交易
+      const _cleanedExpired =
+        await FutureDataGenerationService.cleanupExpiredFutureTransactions(
+          userId
+        )
+
+      // 3. 处理当前到期的定期交易
+      const recurringResult =
+        await this.processCurrentRecurringTransactions(userId)
+      processedRecurring += recurringResult.processed
+      failedCount += recurringResult.failed
+      if (recurringResult.errors.length > 0) {
+        errorMessages.push(...recurringResult.errors)
+      }
+
+      // 4. 处理当前到期的贷款还款记录
+      const loanResult = await this.processCurrentLoanPayments(userId)
+      processedLoans += loanResult.processed
+      failedCount += loanResult.failed
+      if (loanResult.errors.length > 0) {
+        errorMessages.push(...loanResult.errors)
+      }
+
+      // 5. 生成未来7天的定期交易数据
+      const futureRecurringResult =
+        await FutureDataGenerationService.generateFutureRecurringTransactions(
+          userId
+        )
+      processedRecurring += futureRecurringResult.generated
+      if (futureRecurringResult.errors.length > 0) {
+        errorMessages.push(...futureRecurringResult.errors)
+      }
+
+      // 6. 生成未来7天的贷款还款数据
+      const futureLoanResult =
+        await FutureDataGenerationService.generateFutureLoanPayments(userId)
+      processedLoans += futureLoanResult.generated
+      if (futureLoanResult.errors.length > 0) {
+        errorMessages.push(...futureLoanResult.errors)
+      }
+
+      // 7. 更新完成状态
+      await SyncStatusService.updateSyncStatus(userId, 'completed', new Date())
+
+      await SyncStatusService.updateProcessingLog(log.id, {
+        endTime: new Date(),
+        status: 'completed',
+        processedRecurring,
+        processedLoans,
+        failedCount,
+        errorMessage:
+          errorMessages.length > 0 ? errorMessages.join('; ') : undefined,
+      })
+    } catch (error) {
+      // 处理失败
+      await SyncStatusService.updateSyncStatus(userId, 'failed')
+
+      await SyncStatusService.updateProcessingLog(log.id, {
+        endTime: new Date(),
+        status: 'failed',
+        processedRecurring,
+        processedLoans,
+        failedCount,
+        errorMessage: error instanceof Error ? error.message : '未知错误',
+      })
+
+      throw error
+    }
+  }
+
+  /**
+   * 处理当前到期的定期交易（不包含未来数据生成）
+   */
+  private static async processCurrentRecurringTransactions(
+    userId: string
+  ): Promise<{
+    processed: number
+    failed: number
+    errors: string[]
+  }> {
+    const errors: string[] = []
+    let processed = 0
+    let failed = 0
+    const _today = new Date()
+
+    const recurringTransactions =
+      await RecurringTransactionService.getDueRecurringTransactions(userId)
+
+    for (const recurring of recurringTransactions) {
+      try {
+        const success =
+          await RecurringTransactionService.executeRecurringTransaction(
+            recurring.id
+          )
+        if (success) {
+          processed++
+        }
+      } catch (error) {
+        failed++
+        errors.push(
+          `定期交易 ${recurring.id} 处理失败: ${error instanceof Error ? error.message : '未知错误'}`
+        )
+      }
+    }
+
+    return { processed, failed, errors }
+  }
+
+  /**
+   * 处理当前到期的贷款还款记录（基于LoanPayment表）
+   */
+  private static async processCurrentLoanPayments(userId: string): Promise<{
+    processed: number
+    failed: number
+    errors: string[]
+  }> {
+    const errors: string[] = []
+    let processed = 0
+    let failed = 0
+
+    try {
+      const result =
+        await LoanContractService.processLoanPaymentsBySchedule(userId)
+      processed = result.processed
+      errors.push(...result.errors)
+      failed = result.errors.length
+    } catch (error) {
+      failed++
+      errors.push(
+        `处理贷款还款记录失败: ${error instanceof Error ? error.message : '未知错误'}`
+      )
+    }
+
+    return { processed, failed, errors }
+  }
+
+  /**
+   * 手动重试失败的同步
+   */
+  static async retryFailedSync(userId: string) {
+    // 重置状态
+    await SyncStatusService.resetProcessingStatus(userId)
+
+    // 重新触发同步
+    return await this.triggerUserSync(userId, true)
+  }
+
+  /**
+   * 获取同步摘要信息
+   */
+  static async getSyncSummary(userId: string) {
+    const syncStatus = await SyncStatusService.getSyncStatus(userId)
+    const futureStats =
+      await FutureDataGenerationService.getFutureTransactionStats(userId)
+    const recentLogs = await SyncStatusService.getUserProcessingLogs(userId, 5)
+
+    return {
+      syncStatus,
+      futureStats,
+      recentLogs,
+    }
+  }
+
+  /**
+   * 系统级同步（处理所有用户）
+   */
+  static async systemWideSync(): Promise<{
+    totalUsers: number
+    processed: number
+    failed: number
+    errors: string[]
+  }> {
+    // 这个方法用于系统级的批量同步，比如定时任务
+    // 实际实现中需要考虑性能和资源限制
+
+    const errors: string[] = []
+    const processed = 0
+    const failed = 0
+
+    // 获取需要同步的用户列表
+    // 这里可以添加更复杂的逻辑来确定哪些用户需要同步
+
+    return {
+      totalUsers: 0,
+      processed,
+      failed,
+      errors,
+    }
+  }
+
+  /**
+   * 清理和维护
+   */
+  static async performMaintenance(userId?: string) {
+    const results = {
+      cleanedLogs: 0,
+      cleanedTransactions: 0,
+      errors: [] as string[],
+    }
+
+    try {
+      if (userId) {
+        // 单用户维护
+        const cleanupResult = await SyncStatusService.cleanupOldLogs(userId)
+        results.cleanedLogs = cleanupResult.count
+        results.cleanedTransactions =
+          await FutureDataGenerationService.cleanupExpiredFutureTransactions(
+            userId
+          )
+      } else {
+        // 系统级维护
+        // 这里可以添加系统级的清理逻辑
+      }
+    } catch (error) {
+      results.errors.push(error instanceof Error ? error.message : '未知错误')
+    }
+
+    return results
+  }
+
+  /**
+   * 健康检查
+   */
+  static async healthCheck() {
+    try {
+      const systemStats = await SyncStatusService.getSystemSyncStats()
+
+      return {
+        status: 'healthy',
+        timestamp: new Date(),
+        stats: systemStats,
+      }
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        timestamp: new Date(),
+        error: error instanceof Error ? error.message : '未知错误',
+      }
+    }
+  }
+}

@@ -155,7 +155,7 @@ export async function registerUser(email: string, password: string) {
         settings: {
           create: {
             dateFormat: 'YYYY-MM-DD',
-            // baseCurrencyCode 暂时为空，需要用户在初始设置中选择
+            // baseCurrencyId 暂时为空，需要用户在初始设置中选择
           },
         },
       },
@@ -169,7 +169,7 @@ export async function registerUser(email: string, password: string) {
     console.error('Registration error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '注册失败',
+      error: error instanceof Error ? error.message : '未知错误',
     }
   }
 }
@@ -210,7 +210,7 @@ export async function loginUser(email: string, password: string) {
     console.error('Login error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '登录失败',
+      error: error instanceof Error ? error.message : '未知错误',
     }
   }
 }

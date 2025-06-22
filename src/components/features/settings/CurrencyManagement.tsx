@@ -21,10 +21,12 @@ export default function CurrencyManagement({
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [showCustomForm, setShowCustomForm] = useState(false)
+  const [editingCurrency, setEditingCurrency] = useState<string | null>(null)
   const [customCurrencyForm, setCustomCurrencyForm] = useState({
     code: '',
     name: '',
     symbol: '',
+    decimalPlaces: 2,
   })
 
   const fetchAllCurrencies = useCallback(async () => {
@@ -136,6 +138,17 @@ export default function CurrencyManagement({
     }
   }
 
+  const handleEditCurrency = (currency: any) => {
+    setEditingCurrency(currency.code)
+    setCustomCurrencyForm({
+      code: currency.code,
+      name: currency.name,
+      symbol: currency.symbol,
+      decimalPlaces: currency.decimalPlaces,
+    })
+    setShowCustomForm(true)
+  }
+
   const handleCreateCustomCurrency = async () => {
     try {
       setError('')
@@ -150,8 +163,23 @@ export default function CurrencyManagement({
         return
       }
 
-      const response = await fetch('/api/currencies/custom', {
-        method: 'POST',
+      // 验证小数位数
+      if (
+        customCurrencyForm.decimalPlaces < 0 ||
+        customCurrencyForm.decimalPlaces > 10
+      ) {
+        setError('小数位数必须在 0-10 之间')
+        return
+      }
+
+      const isEditing = !!editingCurrency
+      const url = isEditing
+        ? `/api/currencies/custom/${editingCurrency}`
+        : '/api/currencies/custom'
+      const method = isEditing ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -163,12 +191,25 @@ export default function CurrencyManagement({
       if (response.ok) {
         setSuccessMessage(data.message)
         setShowCustomForm(false)
-        setCustomCurrencyForm({ code: '', name: '', symbol: '' })
+        setEditingCurrency(null)
+        setCustomCurrencyForm({
+          code: '',
+          name: '',
+          symbol: '',
+          decimalPlaces: 2,
+        })
         await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(data.error || t('currency.custom.create.failed'))
+        setError(
+          data.error ||
+            t(
+              isEditing
+                ? 'currency.custom.update.failed'
+                : 'currency.custom.create.failed'
+            )
+        )
       }
     } catch (error) {
       console.error('创建自定义货币失败:', error)
@@ -256,27 +297,53 @@ export default function CurrencyManagement({
                     <div className='text-sm text-gray-600 dark:text-gray-400'>
                       {currency.name}
                     </div>
+                    <div className='text-xs text-gray-500 dark:text-gray-500'>
+                      {t('currency.decimalPlaces')}: {currency.decimalPlaces}
+                    </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleRemoveCurrency(currency.code)}
-                  className='p-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors'
-                  title={t('currency.remove')}
-                >
-                  <svg
-                    className='w-4 h-4'
-                    fill='none'
-                    stroke='currentColor'
-                    viewBox='0 0 24 24'
+                <div className='flex space-x-1'>
+                  {currency.isCustom && (
+                    <button
+                      onClick={() => handleEditCurrency(currency)}
+                      className='p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors'
+                      title={t('common.edit')}
+                    >
+                      <svg
+                        className='w-4 h-4'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
+                        />
+                      </svg>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleRemoveCurrency(currency.code)}
+                    className='p-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors'
+                    title={t('currency.remove')}
                   >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M6 18L18 6M6 6l12 12'
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      className='w-4 h-4'
+                      fill='none'
+                      stroke='currentColor'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M6 18L18 6M6 6l12 12'
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -324,9 +391,11 @@ export default function CurrencyManagement({
         {showCustomForm && (
           <div className='mb-6 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800'>
             <h5 className='text-sm font-medium text-gray-900 dark:text-gray-100 mb-3'>
-              {t('currency.custom.create')}
+              {editingCurrency
+                ? t('currency.custom.edit')
+                : t('currency.custom.create')}
             </h5>
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-3 mb-3'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3'>
               <div>
                 <label className='block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1'>
                   {t('currency.code')} *
@@ -341,8 +410,9 @@ export default function CurrencyManagement({
                     }))
                   }
                   placeholder={t('currency.code.placeholder')}
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed'
                   maxLength={10}
+                  disabled={!!editingCurrency}
                 />
                 <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
                   {t('currency.code.help')}
@@ -383,18 +453,48 @@ export default function CurrencyManagement({
                   maxLength={5}
                 />
               </div>
+              <div>
+                <label className='block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1'>
+                  {t('currency.decimalPlaces')}
+                </label>
+                <select
+                  value={customCurrencyForm.decimalPlaces}
+                  onChange={e =>
+                    setCustomCurrencyForm(prev => ({
+                      ...prev,
+                      decimalPlaces: parseInt(e.target.value),
+                    }))
+                  }
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                >
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                    <option key={num} value={num}>
+                      {num} {t('currency.decimalPlaces.unit')}
+                    </option>
+                  ))}
+                </select>
+                <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                  {t('currency.decimalPlaces.help')}
+                </p>
+              </div>
             </div>
             <div className='flex space-x-2'>
               <button
                 onClick={handleCreateCustomCurrency}
                 className='px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors'
               >
-                {t('common.add')}
+                {editingCurrency ? t('common.save') : t('common.add')}
               </button>
               <button
                 onClick={() => {
                   setShowCustomForm(false)
-                  setCustomCurrencyForm({ code: '', name: '', symbol: '' })
+                  setEditingCurrency(null)
+                  setCustomCurrencyForm({
+                    code: '',
+                    name: '',
+                    symbol: '',
+                    decimalPlaces: 2,
+                  })
                 }}
                 className='px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors'
               >
@@ -428,6 +528,9 @@ export default function CurrencyManagement({
                     <div className='text-sm text-gray-600 dark:text-gray-400'>
                       {currency.name}
                     </div>
+                    <div className='text-xs text-gray-500 dark:text-gray-500'>
+                      {t('currency.decimalPlaces')}: {currency.decimalPlaces}
+                    </div>
                   </div>
                 </div>
                 <div className='flex space-x-1'>
@@ -451,25 +554,48 @@ export default function CurrencyManagement({
                     </svg>
                   </button>
                   {currency.isCustom && (
-                    <button
-                      onClick={() => handleDeleteCustomCurrency(currency.code)}
-                      className='p-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors'
-                      title={t('common.delete')}
-                    >
-                      <svg
-                        className='w-4 h-4'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
+                    <>
+                      <button
+                        onClick={() => handleEditCurrency(currency)}
+                        className='p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors'
+                        title={t('common.edit')}
                       >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
-                        />
-                      </svg>
-                    </button>
+                        <svg
+                          className='w-4 h-4'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleDeleteCustomCurrency(currency.code)
+                        }
+                        className='p-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors'
+                        title={t('common.delete')}
+                      >
+                        <svg
+                          className='w-4 h-4'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
+                          />
+                        </svg>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -485,6 +611,7 @@ export default function CurrencyManagement({
         <ul className='text-sm text-yellow-700 dark:text-yellow-300 space-y-1'>
           <li>• {t('currency.tip.custom.create')}</li>
           <li>• {t('currency.tip.code.format')}</li>
+          <li>• {t('currency.tip.decimal.places')}</li>
           <li>• {t('currency.tip.delete.warning')}</li>
           <li>• {t('currency.tip.base.currency')}</li>
           <li>• {t('currency.tip.major.currency')}</li>

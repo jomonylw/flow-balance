@@ -3,7 +3,6 @@
   "type.liability": "负债",
   "type.income": "收入",
   "type.expense": "支出",
-  "type.transfer": "转账",
   "type.stock": "存量账户",
   "type.flow": "流量账户",
   "type.asset.account": "资产账户",

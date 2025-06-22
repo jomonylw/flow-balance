@@ -26,13 +26,14 @@ export default async function TransactionsPage() {
             ? {
                 id: userSettings.id,
                 userId: userSettings.userId,
-                baseCurrencyCode: userSettings.baseCurrencyCode || 'USD',
+                baseCurrencyId: userSettings.baseCurrencyId || '',
                 language: userSettings.language as 'zh' | 'en',
                 theme: userSettings.theme as 'light' | 'dark' | 'system',
                 baseCurrency: userSettings.baseCurrency || undefined,
                 createdAt: userSettings.createdAt,
                 updatedAt: userSettings.updatedAt,
                 fireSWR: userSettings.fireSWR,
+                futureDataDays: userSettings.futureDataDays,
               }
             : undefined,
         }}

@@ -8,6 +8,7 @@ import {
   validationErrorResponse,
 } from '@/lib/api/response'
 import type { Prisma } from '@prisma/client'
+import { generateAutoExchangeRates } from '@/lib/services/exchange-rate-auto-generation.service'
 
 /**
  * 获取用户的汇率设置
@@ -25,12 +26,36 @@ export async function GET(request: NextRequest) {
 
     const whereClause: Prisma.ExchangeRateWhereInput = { userId: user.id }
 
-    // 如果指定了货币对，则过滤
+    // 如果指定了货币对，则过滤（需要先查找货币ID）
     if (fromCurrency) {
-      whereClause.fromCurrency = fromCurrency
+      const fromCurrencyRecord = await prisma.currency.findFirst({
+        where: {
+          code: fromCurrency,
+          OR: [
+            { createdBy: user.id }, // 用户自定义货币
+            { createdBy: null }, // 全局货币
+          ],
+        },
+        orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+      })
+      if (fromCurrencyRecord) {
+        whereClause.fromCurrencyId = fromCurrencyRecord.id
+      }
     }
     if (toCurrency) {
-      whereClause.toCurrency = toCurrency
+      const toCurrencyRecord = await prisma.currency.findFirst({
+        where: {
+          code: toCurrency,
+          OR: [
+            { createdBy: user.id }, // 用户自定义货币
+            { createdBy: null }, // 全局货币
+          ],
+        },
+        orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+      })
+      if (toCurrencyRecord) {
+        whereClause.toCurrencyId = toCurrencyRecord.id
+      }
     }
 
     const exchangeRates = await prisma.exchangeRate.findMany({
@@ -40,16 +65,18 @@ export async function GET(request: NextRequest) {
         toCurrencyRef: true,
       },
       orderBy: [
-        { fromCurrency: 'asc' },
-        { toCurrency: 'asc' },
+        { fromCurrencyRef: { code: 'asc' } },
+        { toCurrencyRef: { code: 'asc' } },
         { effectiveDate: 'desc' },
       ],
     })
 
-    // 序列化 Decimal 类型
+    // 序列化 Decimal 类型并添加货币代码字段
     const serializedRates = exchangeRates.map(rate => ({
       ...rate,
       rate: parseFloat(rate.rate.toString()),
+      fromCurrency: rate.fromCurrencyRef?.code || '',
+      toCurrency: rate.toCurrencyRef?.code || '',
     }))
 
     return successResponse(serializedRates)
@@ -83,11 +110,28 @@ export async function POST(request: NextRequest) {
       return validationErrorResponse('汇率必须是大于0的数字')
     }
 
-    // 验证货币代码
-    const [fromCurrencyExists, toCurrencyExists] = await Promise.all([
-      prisma.currency.findUnique({ where: { code: fromCurrency } }),
-      prisma.currency.findUnique({ where: { code: toCurrency } }),
-    ])
+    // 验证货币代码（优先查找用户自定义货币）
+    const fromCurrencyExists = await prisma.currency.findFirst({
+      where: {
+        code: fromCurrency,
+        OR: [
+          { createdBy: user.id }, // 用户自定义货币
+          { createdBy: null }, // 全局货币
+        ],
+      },
+      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+    })
+
+    const toCurrencyExists = await prisma.currency.findFirst({
+      where: {
+        code: toCurrency,
+        OR: [
+          { createdBy: user.id }, // 用户自定义货币
+          { createdBy: null }, // 全局货币
+        ],
+      },
+      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+    })
 
     if (!fromCurrencyExists) {
       return validationErrorResponse(`源货币 ${fromCurrency} 不存在`)
@@ -111,10 +155,10 @@ export async function POST(request: NextRequest) {
     // 检查是否已存在相同日期的汇率
     const existingRate = await prisma.exchangeRate.findUnique({
       where: {
-        userId_fromCurrency_toCurrency_effectiveDate: {
+        userId_fromCurrencyId_toCurrencyId_effectiveDate: {
           userId: user.id,
-          fromCurrency,
-          toCurrency,
+          fromCurrencyId: fromCurrencyExists.id,
+          toCurrencyId: toCurrencyExists.id,
           effectiveDate: parsedDate,
         },
       },
@@ -139,10 +183,11 @@ export async function POST(request: NextRequest) {
       exchangeRate = await prisma.exchangeRate.create({
         data: {
           userId: user.id,
-          fromCurrency,
-          toCurrency,
+          fromCurrencyId: fromCurrencyExists.id,
+          toCurrencyId: toCurrencyExists.id,
           rate: rateValue,
           effectiveDate: parsedDate,
+          type: 'USER', // 用户输入的汇率
           notes: notes || null,
         },
         include: {
@@ -152,10 +197,29 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 序列化 Decimal 类型
+    // 序列化 Decimal 类型并添加货币代码字段
     const serializedRate = {
       ...exchangeRate,
       rate: parseFloat(exchangeRate.rate.toString()),
+      fromCurrency: exchangeRate.fromCurrencyRef?.code || '',
+      toCurrency: exchangeRate.toCurrencyRef?.code || '',
+    }
+
+    // 清理所有自动生成的汇率，然后重新生成
+    try {
+      // 删除所有自动生成的汇率
+      await prisma.exchangeRate.deleteMany({
+        where: {
+          userId: user.id,
+          type: 'AUTO',
+        },
+      })
+
+      // 重新生成所有自动汇率
+      await generateAutoExchangeRates(user.id, parsedDate)
+    } catch (error) {
+      console.error('自动重新生成汇率失败:', error)
+      // 不影响主要操作，只记录错误
     }
 
     return successResponse(
@@ -217,13 +281,46 @@ export async function PUT(request: NextRequest) {
           continue
         }
 
+        // 验证货币是否存在
+        const fromCurrencyExists = await prisma.currency.findFirst({
+          where: {
+            code: fromCurrency,
+            OR: [
+              { createdBy: user.id }, // 用户自定义货币
+              { createdBy: null }, // 全局货币
+            ],
+          },
+          orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+        })
+
+        const toCurrencyExists = await prisma.currency.findFirst({
+          where: {
+            code: toCurrency,
+            OR: [
+              { createdBy: user.id }, // 用户自定义货币
+              { createdBy: null }, // 全局货币
+            ],
+          },
+          orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+        })
+
+        if (!fromCurrencyExists) {
+          errors.push(`第${i + 1}条记录：源货币 ${fromCurrency} 不存在`)
+          continue
+        }
+
+        if (!toCurrencyExists) {
+          errors.push(`第${i + 1}条记录：目标货币 ${toCurrency} 不存在`)
+          continue
+        }
+
         // 使用 upsert 创建或更新
         const exchangeRate = await prisma.exchangeRate.upsert({
           where: {
-            userId_fromCurrency_toCurrency_effectiveDate: {
+            userId_fromCurrencyId_toCurrencyId_effectiveDate: {
               userId: user.id,
-              fromCurrency,
-              toCurrency,
+              fromCurrencyId: fromCurrencyExists.id,
+              toCurrencyId: toCurrencyExists.id,
               effectiveDate: parsedDate,
             },
           },
@@ -233,10 +330,11 @@ export async function PUT(request: NextRequest) {
           },
           create: {
             userId: user.id,
-            fromCurrency,
-            toCurrency,
+            fromCurrencyId: fromCurrencyExists.id,
+            toCurrencyId: toCurrencyExists.id,
             rate: rateValue,
             effectiveDate: parsedDate,
+            type: 'USER', // 用户输入的汇率
             notes: notes || null,
           },
           include: {
@@ -248,11 +346,32 @@ export async function PUT(request: NextRequest) {
         results.push({
           ...exchangeRate,
           rate: parseFloat(exchangeRate.rate.toString()),
+          fromCurrency: exchangeRate.fromCurrencyRef?.code || '',
+          toCurrency: exchangeRate.toCurrencyRef?.code || '',
         })
       } catch (error) {
         errors.push(
           `第${i + 1}条记录：${error instanceof Error ? error.message : '未知错误'}`
         )
+      }
+    }
+
+    // 如果有成功创建的汇率，触发自动重新生成
+    if (results.length > 0) {
+      try {
+        // 清理所有自动生成的汇率，然后重新生成
+        await prisma.exchangeRate.deleteMany({
+          where: {
+            userId: user.id,
+            type: 'AUTO',
+          },
+        })
+
+        // 重新生成所有自动汇率
+        await generateAutoExchangeRates(user.id)
+      } catch (error) {
+        console.error('自动重新生成汇率失败:', error)
+        // 不影响主要操作，只记录错误
       }
     }
 

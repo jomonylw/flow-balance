@@ -1,0 +1,23 @@
+{
+  "setup.title": "欢迎使用 Flow Balance",
+  "setup.subtitle": "让我们先进行一些基本设置",
+  "setup.step.1": "选择货币",
+  "setup.step.2": "设置本位币",
+  "setup.step.1.title": "选择您需要使用的货币",
+  "setup.step.1.description": "请选择您在日常财务管理中会用到的货币。您可以随时在设置中修改这些选择。",
+  "setup.step.2.title": "选择您的本位币",
+  "setup.step.2.description": "本位币是您的主要货币，用于计算净资产和生成财务报告。其他货币的金额会自动转换为本位币显示。",
+  "setup.common.currencies": "常用货币",
+  "setup.other.currencies": "其他货币",
+  "setup.selected.count": "已选择 {{count}} 种货币",
+  "setup.button.previous": "上一步",
+  "setup.button.next": "下一步",
+  "setup.button.complete": "完成设置",
+  "setup.button.completing": "设置中...",
+  "setup.error.no.currencies": "请至少选择一种货币",
+  "setup.error.no.base.currency": "请选择本位币",
+  "setup.error.fetch.currencies": "获取货币列表失败",
+  "setup.error.set.currencies": "设置可用货币失败",
+  "setup.error.set.base.currency": "设置本位币失败",
+  "setup.error.general": "设置失败，请稍后重试"
+}

@@ -25,10 +25,15 @@ type PrismaTransaction = {
   categoryId: string
   currencyCode: string
   accountId: string
+  recurringTransactionId?: string | null
+  loanContractId?: string | null
+  loanPaymentId?: string | null
   currency: {
+    id: string
     code: string
     name: string
     symbol: string
+    decimalPlaces: number
     isCustom: boolean
     createdBy: string | null
   }
@@ -68,6 +73,10 @@ const serializeTransactions = (
     createdAt: transaction.createdAt.toISOString(),
     updatedAt: transaction.updatedAt.toISOString(),
     notes: transaction.notes || undefined,
+    recurringTransactionId: transaction.recurringTransactionId || null,
+    loanContractId: transaction.loanContractId || null,
+    loanPaymentId: transaction.loanPaymentId || null,
+    currencyId: transaction.currencyCode, // 修复: 添加 currencyId
     account: transaction.account
       ? {
           id: transaction.account.id,
@@ -108,16 +117,20 @@ const serializeTransactions = (
       : [],
     currency: transaction.currency
       ? {
+          id: transaction.currency.id,
           code: transaction.currency.code,
           name: transaction.currency.name,
           symbol: transaction.currency.symbol,
+          decimalPlaces: transaction.currency.decimalPlaces,
           isCustom: transaction.currency.isCustom,
           createdBy: transaction.currency.createdBy,
         }
       : {
+          id: 'default-usd',
           code: 'USD',
           name: 'US Dollar',
           symbol: '$',
+          decimalPlaces: 2,
           isCustom: false,
           createdBy: null,
         },
@@ -298,10 +311,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                 updatedAt: new Date(),
                 parentId: undefined,
               }),
-          currency: {
-            code: account.currencyCode,
-            name: account.currencyCode,
-            symbol: account.currencyCode,
+          currency: currencies.find(c => c.id === account.currencyId) || {
+            id: 'default-usd',
+            code: 'USD',
+            name: 'US Dollar',
+            symbol: '$',
+            decimalPlaces: 2,
             isCustom: false,
             createdBy: null,
           },
@@ -329,10 +344,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             updatedAt: new Date(),
             parentId: undefined,
           }),
-      currency: {
-        code: account.currencyCode,
-        name: account.currencyCode,
-        symbol: account.currencyCode,
+      currency: currencies.find(c => c.id === account.currencyId) || {
+        id: 'default-usd',
+        code: 'USD',
+        name: 'US Dollar',
+        symbol: '$',
+        decimalPlaces: 2,
         isCustom: false,
         createdBy: null,
       },
@@ -367,10 +384,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                 updatedAt: new Date(),
                 parentId: undefined,
               }),
-          currency: {
-            code: account.currencyCode,
-            name: account.currencyCode,
-            symbol: account.currencyCode,
+          currency: currencies.find(c => c.id === account.currencyId) || {
+            id: 'default-usd',
+            code: 'USD',
+            name: 'US Dollar',
+            symbol: '$',
+            decimalPlaces: 2,
             isCustom: false,
             createdBy: null,
           },
@@ -391,13 +410,14 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             ? {
                 id: userSettings.id,
                 userId: userSettings.userId,
-                baseCurrencyCode: userSettings.baseCurrencyCode || 'USD',
+                baseCurrencyId: userSettings.baseCurrencyId,
                 language: userSettings.language as 'zh' | 'en',
                 theme: userSettings.theme as 'light' | 'dark' | 'system',
                 baseCurrency: userSettings.baseCurrency || undefined,
                 createdAt: userSettings.createdAt,
                 updatedAt: userSettings.updatedAt,
                 fireSWR: userSettings.fireSWR,
+                futureDataDays: userSettings.futureDataDays,
               }
             : undefined,
         }}

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import ColorManager from '@/lib/utils/color'
 import type { SimpleCurrency, CategoryType } from '@/types/core'
@@ -32,6 +33,8 @@ export default function FlowMonthlySummaryChart({
   accounts = [],
 }: FlowMonthlySummaryChartProps) {
   const { t, isLoading } = useLanguage()
+  const { formatCurrency, getUserLocale: _getUserLocale } =
+    useUserCurrencyFormatter()
   const { resolvedTheme } = useTheme()
 
   const chartRef = useRef<HTMLDivElement>(null)
@@ -250,7 +253,7 @@ export default function FlowMonthlySummaryChart({
                 }; margin-right: 8px; border-radius: 50%;"></span>
                 <span style="margin-right: 8px;">${typedParam?.seriesName ?? 'N/A'}:</span>
                 <span style="font-weight: bold; color: ${isIncomeCategory ? '#059669' : '#dc2626'};">
-                  ${baseCurrency.symbol}${Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${formatCurrency(Math.abs(value), baseCurrency.code)}
                 </span>
               </div>
             `
@@ -258,7 +261,7 @@ export default function FlowMonthlySummaryChart({
 
             result += `<div style="border-top: 1px solid #ccc; margin-top: 8px; padding-top: 4px; font-weight: bold;">
             ${isIncomeCategory ? t('category.total.income') : t('category.total.expense')}: <span style="color: ${isIncomeCategory ? '#059669' : '#dc2626'};">
-              ${baseCurrency.symbol}${Math.abs(total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${formatCurrency(Math.abs(total), baseCurrency.code)}
             </span>
           </div>`
 
@@ -304,9 +307,9 @@ export default function FlowMonthlySummaryChart({
             axisLabel: {
               formatter: function (value: number) {
                 if (Math.abs(value) >= 1000) {
-                  return `${baseCurrency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
+                  return `${formatCurrency(value / 1000, baseCurrency.code)}k`
                 }
-                return `${baseCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                return formatCurrency(value, baseCurrency.code)
               },
               color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
             },

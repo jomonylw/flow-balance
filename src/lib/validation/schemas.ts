@@ -4,6 +4,9 @@
  */
 
 import { z } from 'zod'
+// 核心类型从 @/types/core 导入，在此文件中不直接使用但保持导入以供其他文件引用
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { UserSettings, Currency, Tag } from '@/types/core'
 
 // ============================================================================
 // 基础验证 Schema
@@ -262,9 +265,7 @@ export function createValidationMiddleware<T>(schema: z.ZodSchema<T>) {
 // ============================================================================
 
 // 从 Schema 推断类型
-export type UserSettings = z.infer<typeof UserSettingsSchema>
-export type Currency = z.infer<typeof CurrencySchema>
-export type Tag = z.infer<typeof TagSchema>
+// UserSettings, Currency, Tag 类型已从 @/types/core 导入
 export type CategoryCreate = z.infer<typeof CategoryCreateSchema>
 export type CategoryUpdate = z.infer<typeof CategoryUpdateSchema>
 export type AccountCreate = z.infer<typeof AccountCreateSchema>

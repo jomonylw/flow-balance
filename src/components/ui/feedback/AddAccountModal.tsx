@@ -105,16 +105,34 @@ export default function AddAccountModal({
 
       if (response.ok) {
         // 转换为 SimpleAccount 类型
+        const selectedCurrency = currencies.find(
+          c => c.code === formData.currencyCode
+        )
         const simpleAccount: SimpleAccount = {
           id: result.data.id,
           name: result.data.name,
-          currencyCode: result.data.currencyCode,
+          currencyId: result.data.currencyId,
           categoryId: category.id,
           category: {
             id: category.id,
             name: category.name,
             type: category.type,
           },
+          currency: selectedCurrency
+            ? {
+                id: selectedCurrency.id,
+                code: selectedCurrency.code,
+                name: selectedCurrency.name,
+                symbol: selectedCurrency.symbol,
+                decimalPlaces: selectedCurrency.decimalPlaces,
+              }
+            : {
+                id: 'default-usd',
+                code: 'USD',
+                name: 'US Dollar',
+                symbol: '$',
+                decimalPlaces: 2,
+              },
         }
         onSuccess(simpleAccount)
         onClose()

@@ -1,0 +1,23 @@
+{
+  "setup.title": "Welcome to Flow Balance",
+  "setup.subtitle": "Let's set up some basic configurations first",
+  "setup.step.1": "Select Currencies",
+  "setup.step.2": "Set Base Currency",
+  "setup.step.1.title": "Select the currencies you need to use",
+  "setup.step.1.description": "Please select the currencies you will use in your daily financial management. You can modify these selections in settings at any time.",
+  "setup.step.2.title": "Choose your base currency",
+  "setup.step.2.description": "The base currency is your primary currency, used for calculating net worth and generating financial reports. Amounts in other currencies will be automatically converted to the base currency for display.",
+  "setup.common.currencies": "Common Currencies",
+  "setup.other.currencies": "Other Currencies",
+  "setup.selected.count": "Selected {{count}} currencies",
+  "setup.button.previous": "Previous",
+  "setup.button.next": "Next",
+  "setup.button.complete": "Complete Setup",
+  "setup.button.completing": "Setting up...",
+  "setup.error.no.currencies": "Please select at least one currency",
+  "setup.error.no.base.currency": "Please select a base currency",
+  "setup.error.fetch.currencies": "Failed to fetch currency list",
+  "setup.error.set.currencies": "Failed to set available currencies",
+  "setup.error.set.base.currency": "Failed to set base currency",
+  "setup.error.general": "Setup failed, please try again later"
+}

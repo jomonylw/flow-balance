@@ -6,6 +6,7 @@ import InputField from '@/components/ui/forms/InputField'
 import SelectField from '@/components/ui/forms/SelectField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { publishBalanceUpdate } from '@/lib/services/data-update.service'
@@ -55,6 +56,7 @@ export default function BalanceUpdateModal({
   editingTransaction,
 }: BalanceUpdateModalProps) {
   const { t } = useLanguage()
+  const { formatCurrency } = useUserCurrencyFormatter()
   const { showSuccess, showError } = useToast()
   const { resolvedTheme } = useTheme()
   const [formData, setFormData] = useState({
@@ -103,7 +105,7 @@ export default function BalanceUpdateModal({
     currentBalance,
     currencyCode,
     editingTransaction,
-    account.currencyCode,
+    account.currency?.code,
   ])
 
   // 额外的useEffect确保编辑模式下币种值正确设置
@@ -114,7 +116,9 @@ export default function BalanceUpdateModal({
       (!formData.currencyCode || formData.currencyCode === '')
     ) {
       const correctCurrencyCode =
-        editingTransaction.currencyCode || account.currencyCode || currencyCode
+        editingTransaction.currencyCode ||
+        account.currency?.code ||
+        currencyCode
 
       setFormData(prev => ({
         ...prev,
@@ -125,7 +129,7 @@ export default function BalanceUpdateModal({
     isOpen,
     editingTransaction,
     formData.currencyCode,
-    account.currencyCode,
+    account.currency?.code,
     currencyCode,
   ])
 
@@ -169,10 +173,10 @@ export default function BalanceUpdateModal({
     e.preventDefault()
 
     // 在提交前再次确保币种值正确
-    if (!formData.currencyCode && account.currencyCode) {
+    if (!formData.currencyCode && account.currency?.code) {
       setFormData(prev => ({
         ...prev,
-        currencyCode: account.currencyCode || '',
+        currencyCode: account.currency?.code || '',
       }))
       return
     }
@@ -221,7 +225,7 @@ export default function BalanceUpdateModal({
           // 发布余额更新事件
           await publishBalanceUpdate(account.id, {
             newBalance: parseFloat(formData.newBalance),
-            currencyCode: account.currencyCode,
+            currencyCode: account.currency?.code || '',
             transaction: result.transaction,
           })
 
@@ -288,7 +292,7 @@ export default function BalanceUpdateModal({
           )
           await publishBalanceUpdate(account.id, {
             newBalance: parseFloat(formData.newBalance),
-            currencyCode: account.currencyCode,
+            currencyCode: account.currency?.code || '',
             transaction: result.transaction,
           })
           console.log(
@@ -329,8 +333,8 @@ export default function BalanceUpdateModal({
   }
 
   // 如果账户有货币限制，只显示该货币
-  const availableCurrencies = account.currencyCode
-    ? currencies.filter(c => c.code === account.currencyCode)
+  const availableCurrencies = account.currency?.code
+    ? currencies.filter(c => c.code === account.currency?.code)
     : currencies
 
   const currencyOptions = (availableCurrencies || []).map(currency => ({
@@ -339,10 +343,10 @@ export default function BalanceUpdateModal({
   }))
 
   // 如果账户有货币限制但在可用货币列表中找不到，添加一个临时选项
-  if (account.currencyCode && currencyOptions.length === 0) {
+  if (account.currency?.code && currencyOptions.length === 0) {
     currencyOptions.push({
-      value: account.currencyCode,
-      label: `${account.currencyCode} - ${account.currency?.name || account.currencyCode}`,
+      value: account.currency.code,
+      label: `${account.currency.code} - ${account.currency.name || account.currency.code}`,
     })
   }
 
@@ -365,7 +369,7 @@ export default function BalanceUpdateModal({
   const currentBalanceCurrency = (currencies || []).find(
     c => c.code === currencyCode
   )
-  const currentBalanceCurrencySymbol = currentBalanceCurrency?.symbol || '$'
+  const _currentBalanceCurrencySymbol = currentBalanceCurrency?.symbol || '$'
 
   // 组件渲染时的调试信息
   console.log('BalanceUpdateModal 渲染调试信息:', {
@@ -373,7 +377,8 @@ export default function BalanceUpdateModal({
     editingTransaction: editingTransaction
       ? {
           id: editingTransaction.id,
-          currencyCode: editingTransaction.currencyCode,
+          currencyCode:
+            editingTransaction.currencyCode || account.currency?.code || 'USD',
           amount: editingTransaction.amount,
         }
       : null,
@@ -381,7 +386,7 @@ export default function BalanceUpdateModal({
     account: {
       id: account.id,
       name: account.name,
-      currencyCode: account.currencyCode,
+      currencyCode: account.currency?.code,
       currency: account.currency,
     },
     currencyOptions,
@@ -438,12 +443,7 @@ export default function BalanceUpdateModal({
                 className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
               >
                 {t('balance.update.modal.current.balance')}:{' '}
-                {currentBalanceCurrencySymbol}
-                {currentBalance.toLocaleString('zh-CN', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{' '}
-                ({currencyCode})
+                {formatCurrency(currentBalance, currencyCode)} ({currencyCode})
               </p>
             </div>
           </div>
@@ -458,12 +458,12 @@ export default function BalanceUpdateModal({
             onChange={handleChange}
             options={currencyOptions}
             error={errors.currencyCode}
-            disabled={!!account.currencyCode}
+            disabled={!!account.currency?.code}
             help={
-              account.currencyCode
+              account.currency?.code
                 ? t('balance.update.currency.locked', {
-                    currencyName: account.currency?.name || '',
-                    currencyCode: account.currencyCode,
+                    currencyName: account.currency.name || '',
+                    currencyCode: account.currency.code,
                   })
                 : undefined
             }

@@ -12,6 +12,7 @@ import CategorySettingsModal from '@/components/ui/feedback/CategorySettingsModa
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useSidebarNavigation } from '@/hooks/ui/useOptimizedNavigation'
 import {
   publishCategoryCreate,
@@ -46,6 +47,7 @@ export default function CategoryTreeItem({
 }: CategoryTreeItemProps) {
   const { showSuccess, showError } = useToast()
   const { t } = useLanguage()
+  const { formatCurrency } = useUserCurrencyFormatter()
   const pathname = usePathname()
   const { navigateToCategory } = useSidebarNavigation()
   const moreButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -90,7 +92,6 @@ export default function CategoryTreeItem({
   }
 
   const balance = calculateCategoryBalance(category)
-  const currencySymbol = baseCurrency?.symbol || '¥'
 
   // 数据现在从UserDataContext获取，无需额外的API调用
 
@@ -390,11 +391,7 @@ export default function CategoryTreeItem({
           <div
             className={`text-xs mt-1.5 font-semibold transition-colors duration-200 ${getAmountColor()}`}
           >
-            {currencySymbol}
-            {Math.abs(balance).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(Math.abs(balance), baseCurrency?.code || 'CNY')}
           </div>
         </div>
 

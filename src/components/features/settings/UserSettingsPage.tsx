@@ -86,7 +86,7 @@ export default function UserSettingsPage({
           label: t('settings.preferences.tab'),
           description: t('settings.preferences.description'),
           icon: '⚙️',
-          status: userSettings?.baseCurrencyCode ? 'complete' : 'warning',
+          status: userSettings?.baseCurrencyId ? 'complete' : 'warning',
         },
         {
           id: 'currencies',

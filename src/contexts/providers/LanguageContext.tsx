@@ -42,12 +42,15 @@ const namespaces = [
   'feature',
   'fire',
   'form',
+  'loan',
   'menu',
   'nav',
   'password',
   'preferences',
+  'recurring',
   'reports',
   'settings',
+  'setup',
   'sidebar',
   'status',
   'success',
@@ -179,7 +182,12 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
     if (params) {
       Object.entries(params).forEach(([paramKey, value]) => {
-        text = text.replace(`{{${paramKey}}}`, String(value))
+        // Support both {key} and {{key}} formats
+        text = text.replace(
+          new RegExp(`\\{\\{${paramKey}\\}\\}`, 'g'),
+          String(value)
+        )
+        text = text.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(value))
       })
     }
 

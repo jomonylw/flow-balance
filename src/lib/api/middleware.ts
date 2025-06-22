@@ -32,7 +32,6 @@ export function withApiHandler(handler: ApiHandler) {
           settings: user.settings
             ? {
                 ...user.settings,
-                baseCurrencyCode: user.settings.baseCurrencyCode || 'USD',
                 language:
                   user.settings.language === 'zh' ||
                   user.settings.language === 'en'
@@ -63,7 +62,6 @@ export function withApiHandler(handler: ApiHandler) {
           settings: user.settings
             ? {
                 ...user.settings,
-                baseCurrencyCode: user.settings.baseCurrencyCode || 'USD',
                 language:
                   user.settings.language === 'zh' ||
                   user.settings.language === 'en'
@@ -92,11 +90,20 @@ export function withApiHandler(handler: ApiHandler) {
 
       // 返回用户友好的错误响应
       if (error instanceof ValidationError) {
-        return errorResponse(error.message, 400)
+        return errorResponse(
+          error instanceof Error ? error.message : '未知错误',
+          400
+        )
       } else if (error instanceof NotFoundError) {
-        return errorResponse(error.message, 404)
+        return errorResponse(
+          error instanceof Error ? error.message : '未知错误',
+          404
+        )
       } else if (error instanceof ForbiddenError) {
-        return errorResponse(error.message, 403)
+        return errorResponse(
+          error instanceof Error ? error.message : '未知错误',
+          403
+        )
       } else {
         console.error('API handler uncaught error:', error)
         return errorResponse('Internal server error', 500)
@@ -291,7 +298,7 @@ function logApiError(
     url: request.url,
     error: {
       name: error.name,
-      message: error.message,
+      message: error instanceof Error ? error.message : '未知错误',
       stack: error.stack,
     },
     duration,
@@ -385,13 +392,25 @@ export async function withDatabaseOperation<T>(
 
     // 根据错误类型返回不同的错误
     if (error instanceof Error) {
-      if (error.message.includes('Unique constraint')) {
+      if (
+        error instanceof Error
+          ? error.message
+          : '未知错误'.includes('Unique constraint')
+      ) {
         throw new ValidationError(
           'Data already exists, please check for duplicates'
         )
-      } else if (error.message.includes('Foreign key constraint')) {
+      } else if (
+        error instanceof Error
+          ? error.message
+          : '未知错误'.includes('Foreign key constraint')
+      ) {
         throw new ValidationError('Related data does not exist')
-      } else if (error.message.includes('Not found')) {
+      } else if (
+        error instanceof Error
+          ? error.message
+          : '未知错误'.includes('Not found')
+      ) {
         throw new NotFoundError('Requested data not found')
       }
     }

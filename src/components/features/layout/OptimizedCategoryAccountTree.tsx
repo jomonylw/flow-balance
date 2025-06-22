@@ -15,6 +15,7 @@ import TypeGroupHeader from './TypeGroupHeader'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useAllDataListener } from '@/hooks/business/useDataUpdateListener'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import type { SimpleCategory, SimpleAccount, CategoryType } from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
@@ -75,7 +76,7 @@ const OptimizedCategoryAccountTree = forwardRef<
     error: userDataError,
     getBaseCurrency,
     accountBalances,
-    isLoadingBalances,
+    isLoadingBalances: _isLoadingBalances,
     balancesError,
     fetchBalances,
     refreshBalances,
@@ -138,7 +139,7 @@ const OptimizedCategoryAccountTree = forwardRef<
     const { type, silent } = event
     // 调试信息 - 仅在开发环境输出
     if (process.env.NODE_ENV === 'development') {
-      console.error(
+      console.log(
         '[OptimizedCategoryAccountTree] Received data update event:',
         event
       )
@@ -155,7 +156,7 @@ const OptimizedCategoryAccountTree = forwardRef<
           | 'full'
           | undefined
         if (process.env.NODE_ENV === 'development') {
-          console.error(
+          console.log(
             `[OptimizedCategoryAccountTree] Manual refresh event received, type: ${refreshType}`
           )
         }
@@ -183,7 +184,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'transaction-delete':
         // 余额相关更新：强制刷新余额数据
         if (process.env.NODE_ENV === 'development') {
-          console.error(
+          console.log(
             '[OptimizedCategoryAccountTree] Refreshing balances for transaction/balance event'
           )
         }
@@ -195,7 +196,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'account-delete':
         // 账户相关更新：刷新账户数据和余额数据
         if (process.env.NODE_ENV === 'development') {
-          console.error(
+          console.log(
             '[OptimizedCategoryAccountTree] Refreshing accounts and balances for account event'
           )
         }
@@ -208,7 +209,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'category-delete':
         // 分类相关更新：刷新分类数据和账户数据（账户的分类信息可能变化）
         if (process.env.NODE_ENV === 'development') {
-          console.error(
+          console.log(
             '[OptimizedCategoryAccountTree] Refreshing categories and accounts for category event'
           )
         }
@@ -219,7 +220,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       default:
         // 其他更新：刷新余额数据
         if (process.env.NODE_ENV === 'development') {
-          console.error(
+          console.log(
             '[OptimizedCategoryAccountTree] Refreshing balances for unknown event'
           )
         }
@@ -264,7 +265,20 @@ const OptimizedCategoryAccountTree = forwardRef<
 
   // 构建按类型分组的树状结构
   const groupedTreeData = useMemo(() => {
-    if (!categories || !accounts || !accountBalances) return null
+    // 如果数据正在加载，返回null（显示加载状态）
+    if (userDataLoading) {
+      return null
+    }
+
+    // 如果数据加载完成但为空，返回空数组（显示"没有数据"）
+    if (
+      !categories ||
+      !accounts ||
+      categories.length === 0 ||
+      accounts.length === 0
+    ) {
+      return []
+    }
 
     // 构建分类映射
     const categoryMap = new Map()
@@ -297,9 +311,9 @@ const OptimizedCategoryAccountTree = forwardRef<
       if (category) {
         category.accounts.push({
           ...account,
-          balances: accountBalances[account.id]?.balances || {},
+          balances: accountBalances?.[account.id]?.balances || {},
           balanceInBaseCurrency:
-            accountBalances[account.id]?.balanceInBaseCurrency || 0,
+            accountBalances?.[account.id]?.balanceInBaseCurrency || 0,
         })
       }
     })
@@ -335,6 +349,7 @@ const OptimizedCategoryAccountTree = forwardRef<
 
     return typeGroups
   }, [
+    userDataLoading, // 添加这个依赖项，确保加载状态变化时重新计算
     categories,
     accounts,
     accountBalances,
@@ -391,7 +406,8 @@ const OptimizedCategoryAccountTree = forwardRef<
 
   // 过滤数据
   const filteredData = useMemo(() => {
-    if (!groupedTreeData) return null
+    if (groupedTreeData === null) return null // 数据正在加载
+    if (groupedTreeData.length === 0) return [] // 数据为空
     if (!searchQuery.trim()) {
       return groupedTreeData
     }
@@ -473,18 +489,20 @@ const OptimizedCategoryAccountTree = forwardRef<
 
         // 如果有子分类，递归检查
         if (hasMatchingChildren) {
-          collectExpandableCategories(category.children!)
+          collectExpandableCategories(category.children || [])
           // 如果子分类有匹配结果，也展开父分类
-          const hasMatchingDescendants = category.children!.some(child => {
-            const childMatches =
-              child.name.toLowerCase().includes(query) ||
-              child.accounts?.some(
-                account =>
-                  account.name.toLowerCase().includes(query) ||
-                  account.description?.toLowerCase().includes(query)
-              )
-            return childMatches
-          })
+          const hasMatchingDescendants = (category.children || []).some(
+            child => {
+              const childMatches =
+                child.name.toLowerCase().includes(query) ||
+                child.accounts?.some(
+                  account =>
+                    account.name.toLowerCase().includes(query) ||
+                    account.description?.toLowerCase().includes(query)
+                )
+              return childMatches
+            }
+          )
           if (hasMatchingDescendants) {
             categoriesToExpand.push(category.id)
           }
@@ -636,13 +654,11 @@ const OptimizedCategoryAccountTree = forwardRef<
   }
 
   // 避免 hydration 错误 - 在客户端挂载前显示加载状态
-  if (!isMounted || userDataLoading || isLoadingBalances) {
+  // 只有在基础数据加载中时才显示加载状态，余额数据可以异步加载
+  if (!isMounted || userDataLoading || filteredData === null) {
     return (
       <div className='flex items-center justify-center py-8'>
-        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400'></div>
-        <span className='ml-2 text-gray-600 dark:text-gray-400'>
-          {t('common.loading')}
-        </span>
+        <LoadingSpinner size='lg' inline showText text={t('common.loading')} />
       </div>
     )
   }
@@ -666,7 +682,7 @@ const OptimizedCategoryAccountTree = forwardRef<
     )
   }
 
-  if (!filteredData || filteredData.length === 0) {
+  if (filteredData.length === 0) {
     return (
       <div className='text-center py-8 text-gray-500 dark:text-gray-400'>
         {searchQuery ? t('sidebar.search.no.results') : t('common.no.data')}

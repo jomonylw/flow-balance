@@ -42,6 +42,8 @@ export function formatCurrency(
 
   const currencySymbol = symbol || currencySymbols[currencyCode] || currencyCode
 
+  // 注意：这个函数已被弃用，请使用 useUserCurrencyFormatter Hook
+  // 这里保留硬编码的 'zh-CN' 是为了向后兼容，但建议迁移到新的Hook
   return `${currencySymbol}${amount.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -55,6 +57,8 @@ export function formatCurrency(
  * @returns 格式化的数字字符串
  */
 export function formatNumber(value: number, decimals: number = 2): string {
+  // 注意：这个函数已被弃用，请使用 useUserCurrencyFormatter Hook
+  // 这里保留硬编码的 'zh-CN' 是为了向后兼容，但建议迁移到新的Hook
   return value.toLocaleString('zh-CN', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -102,7 +106,74 @@ export function monthsToYearsAndMonths(months: number): {
  * @returns 唯一ID字符串
  */
 export function generateId(): string {
-  return Math.random().toString(36).substr(2, 9)
+  return Math.random().toString(36).substring(2, 11)
+}
+
+/**
+ * 获取指定月份的天数
+ * @param date 日期对象
+ * @returns 该月的天数
+ */
+export function getDaysInMonth(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+}
+
+/**
+ * 计算贷款还款日期，处理月末日期边界情况
+ * @param baseDate 基准日期
+ * @param targetDay 目标还款日（1-31）
+ * @param monthsToAdd 要添加的月数
+ * @returns 调整后的还款日期
+ */
+export function calculateLoanPaymentDate(
+  baseDate: Date,
+  targetDay: number,
+  monthsToAdd: number = 0
+): Date {
+  // 从基准日期的年月开始，避免日期跳跃问题
+  const baseYear = baseDate.getFullYear()
+  const baseMonth = baseDate.getMonth()
+
+  // 计算目标年月
+  const targetYear = baseYear + Math.floor((baseMonth + monthsToAdd) / 12)
+  const targetMonth = (baseMonth + monthsToAdd) % 12
+
+  // 创建目标月份的第一天
+  const result = new Date(targetYear, targetMonth, 1)
+
+  // 获取目标月份的最大天数
+  const maxDayInMonth = getDaysInMonth(result)
+
+  // 如果目标日期超过该月最大天数，选择该月最后一天
+  // 如果目标日期在该月范围内，使用目标日期
+  const adjustedDay = Math.min(targetDay, maxDayInMonth)
+
+  // 设置为调整后的日期
+  result.setDate(adjustedDay)
+
+  return result
+}
+
+/**
+ * 为贷款合约计算指定期数的还款日期
+ * @param contractStartDate 合约开始日期
+ * @param paymentDay 每月还款日（1-31）
+ * @param period 期数（从1开始）
+ * @returns 该期的还款日期
+ */
+export function calculateLoanPaymentDateForPeriod(
+  contractStartDate: Date,
+  paymentDay: number,
+  period: number
+): Date {
+  // 第一期使用合约开始日期
+  if (period === 1) {
+    return new Date(contractStartDate)
+  }
+
+  // 第二期开始使用每月还款日
+  // period - 1 是因为第一期已经是开始日期，第二期是开始日期的下个月
+  return calculateLoanPaymentDate(contractStartDate, paymentDay, period - 1)
 }
 
 /**

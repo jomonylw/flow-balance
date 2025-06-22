@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 
 interface CashFlowChartProps {
@@ -24,6 +25,8 @@ interface CashFlowChartProps {
 
 export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
   const { t } = useLanguage()
+  const { formatCurrency, getUserLocale: _getUserLocale } =
+    useUserCurrencyFormatter()
   const { resolvedTheme } = useTheme()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
@@ -72,7 +75,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
           let result = `<div style="font-weight: bold; margin-bottom: 5px;">${params[0].axisValue}</div>`
           params.forEach(param => {
             const value = param.value
-            const formattedValue = `${value < 0 ? '-' : ''}${currency.symbol}${Math.abs(value).toLocaleString()}`
+            const formattedValue = `${value < 0 ? '-' : ''}${formatCurrency(Math.abs(value), currency.code)}`
             result += `<div style="margin: 2px 0;">
               <span style="display: inline-block; width: 10px; height: 10px; background-color: ${param.color}; border-radius: 50%; margin-right: 5px;"></span>
               ${param.seriesName}: ${formattedValue}
@@ -127,9 +130,9 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
             formatter: function (value: number) {
               const absValue = Math.abs(value)
               if (absValue >= 1000) {
-                return `${value < 0 ? '-' : ''}${currency.symbol}${(absValue / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
+                return `${value < 0 ? '-' : ''}${formatCurrency(absValue / 1000, currency.code)}k`
               }
-              return `${value < 0 ? '-' : ''}${currency.symbol}${absValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+              return `${value < 0 ? '-' : ''}${formatCurrency(absValue, currency.code)}`
             },
           },
           nameTextStyle: {

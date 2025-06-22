@@ -60,10 +60,14 @@ export async function PUT(request: NextRequest) {
       return validationErrorResponse('货币代码列表格式错误')
     }
 
-    // 验证所有货币代码是否有效
+    // 验证所有货币代码是否有效（优先查找用户自定义货币）
     const validCurrencies = await prisma.currency.findMany({
       where: {
         code: { in: currencyCodes },
+        OR: [
+          { createdBy: user.id }, // 用户自定义货币
+          { createdBy: null }, // 全局货币
+        ],
       },
     })
 
@@ -86,12 +90,18 @@ export async function PUT(request: NextRequest) {
       // 创建新的用户货币设置
       if (currencyCodes.length > 0) {
         await tx.userCurrency.createMany({
-          data: currencyCodes.map((code: string, index: number) => ({
-            userId: user.id,
-            currencyCode: code,
-            order: index,
-            isActive: true,
-          })),
+          data: currencyCodes.map((code: string, index: number) => {
+            const currency = validCurrencies.find(c => c.code === code)
+            if (!currency) {
+              throw new Error(`Currency not found: ${code}`)
+            }
+            return {
+              userId: user.id,
+              currencyId: currency.id,
+              order: index,
+              isActive: true,
+            }
+          }),
         })
       }
     })
@@ -120,9 +130,16 @@ export async function POST(request: NextRequest) {
       return validationErrorResponse('货币代码不能为空')
     }
 
-    // 验证货币代码是否有效
-    const currency = await prisma.currency.findUnique({
-      where: { code: currencyCode },
+    // 验证货币代码是否有效（优先查找用户自定义货币，然后查找全局货币）
+    const currency = await prisma.currency.findFirst({
+      where: {
+        code: currencyCode,
+        OR: [
+          { createdBy: user.id }, // 用户自定义货币
+          { createdBy: null }, // 全局货币
+        ],
+      },
+      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
     })
 
     if (!currency) {
@@ -132,9 +149,9 @@ export async function POST(request: NextRequest) {
     // 检查是否已存在
     const existingUserCurrency = await prisma.userCurrency.findUnique({
       where: {
-        userId_currencyCode: {
+        userId_currencyId: {
           userId: user.id,
-          currencyCode,
+          currencyId: currency.id,
         },
       },
     })
@@ -162,7 +179,7 @@ export async function POST(request: NextRequest) {
     const userCurrency = await prisma.userCurrency.create({
       data: {
         userId: user.id,
-        currencyCode,
+        currencyId: currency.id,
         order: (maxOrder._max.order || 0) + 1,
         isActive: true,
       },

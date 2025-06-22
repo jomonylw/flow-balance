@@ -19,5 +19,6 @@
   "error.server.response.format": "Server response format error",
   "error.server.response.parse": "Server response parsing failed",
   "error.request.failed": "Request failed",
-  "error.request.process": "Request processing error"
+  "error.request.process": "Request processing error",
+  "error.load.exchange.rates": "Failed to load exchange rates"
 }

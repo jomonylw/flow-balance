@@ -24,12 +24,27 @@ export async function DELETE(
 
     const { currencyCode } = await params
 
+    // 先查找货币以获取 ID
+    const currency = await prisma.currency.findFirst({
+      where: {
+        code: currencyCode,
+        OR: [
+          { createdBy: user.id }, // 用户自定义货币
+          { createdBy: null }, // 全局货币
+        ],
+      },
+    })
+
+    if (!currency) {
+      return validationErrorResponse('货币不存在')
+    }
+
     // 检查是否是本位币
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
     })
 
-    if (userSettings?.baseCurrencyCode === currencyCode) {
+    if (userSettings?.baseCurrencyId === currency.id) {
       return validationErrorResponse('不能删除本位币，请先更改本位币设置')
     }
 
@@ -37,7 +52,7 @@ export async function DELETE(
     const transactionCount = await prisma.transaction.count({
       where: {
         userId: user.id,
-        currencyCode,
+        currencyId: currency.id,
       },
     })
 
@@ -51,7 +66,7 @@ export async function DELETE(
     const exchangeRateCount = await prisma.exchangeRate.count({
       where: {
         userId: user.id,
-        OR: [{ fromCurrency: currencyCode }, { toCurrency: currencyCode }],
+        OR: [{ fromCurrencyId: currency.id }, { toCurrencyId: currency.id }],
       },
     })
 
@@ -65,7 +80,7 @@ export async function DELETE(
     const deletedCount = await prisma.userCurrency.deleteMany({
       where: {
         userId: user.id,
-        currencyCode,
+        currencyId: currency.id,
       },
     })
 
@@ -97,12 +112,27 @@ export async function PATCH(
     const body = await request.json()
     const { isActive, order } = body
 
+    // 先查找货币以获取 ID
+    const currency = await prisma.currency.findFirst({
+      where: {
+        code: currencyCode,
+        OR: [
+          { createdBy: user.id }, // 用户自定义货币
+          { createdBy: null }, // 全局货币
+        ],
+      },
+    })
+
+    if (!currency) {
+      return validationErrorResponse('货币不存在')
+    }
+
     // 查找用户货币记录
     const userCurrency = await prisma.userCurrency.findUnique({
       where: {
-        userId_currencyCode: {
+        userId_currencyId: {
           userId: user.id,
-          currencyCode,
+          currencyId: currency.id,
         },
       },
     })
@@ -117,7 +147,7 @@ export async function PATCH(
         where: { userId: user.id },
       })
 
-      if (userSettings?.baseCurrencyCode === currencyCode) {
+      if (userSettings?.baseCurrencyId === currency.id) {
         return validationErrorResponse('不能停用本位币')
       }
     }

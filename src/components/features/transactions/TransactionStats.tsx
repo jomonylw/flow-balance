@@ -1,6 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 
 interface TransactionStatsData {
   totalIncome: number
@@ -17,16 +18,18 @@ interface TransactionStatsData {
 
 interface TransactionStatsProps {
   stats: TransactionStatsData | null
-  currencySymbol: string
+  currencyCode: string
   isLoading?: boolean
 }
 
 export default function TransactionStats({
   stats,
-  currencySymbol,
+  currencyCode,
   isLoading = false,
 }: TransactionStatsProps) {
   const { t } = useLanguage()
+  const { formatCurrency, formatNumber: _formatNumber } =
+    useUserCurrencyFormatter()
 
   // 如果正在加载或没有数据，显示加载状态
   if (isLoading || !stats) {
@@ -81,11 +84,7 @@ export default function TransactionStats({
                 {t('transaction.stats.total.income')}
               </dt>
               <dd className='text-2xl font-semibold text-green-600 dark:text-green-400'>
-                {currencySymbol}
-                {stats.totalIncome.toLocaleString('zh-CN', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(stats.totalIncome, currencyCode)}
               </dd>
               <dd className='text-xs text-gray-500 dark:text-gray-400'>
                 {t('transaction.stats.count.transactions', {
@@ -123,11 +122,7 @@ export default function TransactionStats({
                 {t('transaction.stats.total.expense')}
               </dt>
               <dd className='text-2xl font-semibold text-red-600 dark:text-red-400'>
-                {currencySymbol}
-                {stats.totalExpense.toLocaleString('zh-CN', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(stats.totalExpense, currencyCode)}
               </dd>
               <dd className='text-xs text-gray-500 dark:text-gray-400'>
                 {t('transaction.stats.count.transactions', {
@@ -182,11 +177,7 @@ export default function TransactionStats({
                 }`}
               >
                 {stats.totalNet >= 0 ? '+' : ''}
-                {currencySymbol}
-                {stats.totalNet.toLocaleString('zh-CN', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(Math.abs(stats.totalNet), currencyCode)}
               </dd>
               <dd className='text-xs text-gray-500 dark:text-gray-400'>
                 {t('transaction.stats.total.records', {
@@ -220,13 +211,14 @@ export default function TransactionStats({
               <dd className={`text-2xl font-semibold ${
                 stats.thisMonthNet >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-yellow-600 dark:text-yellow-400'
               }`}>
-                {stats.thisMonthNet >= 0 ? '+' : ''}{currencySymbol}{stats.thisMonthNet.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {stats.thisMonthNet >= 0 ? '+' : ''}
+                {formatCurrency(Math.abs(stats.thisMonthNet), currencyCode)}
               </dd>
               {stats.monthlyChange !== 0 && (
                 <dd className={`text-xs ${
                   stats.monthlyChange > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                 }`}>
-                  {stats.monthlyChange > 0 ? '↗' : '↘'} {Math.abs(stats.monthlyChange).toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% {t('transaction.stats.vs.last.month')}
+                  {stats.monthlyChange > 0 ? '↗' : '↘'} {formatNumber(Math.abs(stats.monthlyChange), 1)}% {t('transaction.stats.vs.last.month')}
                 </dd>
               )}
             </dl>

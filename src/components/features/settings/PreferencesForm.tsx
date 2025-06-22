@@ -22,12 +22,13 @@ export default function PreferencesForm({
   const { setTheme } = useTheme()
   const { currencies: userCurrencies, updateUserSettings } = useUserData()
   const [formData, setFormData] = useState({
-    baseCurrencyCode: userSettings?.baseCurrencyCode || '',
+    baseCurrencyCode: userSettings?.baseCurrency?.code || '',
     dateFormat: userSettings?.dateFormat || 'YYYY-MM-DD',
     theme: userSettings?.theme || 'system',
     language: userSettings?.language || 'zh',
     fireEnabled: userSettings?.fireEnabled || false,
     fireSWR: userSettings?.fireSWR || 4.0,
+    futureDataDays: userSettings?.futureDataDays || 7,
   })
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -307,6 +308,34 @@ export default function PreferencesForm({
                 formatValue={value => `${value.toFixed(1)}%`}
               />
             )}
+          </div>
+
+          {/* 数据生成设置 */}
+          <div className='pt-6'>
+            <h4 className='text-md font-medium text-gray-900 dark:text-gray-100 mb-3'>
+              {t('preferences.data.generation.settings')}
+            </h4>
+            <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+              {t('preferences.data.generation.description')}
+            </p>
+          </div>
+
+          <div className='space-y-4'>
+            <Slider
+              name='futureDataDays'
+              label={t('preferences.future.data.days')}
+              value={formData.futureDataDays}
+              onChange={value => handleSliderChange('futureDataDays', value)}
+              min={0}
+              max={30}
+              step={1}
+              help={t('preferences.future.data.days.help')}
+              formatValue={value =>
+                value === 0
+                  ? t('preferences.future.data.days.disabled')
+                  : `${value} ${t('common.days')}`
+              }
+            />
           </div>
 
           {/* 本位币说明 */}

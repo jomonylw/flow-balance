@@ -68,9 +68,16 @@ export async function POST(request: NextRequest) {
       return errorResponse('分类不存在', 400)
     }
 
-    // 验证货币
-    const currency = await prisma.currency.findUnique({
-      where: { code: currencyCode },
+    // 验证货币（优先查找用户自定义货币）
+    const currency = await prisma.currency.findFirst({
+      where: {
+        code: currencyCode,
+        OR: [
+          { createdBy: user.id }, // 用户自定义货币
+          { createdBy: null }, // 全局货币
+        ],
+      },
+      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
     })
 
     if (!currency) {
@@ -81,7 +88,7 @@ export async function POST(request: NextRequest) {
     const userCurrency = await prisma.userCurrency.findFirst({
       where: {
         userId: user.id,
-        currencyCode: currencyCode,
+        currencyId: currency.id,
         isActive: true,
       },
     })
@@ -106,7 +113,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         categoryId,
-        currencyCode,
+        currencyId: currency.id,
         name,
         description: description || null,
         color: color || null,

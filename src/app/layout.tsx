@@ -4,6 +4,7 @@ import { ToastProvider } from '@/contexts/providers/ToastContext'
 import { LanguageProvider } from '@/contexts/providers/LanguageContext'
 import { UserDataProvider } from '@/contexts/providers/UserDataContext'
 import { ThemeProvider } from '@/contexts/providers/ThemeContext'
+import { AuthProvider } from '@/contexts/providers/AuthContext'
 import ThemeScript from '@/components/ThemeScript'
 import LanguageScript from '@/components/LanguageScript'
 
@@ -27,7 +28,9 @@ export default function RootLayout({
         <ThemeProvider>
           <LanguageProvider>
             <ToastProvider>
-              <UserDataProvider>{children}</UserDataProvider>
+              <AuthProvider>
+                <UserDataProvider>{children}</UserDataProvider>
+              </AuthProvider>
             </ToastProvider>
           </LanguageProvider>
         </ThemeProvider>

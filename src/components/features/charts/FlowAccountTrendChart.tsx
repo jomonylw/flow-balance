@@ -3,8 +3,10 @@
 import { useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import ColorManager from '@/lib/utils/color'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 
 import type {
   TrendDataPoint,
@@ -36,6 +38,8 @@ export default function FlowAccountTrendChart({
   isLoading,
 }: FlowAccountTrendChartProps) {
   const { t, isLoading: langLoading } = useLanguage()
+  const { formatCurrency, getUserLocale: _getUserLocale } =
+    useUserCurrencyFormatter()
   const { resolvedTheme } = useTheme()
 
   const chartRef = useRef<HTMLDivElement>(null)
@@ -110,13 +114,13 @@ export default function FlowAccountTrendChart({
             <div style="padding: 8px;">
               <div style="font-weight: bold; margin-bottom: 4px;">${param.axisValue}</div>
               <div style="color: #10b981;">
-                ${t('chart.transaction.amount')}: ${displayCurrency.symbol}${(param.value as number).toLocaleString()}
+                ${t('chart.transaction.amount')}: ${formatCurrency(param.value as number, displayCurrency.code)}
               </div>
               ${
                 cumulativeData
                   ? `
                 <div style="color: #3b82f6;">
-                  ${t('chart.cumulative.amount')}: ${displayCurrency.symbol}${(cumulativeData.value as number).toLocaleString()}
+                  ${t('chart.cumulative.amount')}: ${formatCurrency(cumulativeData.value as number, displayCurrency.code)}
                 </div>
               `
                   : ''
@@ -181,9 +185,9 @@ export default function FlowAccountTrendChart({
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
             formatter: function (value: number) {
               if (Math.abs(value) >= 1000) {
-                return `${displayCurrency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
+                return `${formatCurrency(value / 1000, displayCurrency.code)}k`
               }
-              return `${displayCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+              return formatCurrency(value, displayCurrency.code)
             },
           },
           axisLine: {
@@ -208,9 +212,9 @@ export default function FlowAccountTrendChart({
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
             formatter: function (value: number) {
               if (Math.abs(value) >= 1000) {
-                return `${displayCurrency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
+                return `${formatCurrency(value / 1000, displayCurrency.code)}k`
               }
-              return `${displayCurrency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+              return formatCurrency(value, displayCurrency.code)
             },
           },
         },
@@ -311,7 +315,7 @@ export default function FlowAccountTrendChart({
         style={{ height }}
       >
         <div className='flex items-center justify-center h-full'>
-          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
+          <LoadingSpinner size='lg' showText />
         </div>
       </div>
     )
@@ -352,12 +356,7 @@ export default function FlowAccountTrendChart({
       <div className='p-4 relative' style={{ height: `${height - 100}px` }}>
         {isLoading && (
           <div className='absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-800/50 z-10'>
-            <div className='text-center'>
-              <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
-              <p className='mt-2 text-gray-500 dark:text-gray-400'>
-                {t('chart.loading')}
-              </p>
-            </div>
+            <LoadingSpinner size='lg' showText text={t('chart.loading')} />
           </div>
         )}
         {!isLoading && (!trendData || trendData.length === 0) && (

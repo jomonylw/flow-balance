@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useDataUpdateListener } from '@/hooks/business/useDataUpdateListener'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 
 import { calculateAccountBalance } from '@/lib/services/account.service'
 import type {
@@ -31,15 +33,16 @@ interface StockAccountSummaryCardProps {
     transactions: StockTransaction[]
   }
   balance: number
-  currencySymbol: string
+  currencyCode: string
 }
 
 export default function StockAccountSummaryCard({
   account,
   balance,
-  currencySymbol,
+  currencyCode,
 }: StockAccountSummaryCardProps) {
   const { t } = useLanguage()
+  const { formatCurrency, formatNumber } = useUserCurrencyFormatter()
   const accountType = account.category.type
 
   // 本地状态管理最新的交易数据和余额
@@ -274,7 +277,7 @@ export default function StockAccountSummaryCard({
       {/* 加载指示器 */}
       {isLoading && (
         <div className='absolute top-2 right-2'>
-          <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600'></div>
+          <LoadingSpinner size='sm' color='primary' />
         </div>
       )}
       {/* 账户类型标识 */}
@@ -306,11 +309,7 @@ export default function StockAccountSummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {currencySymbol}
-            {Math.abs(stockStats.currentBalance).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(Math.abs(stockStats.currentBalance), currencyCode)}
           </div>
         </div>
 
@@ -320,11 +319,10 @@ export default function StockAccountSummaryCard({
             {t('account.balance.last.month')}
           </div>
           <div className='text-2xl font-semibold text-gray-600 dark:text-gray-300'>
-            {currencySymbol}
-            {Math.abs(stockStats.lastMonthBalance).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(
+              Math.abs(stockStats.lastMonthBalance),
+              currencyCode
+            )}
           </div>
         </div>
 
@@ -341,11 +339,7 @@ export default function StockAccountSummaryCard({
             }`}
           >
             {stockStats.monthlyChange >= 0 ? '+' : ''}
-            {stockStats.monthlyChange.toLocaleString('zh-CN', {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            })}
-            %
+            {formatNumber(stockStats.monthlyChange, 1)}%
           </div>
           <div
             className={`text-xs mt-1 ${
@@ -357,13 +351,10 @@ export default function StockAccountSummaryCard({
             {stockStats.currentBalance - stockStats.lastMonthBalance >= 0
               ? '+'
               : '-'}
-            {currencySymbol}
-            {Math.abs(
-              stockStats.currentBalance - stockStats.lastMonthBalance
-            ).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(
+              Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance),
+              currencyCode
+            )}
           </div>
         </div>
 
@@ -380,18 +371,14 @@ export default function StockAccountSummaryCard({
             }`}
           >
             {stockStats.yearToDateChange >= 0 ? '+' : ''}
-            {stockStats.yearToDateChange.toLocaleString('zh-CN', {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            })}
-            %
+            {formatNumber(stockStats.yearToDateChange, 1)}%
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-            {t('account.balance.year.start')}: {currencySymbol}
-            {Math.abs(stockStats.yearStartBalance).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {t('account.balance.year.start')}:{' '}
+            {formatCurrency(
+              Math.abs(stockStats.yearStartBalance),
+              currencyCode
+            )}
           </div>
         </div>
       </div>

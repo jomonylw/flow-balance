@@ -14,6 +14,7 @@ import { format } from 'date-fns'
 import { zhCN, enUS } from 'date-fns/locale'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import ColorManager from '@/lib/utils/color'
 import WithTranslation from '@/components/ui/data-display/WithTranslation'
 import type {
@@ -42,17 +43,14 @@ interface BalanceSheetResponse {
 export default function BalanceSheetCard() {
   const { t, language } = useLanguage()
   const { categories, accounts, getBaseCurrency } = useUserData()
+  const { formatCurrency } = useUserCurrencyFormatter()
   const [data, setData] = useState<BalanceSheetResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [asOfDate, setAsOfDate] = useState<Date>(new Date())
 
   // Get the appropriate locale for date formatting
   const dateLocale = language === 'zh' ? zhCN : enUS
-  const baseCurrency = getBaseCurrency() || {
-    code: 'CNY',
-    symbol: '¥',
-    name: '人民币',
-  }
+  const baseCurrency = getBaseCurrency()
 
   // 构建分类树并汇总余额数据
   const enrichedCategoryTree = useMemo(() => {
@@ -195,50 +193,40 @@ export default function BalanceSheetCard() {
     fetchBalanceSheet()
   }, [asOfDate, fetchBalanceSheet])
 
-  // 货币符号映射函数
-  const getCurrencySymbol = (currencyCode: string) => {
-    const symbolMap: Record<string, string> = {
-      CNY: '¥',
-      USD: '$',
-      EUR: '€',
-      GBP: '£',
-      JPY: '¥',
-      HKD: 'HK$',
-      TWD: 'NT$',
-      SGD: 'S$',
-      AUD: 'A$',
-      CAD: 'C$',
-      CHF: 'CHF',
-      SEK: 'kr',
-      NOK: 'kr',
-      DKK: 'kr',
-      RUB: '₽',
-      INR: '₹',
-      KRW: '₩',
-      THB: '฿',
-      MYR: 'RM',
-      IDR: 'Rp',
-      PHP: '₱',
-      VND: '₫',
-    }
-    return symbolMap[currencyCode] || currencyCode
+  // 如果没有设置本位币，显示提示
+  if (!baseCurrency) {
+    return (
+      <WithTranslation>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('reports.balance.sheet.title')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className='text-center py-8'>
+              <p className='text-gray-500 dark:text-gray-400 mb-4'>
+                {t('currency.setup.required')}
+              </p>
+              <p className='text-sm text-gray-400'>
+                {t('currency.setup.description')}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </WithTranslation>
+    )
   }
 
-  const formatCurrency = (amount: number, currency: SimpleCurrency) => {
-    const locale = language === 'zh' ? 'zh-CN' : 'en-US'
-    return `${currency.symbol}${amount.toLocaleString(locale, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
-  }
-
+  // 使用统一的格式化函数
   const formatCurrencyWithCode = (amount: number, currencyCode: string) => {
-    const locale = language === 'zh' ? 'zh-CN' : 'en-US'
-    const symbol = getCurrencySymbol(currencyCode)
-    return `${symbol}${amount.toLocaleString(locale, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
+    return formatCurrency(amount, currencyCode)
+  }
+
+  const formatCurrencyWithSymbol = (
+    amount: number,
+    currencyCode: string,
+    _symbol: string
+  ) => {
+    return formatCurrency(amount, currencyCode)
   }
 
   // 新的层级渲染函数
@@ -278,13 +266,10 @@ export default function BalanceSheetCard() {
                       : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
                   }`}
                 >
-                  {baseCurrency.symbol}
-                  {Math.abs(category.totalInBaseCurrency).toLocaleString(
-                    language === 'zh' ? 'zh-CN' : 'en-US',
-                    {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }
+                  {formatCurrencyWithSymbol(
+                    Math.abs(category.totalInBaseCurrency),
+                    baseCurrency.code,
+                    baseCurrency.symbol
                   )}
                 </span>
               </div>
@@ -318,20 +303,16 @@ export default function BalanceSheetCard() {
                         </div>
                         {currencyCode !== baseCurrency.code && (
                           <div className='text-xs text-gray-400 whitespace-nowrap'>
-                            ≈ {baseCurrency.symbol}
-                            {currencyAccounts
-                              .reduce(
+                            ≈{' '}
+                            {formatCurrencyWithSymbol(
+                              currencyAccounts.reduce(
                                 (sum, account) =>
                                   sum + (account.balanceInBaseCurrency || 0),
                                 0
-                              )
-                              .toLocaleString(
-                                language === 'zh' ? 'zh-CN' : 'en-US',
-                                {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                }
-                              )}
+                              ),
+                              baseCurrency.code,
+                              baseCurrency.symbol
+                            )}
                           </div>
                         )}
                       </div>
@@ -377,23 +358,20 @@ export default function BalanceSheetCard() {
                           </div>
                           <div className='text-right min-w-0 flex-shrink-0'>
                             <div className='text-gray-900 dark:text-gray-100 whitespace-nowrap'>
-                              {formatCurrency(
+                              {formatCurrencyWithSymbol(
                                 account.balance,
-                                account.currency
+                                account.currency.code,
+                                account.currency.symbol
                               )}
                             </div>
                             {account.balanceInBaseCurrency !== undefined &&
                               account.currency.code !== baseCurrency.code && (
                                 <div className='text-xs text-gray-400 whitespace-nowrap'>
-                                  ≈ {baseCurrency.symbol}
-                                  {Math.abs(
-                                    account.balanceInBaseCurrency
-                                  ).toLocaleString(
-                                    language === 'zh' ? 'zh-CN' : 'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
+                                  ≈{' '}
+                                  {formatCurrencyWithSymbol(
+                                    Math.abs(account.balanceInBaseCurrency),
+                                    baseCurrency.code,
+                                    baseCurrency.symbol
                                   )}
                                 </div>
                               )}
@@ -481,14 +459,10 @@ export default function BalanceSheetCard() {
                         currencyCode !== baseCurrency.code && (
                           <span className='text-xs text-gray-400'>
                             ≈ {baseCurrency.symbol}
-                            {Math.abs(
-                              category.totalInBaseCurrency
-                            ).toLocaleString(
-                              language === 'zh' ? 'zh-CN' : 'en-US',
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }
+                            {formatCurrencyWithSymbol(
+                              Math.abs(category.totalInBaseCurrency),
+                              baseCurrency.code,
+                              baseCurrency.symbol
                             )}
                           </span>
                         )}
@@ -514,23 +488,20 @@ export default function BalanceSheetCard() {
                           </Link>
                           <div className='flex flex-col items-end'>
                             <span className='text-gray-900 dark:text-gray-100'>
-                              {formatCurrency(
+                              {formatCurrencyWithSymbol(
                                 account.balance,
-                                account.currency
+                                account.currency.code,
+                                account.currency.symbol
                               )}
                             </span>
                             {account.balanceInBaseCurrency !== undefined &&
                               account.currency.code !== baseCurrency.code && (
                                 <span className='text-xs text-gray-400'>
-                                  ≈ {baseCurrency.symbol}
-                                  {Math.abs(
-                                    account.balanceInBaseCurrency
-                                  ).toLocaleString(
-                                    language === 'zh' ? 'zh-CN' : 'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
+                                  ≈{' '}
+                                  {formatCurrencyWithSymbol(
+                                    Math.abs(account.balanceInBaseCurrency),
+                                    baseCurrency.code,
+                                    baseCurrency.symbol
                                   )}
                                 </span>
                               )}
@@ -676,13 +647,11 @@ export default function BalanceSheetCard() {
                           {currencyCode !== data.baseCurrency.code &&
                             baseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
-                                ≈ {data.baseCurrency.symbol}
-                                {Math.abs(baseCurrencyAmount).toLocaleString(
-                                  language === 'zh' ? 'zh-CN' : 'en-US',
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
+                                ≈{' '}
+                                {formatCurrencyWithSymbol(
+                                  Math.abs(baseCurrencyAmount),
+                                  data.baseCurrency.code,
+                                  data.baseCurrency.symbol
                                 )}
                               </div>
                             )}
@@ -701,9 +670,10 @@ export default function BalanceSheetCard() {
                         {data.baseCurrency.code})
                       </span>
                       <div className='text-gray-900 dark:text-gray-100'>
-                        {formatCurrency(
+                        {formatCurrencyWithSymbol(
                           data.summary.baseCurrencyTotals.totalAssets,
-                          data.baseCurrency
+                          data.baseCurrency.code,
+                          data.baseCurrency.symbol
                         )}
                       </div>
                     </div>
@@ -767,13 +737,10 @@ export default function BalanceSheetCard() {
                           {currencyCode !== data.baseCurrency.code &&
                             baseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
-                                ≈ {data.baseCurrency.symbol}
-                                {Math.abs(baseCurrencyAmount).toLocaleString(
-                                  language === 'zh' ? 'zh-CN' : 'en-US',
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
+                                ≈{' '}
+                                {formatCurrency(
+                                  Math.abs(baseCurrencyAmount),
+                                  data.baseCurrency.code
                                 )}
                               </div>
                             )}
@@ -794,7 +761,7 @@ export default function BalanceSheetCard() {
                       <div className='text-red-600 dark:text-red-400'>
                         {formatCurrency(
                           data.summary.baseCurrencyTotals.totalLiabilities,
-                          data.baseCurrency
+                          data.baseCurrency.code
                         )}
                       </div>
                     </div>
@@ -864,15 +831,10 @@ export default function BalanceSheetCard() {
                             {currencyCode !== data.baseCurrency.code &&
                               Math.abs(netBaseCurrencyAmount) > 0.01 && (
                                 <div className='text-xs text-gray-400'>
-                                  ≈ {data.baseCurrency.symbol}
-                                  {Math.abs(
-                                    netBaseCurrencyAmount
-                                  ).toLocaleString(
-                                    language === 'zh' ? 'zh-CN' : 'en-US',
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
+                                  ≈{' '}
+                                  {formatCurrency(
+                                    Math.abs(netBaseCurrencyAmount),
+                                    data.baseCurrency.code
                                   )}
                                 </div>
                               )}
@@ -900,7 +862,7 @@ export default function BalanceSheetCard() {
                       >
                         {formatCurrency(
                           data.summary.baseCurrencyTotals.netWorth,
-                          data.baseCurrency
+                          data.baseCurrency.code
                         )}
                       </div>
                     </div>
@@ -949,13 +911,10 @@ export default function BalanceSheetCard() {
                           {currencyCode !== data.baseCurrency.code &&
                             baseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
-                                ≈ {data.baseCurrency.symbol}
-                                {Math.abs(baseCurrencyAmount).toLocaleString(
-                                  language === 'zh' ? 'zh-CN' : 'en-US',
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
+                                ≈{' '}
+                                {formatCurrency(
+                                  Math.abs(baseCurrencyAmount),
+                                  data.baseCurrency.code
                                 )}
                               </div>
                             )}
@@ -996,13 +955,10 @@ export default function BalanceSheetCard() {
                           {currencyCode !== data.baseCurrency.code &&
                             baseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
-                                ≈ {data.baseCurrency.symbol}
-                                {Math.abs(baseCurrencyAmount).toLocaleString(
-                                  language === 'zh' ? 'zh-CN' : 'en-US',
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
+                                ≈{' '}
+                                {formatCurrency(
+                                  Math.abs(baseCurrencyAmount),
+                                  data.baseCurrency.code
                                 )}
                               </div>
                             )}
@@ -1068,13 +1024,10 @@ export default function BalanceSheetCard() {
                           {currencyCode !== data.baseCurrency.code &&
                             Math.abs(netBaseCurrencyAmount) > 0.01 && (
                               <div className='text-xs text-gray-400'>
-                                ≈ {data.baseCurrency.symbol}
-                                {Math.abs(netBaseCurrencyAmount).toLocaleString(
-                                  language === 'zh' ? 'zh-CN' : 'en-US',
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
+                                ≈{' '}
+                                {formatCurrency(
+                                  Math.abs(netBaseCurrencyAmount),
+                                  data.baseCurrency.code
                                 )}
                               </div>
                             )}
@@ -1098,7 +1051,7 @@ export default function BalanceSheetCard() {
                     <div className='font-semibold text-gray-900 dark:text-gray-100'>
                       {formatCurrency(
                         data.summary.baseCurrencyTotals.totalAssets,
-                        data.baseCurrency
+                        data.baseCurrency.code
                       )}
                     </div>
                   </div>
@@ -1110,7 +1063,7 @@ export default function BalanceSheetCard() {
                     <div className='font-semibold text-red-600 dark:text-red-400'>
                       {formatCurrency(
                         data.summary.baseCurrencyTotals.totalLiabilities,
-                        data.baseCurrency
+                        data.baseCurrency.code
                       )}
                     </div>
                   </div>
@@ -1124,7 +1077,7 @@ export default function BalanceSheetCard() {
                     >
                       {formatCurrency(
                         data.summary.baseCurrencyTotals.netWorth,
-                        data.baseCurrency
+                        data.baseCurrency.code
                       )}
                     </div>
                   </div>

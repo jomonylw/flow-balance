@@ -54,7 +54,7 @@ export default function TransactionListView({
   const [stats, setStats] = useState(null)
   const [isLoadingStats, setIsLoadingStats] = useState(true)
 
-  const currencySymbol = user.settings?.baseCurrency?.symbol || '$'
+  const currencyCode = user.settings?.baseCurrency?.code || 'USD'
 
   // 加载统计数据
   const loadStats = useCallback(async () => {
@@ -283,7 +283,7 @@ export default function TransactionListView({
         <div className='mb-8'>
           <TransactionStats
             stats={stats}
-            currencySymbol={currencySymbol}
+            currencyCode={currencyCode}
             isLoading={isLoadingStats}
           />
         </div>
@@ -324,7 +324,7 @@ export default function TransactionListView({
               onEdit={handleEditTransaction}
               onDelete={handleDeleteTransaction}
               onBatchDelete={handleBatchDelete}
-              currencySymbol={currencySymbol}
+              currencySymbol={user.settings?.baseCurrency?.symbol || '$'}
               showAccount={true}
               pagination={{
                 currentPage: pagination.page,

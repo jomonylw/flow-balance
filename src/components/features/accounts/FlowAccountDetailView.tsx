@@ -8,6 +8,8 @@ import FlowAccountSummaryCard from './FlowAccountSummaryCard'
 import FlowAccountTrendChart from '@/components/features/charts/FlowAccountTrendChart'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import DetailPageLayout from '@/components/ui/layout/DetailPageLayout'
+import RecurringTransactionCards from './RecurringTransactionCards'
+import RecurringTransactionModal from './RecurringTransactionModal'
 import { calculateAccountBalance } from '@/lib/services/account.service'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
@@ -16,7 +18,6 @@ import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
 
 import {
   Tag,
-  Transaction,
   User,
   LegacyAccount,
   LegacyCategory,
@@ -24,6 +25,7 @@ import {
   TrendDataPoint,
   TimeRange,
 } from '@/types/business/transaction'
+import type { RecurringTransaction, ExtendedTransaction } from '@/types/core'
 
 interface FlowAccountDetailViewProps {
   account: LegacyAccount
@@ -54,13 +56,26 @@ export default function FlowAccountDetailView({
     tagIds?: string[]
   } | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [transactions, setTransactions] = useState<ExtendedTransaction[]>([])
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
     itemsPerPage: 10,
   })
+
+  // 定期交易相关状态
+  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false)
+  const [editingRecurringTransaction, setEditingRecurringTransaction] =
+    useState<RecurringTransaction | null>(null)
+  const [selectedRecurringTransactionId, setSelectedRecurringTransactionId] =
+    useState<string | null>(null)
+  const [showDeleteRecurringConfirm, setShowDeleteRecurringConfirm] =
+    useState(false)
+  const [deletingRecurringTransactionId, setDeletingRecurringTransactionId] =
+    useState<string | null>(null)
+  const [recurringTransactionsKey, setRecurringTransactionsKey] = useState(0) // 用于强制刷新定期交易列表
   const [isLoading, setIsLoading] = useState(true)
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([])
   const [timeRange, setTimeRange] = useState<TimeRange>('lastYear')
@@ -114,7 +129,7 @@ export default function FlowAccountDetailView({
     setIsTransactionModalOpen(true)
   }
 
-  const handleEditTransaction = (transaction: Transaction) => {
+  const handleEditTransaction = (transaction: ExtendedTransaction) => {
     // 转换为FlowTransactionModal期望的格式
     const formTransaction = {
       id: transaction.id,
@@ -126,7 +141,9 @@ export default function FlowAccountDetailView({
         transaction.date instanceof Date
           ? transaction.date.toISOString().split('T')[0]
           : transaction.date,
-      tagIds: transaction.tags ? transaction.tags.map(tt => tt.tag.id) : [],
+      tagIds: transaction.tags
+        ? transaction.tags.map((tt: { tag: { id: string } }) => tt.tag.id)
+        : [],
     }
     setEditingTransaction(formTransaction)
     setIsTransactionModalOpen(true)
@@ -139,6 +156,12 @@ export default function FlowAccountDetailView({
         page: page.toString(),
         limit: pagination.itemsPerPage.toString(),
       })
+
+      // 如果有选中的定期交易，添加筛选参数
+      if (selectedRecurringTransactionId) {
+        params.append('recurringTransactionId', selectedRecurringTransactionId)
+      }
+
       // 使用账户专用的交易API，确保数据一致性
       const response = await fetch(
         `/api/accounts/${account.id}/transactions?${params}`
@@ -170,7 +193,7 @@ export default function FlowAccountDetailView({
 
   useEffect(() => {
     loadTransactions(pagination.currentPage)
-  }, [pagination.currentPage, account.id])
+  }, [pagination.currentPage, account.id, selectedRecurringTransactionId])
 
   const handlePageChange = (page: number) => {
     setPagination(prev => ({ ...prev, currentPage: page }))
@@ -221,6 +244,37 @@ export default function FlowAccountDetailView({
     }
   }
 
+  const handleClearTransactions = async () => {
+    try {
+      const response = await fetch(
+        `/api/accounts/${account.id}/clear-transactions`,
+        {
+          method: 'DELETE',
+        }
+      )
+
+      if (response.ok) {
+        const result = await response.json()
+        showSuccess(
+          t('success.cleared'),
+          result.message || t('account.transactions.cleared')
+        )
+
+        // 清空成功后，重新加载交易记录
+        loadTransactions(pagination.currentPage)
+      } else {
+        const error = await response.json()
+        showError(
+          t('error.clear.failed'),
+          error.message || t('account.transactions.clear.failed')
+        )
+      }
+    } catch (error) {
+      console.error('Error clearing transactions:', error)
+      showError(t('error.clear.failed'), t('error.network'))
+    }
+  }
+
   // 批量编辑功能（暂时隐藏）
   // const handleBatchEdit = (transactionIds: string[]) => {
   //   showInfo(t('feature.in.development'), t('batch.edit.development', { count: transactionIds.length }))
@@ -256,6 +310,104 @@ export default function FlowAccountDetailView({
       console.error('Batch delete error:', error)
       showError(t('error.batch.delete.failed'), t('error.network'))
     }
+  }
+
+  // 定期交易相关处理函数
+  const handleCreateRecurringTransaction = () => {
+    setEditingRecurringTransaction(null)
+    setIsRecurringModalOpen(true)
+  }
+
+  const handleEditRecurringTransaction = (
+    transaction: RecurringTransaction
+  ) => {
+    setEditingRecurringTransaction(transaction)
+    setIsRecurringModalOpen(true)
+  }
+
+  const handleSaveRecurringTransaction = async (
+    transactionData: Partial<RecurringTransaction>
+  ) => {
+    try {
+      const url = editingRecurringTransaction
+        ? `/api/recurring-transactions/${editingRecurringTransaction.id}`
+        : '/api/recurring-transactions'
+
+      const method = editingRecurringTransaction ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transactionData),
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || '保存定期交易失败')
+      }
+
+      showSuccess(
+        editingRecurringTransaction
+          ? t('recurring.transaction.updated')
+          : t('recurring.transaction.created'),
+        editingRecurringTransaction ? '定期交易已更新' : '定期交易已创建'
+      )
+
+      // 刷新定期交易列表
+      setRecurringTransactionsKey(prev => prev + 1)
+    } catch (error) {
+      console.error('Failed to save recurring transaction:', error)
+      showError('保存失败', error instanceof Error ? error.message : '未知错误')
+      throw error // 重新抛出错误，让模态框处理
+    }
+  }
+
+  const handleDeleteRecurringTransaction = (transactionId: string) => {
+    setDeletingRecurringTransactionId(transactionId)
+    setShowDeleteRecurringConfirm(true)
+  }
+
+  const handleConfirmDeleteRecurringTransaction = async () => {
+    if (!deletingRecurringTransactionId) return
+
+    try {
+      const response = await fetch(
+        `/api/recurring-transactions/${deletingRecurringTransactionId}`,
+        {
+          method: 'DELETE',
+        }
+      )
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || '删除定期交易失败')
+      }
+
+      showSuccess('删除成功', '定期交易已删除')
+
+      // 刷新定期交易列表
+      setRecurringTransactionsKey(prev => prev + 1)
+
+      // 如果删除的是当前筛选的定期交易，清除筛选
+      if (selectedRecurringTransactionId === deletingRecurringTransactionId) {
+        setSelectedRecurringTransactionId(null)
+      }
+    } catch (error) {
+      console.error('Failed to delete recurring transaction:', error)
+      showError('删除失败', error instanceof Error ? error.message : '未知错误')
+    } finally {
+      setShowDeleteRecurringConfirm(false)
+      setDeletingRecurringTransactionId(null)
+    }
+  }
+
+  // 处理定期交易筛选
+  const handleFilterTransactions = (recurringTransactionId: string | null) => {
+    setSelectedRecurringTransactionId(recurringTransactionId)
+    // 重置到第一页
+    setPagination(prev => ({ ...prev, currentPage: 1 }))
   }
 
   // 使用专业的余额计算服务（流量类账户）
@@ -391,7 +543,7 @@ export default function FlowAccountDetailView({
         <FlowAccountSummaryCard
           account={{ ...account, transactions: account.transactions || [] }}
           balance={flowTotal}
-          currencySymbol={currencySymbol}
+          currencyCode={account.currency?.code || 'USD'}
         />
       </div>
 
@@ -402,13 +554,25 @@ export default function FlowAccountDetailView({
           account={{
             ...account,
             type: account.category.type || 'INCOME',
+            currency: account.currency || {
+              id: 'default-usd',
+              code: 'USD',
+              symbol: '$',
+              name: 'US Dollar',
+              decimalPlaces: 2,
+              isCustom: false,
+              createdBy: null,
+              isActive: true,
+            },
           }}
           displayCurrency={
             account.currency ||
             user.settings?.baseCurrency || {
-              code: 'CNY',
-              symbol: '¥',
-              name: '人民币',
+              id: 'default-usd',
+              code: 'USD',
+              symbol: '$',
+              name: 'US Dollar',
+              decimalPlaces: 2,
             }
           }
           height={400}
@@ -418,27 +582,73 @@ export default function FlowAccountDetailView({
         />
       </div>
 
-      {/* 交易列表 */}
+      {/* 定期交易卡片 */}
+      <RecurringTransactionCards
+        key={recurringTransactionsKey}
+        accountId={account.id}
+        onEdit={handleEditRecurringTransaction}
+        onDelete={handleDeleteRecurringTransaction}
+        onCreateNew={handleCreateRecurringTransaction}
+        onFilterTransactions={handleFilterTransactions}
+        selectedRecurringTransactionId={selectedRecurringTransactionId}
+      />
+
+      {/* 交易记录 */}
       <div className='bg-white dark:bg-gray-800 shadow rounded-lg'>
-        <div className='px-6 py-4 border-b border-gray-200 dark:border-gray-700'>
-          <div className='flex items-center justify-between'>
-            <h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
-              {t('account.transactions')}
-            </h2>
-            <span className='text-sm text-gray-500 dark:text-gray-400'>
-              {t('account.total.transactions', {
-                count: pagination.totalItems,
-              })}
-            </span>
+        <div className='px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700'>
+          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0'>
+            <div>
+              <h3 className='text-lg font-medium text-gray-900 dark:text-gray-100'>
+                {t('account.transactions')}
+              </h3>
+              <p className='text-xs sm:text-sm text-gray-600 dark:text-gray-400'>
+                {selectedRecurringTransactionId
+                  ? t('account.transaction.filtered.description')
+                  : t('account.transaction.description', {
+                      type:
+                        account.category.type === 'INCOME'
+                          ? t('type.income')
+                          : t('type.expense'),
+                    })}
+              </p>
+            </div>
+            <div className='flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3'>
+              {selectedRecurringTransactionId && (
+                <button
+                  onClick={() => handleFilterTransactions(null)}
+                  className='text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300'
+                >
+                  {t('common.clear.filter')}
+                </button>
+              )}
+              <span className='text-xs sm:text-sm text-gray-500 dark:text-gray-400'>
+                {t('account.total.transactions', {
+                  count: pagination.totalItems,
+                })}
+              </span>
+              {pagination.totalItems > 0 && (
+                <button
+                  onClick={() => setShowClearConfirm(true)}
+                  className='inline-flex items-center px-3 py-1 border border-red-300 dark:border-red-600 text-xs font-medium rounded-md text-red-700 dark:text-red-400 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
+                >
+                  <svg
+                    className='mr-1 h-3 w-3'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
+                    />
+                  </svg>
+                  {t('account.clear.records')}
+                </button>
+              )}
+            </div>
           </div>
-          <p className='text-sm text-gray-600 dark:text-gray-400 mt-1'>
-            {t('account.transaction.description', {
-              type:
-                account.category.type === 'INCOME'
-                  ? t('type.income')
-                  : t('type.expense'),
-            })}
-          </p>
         </div>
 
         {isLoading ? (
@@ -470,7 +680,7 @@ export default function FlowAccountDetailView({
         tags={tags}
       />
 
-      {/* 删除确认模态框 */}
+      {/* 删除账户确认模态框 */}
       <ConfirmationModal
         isOpen={showDeleteConfirm}
         title={t('account.delete')}
@@ -478,6 +688,52 @@ export default function FlowAccountDetailView({
         confirmLabel={t('common.delete')}
         onConfirm={handleDeleteAccount}
         onCancel={() => setShowDeleteConfirm(false)}
+        variant='danger'
+      />
+
+      {/* 清空交易记录确认模态框 */}
+      <ConfirmationModal
+        isOpen={showClearConfirm}
+        title={t('account.clear.transactions')}
+        message={t('confirm.clear.transactions')}
+        confirmLabel={t('common.confirm.clear')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => {
+          setShowClearConfirm(false)
+          handleClearTransactions()
+        }}
+        onCancel={() => setShowClearConfirm(false)}
+        variant='danger'
+      />
+
+      {/* 删除定期交易确认模态框 */}
+      <ConfirmationModal
+        isOpen={showDeleteRecurringConfirm}
+        title={t('recurring.transaction.delete')}
+        message={t('confirm.delete.recurring.transaction.message')}
+        confirmLabel={t('common.delete')}
+        onConfirm={handleConfirmDeleteRecurringTransaction}
+        onCancel={() => {
+          setShowDeleteRecurringConfirm(false)
+          setDeletingRecurringTransactionId(null)
+        }}
+        variant='danger'
+      />
+
+      {/* 定期交易模态框 */}
+      <RecurringTransactionModal
+        isOpen={isRecurringModalOpen}
+        onClose={() => {
+          setIsRecurringModalOpen(false)
+          setEditingRecurringTransaction(null)
+        }}
+        onSave={handleSaveRecurringTransaction}
+        accountId={account.id}
+        accountCurrency={
+          account.currency?.code || user.settings?.baseCurrency?.code || 'USD'
+        }
+        accountType={account.category.type as 'INCOME' | 'EXPENSE'}
+        editingTransaction={editingRecurringTransaction}
       />
     </DetailPageLayout>
   )

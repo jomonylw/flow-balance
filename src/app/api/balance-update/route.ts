@@ -56,9 +56,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证账户货币限制
-    if (account.currencyCode && account.currencyCode !== currencyCode) {
+    if (account.currency?.code && account.currency.code !== currencyCode) {
       return errorResponse(
-        `此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`,
+        `此账户只能使用 ${account.currency.name} (${account.currency.code})，无法使用 ${currencyCode}`,
         400
       )
     }
@@ -70,8 +70,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证币种
-    const currency = await prisma.currency.findUnique({
-      where: { code: currencyCode },
+    const currency = await prisma.currency.findFirst({
+      where: {
+        code: currencyCode,
+        OR: [{ createdBy: user.id }, { createdBy: null }],
+      },
     })
 
     if (!currency) {
@@ -133,7 +136,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       accountId,
       categoryId: account.categoryId,
-      currencyCode,
+      currencyId: currency.id,
       type: 'BALANCE' as const,
       amount: newBalanceAmount, // 存储目标余额，而不是变化金额
       description: `余额更新 - ${account.name}`,
@@ -259,7 +262,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (currencyCode) {
-      whereClause.currencyCode = currencyCode
+      // 需要通过关联查询来过滤货币
+      whereClause.currency = {
+        code: currencyCode,
+        OR: [{ createdBy: user.id }, { createdBy: null }],
+      }
     }
 
     const transactions = await prisma.transaction.findMany({
@@ -417,8 +424,11 @@ export async function GET(request: NextRequest) {
       },
       currentBalance: cumulativeBalance,
       currency: currencyCode
-        ? await prisma.currency.findUnique({
-            where: { code: currencyCode },
+        ? await prisma.currency.findFirst({
+            where: {
+              code: currencyCode,
+              OR: [{ createdBy: user.id }, { createdBy: null }],
+            },
           })
         : null,
       history: balanceHistory.slice(0, limit),

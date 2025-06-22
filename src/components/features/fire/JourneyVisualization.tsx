@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
-import { formatCurrency } from '@/lib/utils/format'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import * as echarts from 'echarts'
 import type { SimpleCurrency, FireParams } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
@@ -17,6 +17,7 @@ export default function JourneyVisualization({
   currency,
 }: JourneyVisualizationProps) {
   const { t } = useLanguage()
+  const { formatCurrency } = useUserCurrencyFormatter()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
 

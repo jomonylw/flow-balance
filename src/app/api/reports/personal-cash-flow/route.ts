@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
     for (const transaction of transactions) {
       const accountId = transaction.account.id
       const categoryId = transaction.account.category.id
-      const currencyCode = transaction.currencyCode
+      const currencyCode = transaction.currency.code
       const amount =
         typeof transaction.amount === 'number'
           ? transaction.amount

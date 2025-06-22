@@ -7,6 +7,7 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/api/response'
+import { generateAutoExchangeRates } from '@/lib/services/exchange-rate-auto-generation.service'
 
 /**
  * 获取单个汇率详情
@@ -38,10 +39,12 @@ export async function GET(
       return errorResponse('汇率记录不存在', 404)
     }
 
-    // 序列化 Decimal 类型
+    // 序列化 Decimal 类型并添加货币代码字段
     const serializedRate = {
       ...exchangeRate,
       rate: parseFloat(exchangeRate.rate.toString()),
+      fromCurrency: exchangeRate.fromCurrencyRef?.code || '',
+      toCurrency: exchangeRate.toCurrencyRef?.code || '',
     }
 
     return successResponse(serializedRate)
@@ -101,8 +104,8 @@ export async function PUT(
         const conflictingRate = await prisma.exchangeRate.findFirst({
           where: {
             userId: user.id,
-            fromCurrency: existingRate.fromCurrency,
-            toCurrency: existingRate.toCurrency,
+            fromCurrencyId: existingRate.fromCurrencyId,
+            toCurrencyId: existingRate.toCurrencyId,
             effectiveDate: parsedDate,
             id: { not: id },
           },
@@ -128,10 +131,31 @@ export async function PUT(
       },
     })
 
-    // 序列化 Decimal 类型
+    // 序列化 Decimal 类型并添加货币代码字段
     const serializedRate = {
       ...updatedRate,
       rate: parseFloat(updatedRate.rate.toString()),
+      fromCurrency: updatedRate.fromCurrencyRef?.code || '',
+      toCurrency: updatedRate.toCurrencyRef?.code || '',
+    }
+
+    // 只有当更新的是用户输入汇率时，才触发自动重新生成
+    if (existingRate.type === 'USER') {
+      try {
+        // 清理所有自动生成的汇率，然后重新生成
+        await prisma.exchangeRate.deleteMany({
+          where: {
+            userId: user.id,
+            type: 'AUTO',
+          },
+        })
+
+        // 重新生成所有自动汇率（使用当前日期，确保能找到所有用户汇率）
+        await generateAutoExchangeRates(user.id)
+      } catch (error) {
+        console.error('自动重新生成汇率失败:', error)
+        // 不影响主要操作，只记录错误
+      }
     }
 
     return successResponse(serializedRate, '汇率更新成功')
@@ -172,6 +196,25 @@ export async function DELETE(
     await prisma.exchangeRate.delete({
       where: { id },
     })
+
+    // 只有当删除的是用户输入汇率时，才触发自动重新生成
+    if (existingRate.type === 'USER') {
+      try {
+        // 清理所有自动生成的汇率，然后重新生成
+        await prisma.exchangeRate.deleteMany({
+          where: {
+            userId: user.id,
+            type: 'AUTO',
+          },
+        })
+
+        // 重新生成所有自动汇率
+        await generateAutoExchangeRates(user.id)
+      } catch (error) {
+        console.error('自动重新生成汇率失败:', error)
+        // 不影响主要操作，只记录错误
+      }
+    }
 
     return successResponse(null, '汇率删除成功')
   } catch (error) {

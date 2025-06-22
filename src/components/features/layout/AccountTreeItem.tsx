@@ -11,6 +11,7 @@ import FlowTransactionModal from '@/components/features/accounts/FlowTransaction
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useOptimizedNavigation } from '@/hooks/ui/useOptimizedNavigation'
 import {
   publishAccountDelete,
@@ -29,6 +30,7 @@ export default function AccountTreeItem({
 }: AccountTreeItemProps) {
   const { showSuccess, showError } = useToast()
   const { t } = useLanguage()
+  const { formatCurrency } = useUserCurrencyFormatter()
   const pathname = usePathname()
   const { navigateTo } = useOptimizedNavigation()
   const moreButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -55,10 +57,10 @@ export default function AccountTreeItem({
 
   // 使用传入的余额数据
   const balance = account.balanceInBaseCurrency || 0
-  const currencySymbol = baseCurrency?.symbol || '¥'
+  const _currencySymbol = baseCurrency?.symbol || '¥'
 
   // 获取账户原始货币的余额（用于余额更新模态框）
-  const accountCurrency = account.currencyCode || baseCurrency?.code || 'CNY'
+  const accountCurrency = account.currency?.code || baseCurrency?.code || 'USD'
   const accountBalance = account.balances?.[accountCurrency]?.amount || 0
 
   // 根据账户类型确定金额颜色
@@ -217,7 +219,7 @@ export default function AccountTreeItem({
           categoryId: account.categoryId,
           description: updates.description,
           color: updates.color,
-          currencyCode: updates.currencyCode,
+          currencyId: updates.currencyId,
         }),
       })
 
@@ -278,7 +280,7 @@ export default function AccountTreeItem({
         {/* 货币标签 */}
         <div className='mr-3 flex-shrink-0'>
           <CurrencyTag
-            currencyCode={account.currencyCode}
+            currencyCode={account.currency?.code || 'USD'}
             color={account.color || undefined}
             size='sm'
           />
@@ -303,11 +305,7 @@ export default function AccountTreeItem({
             <div
               className={`text-xs mt-1.5 font-semibold transition-colors duration-200 ${getAmountColor()}`}
             >
-              {currencySymbol}
-              {Math.abs(balance).toLocaleString('zh-CN', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(Math.abs(balance), baseCurrency?.code || 'CNY')}
             </div>
           )}
         </div>

@@ -1,7 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 
 import type {
   SimpleCategory,
@@ -18,14 +20,15 @@ interface FlowAccountSummaryCardProps {
     transactions: SimpleTransaction[]
   }
   balance: number
-  currencySymbol: string
+  currencyCode: string
 }
 export default function FlowAccountSummaryCard({
   account,
   balance: _balance,
-  currencySymbol,
+  currencyCode,
 }: FlowAccountSummaryCardProps) {
   const { t } = useLanguage()
+  const { formatCurrency, formatNumber } = useUserCurrencyFormatter()
   const accountType = account.category.type || 'EXPENSE'
   // 本地状态管理最新的交易数据
   const [transactions, setTransactions] = useState<SimpleTransaction[]>(
@@ -43,7 +46,7 @@ export default function FlowAccountSummaryCard({
       if (result.success) {
         setTransactions(
           result.data.transactions.map((t: ApiTransaction) => ({
-            type: t.type as 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE',
+            type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
             amount: parseFloat(t.amount.toString()),
             date: t.date,
           }))
@@ -186,7 +189,7 @@ export default function FlowAccountSummaryCard({
       {/* 加载指示器 */}
       {isLoading && (
         <div className='absolute top-2 right-2'>
-          <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600'></div>
+          <LoadingSpinner size='sm' color='primary' />
         </div>
       )}
       {/* 账户类型标识 */}
@@ -217,11 +220,7 @@ export default function FlowAccountSummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {currencySymbol}
-            {flowStats.thisMonthAmount.toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(flowStats.thisMonthAmount, currencyCode)}
           </div>
         </div>
         {/* 上月金额 */}
@@ -230,11 +229,7 @@ export default function FlowAccountSummaryCard({
             {t('account.amount.last.month')}
           </div>
           <div className='text-2xl font-semibold text-gray-600 dark:text-gray-300'>
-            {currencySymbol}
-            {flowStats.lastMonthAmount.toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(flowStats.lastMonthAmount, currencyCode)}
           </div>
         </div>
         {/* 月度变化 + 绝对变化 */}
@@ -250,11 +245,7 @@ export default function FlowAccountSummaryCard({
             }`}
           >
             {flowStats.monthlyChange >= 0 ? '+' : ''}
-            {flowStats.monthlyChange.toLocaleString('zh-CN', {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            })}
-            %
+            {formatNumber(flowStats.monthlyChange, 1)}%
           </div>
           <div
             className={`text-xs mt-1 ${
@@ -266,13 +257,10 @@ export default function FlowAccountSummaryCard({
             {flowStats.thisMonthAmount - flowStats.lastMonthAmount >= 0
               ? '+'
               : '-'}
-            {currencySymbol}
-            {Math.abs(
-              flowStats.thisMonthAmount - flowStats.lastMonthAmount
-            ).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrency(
+              Math.abs(flowStats.thisMonthAmount - flowStats.lastMonthAmount),
+              currencyCode
+            )}
           </div>
         </div>
         {/* 年度对比 + 12月均值 */}
@@ -288,18 +276,11 @@ export default function FlowAccountSummaryCard({
             }`}
           >
             {flowStats.yearlyComparison >= 0 ? '+' : ''}
-            {flowStats.yearlyComparison.toLocaleString('zh-CN', {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            })}
-            %
+            {formatNumber(flowStats.yearlyComparison, 1)}%
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-            {t('account.average.12months')}: {currencySymbol}
-            {flowStats.average12Months.toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {t('account.average.12months')}:{' '}
+            {formatCurrency(flowStats.average12Months, currencyCode)}
           </div>
         </div>
       </div>

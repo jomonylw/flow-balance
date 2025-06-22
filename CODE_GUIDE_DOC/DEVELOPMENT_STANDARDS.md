@@ -627,6 +627,74 @@ const chartOptions = {
 }
 ```
 
+## 🔄 Context 管理规范
+
+### Context 架构设计
+
+项目采用分层 Context 架构，避免单一巨型 Context：
+
+```typescript
+// ✅ 分层 Context 设计
+AuthContext          // 用户认证状态
+├── UserDataContext  // 用户数据（账户、分类、标签等）
+├── BalanceContext   // 账户余额和汇总数据
+├── ThemeContext     // 主题设置
+├── LanguageContext  // 语言设置
+└── ToastContext     // 通知消息
+```
+
+### Context 使用规范
+
+```typescript
+// ✅ Context Provider 组合
+function AppProviders({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <ToastProvider>
+            <UserDataProvider>
+              <BalanceProvider>
+                {children}
+              </BalanceProvider>
+            </UserDataProvider>
+          </ToastProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </AuthProvider>
+  )
+}
+
+// ✅ Context Hook 使用
+function MyComponent() {
+  const { user, isAuthenticated } = useAuth()
+  const { accounts, categories } = useUserData()
+  const { formatCurrency } = useUserCurrencyFormatter()
+  const { showSuccess, showError } = useToast()
+
+  // 组件逻辑
+}
+```
+
+### Context 性能优化
+
+```typescript
+// ✅ 使用 useMemo 优化 Context 值
+const contextValue = useMemo(
+  () => ({
+    ...userData,
+    refreshAll,
+    updateAccount,
+    // 其他方法
+  }),
+  [userData, refreshAll, updateAccount] // 依赖数组
+)
+
+// ✅ 避免在 Context 中存储频繁变化的状态
+// ❌ 不要在 UserDataContext 中存储 loading 状态
+// ✅ 使用局部状态或专门的 Context
+```
+
 ## 🎨 主题和样式规范
 
 ### 深色主题支持
@@ -672,6 +740,290 @@ function MyComponent() {
 }
 ```
 
+## � Context 管理规范
+
+### Context 架构设计
+
+项目采用分层 Context 架构，避免单一巨型 Context：
+
+```typescript
+// ✅ 分层 Context 设计
+AuthContext          // 用户认证状态
+├── UserDataContext  // 用户数据（账户、分类、标签等）
+├── BalanceContext   // 账户余额和汇总数据
+├── ThemeContext     // 主题设置
+├── LanguageContext  // 语言设置
+└── ToastContext     // 通知消息
+```
+
+### Context 使用规范
+
+```typescript
+// ✅ Context Provider 组合
+function AppProviders({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <ToastProvider>
+            <UserDataProvider>
+              <BalanceProvider>
+                {children}
+              </BalanceProvider>
+            </UserDataProvider>
+          </ToastProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </AuthProvider>
+  )
+}
+
+// ✅ Context Hook 使用
+function MyComponent() {
+  const { user, isAuthenticated } = useAuth()
+  const { accounts, categories } = useUserData()
+  const { formatCurrency } = useUserCurrencyFormatter()
+  const { showSuccess, showError } = useToast()
+
+  // 组件逻辑
+}
+```
+
+### Context 性能优化
+
+```typescript
+// ✅ 使用 useMemo 优化 Context 值
+const contextValue = useMemo(
+  () => ({
+    ...userData,
+    refreshAll,
+    updateAccount,
+    // 其他方法
+  }),
+  [userData, refreshAll, updateAccount] // 依赖数组
+)
+
+// ✅ 避免在 Context 中存储频繁变化的状态
+// ❌ 不要在 UserDataContext 中存储 loading 状态
+// ✅ 使用局部状态或专门的 Context
+```
+
+## 🔧 统一处理机制规范
+
+### 货币转换和格式化
+
+**核心原则**：所有货币相关操作必须使用统一的 Hook 和服务
+
+```typescript
+// ✅ 统一的货币格式化 Hook
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+
+function MyComponent() {
+  const { formatCurrency, formatNumber, getCurrencySymbol } = useUserCurrencyFormatter()
+
+  // 自动使用用户语言设置和货币配置
+  const formattedAmount = formatCurrency(1234.56, 'CNY')
+  // 输出: ¥1,234.56 (根据用户语言设置)
+}
+
+// ❌ 避免硬编码格式化
+const hardcoded = `¥${amount.toLocaleString('zh-CN')}`
+
+// ❌ 避免重复的货币符号映射
+const symbols = { CNY: '¥', USD: '$' } // 不要在组件中重复定义
+```
+
+### 颜色管理系统
+
+**核心原则**：使用统一的颜色管理服务，避免重复的颜色逻辑
+
+```typescript
+// ✅ 统一的颜色管理
+import { ColorManager } from '@/lib/utils/color'
+
+// 获取账户颜色（优先自定义 → 类型默认 → 通用默认）
+const accountColor = ColorManager.getAccountColor(accountId, customColor, accountType)
+
+// 生成图表颜色序列
+const chartColors = ColorManager.generateSmartChartColors(items, item => item.customColor)
+
+// ❌ 避免在组件中重复颜色逻辑
+const getColor = type => {
+  switch (type) {
+    case 'ASSET':
+      return '#3b82f6'
+    // 不要重复定义
+  }
+}
+```
+
+### API 调用模式
+
+**核心原则**：使用统一的 API 调用模式和错误处理
+
+```typescript
+// ✅ 统一的 API 调用模式
+async function apiCall<T>(
+  url: string,
+  options?: RequestInit
+): Promise<{ success: boolean; data?: T; error?: string }> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      ...options,
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || '请求失败')
+    }
+
+    return { success: true, data: result.data }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '未知错误',
+    }
+  }
+}
+
+// ✅ 在组件中使用
+const { showSuccess, showError } = useToast()
+
+const handleSubmit = async () => {
+  const result = await apiCall('/api/accounts', {
+    method: 'POST',
+    body: JSON.stringify(formData),
+  })
+
+  if (result.success) {
+    showSuccess('创建成功')
+  } else {
+    showError('创建失败', result.error)
+  }
+}
+```
+
+### 表单验证模式
+
+**核心原则**：使用 Zod Schema 进行统一验证
+
+```typescript
+// ✅ 统一的表单验证
+import { z } from 'zod'
+import { validateData } from '@/lib/validation/schemas'
+
+const AccountSchema = z.object({
+  name: z.string().min(1, '账户名称不能为空'),
+  type: z.enum(['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE']),
+  currencyCode: z.string().length(3, '货币代码必须为3位'),
+})
+
+function AccountForm() {
+  const handleSubmit = (formData: unknown) => {
+    const validation = validateData(AccountSchema, formData)
+
+    if (!validation.success) {
+      setErrors(validation.errors)
+      return
+    }
+
+    // 处理验证通过的数据
+    processAccount(validation.data)
+  }
+}
+```
+
+### 模态框处理模式
+
+**核心原则**：使用统一的模态框组件和状态管理
+
+```typescript
+// ✅ 统一的模态框使用
+import Modal from '@/components/ui/feedback/Modal'
+import { useToast } from '@/contexts/providers/ToastContext'
+
+function MyComponent() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const { showSuccess, showError } = useToast()
+
+  const handleSubmit = async (data: FormData) => {
+    setIsLoading(true)
+    try {
+      const result = await apiCall('/api/endpoint', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+
+      if (result.success) {
+        setIsModalOpen(false)
+        showSuccess('操作成功')
+        // 刷新数据
+        refreshData()
+      } else {
+        showError('操作失败', result.error)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <Modal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      title="标题"
+      size="md"
+    >
+      <form onSubmit={handleSubmit}>
+        {/* 表单内容 */}
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? '处理中...' : '提交'}
+        </button>
+      </form>
+    </Modal>
+  )
+}
+```
+
+### 加载状态管理
+
+**核心原则**：使用统一的加载状态组件和模式
+
+```typescript
+// ✅ 统一的加载状态
+import LoadingScreen from '@/components/ui/feedback/LoadingScreen'
+import { LoadingSpinner } from '@/components/ui/feedback/LoadingSpinner'
+
+// 全屏加载
+function PageComponent() {
+  const [isLoading, setIsLoading] = useState(true)
+
+  if (isLoading) {
+    return <LoadingScreen messageType="loading-data" variant="pulse" />
+  }
+
+  return <div>{/* 页面内容 */}</div>
+}
+
+// 局部加载
+function ComponentWithLoading() {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  return (
+    <button disabled={isSubmitting}>
+      {isSubmitting && <LoadingSpinner size="sm" className="mr-2" />}
+      {isSubmitting ? '提交中...' : '提交'}
+    </button>
+  )
+}
+```
+
 ## 🔧 自动化脚本使用
 
 ### 批量修复脚本
@@ -703,9 +1055,134 @@ tsx scripts/check-database-data.ts
 node scripts/migrate-account-currencies.js
 ```
 
+## 🚨 避免重复代码的关键原则
+
+### 识别重复代码的信号
+
+```typescript
+// 🚨 重复代码信号
+// 1. 相同的货币符号映射
+const currencySymbols = { CNY: '¥', USD: '$' } // 在多个文件中出现
+
+// 2. 相同的颜色定义
+const accountColors = { ASSET: '#3b82f6', LIABILITY: '#f97316' } // 重复定义
+
+// 3. 相同的 API 调用模式
+const response = await fetch('/api/...') // 重复的错误处理逻辑
+
+// 4. 相同的表单验证逻辑
+if (!name) setError('名称不能为空') // 重复的验证规则
+```
+
+### 重构策略
+
+```typescript
+// ✅ 提取为共享服务
+// 创建 src/lib/services/shared-service.ts
+export class SharedService {
+  static formatCurrency = useUserCurrencyFormatter
+  static getAccountColor = ColorManager.getAccountColor
+  static validateForm = validateData
+}
+
+// ✅ 提取为自定义 Hook
+// 创建 src/hooks/useCommonLogic.ts
+export function useCommonLogic() {
+  const { formatCurrency } = useUserCurrencyFormatter()
+  const { showSuccess, showError } = useToast()
+
+  return { formatCurrency, showSuccess, showError }
+}
+
+// ✅ 提取为工具函数
+// 创建 src/lib/utils/common.ts
+export const commonUtils = {
+  formatDate: (date: Date) => date.toLocaleDateString(),
+  generateId: () => Math.random().toString(36).substr(2, 9),
+  debounce: (fn: Function, delay: number) => {
+    /* 实现 */
+  },
+}
+```
+
+### 代码审查检查清单
+
+**提交前必检项目**：
+
+- [ ] **货币格式化**：是否使用 `useUserCurrencyFormatter`？
+- [ ] **颜色管理**：是否使用 `ColorManager`？
+- [ ] **API 调用**：是否使用统一的错误处理？
+- [ ] **表单验证**：是否使用 Zod Schema？
+- [ ] **模态框**：是否使用统一的 Modal 组件？
+- [ ] **加载状态**：是否使用统一的 Loading 组件？
+- [ ] **国际化**：是否使用 `useLanguage` Hook？
+- [ ] **主题适配**：是否支持深色/浅色主题？
+
+### 重复代码检测工具
+
+```bash
+# 使用 ESLint 检测重复代码
+pnpm lint
+
+# 使用自定义脚本检测
+node scripts/detect-duplicate-code.js
+
+# 检查未使用的导入
+node scripts/check-unused-imports.js
+```
+
+## � Context 使用最佳实践
+
+### Context 数据流设计
+
+```typescript
+// ✅ 清晰的数据流向
+AuthContext (用户认证)
+    ↓
+UserDataContext (用户基础数据)
+    ↓
+BalanceContext (计算数据)
+    ↓
+UI Components (展示层)
+
+// ✅ Context 职责分离
+- AuthContext: 仅处理认证状态
+- UserDataContext: 管理用户的基础数据（账户、分类、标签）
+- BalanceContext: 处理计算密集的余额数据
+- ThemeContext: 管理主题设置
+- LanguageContext: 管理语言设置
+```
+
+### Context 性能优化策略
+
+```typescript
+// ✅ 避免不必要的重新渲染
+const UserDataProvider = ({ children }) => {
+  // 使用 useCallback 包装函数
+  const refreshAccounts = useCallback(async () => {
+    // 刷新逻辑
+  }, [])
+
+  // 使用 useMemo 优化复杂计算
+  const sortedAccounts = useMemo(() => {
+    return accounts.sort((a, b) => a.name.localeCompare(b.name))
+  }, [accounts])
+
+  // 分离频繁变化的状态
+  const contextValue = useMemo(
+    () => ({
+      accounts: sortedAccounts,
+      refreshAccounts,
+      // 不要包含 loading 状态
+    }),
+    [sortedAccounts, refreshAccounts]
+  )
+}
+```
+
 ---
 
-## 🔄 持续改进
+## �🔄 持续改进
 
 这份规范文档会随着项目发展持续更新。如有建议或发现问题，请及时反馈并更新文档。
 
@@ -723,5 +1200,7 @@ node scripts/migrate-account-currencies.js
 - [ ] 每季度审查代码规范
 - [ ] 每半年评估工具链
 - [ ] 年度架构回顾
+- [ ] **新增**：每月检查重复代码
+- [ ] **新增**：每季度审查 Context 性能
 
-**最后更新**: 2025-06-18 **维护者**: 开发团队 **版本**: v1.0
+**最后更新**: 2025-06-22 **维护者**: 开发团队 **版本**: v1.1

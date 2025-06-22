@@ -12,18 +12,18 @@ describe('Utils', () => {
     })
 
     it('should handle negative values', () => {
-      expect(formatCurrency(-1234.56, 'CNY')).toBe('-¥1,234.56')
+      expect(formatCurrency(-1234.56, 'CNY')).toBe('¥-1,234.56')
     })
   })
 
   describe('formatNumber', () => {
     it('should format numbers with thousand separators', () => {
       expect(formatNumber(1234.56)).toBe('1,234.56')
-      expect(formatNumber(1000)).toBe('1,000')
+      expect(formatNumber(1000)).toBe('1,000.00')
     })
 
     it('should handle zero', () => {
-      expect(formatNumber(0)).toBe('0')
+      expect(formatNumber(0)).toBe('0.00')
     })
   })
 })

@@ -66,10 +66,11 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
             disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400
             text-base sm:text-sm min-h-[44px] sm:min-h-[auto] transition-all duration-200
             hover:border-gray-400 dark:hover:border-gray-500
-            autofill:bg-white dark:autofill:bg-gray-700 autofill:text-gray-900 dark:autofill:text-gray-100
-            [-webkit-autofill]:bg-white dark:[-webkit-autofill]:bg-gray-700 [-webkit-autofill]:text-gray-900 dark:[-webkit-autofill]:text-gray-100
             ${error ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500 focus:shadow-rose-500/10' : ''}
           `}
+          style={{
+            colorScheme: 'light dark',
+          }}
         />
 
         {help && !error && (

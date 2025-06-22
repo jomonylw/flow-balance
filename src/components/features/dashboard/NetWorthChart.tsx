@@ -5,7 +5,9 @@ import * as echarts from 'echarts'
 import { useIsMobile } from '@/hooks/ui/useResponsive'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { getChartHeight } from '@/lib/utils/responsive'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 
 interface NetWorthChartProps {
   data: {
@@ -34,6 +36,8 @@ export default function NetWorthChart({
 }: NetWorthChartProps) {
   const { t } = useLanguage()
   const { resolvedTheme } = useTheme()
+  const { formatCurrency, getUserLocale: _getUserLocale } =
+    useUserCurrencyFormatter()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
   const [chartError, setChartError] = useState<string | null>(null)
@@ -131,10 +135,7 @@ export default function NetWorthChart({
               if (typeof numericValue !== 'number' || isNaN(numericValue))
                 return
 
-              const value =
-                numericValue >= 0
-                  ? `${currency.symbol}${numericValue.toLocaleString()}`
-                  : `-${currency.symbol}${Math.abs(numericValue).toLocaleString()}`
+              const value = formatCurrency(numericValue, currency.code)
               result += `<div style="margin: 2px 0;">
               <span style="display: inline-block; width: 10px; height: 10px; background-color: ${param.color}; border-radius: 50%; margin-right: 5px;"></span>
               ${param.seriesName}: ${value}
@@ -187,9 +188,9 @@ export default function NetWorthChart({
             fontSize: isMobile ? 10 : 12,
             formatter: function (value: number) {
               if (Math.abs(value) >= 1000) {
-                return `${currency.symbol}${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`
+                return `${formatCurrency(value / 1000, currency.code)}k`
               }
-              return `${currency.symbol}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+              return formatCurrency(value, currency.code)
             },
           },
           axisLine: {
@@ -257,7 +258,7 @@ export default function NetWorthChart({
       }
     } catch (error) {
       console.error('图表渲染错误:', error)
-      setChartError(error instanceof Error ? error.message : '图表渲染失败')
+      setChartError(error instanceof Error ? error.message : '未知错误')
       return undefined
     }
   }, [data, currency, loading, resolvedTheme, isMobile, chartHeight, t])
@@ -278,16 +279,11 @@ export default function NetWorthChart({
         className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
       >
         <div className='flex items-center justify-center h-[300px] sm:h-[400px]'>
-          <div className='text-center'>
-            <div
-              className={`animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 mx-auto mb-4 ${resolvedTheme === 'dark' ? 'border-blue-400' : 'border-blue-600'}`}
-            ></div>
-            <p
-              className={`text-sm sm:text-base ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
-            >
-              {t('chart.loading')}
-            </p>
-          </div>
+          <LoadingSpinner
+            size={isMobile ? 'md' : 'lg'}
+            showText
+            text={t('chart.loading')}
+          />
         </div>
       </div>
     )

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Currency } from '@/types/business/transaction'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 
 interface BalanceInfo {
   currencyCode: string
@@ -38,12 +39,13 @@ export default function CategorySummaryItem({
   currencies = [],
   accountCount = 0,
   simpleBalance,
-  currencySymbol = '$',
+  currencySymbol: _currencySymbol = '$',
   transactionCount = 0,
   isSubcategory = false,
   subcategoryLabel,
 }: CategorySummaryItemProps) {
   const { t } = useLanguage()
+  const { formatCurrency } = useUserCurrencyFormatter()
 
   const renderStockContent = () => {
     if (isSubcategory) {
@@ -63,11 +65,7 @@ export default function CategorySummaryItem({
               : 'text-red-600 dark:text-red-400'
           }`}
         >
-          {currencySymbol}
-          {Math.abs(simpleBalance).toLocaleString('zh-CN', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
+          {formatCurrency(simpleBalance, baseCurrency?.code || 'USD')}
         </span>
       )
     }
@@ -89,7 +87,7 @@ export default function CategorySummaryItem({
         {balances.map(({ currencyCode, balance, convertedAmount }) => {
           // 查找对应的货币信息
           const currencyInfo = currencies.find(c => c.code === currencyCode)
-          const originalSymbol = currencyInfo?.symbol || currencyCode
+          const _originalSymbol = currencyInfo?.symbol || currencyCode
 
           return (
             <div
@@ -107,20 +105,16 @@ export default function CategorySummaryItem({
                       : 'text-red-600 dark:text-red-400'
                   }`}
                 >
-                  {originalSymbol}
-                  {Math.abs(balance).toLocaleString('zh-CN', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {formatCurrency(balance, currencyCode)}
                 </span>
                 {convertedAmount !== undefined &&
                   currencyCode !== baseCurrency?.code && (
                     <span className='text-xs text-gray-400'>
-                      ≈ {baseCurrency?.symbol}
-                      {Math.abs(convertedAmount).toLocaleString('zh-CN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      ≈{' '}
+                      {formatCurrency(
+                        convertedAmount,
+                        baseCurrency?.code || 'USD'
+                      )}
                     </span>
                   )}
               </div>

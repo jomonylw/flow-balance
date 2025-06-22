@@ -5,6 +5,7 @@ import Modal from '@/components/ui/feedback/Modal'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import type { CategorySettingsModalProps } from '@/types/components'
 import type { SimpleCategory } from '@/types/core'
 
@@ -146,7 +147,7 @@ export default function CategorySettingsModal({
             // 如果不能安全变更，显示错误提示并阻止保存
             showError(
               t('category.type.change.error'),
-              t('category.type.change.error.message')
+              t('category.type.change.error')
             )
             return
           }
@@ -285,7 +286,7 @@ export default function CategorySettingsModal({
               {isCheckingType && (
                 <div className='mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg'>
                   <div className='flex items-center space-x-2'>
-                    <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600'></div>
+                    <LoadingSpinner size='sm' color='primary' />
                     <span className='text-sm text-blue-800 dark:text-blue-400'>
                       {t('category.type.change.checking')}
                     </span>

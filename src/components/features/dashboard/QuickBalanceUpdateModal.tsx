@@ -7,6 +7,7 @@ import SelectField from '@/components/ui/forms/SelectField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { publishBalanceUpdate } from '@/lib/services/data-update.service'
@@ -33,61 +34,45 @@ export default function QuickBalanceUpdateModal({
     accountBalances,
     fetchBalances,
   } = useUserData()
+  const { formatCurrency, formatNumber: _formatNumber } =
+    useUserCurrencyFormatter()
   const { resolvedTheme } = useTheme()
 
-  // 从context获取基础货币
-  const baseCurrency = getBaseCurrency() || {
-    code: 'CNY',
-    symbol: '¥',
-    name: '人民币',
-  }
+  // Hooks MUST be called at the top level
+  const baseCurrency = getBaseCurrency()
 
-  // 确保余额数据已加载
+  const [formData, setFormData] = useState({
+    accountId: '',
+    newBalance: '',
+    currencyCode: baseCurrency?.code || '',
+    updateDate: new Date().toISOString().split('T')[0],
+    notes: '',
+  })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState(false)
+
+  const stockAccounts = accounts.filter(account => {
+    const isStockAccount =
+      account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
+    if (!isStockAccount) return false
+    if (accountType) {
+      return account.category.type === accountType
+    }
+    return true
+  })
+
+  const selectedAccount = stockAccounts.find(
+    account => account.id === formData.accountId
+  )
+
   useEffect(() => {
     if (isOpen && !accountBalances) {
       fetchBalances()
     }
   }, [isOpen, accountBalances, fetchBalances])
 
-  const [formData, setFormData] = useState({
-    accountId: '',
-    newBalance: '',
-    currencyCode: baseCurrency.code,
-    updateDate: new Date().toISOString().split('T')[0],
-    notes: '',
-  })
-
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isLoading, setIsLoading] = useState(false)
-
-  // 过滤出存量类账户（资产/负债），如果指定了accountType则进一步筛选
-  const stockAccounts = accounts.filter(account => {
-    const isStockAccount =
-      account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
-    if (!isStockAccount) return false
-
-    // 如果指定了accountType，则只显示该类型的账户
-    if (accountType) {
-      return account.category.type === accountType
-    }
-
-    // 否则显示所有存量类账户
-    return true
-  })
-
-  // 获取选中账户的当前余额
-  const selectedAccount = stockAccounts.find(
-    account => account.id === formData.accountId
-  )
-  const accountBalance = accountBalances?.[formData.accountId]
-  const currentBalance =
-    accountBalance?.balances[formData.currencyCode]?.amount || 0
-  const currencySymbol =
-    currencies.find(c => c.code === formData.currencyCode)?.symbol || ''
-
-  // 重置表单
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && baseCurrency) {
       setFormData({
         accountId: '',
         newBalance: '',
@@ -97,29 +82,51 @@ export default function QuickBalanceUpdateModal({
       })
       setErrors({})
     }
-  }, [isOpen, baseCurrency.code])
+  }, [isOpen, baseCurrency])
 
-  // 当选择账户时，更新币种为该账户的货币，新余额默认为 0
   useEffect(() => {
     if (selectedAccount) {
-      // 使用账户设定的货币
       const accountCurrency = selectedAccount.currencyCode
-
       setFormData(prev => ({
         ...prev,
         currencyCode: accountCurrency,
-        newBalance: '0', // 新余额默认为 0
+        newBalance: '0',
       }))
     }
   }, [formData.accountId, selectedAccount])
+
+  // Conditional return after all hooks have been called
+  if (!baseCurrency) {
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={t('balance.update.quick.title')}
+        size='lg'
+      >
+        <div className='text-center py-8'>
+          <p className='text-gray-500 dark:text-gray-400 mb-4'>
+            {t('currency.setup.required')}
+          </p>
+          <p className='text-sm text-gray-400'>
+            {t('currency.setup.description')}
+          </p>
+        </div>
+      </Modal>
+    )
+  }
+
+  const accountBalance = accountBalances?.[formData.accountId]
+  const currentBalance =
+    accountBalance?.balances[formData.currencyCode]?.amount || 0
+  const _currencySymbol =
+    currencies.find(c => c.code === formData.currencyCode)?.symbol || ''
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-
-    // 清除对应字段的错误
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -127,50 +134,36 @@ export default function QuickBalanceUpdateModal({
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-
     if (!formData.accountId) {
       newErrors.accountId = t('balance.update.select.account')
     }
-
     if (!formData.newBalance.trim()) {
       newErrors.newBalance = t('balance.update.enter.amount')
-    } else {
-      const amount = parseFloat(formData.newBalance)
-      if (isNaN(amount)) {
-        newErrors.newBalance = t('balance.update.valid.number')
-      }
+    } else if (isNaN(parseFloat(formData.newBalance))) {
+      newErrors.newBalance = t('balance.update.valid.number')
     }
-
     if (!formData.currencyCode) {
       newErrors.currencyCode = t('balance.update.select.currency')
     }
-
     if (!formData.updateDate) {
       newErrors.updateDate = t('balance.update.select.date')
     }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!validateForm()) {
       return
     }
-
     setIsLoading(true)
-
     try {
       const newBalance = parseFloat(formData.newBalance)
       const balanceChange = newBalance - currentBalance
-
       const response = await fetch('/api/balance-update', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           accountId: formData.accountId,
           currencyCode: formData.currencyCode,
@@ -180,9 +173,7 @@ export default function QuickBalanceUpdateModal({
           notes: formData.notes || t('balance.update.default.notes'),
         }),
       })
-
       const result = await response.json()
-
       if (result.success) {
         showSuccess(
           t('balance.update.success'),
@@ -190,20 +181,11 @@ export default function QuickBalanceUpdateModal({
             accountName: selectedAccount?.name || '',
           })
         )
-
-        // 发布余额更新事件
-        console.log(
-          `[QuickBalanceUpdateModal] Publishing balance update event for account ${formData.accountId}`
-        )
         await publishBalanceUpdate(formData.accountId, {
           newBalance: parseFloat(formData.newBalance),
           currencyCode: formData.currencyCode,
           transaction: result.transaction,
         })
-        console.log(
-          '[QuickBalanceUpdateModal] Balance update event published successfully'
-        )
-
         onSuccess()
         onClose()
       } else {
@@ -221,7 +203,6 @@ export default function QuickBalanceUpdateModal({
     }
   }
 
-  // 准备选项数据
   const accountOptions = stockAccounts.map(account => ({
     value: account.id,
     label: `${account.name} (${account.category.name})`,
@@ -232,7 +213,6 @@ export default function QuickBalanceUpdateModal({
     label: `${currency.code} - ${currency.name}`,
   }))
 
-  // 根据accountType生成标题
   const getModalTitle = () => {
     if (accountType === 'ASSET') return t('balance.update.asset.title')
     if (accountType === 'LIABILITY') return t('balance.update.liability.title')
@@ -251,8 +231,6 @@ export default function QuickBalanceUpdateModal({
             <div className='text-sm text-red-600'>{errors.general}</div>
           </div>
         )}
-
-        {/* 账户选择 */}
         <SelectField
           name='accountId'
           label={
@@ -279,8 +257,6 @@ export default function QuickBalanceUpdateModal({
           error={errors.accountId}
           required
         />
-
-        {/* 显示选中账户信息 */}
         {selectedAccount && (
           <div
             className={`p-4 rounded-lg border ${
@@ -313,18 +289,13 @@ export default function QuickBalanceUpdateModal({
                 <p
                   className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
                 >
-                  {t('balance.update.current.balance')}: {currencySymbol}
-                  {currentBalance.toLocaleString('zh-CN', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {t('balance.update.current.balance')}:{' '}
+                  {formatCurrency(currentBalance, formData.currencyCode)}
                 </p>
               </div>
             </div>
           </div>
         )}
-
-        {/* 币种选择 */}
         <div>
           <SelectField
             name='currencyCode'
@@ -334,7 +305,7 @@ export default function QuickBalanceUpdateModal({
             options={currencyOptions}
             error={errors.currencyCode}
             required
-            disabled={!!selectedAccount} // 选择账户后币种不可更改
+            disabled={!!selectedAccount}
           />
           {selectedAccount && (
             <p
@@ -349,8 +320,6 @@ export default function QuickBalanceUpdateModal({
             </p>
           )}
         </div>
-
-        {/* 新余额和日期 */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
           <InputField
             name='newBalance'
@@ -363,7 +332,6 @@ export default function QuickBalanceUpdateModal({
             required
             placeholder={t('balance.update.new.balance.placeholder')}
           />
-
           <InputField
             name='updateDate'
             label={t('balance.update.date')}
@@ -374,8 +342,6 @@ export default function QuickBalanceUpdateModal({
             required
           />
         </div>
-
-        {/* 备注 */}
         <InputField
           name='notes'
           label={t('balance.update.notes.optional')}
@@ -383,8 +349,6 @@ export default function QuickBalanceUpdateModal({
           onChange={handleChange}
           placeholder={t('balance.update.notes.placeholder')}
         />
-
-        {/* 操作按钮 */}
         <div className='flex justify-end space-x-3 pt-4'>
           <button
             type='button'

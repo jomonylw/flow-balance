@@ -6,5 +6,6 @@
   "confirm.clear.data": "This will permanently delete all related data.",
   "confirm.cannot.undo": "This action cannot be undone.",
   "confirm.delete.account.message": "Are you sure you want to delete account \"{{name}}\"? This action cannot be undone.",
-  "confirm.clear.balance.records": "Are you sure you want to clear all balance records? This action cannot be undone."
+  "confirm.clear.balance.records": "Are you sure you want to clear all balance records? This action cannot be undone.",
+  "confirm.clear.transactions": "Are you sure you want to clear all transaction records? This action cannot be undone."
 }

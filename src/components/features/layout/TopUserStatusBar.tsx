@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import UserMenuDropdown from './UserMenuDropdown'
 import LanguageToggle from './LanguageToggle'
 import ThemeToggle from './ThemeToggle'
+import CurrencyConverterPopover from '../currency/CurrencyConverterPopover'
 import type { SimpleUser, SimpleCurrency } from '@/types/core'
 
 interface UserWithSettings extends SimpleUser {
@@ -26,19 +28,15 @@ export default function TopUserStatusBar({
   showMenuButton = false,
 }: TopUserStatusBarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isCurrencyConverterOpen, setIsCurrencyConverterOpen] = useState(false)
+  const currencyButtonRef = useRef<HTMLButtonElement>(null)
   const router = useRouter()
   const { t } = useLanguage()
+  const { logout } = useAuth()
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-      })
-
-      if (response.ok) {
-        router.push('/login')
-        router.refresh()
-      }
+      await logout()
     } catch (error) {
       console.error('Logout error:', error)
     }
@@ -109,7 +107,14 @@ export default function TopUserStatusBar({
         <div className='flex items-center space-x-4'>
           {/* 本位币显示 */}
           {user.settings?.baseCurrency && (
-            <div className='hidden md:flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-700'>
+            <button
+              ref={currencyButtonRef}
+              onClick={() =>
+                setIsCurrencyConverterOpen(!isCurrencyConverterOpen)
+              }
+              className='flex items-center px-2 md:px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-700 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900'
+              title={t('currency.converter.title') || '汇率快览'}
+            >
               <svg
                 className='h-4 w-4 text-blue-600 dark:text-blue-400 mr-2'
                 fill='none'
@@ -123,11 +128,26 @@ export default function TopUserStatusBar({
                   d='M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
                 />
               </svg>
-              <span className='text-sm font-medium text-blue-700 dark:text-blue-300'>
-                {user.settings.baseCurrency.symbol}{' '}
+              <span className='text-xs md:text-sm font-medium text-blue-700 dark:text-blue-300'>
+                <span className='hidden sm:inline'>
+                  {user.settings.baseCurrency.symbol}{' '}
+                </span>
                 {user.settings.baseCurrency.code}
               </span>
-            </div>
+              <svg
+                className={`h-3 w-3 text-blue-600 dark:text-blue-400 ml-1 transition-transform duration-200 ${isCurrencyConverterOpen ? 'rotate-180' : ''}`}
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M19 9l-7 7-7-7'
+                />
+              </svg>
+            </button>
           )}
 
           {/* 快捷操作按钮（中等屏幕以上） */}
@@ -194,6 +214,16 @@ export default function TopUserStatusBar({
           </div>
         </div>
       </div>
+
+      {/* 货币转换弹窗 */}
+      {user.settings?.baseCurrency && (
+        <CurrencyConverterPopover
+          isOpen={isCurrencyConverterOpen}
+          onClose={() => setIsCurrencyConverterOpen(false)}
+          baseCurrency={user.settings.baseCurrency}
+          anchorElement={currencyButtonRef.current}
+        />
+      )}
     </div>
   )
 }

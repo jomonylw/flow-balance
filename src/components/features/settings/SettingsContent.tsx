@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
-import { useLanguage } from '@/contexts/providers/LanguageContext'
+// import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { TabType, SettingGroup } from './SettingsNavigation'
 
 interface SettingsContentProps {
@@ -15,33 +15,33 @@ export default function SettingsContent({
   settingGroups,
   children,
 }: SettingsContentProps) {
-  const { t } = useLanguage()
+  // const { t } = useLanguage()
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'complete':
-        return 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
-      case 'warning':
-        return 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-      case 'incomplete':
-        return 'text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800'
-      default:
-        return 'text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-    }
-  }
+  // const getStatusColor = (status?: string) => {
+  //   switch (status) {
+  //     case 'complete':
+  //       return 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+  //     case 'warning':
+  //       return 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+  //     case 'incomplete':
+  //       return 'text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800'
+  //     default:
+  //       return 'text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+  //   }
+  // }
 
-  const getStatusIcon = (status?: string) => {
-    switch (status) {
-      case 'complete':
-        return '✓'
-      case 'warning':
-        return '⚠'
-      case 'incomplete':
-        return '!'
-      default:
-        return ''
-    }
-  }
+  // const getStatusIcon = (status?: string) => {
+  //   switch (status) {
+  //     case 'complete':
+  //       return '✓'
+  //     case 'warning':
+  //       return '⚠'
+  //     case 'incomplete':
+  //       return '!'
+  //     default:
+  //       return ''
+  //   }
+  // }
 
   const currentItem = settingGroups
     .flatMap(group => group.items)
@@ -67,7 +67,7 @@ export default function SettingsContent({
                   </p>
                 </div>
               </div>
-              {currentItem.status && (
+              {/* {currentItem.status && (
                 <span
                   className={`
                   inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-all
@@ -85,7 +85,7 @@ export default function SettingsContent({
                         ? t('settings.status.incomplete')
                         : ''}
                 </span>
-              )}
+              )} */}
             </div>
           )}
         </div>

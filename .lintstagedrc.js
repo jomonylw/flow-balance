@@ -1,6 +1,9 @@
 module.exports = {
   // TypeScript 和 JavaScript 文件 (排除 scripts 目录)
-  'src/**/*.{ts,tsx,js,jsx}': ['eslint --fix --max-warnings=1000', 'prettier --write'],
+  'src/**/*.{ts,tsx,js,jsx}': [
+    'eslint --fix --max-warnings=1000',
+    'prettier --write',
+  ],
   '*.{ts,tsx}': ['eslint --fix --max-warnings=1000', 'prettier --write'],
 
   // JSON 文件

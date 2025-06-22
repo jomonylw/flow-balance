@@ -159,10 +159,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 获取货币ID
+    const currency = await prisma.currency.findFirst({
+      where: {
+        code: validatedData.currencyCode,
+        OR: [{ createdBy: user.id }, { createdBy: null }],
+      },
+    })
+
+    if (!currency) {
+      return NextResponse.json(
+        { success: false, error: '货币不存在' },
+        { status: 400 }
+      )
+    }
+
     // 创建模板
     const template = await prisma.transactionTemplate.create({
       data: {
-        ...validatedData,
+        name: validatedData.name,
+        accountId: validatedData.accountId,
+        categoryId: validatedData.categoryId,
+        currencyId: currency.id,
+        type: validatedData.type,
+        description: validatedData.description,
+        notes: validatedData.notes,
         userId: user.id,
         tagIds: validatedData.tagIds || [],
       },

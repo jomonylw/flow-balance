@@ -140,19 +140,22 @@ export async function PUT(
     }
 
     // 验证账户货币限制
-    if (account.currencyCode && account.currencyCode !== currencyCode) {
+    if (account.currency && account.currency.code !== currencyCode) {
       return errorResponse(
-        `此账户只能使用 ${account.currency?.name} (${account.currencyCode})，无法使用 ${currencyCode}`,
+        `此账户只能使用 ${account.currency?.name} (${account.currency.code})，无法使用 ${currencyCode}`,
         400
       )
     }
 
     // 验证币种
-    const currency = await prisma.currency.findUnique({
-      where: { code: currencyCode },
+    const currencyCheck = await prisma.currency.findFirst({
+      where: {
+        code: currencyCode,
+        OR: [{ createdBy: user.id }, { createdBy: null }],
+      },
     })
 
-    if (!currency) {
+    if (!currencyCheck) {
       return errorResponse('币种不存在', 400)
     }
 
@@ -198,13 +201,29 @@ export async function PUT(
       }
     }
 
+    // 验证并获取货币ID
+    const currency = await prisma.currency.findFirst({
+      where: {
+        code: currencyCode,
+        OR: [
+          { createdBy: user.id }, // 用户自定义货币
+          { createdBy: null }, // 全局货币
+        ],
+      },
+      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+    })
+
+    if (!currency) {
+      return errorResponse('指定的货币不存在', 400)
+    }
+
     // 更新交易
     const transaction = await prisma.transaction.update({
       where: { id: id },
       data: {
         accountId,
         categoryId,
-        currencyCode,
+        currencyId: currency.id,
         type: type as TransactionType,
         amount: parseFloat(amount),
         description,

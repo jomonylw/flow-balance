@@ -24,9 +24,11 @@ export default async function AppLayout({ children }: AppLayoutProps) {
       ? {
           baseCurrency: userSettings.baseCurrency
             ? {
+                id: userSettings.baseCurrency.id,
                 code: userSettings.baseCurrency.code,
                 name: userSettings.baseCurrency.name,
                 symbol: userSettings.baseCurrency.symbol,
+                decimalPlaces: userSettings.baseCurrency.decimalPlaces,
               }
             : undefined,
         }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import type { TransactionFilters } from '@/types/components'
 
 interface TransactionFiltersProps {
@@ -221,7 +222,7 @@ export default function TransactionFilters({
               />
               {isSearchPending && (
                 <div className='absolute inset-y-0 right-0 flex items-center pr-3'>
-                  <div className='animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full'></div>
+                  <LoadingSpinner size='sm' color='primary' />
                 </div>
               )}
             </div>

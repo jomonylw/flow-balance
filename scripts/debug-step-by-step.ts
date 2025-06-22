@@ -40,6 +40,7 @@ async function debugStepByStep() {
       },
       include: {
         category: true,
+        currency: true,
         transactions: {
           include: { currency: true },
           orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
@@ -56,7 +57,7 @@ async function debugStepByStep() {
     console.log(`  账户ID: ${testAccount.id}`)
     console.log(`  账户名称: ${testAccount.name}`)
     console.log(`  账户类型: ${testAccount.category?.type}`)
-    console.log(`  账户货币: ${testAccount.currencyCode}`)
+    console.log(`  账户货币: ${testAccount.currency?.code}`)
     console.log(`  交易数量: ${testAccount.transactions.length}`)
 
     // 显示所有交易
@@ -96,7 +97,7 @@ async function debugStepByStep() {
     console.log('\n💰 计算账户余额:')
     const balances = calculateAccountBalance(serializedAccount)
 
-    console.log(`  余额结果:`)
+    console.log('  余额结果:')
     if (Object.keys(balances).length === 0) {
       console.log('    ❌ 没有计算出任何余额')
     } else {
@@ -115,12 +116,12 @@ async function debugStepByStep() {
       baseCurrency
     )
 
-    console.log(`  转换结果:`)
+    console.log('  转换结果:')
     console.log(
       `    本位币总额: ${baseCurrency.symbol}${conversionResult.totalInBaseCurrency.toFixed(2)}`
     )
     console.log(`    转换错误: ${conversionResult.hasConversionErrors}`)
-    console.log(`    原币种余额:`)
+    console.log('    原币种余额:')
     Object.values(conversionResult.totalsByOriginalCurrency).forEach(
       balance => {
         console.log(
@@ -131,7 +132,7 @@ async function debugStepByStep() {
 
     // 检查汇率转换详情
     if (conversionResult.conversionDetails.length > 0) {
-      console.log(`    转换详情:`)
+      console.log('    转换详情:')
       conversionResult.conversionDetails.forEach(detail => {
         console.log(
           `      ${detail.fromCurrency} -> ${detail.targetCurrency}: ${detail.originalAmount} * ${detail.exchangeRate} = ${detail.convertedAmount} (成功: ${detail.success})`
@@ -150,6 +151,7 @@ async function debugStepByStep() {
       },
       include: {
         category: true,
+        currency: true,
         transactions: {
           include: { currency: true },
           orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
@@ -184,14 +186,14 @@ async function debugStepByStep() {
       baseCurrency
     )
 
-    console.log(`  总资产计算结果:`)
+    console.log('  总资产计算结果:')
     console.log(
       `    本位币总额: ${baseCurrency.symbol}${totalAssetsResult.totalInBaseCurrency.toFixed(2)}`
     )
     console.log(`    转换错误: ${totalAssetsResult.hasConversionErrors}`)
 
     // 逐个检查每个资产账户的余额
-    console.log(`\n  各资产账户余额:`)
+    console.log('\n  各资产账户余额:')
     for (const account of serializedAssetAccounts) {
       const accountBalances = calculateAccountBalance(account)
       const hasBalance = Object.values(accountBalances).some(

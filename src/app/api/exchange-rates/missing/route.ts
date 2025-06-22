@@ -53,19 +53,26 @@ export async function GET(_request: NextRequest) {
     const existingRates = await prisma.exchangeRate.findMany({
       where: {
         userId: user.id,
-        toCurrency: baseCurrency.code,
+        toCurrencyRef: {
+          code: baseCurrency.code,
+        },
       },
       include: {
         fromCurrencyRef: true,
         toCurrencyRef: true,
       },
-      orderBy: [{ fromCurrency: 'asc' }, { effectiveDate: 'desc' }],
+      orderBy: [
+        { fromCurrencyRef: { code: 'asc' } },
+        { effectiveDate: 'desc' },
+      ],
     })
 
-    // 序列化现有汇率
+    // 序列化现有汇率并添加货币代码字段
     const serializedExistingRates = existingRates.map(rate => ({
       ...rate,
       rate: parseFloat(rate.rate.toString()),
+      fromCurrency: rate.fromCurrencyRef?.code || '',
+      toCurrency: rate.toCurrencyRef?.code || '',
     }))
 
     // 构建缺失汇率的详细信息

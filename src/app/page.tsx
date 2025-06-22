@@ -12,7 +12,7 @@ export default async function Home() {
       where: { userId: user.id },
     })
 
-    if (!userSettings?.baseCurrencyCode) {
+    if (!userSettings?.baseCurrencyId) {
       // 如果未设置本位币，重定向到初始设置页面
       redirect('/setup')
     } else {

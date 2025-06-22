@@ -18,7 +18,7 @@ export default async function FirePage() {
   })
 
   // 如果用户未完成初始设置，重定向到设置页面
-  if (!userSettings?.baseCurrencyCode) {
+  if (!userSettings?.baseCurrencyId) {
     redirect('/setup')
   }
 

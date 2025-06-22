@@ -37,6 +37,7 @@ export async function GET(
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const search = searchParams.get('search')
+    const recurringTransactionId = searchParams.get('recurringTransactionId')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
@@ -60,6 +61,10 @@ export async function GET(
         dateCondition.lte = new Date(dateTo)
       }
       baseConditions.push({ date: dateCondition })
+    }
+
+    if (recurringTransactionId) {
+      baseConditions.push({ recurringTransactionId })
     }
 
     // 构建最终查询条件
@@ -130,6 +135,10 @@ export async function GET(
       description: transaction.description,
       notes: transaction.notes,
       date: transaction.date,
+      // 关联字段
+      recurringTransactionId: transaction.recurringTransactionId,
+      loanContractId: transaction.loanContractId,
+      loanPaymentId: transaction.loanPaymentId,
       account: {
         id: transaction.account.id,
         name: transaction.account.name,

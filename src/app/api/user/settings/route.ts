@@ -45,17 +45,28 @@ export async function PUT(request: NextRequest) {
       language,
       fireEnabled,
       fireSWR,
+      futureDataDays,
     } = body
 
-    // 验证币种代码
+    // 验证币种代码并获取货币ID
+    let baseCurrencyId: string | undefined
     if (baseCurrencyCode) {
-      const currency = await prisma.currency.findUnique({
-        where: { code: baseCurrencyCode },
+      const currency = await prisma.currency.findFirst({
+        where: {
+          code: baseCurrencyCode,
+          OR: [
+            { createdBy: user.id }, // 用户自定义货币
+            { createdBy: null }, // 全局货币
+          ],
+        },
+        orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
       })
 
       if (!currency) {
         return validationErrorResponse('无效的币种代码')
       }
+
+      baseCurrencyId = currency.id
     }
 
     // 验证日期格式
@@ -93,6 +104,14 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // 验证未来数据生成天数
+    if (futureDataDays !== undefined) {
+      const daysValue = parseInt(futureDataDays)
+      if (isNaN(daysValue) || daysValue < 0 || daysValue > 30) {
+        return validationErrorResponse('未来数据生成天数必须在0-30天之间')
+      }
+    }
+
     // 获取或创建用户设置
     const existingSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
@@ -104,26 +123,44 @@ export async function PUT(request: NextRequest) {
       userSettings = await prisma.userSettings.update({
         where: { userId: user.id },
         data: {
-          ...(baseCurrencyCode && { baseCurrencyCode }),
+          ...(baseCurrencyId && { baseCurrencyId }),
           ...(dateFormat && { dateFormat }),
           ...(theme && { theme }),
           ...(language && { language }),
           ...(fireEnabled !== undefined && { fireEnabled }),
           ...(fireSWR !== undefined && { fireSWR }),
+          ...(futureDataDays !== undefined && { futureDataDays }),
         },
         include: { baseCurrency: true },
       })
     } else {
       // 创建新设置
+      // 如果没有指定货币，使用默认的 USD
+      let defaultBaseCurrencyId = baseCurrencyId
+      if (!defaultBaseCurrencyId) {
+        const defaultCurrency = await prisma.currency.findFirst({
+          where: {
+            code: 'USD',
+            OR: [
+              { createdBy: user.id }, // 用户自定义货币
+              { createdBy: null }, // 全局货币
+            ],
+          },
+          orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+        })
+        defaultBaseCurrencyId = defaultCurrency?.id
+      }
+
       userSettings = await prisma.userSettings.create({
         data: {
           userId: user.id,
-          baseCurrencyCode: baseCurrencyCode || 'USD',
+          baseCurrencyId: defaultBaseCurrencyId,
           dateFormat: dateFormat || 'YYYY-MM-DD',
           theme: theme || 'system',
           language: language || 'zh',
           fireEnabled: fireEnabled !== undefined ? fireEnabled : false,
           fireSWR: fireSWR !== undefined ? fireSWR : 4.0,
+          futureDataDays: futureDataDays !== undefined ? futureDataDays : 7,
         },
         include: { baseCurrency: true },
       })
