@@ -4,6 +4,8 @@
  */
 
 import { z } from 'zod'
+import { ConstantsManager } from '@/lib/utils/constants-manager'
+import { SortOrder } from '@/types/core/constants'
 // 核心类型从 @/types/core 导入，在此文件中不直接使用但保持导入以供其他文件引用
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { UserSettings, Currency, Tag } from '@/types/core'
@@ -15,8 +17,8 @@ import type { UserSettings, Currency, Tag } from '@/types/core'
 /** 用户设置验证 Schema */
 export const UserSettingsSchema = z.object({
   baseCurrencyCode: z.string().min(3).max(3).optional(),
-  language: z.enum(['zh', 'en']).optional(),
-  theme: z.enum(['light', 'dark', 'system']).optional(),
+  language: z.enum(ConstantsManager.getZodLanguageEnum()).optional(),
+  theme: z.enum(ConstantsManager.getZodThemeEnum()).optional(),
 })
 
 /** 货币验证 Schema */
@@ -43,7 +45,7 @@ export const TagSchema = z.object({
 /** 分类创建验证 Schema */
 export const CategoryCreateSchema = z.object({
   name: z.string().min(1).max(100),
-  type: z.enum(['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE']),
+  type: z.enum(ConstantsManager.getZodAccountTypeEnum()),
   icon: z.string().max(50).optional(),
   color: z
     .string()
@@ -80,7 +82,7 @@ export const TransactionCreateSchema = z.object({
   accountId: z.string().uuid(),
   categoryId: z.string().uuid(),
   currencyCode: z.string().min(3).max(3),
-  type: z.enum(['INCOME', 'EXPENSE', 'BALANCE']),
+  type: z.enum(ConstantsManager.getZodTransactionTypeEnum()),
   amount: z.number().positive(),
   description: z.string().min(1).max(200),
   notes: z.string().max(1000).optional(),
@@ -95,7 +97,7 @@ export const TransactionUpdateSchema = TransactionCreateSchema.partial()
 export const TransactionQuerySchema = z.object({
   accountId: z.string().uuid().optional(),
   categoryId: z.string().uuid().optional(),
-  type: z.enum(['INCOME', 'EXPENSE', 'BALANCE']).optional(),
+  type: z.enum(ConstantsManager.getZodTransactionTypeEnum()).optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
   search: z.string().max(100).optional(),
@@ -103,7 +105,7 @@ export const TransactionQuerySchema = z.object({
   page: z.number().int().positive().default(1),
   limit: z.number().int().positive().max(100).default(20),
   sortBy: z.string().optional(),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  sortOrder: z.enum(ConstantsManager.getZodSortOrderEnum()).default(SortOrder.DESC),
 })
 
 // ============================================================================
@@ -135,7 +137,7 @@ export const PaginationSchema = z.object({
 /** 排序参数验证 Schema */
 export const SortSchema = z.object({
   sortBy: z.string().optional(),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  sortOrder: z.enum(ConstantsManager.getZodSortOrderEnum()).default(SortOrder.DESC),
 })
 
 /** 筛选参数验证 Schema */
@@ -207,7 +209,7 @@ export const CSVImportSchema = z.object({
 
 /** 数据导出选项验证 Schema */
 export const ExportOptionsSchema = z.object({
-  format: z.enum(['csv', 'json', 'xlsx']),
+  format: z.enum(ConstantsManager.getZodExportFormatEnum()),
   dateRange: z
     .object({
       start: z.string().datetime(),

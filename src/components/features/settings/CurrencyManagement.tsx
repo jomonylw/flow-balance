@@ -330,7 +330,7 @@ export default function CurrencyManagement({
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'>
             {userCurrencies.map(currency => (
               <div
-                key={currency.code}
+                key={currency.id}
                 className='flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-blue-50 dark:bg-blue-900/20'
               >
                 <div className='flex items-center space-x-3'>
@@ -561,7 +561,7 @@ export default function CurrencyManagement({
             .filter(currency => !currency.isSelected)
             .map(currency => (
               <div
-                key={currency.code}
+                key={currency.id}
                 className='flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
               >
                 <div className='flex items-center space-x-3'>

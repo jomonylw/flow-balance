@@ -46,6 +46,7 @@ export async function PUT(request: NextRequest) {
       fireEnabled,
       fireSWR,
       futureDataDays,
+      autoUpdateExchangeRates,
     } = body
 
     // 验证币种代码并获取货币ID
@@ -112,6 +113,11 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // 验证汇率自动更新设置
+    if (autoUpdateExchangeRates !== undefined && typeof autoUpdateExchangeRates !== 'boolean') {
+      return validationErrorResponse('无效的汇率自动更新设置')
+    }
+
     // 获取或创建用户设置
     const existingSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
@@ -130,6 +136,7 @@ export async function PUT(request: NextRequest) {
           ...(fireEnabled !== undefined && { fireEnabled }),
           ...(fireSWR !== undefined && { fireSWR }),
           ...(futureDataDays !== undefined && { futureDataDays }),
+          ...(autoUpdateExchangeRates !== undefined && { autoUpdateExchangeRates }),
         },
         include: { baseCurrency: true },
       })
@@ -161,6 +168,7 @@ export async function PUT(request: NextRequest) {
           fireEnabled: fireEnabled !== undefined ? fireEnabled : false,
           fireSWR: fireSWR !== undefined ? fireSWR : 4.0,
           futureDataDays: futureDataDays !== undefined ? futureDataDays : 7,
+          autoUpdateExchangeRates: autoUpdateExchangeRates !== undefined ? autoUpdateExchangeRates : false,
         },
         include: { baseCurrency: true },
       })

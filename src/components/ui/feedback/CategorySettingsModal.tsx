@@ -6,6 +6,7 @@ import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
+import { ConstantsManager } from '@/lib/utils/constants-manager'
 import type { CategorySettingsModalProps } from '@/types/components'
 import type { SimpleCategory } from '@/types/core'
 
@@ -45,32 +46,13 @@ export default function CategorySettingsModal({
   // 使用UserDataContext获取分类数据，避免API调用
   const { categories } = useUserData()
 
-  const ACCOUNT_TYPES = [
-    {
-      value: 'ASSET',
-      label: t('category.type.asset'),
-      description: t('category.settings.asset.description'),
-      color: 'text-blue-600 dark:text-blue-400',
-    },
-    {
-      value: 'LIABILITY',
-      label: t('category.type.liability'),
-      description: t('category.settings.liability.description'),
-      color: 'text-red-600 dark:text-red-400',
-    },
-    {
-      value: 'INCOME',
-      label: t('category.type.income'),
-      description: t('category.settings.income.description'),
-      color: 'text-green-600 dark:text-green-400',
-    },
-    {
-      value: 'EXPENSE',
-      label: t('category.type.expense'),
-      description: t('category.settings.expense.description'),
-      color: 'text-orange-600 dark:text-orange-400',
-    },
-  ] as const
+  // 使用统一的账户类型配置
+  const accountTypeConfigs = ConstantsManager.getAccountTypeConfigs().map(config => ({
+    value: config.value,
+    label: t(config.labelKey),
+    description: t(config.descriptionKey),
+    color: config.colorClass,
+  }))
 
   // 是否为顶级分类
   const isTopLevel = !category.parentId
@@ -153,11 +135,11 @@ export default function CategorySettingsModal({
           }
         }
 
-        updates.type = selectedType as
-          | 'ASSET'
-          | 'LIABILITY'
-          | 'INCOME'
-          | 'EXPENSE'
+        // 验证并设置账户类型
+        const validatedType = ConstantsManager.validateAccountType(selectedType)
+        if (validatedType) {
+          updates.type = validatedType
+        }
       }
 
       await onSave(updates)
@@ -181,7 +163,7 @@ export default function CategorySettingsModal({
   }
 
   const getTypeInfo = (type: string) => {
-    return ACCOUNT_TYPES.find(t => t.value === type)
+    return accountTypeConfigs.find(t => t.value === type)
   }
 
   const inheritedType = getInheritedType()
@@ -257,7 +239,7 @@ export default function CategorySettingsModal({
               </p>
 
               <div className='space-y-3'>
-                {ACCOUNT_TYPES.map(type => (
+                {accountTypeConfigs.map(type => (
                   <label
                     key={type.value}
                     className='flex items-start space-x-3 cursor-pointer'
@@ -372,8 +354,7 @@ export default function CategorySettingsModal({
                     {t('category.settings.statistics.method')}
                   </h4>
                   <div className='text-sm text-blue-800 dark:text-blue-400'>
-                    {selectedType === 'ASSET' ||
-                    selectedType === 'LIABILITY' ? (
+                    {ConstantsManager.isStockAccount(selectedType) ? (
                       <div>
                         <p>
                           <strong>

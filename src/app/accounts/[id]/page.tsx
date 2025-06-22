@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import AppLayout from '@/components/features/layout/AppLayout'
 import AccountDetailRouter from '@/components/features/accounts/AccountDetailRouter'
+import { ConstantsManager } from '@/lib/utils/constants-manager'
+import { convertPrismaAccountType } from '@/types/core/constants'
 
 interface AccountPageProps {
   params: Promise<{ id: string }>
@@ -97,6 +99,7 @@ export default async function AccountPage({ params }: AccountPageProps) {
     category: {
       ...account.category,
       parentId: account.category.parentId || undefined,
+      type: convertPrismaAccountType(account.category.type),
     },
     transactions: account.transactions.map(transaction => ({
       ...transaction,
@@ -117,13 +120,13 @@ export default async function AccountPage({ params }: AccountPageProps) {
         name: transaction.account.name,
         category: {
           name: transaction.account.category.name,
-          type: transaction.account.category.type,
+          type: convertPrismaAccountType(transaction.account.category.type),
         },
       },
       category: {
         id: transaction.category.id,
         name: transaction.category.name,
-        type: transaction.category.type,
+        type: convertPrismaAccountType(transaction.category.type),
       },
       currency: {
         id: transaction.currency.id,
@@ -144,6 +147,7 @@ export default async function AccountPage({ params }: AccountPageProps) {
         categories={categories.map(category => ({
           ...category,
           parentId: category.parentId || undefined, // 转换 null 为 undefined
+          type: convertPrismaAccountType(category.type),
         }))}
         currencies={currencies.map(currency => ({
           ...currency,
@@ -160,13 +164,15 @@ export default async function AccountPage({ params }: AccountPageProps) {
                 id: userSettings.id,
                 userId: userSettings.userId,
                 baseCurrencyId: userSettings.baseCurrencyId || '',
-                language: userSettings.language as 'zh' | 'en',
-                theme: userSettings.theme as 'light' | 'dark' | 'system',
+                language: ConstantsManager.convertPrismaLanguage(userSettings.language),
+                theme: ConstantsManager.convertPrismaTheme(userSettings.theme),
                 baseCurrency: userSettings.baseCurrency || undefined,
                 createdAt: userSettings.createdAt,
                 updatedAt: userSettings.updatedAt,
                 fireSWR: userSettings.fireSWR,
                 futureDataDays: userSettings.futureDataDays,
+                autoUpdateExchangeRates: userSettings.autoUpdateExchangeRates,
+                lastExchangeRateUpdate: userSettings.lastExchangeRateUpdate,
               }
             : undefined,
         }}

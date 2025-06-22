@@ -186,6 +186,12 @@ export default function SystemUpdateCard() {
                 </div>
                 <div>{t('sync.processed.loans')}</div>
               </div>
+              <div className='text-center'>
+                <div className='font-semibold text-orange-600 dark:text-orange-400'>
+                  {syncStatus.processedExchangeRates || 0}
+                </div>
+                <div>{t('sync.processed.exchange.rates')}</div>
+              </div>
             </div>
           )}
 

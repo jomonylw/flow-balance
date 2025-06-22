@@ -211,6 +211,7 @@ export default function QuickBalanceUpdateModal({
   const currencyOptions = currencies.map(currency => ({
     value: currency.code,
     label: `${currency.code} - ${currency.name}`,
+    id: currency.id, // 添加唯一标识符
   }))
 
   const getModalTitle = () => {

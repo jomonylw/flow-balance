@@ -31,6 +31,7 @@ import type {
   LoanContractFormData,
   ExtendedTransaction,
 } from '@/types/core'
+import { convertPrismaAccountType } from '@/types/core/constants'
 
 interface StockAccountDetailViewProps {
   account: LegacyAccount
@@ -523,7 +524,7 @@ export default function StockAccountDetailView({
               ...account,
               category: {
                 ...account.category,
-                type: account.category.type,
+                type: account.category.type ? convertPrismaAccountType(account.category.type) : convertPrismaAccountType('ASSET'),
               },
               transactions: account.transactions || [],
             }}
@@ -539,7 +540,11 @@ export default function StockAccountDetailView({
           trendData={trendData}
           account={{
             ...account,
-            type: account.category.type || 'ASSET',
+            type: account.category.type ? convertPrismaAccountType(account.category.type) : convertPrismaAccountType('ASSET'),
+            category: {
+              ...account.category,
+              type: account.category.type ? convertPrismaAccountType(account.category.type) : convertPrismaAccountType('ASSET'),
+            },
             currency: account.currency ||
               user.settings?.baseCurrency || {
                 id: 'default-usd-for-account-prop',
@@ -648,7 +653,13 @@ export default function StockAccountDetailView({
           setEditingTransaction(null)
         }}
         onSuccess={handleBalanceUpdateSuccess}
-        account={account}
+        account={{
+          ...account,
+          category: {
+            ...account.category,
+            type: account.category.type ? convertPrismaAccountType(account.category.type) : convertPrismaAccountType('ASSET'),
+          },
+        }}
         currencies={currencies}
         currentBalance={balance}
         currencyCode={actualCurrencyCode}

@@ -178,6 +178,7 @@ export default function ExchangeRateForm({
   const currencyOptions = userCurrencies.map(currency => ({
     value: currency.code,
     label: `${currency.symbol} ${currency.name} (${currency.code})`,
+    id: currency.id, // 添加唯一标识符
   }))
 
   // 过滤源货币选项（排除目标货币）

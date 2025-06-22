@@ -12,31 +12,72 @@ import {
  */
 export function DashboardSkeleton() {
   return (
-    <div className='p-6 space-y-6'>
+    <div className='max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8'>
       {/* 页面标题 */}
-      <div>
+      <div className='mb-6 sm:mb-8'>
         <Skeleton height='2rem' width='25%' className='mb-2' />
         <Skeleton height='1rem' width='50%' />
       </div>
 
-      {/* 快速操作按钮 */}
-      <div className='flex gap-4'>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} height='2.5rem' width='120px' rounded='md' />
-        ))}
+      {/* 汇率设置提醒 */}
+      <div className='mb-4 sm:mb-6'>
+        <SkeletonCard hasHeader={false} contentLines={1} className='bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700' />
       </div>
 
-      {/* 财务统计卡片 */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
-        {Array.from({ length: 4 }).map((_, i) => (
+      {/* 系统更新状态卡片 */}
+      <SkeletonCard hasHeader={false} contentLines={2} className='mb-6' />
+
+      {/* 智能财务统计 */}
+      <div className='mb-8'>
+        <Skeleton height='1.5rem' width='30%' className='mb-4' />
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} hasHeader={false} contentLines={3} />
+          ))}
+        </div>
+      </div>
+
+      {/* 基础统计卡片 */}
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
+        {Array.from({ length: 3 }).map((_, i) => (
           <SkeletonCard key={i} hasHeader={false} contentLines={2} />
         ))}
       </div>
 
-      {/* 图表区域 */}
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        <SkeletonChart height={400} hasTitle={true} hasLegend={true} />
-        <SkeletonChart height={400} hasTitle={true} hasLegend={true} />
+      {/* 快速操作 */}
+      <div className='bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 mb-6 sm:mb-8'>
+        <Skeleton height='1.125rem' width='20%' className='mb-4' />
+        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4'>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} height='3rem' rounded='md' />
+          ))}
+        </div>
+      </div>
+
+      {/* 图表展示区域 */}
+      <div className='space-y-6'>
+        <Skeleton height='1.5rem' width='30%' className='mb-4' />
+        <div className='space-y-6'>
+          <SkeletonChart height={400} hasTitle={true} hasLegend={false} />
+          <SkeletonChart height={400} hasTitle={true} hasLegend={false} />
+        </div>
+      </div>
+
+      {/* 数据质量评分 */}
+      <div className='bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6'>
+        <div className='flex items-center justify-between mb-4'>
+          <Skeleton height='1.5rem' width='25%' />
+          <Skeleton height='2rem' width='80px' />
+        </div>
+        <Skeleton height='0.5rem' rounded='full' className='mb-4' />
+        <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4'>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className='text-center'>
+              <Skeleton height='1.125rem' width='60%' className='mx-auto mb-1' />
+              <Skeleton height='0.875rem' width='80%' className='mx-auto' />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -816,6 +857,126 @@ export function SettingsPageSkeleton({
     <SettingsPageMobileSkeleton />
   ) : (
     <SettingsPageDesktopSkeleton />
+  )
+}
+
+/**
+ * 顶部用户状态栏骨架屏
+ */
+export function TopUserStatusBarSkeleton() {
+  return (
+    <div className='bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm'>
+      <div className='flex items-center justify-between'>
+        {/* 左侧：移动端菜单按钮 + Logo */}
+        <div className='flex items-center'>
+          {/* 移动端菜单按钮 */}
+          <div className='mr-3 lg:hidden'>
+            <Skeleton width='40px' height='40px' rounded='xl' />
+          </div>
+
+          {/* Logo */}
+          <div className='flex items-center space-x-3'>
+            <Skeleton width='32px' height='32px' rounded='lg' />
+            <Skeleton height='1.5rem' width='120px' />
+          </div>
+        </div>
+
+        {/* 右侧：基础货币 + 用户菜单 */}
+        <div className='flex items-center space-x-3'>
+          {/* 基础货币显示 */}
+          <Skeleton height='2rem' width='80px' rounded='md' />
+
+          {/* 用户菜单 */}
+          <Skeleton width='32px' height='32px' rounded='full' />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 完整应用布局骨架屏
+ */
+export function AppLayoutSkeleton({
+  children
+}: {
+  children?: React.ReactNode
+}) {
+  return (
+    <div className='h-screen flex flex-col bg-gray-50 dark:bg-gray-900'>
+      {/* 顶部用户状态栏 */}
+      <TopUserStatusBarSkeleton />
+
+      {/* 主内容区域 */}
+      <div className='flex-1 flex overflow-hidden'>
+        {/* 左侧导航栏 - 桌面端 */}
+        <div className='hidden lg:block flex-shrink-0'>
+          <SidebarSkeleton />
+        </div>
+
+        {/* 右侧主内容 */}
+        <main className='flex-1 overflow-y-auto bg-white dark:bg-gray-800'>
+          <div className='min-h-full'>
+            {children || <DashboardSkeleton />}
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 仪表板应用布局骨架屏
+ */
+export function DashboardAppLayoutSkeleton() {
+  return (
+    <AppLayoutSkeleton>
+      <DashboardSkeleton />
+    </AppLayoutSkeleton>
+  )
+}
+
+/**
+ * 设置页面应用布局骨架屏
+ */
+export function SettingsAppLayoutSkeleton() {
+  return (
+    <AppLayoutSkeleton>
+      <SettingsPageSkeleton />
+    </AppLayoutSkeleton>
+  )
+}
+
+/**
+ * FIRE页面应用布局骨架屏
+ */
+export function FireAppLayoutSkeleton() {
+  return (
+    <AppLayoutSkeleton>
+      <FirePageSkeleton />
+    </AppLayoutSkeleton>
+  )
+}
+
+/**
+ * 报表页面应用布局骨架屏
+ */
+export function ReportsAppLayoutSkeleton() {
+  return (
+    <AppLayoutSkeleton>
+      <ReportsSkeleton />
+    </AppLayoutSkeleton>
+  )
+}
+
+/**
+ * 交易页面应用布局骨架屏
+ */
+export function TransactionsAppLayoutSkeleton() {
+  return (
+    <AppLayoutSkeleton>
+      <TransactionListSkeleton />
+    </AppLayoutSkeleton>
   )
 }
 

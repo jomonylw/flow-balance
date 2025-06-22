@@ -6,6 +6,7 @@ import {
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
+import { TransactionType, AccountType } from '@/types/core/constants'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import { calculateAccountBalance } from '@/lib/services/account.service'
 
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
           amount: parseFloat(transaction.amount.toString()),
           date: transaction.date.toISOString(),
           // 交易类型已经是正确的格式
-          type: transaction.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          type: transaction.type as TransactionType,
         })),
       }
 
@@ -145,7 +146,7 @@ export async function GET(request: NextRequest) {
         const categoryName = account.category.name
         const accountType = account.category.type
 
-        if (accountType === 'ASSET') {
+        if (accountType === AccountType.ASSET) {
           // 初始化资产类别
           if (!balanceSheet.assets.categories[categoryId]) {
             balanceSheet.assets.categories[categoryId] = {
@@ -175,7 +176,7 @@ export async function GET(request: NextRequest) {
             balanceSheet.assets.totalByCurrency[currencyCode] = 0
           }
           balanceSheet.assets.totalByCurrency[currencyCode] += balance
-        } else if (accountType === 'LIABILITY') {
+        } else if (accountType === AccountType.LIABILITY) {
           // 初始化负债类别
           if (!balanceSheet.liabilities.categories[categoryId]) {
             balanceSheet.liabilities.categories[categoryId] = {

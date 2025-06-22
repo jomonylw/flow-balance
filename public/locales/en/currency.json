@@ -8,6 +8,7 @@
   "currency.add.instruction": "Please add the currencies you need from below",
   "currency.custom": "Custom",
   "currency.custom.create": "Create Custom Currency",
+  "currency.custom.create.success": "Custom currency created successfully",
   "currency.custom.edit": "Edit Custom Currency",
   "currency.custom.update.failed": "Failed to update custom currency",
   "currency.code": "Currency Code",

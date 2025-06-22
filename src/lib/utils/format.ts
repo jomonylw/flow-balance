@@ -2,6 +2,8 @@
  * 通用工具函数
  */
 
+import { CURRENCY_SYMBOLS } from '@/types/core/constants'
+
 /**
  * 格式化货币显示
  * @param amount 金额
@@ -14,33 +16,9 @@ export function formatCurrency(
   currencyCode: string,
   symbol?: string
 ): string {
-  // 常见货币符号映射
-  const currencySymbols: Record<string, string> = {
-    CNY: '¥',
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    JPY: '¥',
-    HKD: 'HK$',
-    TWD: 'NT$',
-    SGD: 'S$',
-    AUD: 'A$',
-    CAD: 'C$',
-    CHF: 'CHF',
-    SEK: 'kr',
-    NOK: 'kr',
-    DKK: 'kr',
-    RUB: '₽',
-    INR: '₹',
-    KRW: '₩',
-    THB: '฿',
-    MYR: 'RM',
-    IDR: 'Rp',
-    PHP: '₱',
-    VND: '₫',
-  }
+  // 使用统一的货币符号映射
 
-  const currencySymbol = symbol || currencySymbols[currencyCode] || currencyCode
+  const currencySymbol = symbol || CURRENCY_SYMBOLS[currencyCode as keyof typeof CURRENCY_SYMBOLS] || currencyCode
 
   // 注意：这个函数已被弃用，请使用 useUserCurrencyFormatter Hook
   // 这里保留硬编码的 'zh-CN' 是为了向后兼容，但建议迁移到新的Hook

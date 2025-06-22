@@ -340,6 +340,7 @@ export default function BalanceUpdateModal({
   const currencyOptions = (availableCurrencies || []).map(currency => ({
     value: currency.code,
     label: `${currency.code} - ${currency.name}`,
+    id: currency.id, // 添加唯一标识符
   }))
 
   // 如果账户有货币限制但在可用货币列表中找不到，添加一个临时选项
@@ -347,6 +348,7 @@ export default function BalanceUpdateModal({
     currencyOptions.push({
       value: account.currency.code,
       label: `${account.currency.code} - ${account.currency.name || account.currency.code}`,
+      id: account.currency.id || account.currency.code, // 使用 currency id 或 code 作为 fallback
     })
   }
 
@@ -362,6 +364,7 @@ export default function BalanceUpdateModal({
     currencyOptions.push({
       value: editingTransaction.currencyCode,
       label: `${editingTransaction.currencyCode} - ${transactionCurrency?.name || editingTransaction.currencyCode}`,
+      id: transactionCurrency?.id || editingTransaction.currencyCode, // 使用 currency id 或 code 作为 fallback
     })
   }
 

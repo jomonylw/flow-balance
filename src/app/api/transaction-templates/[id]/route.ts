@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import { z } from 'zod'
+import { TransactionType } from '@/types/core/constants'
 
 // 更新模板验证schema
 const updateTemplateSchema = z.object({
@@ -14,7 +15,7 @@ const updateTemplateSchema = z.object({
   categoryId: z.string().min(1, '分类ID不能为空').optional(),
   currencyCode: z.string().min(1, '货币代码不能为空').optional(),
   type: z
-    .enum(['INCOME', 'EXPENSE'], {
+    .enum([TransactionType.INCOME, TransactionType.EXPENSE], {
       errorMap: () => ({ message: '交易类型必须是收入或支出' }),
     })
     .optional(),
@@ -163,8 +164,8 @@ export async function PUT(
       const transactionType = validatedData.type || existingTemplate.type
       const accountType = account.category.type
       if (
-        (transactionType === 'INCOME' && accountType !== 'INCOME') ||
-        (transactionType === 'EXPENSE' && accountType !== 'EXPENSE')
+        (transactionType === TransactionType.INCOME && accountType !== 'INCOME') ||
+        (transactionType === TransactionType.EXPENSE && accountType !== 'EXPENSE')
       ) {
         return NextResponse.json(
           { success: false, error: '交易类型与账户类型不匹配' },

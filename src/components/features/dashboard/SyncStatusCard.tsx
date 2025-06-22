@@ -88,10 +88,17 @@ export default function SyncStatusCard() {
       {syncStatus.status === 'completed' && (
         <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-1'>
           <div>
-            {t('sync.processed.summary', {
-              recurring: syncStatus.processedRecurring || 0,
-              loans: syncStatus.processedLoans || 0,
-            })}
+            {(syncStatus.processedExchangeRates || 0) > 0
+              ? t('sync.processed.summary.with.rates', {
+                  recurring: syncStatus.processedRecurring || 0,
+                  loans: syncStatus.processedLoans || 0,
+                  exchangeRates: syncStatus.processedExchangeRates || 0,
+                })
+              : t('sync.processed.summary', {
+                  recurring: syncStatus.processedRecurring || 0,
+                  loans: syncStatus.processedLoans || 0,
+                })
+            }
           </div>
           {syncStatus.futureDataGenerated && syncStatus.futureDataUntil && (
             <div className='flex items-center space-x-1'>

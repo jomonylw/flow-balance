@@ -3,6 +3,31 @@
  * 统一管理项目中的核心业务实体类型
  */
 
+// 导入常量和枚举
+import {
+  AccountType,
+  TransactionType as TransactionTypeEnum,
+  Theme,
+  Language,
+  LoadingState,
+  Size,
+  ColorVariant,
+  SortOrder,
+  ExportFormat,
+} from './constants'
+
+// 重新导出常量和枚举
+export {
+  AccountType,
+  Theme,
+  Language,
+  LoadingState,
+  Size,
+  ColorVariant,
+  SortOrder,
+  ExportFormat,
+}
+
 // ============================================================================
 // 基础类型
 // ============================================================================
@@ -22,10 +47,12 @@ export interface UserSettings {
   id: string
   userId: string
   baseCurrencyId: string | null
-  language: 'zh' | 'en'
-  theme: 'light' | 'dark' | 'system'
+  language: Language
+  theme: Theme
   fireSWR: number
   futureDataDays: number
+  autoUpdateExchangeRates: boolean
+  lastExchangeRateUpdate: Date | null
   createdAt: Date
   updatedAt: Date
   baseCurrency?: Currency
@@ -69,8 +96,8 @@ export interface Tag {
 // 分类和账户类型
 // ============================================================================
 
-/** 分类类型枚举 */
-export type CategoryType = 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+/** 分类类型枚举 - 使用从 constants 导入的 AccountType */
+export type CategoryType = AccountType
 
 /** 分类信息 */
 export interface Category {
@@ -111,8 +138,8 @@ export interface Account {
 // 交易类型
 // ============================================================================
 
-/** 交易类型枚举 */
-export type TransactionType = 'INCOME' | 'EXPENSE' | 'BALANCE'
+/** 交易类型枚举 - 使用从 constants 导入的 TransactionType */
+export type TransactionType = TransactionTypeEnum
 
 /** 交易信息 */
 export interface Transaction {
@@ -428,7 +455,7 @@ export interface CategoryTransaction {
 export interface FlowCategory {
   id: string
   name: string
-  type: 'INCOME' | 'EXPENSE'
+  type: AccountType.INCOME | AccountType.EXPENSE
   transactions?: SimpleTransaction[]
 }
 
@@ -436,7 +463,7 @@ export interface FlowCategory {
 export interface StockCategory {
   id: string
   name: string
-  type: 'ASSET' | 'LIABILITY'
+  type: AccountType.ASSET | AccountType.LIABILITY
   transactions?: SimpleTransaction[]
 }
 
@@ -704,7 +731,7 @@ export interface RecurringTransaction {
   userId: string
   accountId: string
   currencyCode: string
-  type: 'INCOME' | 'EXPENSE'
+  type: TransactionTypeEnum.INCOME | TransactionTypeEnum.EXPENSE
   amount: number
   description: string
   notes?: string | null
@@ -738,7 +765,7 @@ export interface RecurringTransactionFormData {
   id?: string
   accountId: string
   currencyCode: string
-  type: 'INCOME' | 'EXPENSE'
+  type: TransactionTypeEnum.INCOME | TransactionTypeEnum.EXPENSE
   amount: number
   description: string
   notes?: string | null
@@ -885,6 +912,7 @@ export interface SyncStatus {
   lastSyncTime?: Date
   processedRecurring?: number
   processedLoans?: number
+  processedExchangeRates?: number
   failedCount?: number
   errorMessage?: string
   futureDataGenerated?: boolean
@@ -900,6 +928,7 @@ export interface RecurringProcessingLog {
   status: 'processing' | 'completed' | 'failed'
   processedRecurring: number
   processedLoans: number
+  processedExchangeRates: number
   failedCount: number
   errorMessage?: string
   createdAt: Date

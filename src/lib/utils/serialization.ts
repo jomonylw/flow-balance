@@ -5,6 +5,7 @@
 
 import { Decimal } from '@prisma/client/runtime/library'
 import type { Account, Transaction, Category, Currency } from '@prisma/client'
+import { convertPrismaTransactionType, convertPrismaAccountType } from '@/types/core/constants'
 
 /**
  * 递归地将对象中的所有Decimal类型转换为number类型
@@ -47,9 +48,14 @@ export function serializeAccount(
 ) {
   return {
     ...account,
+    category: {
+      ...account.category,
+      type: convertPrismaAccountType(account.category.type),
+    },
     transactions:
       account.transactions?.map(transaction => ({
         ...transaction,
+        type: convertPrismaTransactionType(transaction.type),
         amount: parseFloat(transaction.amount.toString()),
         date: transaction.date.toISOString().split('T')[0], // 转换为 YYYY-MM-DD 格式
         createdAt: transaction.createdAt.toISOString(),

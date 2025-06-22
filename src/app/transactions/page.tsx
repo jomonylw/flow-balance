@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import AppLayout from '@/components/features/layout/AppLayout'
 import TransactionListView from '@/components/features/transactions/TransactionListView'
+import { ConstantsManager } from '@/lib/utils/constants-manager'
 
 export default async function TransactionsPage() {
   const user = await getCurrentUser()
@@ -27,13 +28,15 @@ export default async function TransactionsPage() {
                 id: userSettings.id,
                 userId: userSettings.userId,
                 baseCurrencyId: userSettings.baseCurrencyId || '',
-                language: userSettings.language as 'zh' | 'en',
-                theme: userSettings.theme as 'light' | 'dark' | 'system',
+                language: ConstantsManager.convertPrismaLanguage(userSettings.language),
+                theme: ConstantsManager.convertPrismaTheme(userSettings.theme),
                 baseCurrency: userSettings.baseCurrency || undefined,
                 createdAt: userSettings.createdAt,
                 updatedAt: userSettings.updatedAt,
                 fireSWR: userSettings.fireSWR,
                 futureDataDays: userSettings.futureDataDays,
+                autoUpdateExchangeRates: (userSettings as any).autoUpdateExchangeRates || false,
+                lastExchangeRateUpdate: (userSettings as any).lastExchangeRateUpdate || null,
               }
             : undefined,
         }}

@@ -7,6 +7,7 @@ import { SyncStatusService } from './sync-status.service'
 import { FutureDataGenerationService } from './future-data-generation.service'
 import { RecurringTransactionService } from './recurring-transaction.service'
 import { LoanContractService } from './loan-contract.service'
+import { ExchangeRateAutoUpdateService } from './exchange-rate-auto-update.service'
 
 export class UnifiedSyncService {
   /**
@@ -53,6 +54,7 @@ export class UnifiedSyncService {
 
     let processedRecurring = 0
     let processedLoans = 0
+    let processedExchangeRates = 0
     let failedCount = 0
     const errorMessages: string[] = []
 
@@ -67,7 +69,14 @@ export class UnifiedSyncService {
           userId
         )
 
-      // 3. 处理当前到期的定期交易
+      // 3. 处理汇率自动更新
+      const exchangeRateResult = await this.processExchangeRateUpdate(userId)
+      processedExchangeRates += exchangeRateResult.processed
+      if (exchangeRateResult.errors.length > 0) {
+        errorMessages.push(...exchangeRateResult.errors)
+      }
+
+      // 4. 处理当前到期的定期交易
       const recurringResult =
         await this.processCurrentRecurringTransactions(userId)
       processedRecurring += recurringResult.processed
@@ -76,7 +85,7 @@ export class UnifiedSyncService {
         errorMessages.push(...recurringResult.errors)
       }
 
-      // 4. 处理当前到期的贷款还款记录
+      // 5. 处理当前到期的贷款还款记录
       const loanResult = await this.processCurrentLoanPayments(userId)
       processedLoans += loanResult.processed
       failedCount += loanResult.failed
@@ -84,7 +93,7 @@ export class UnifiedSyncService {
         errorMessages.push(...loanResult.errors)
       }
 
-      // 5. 生成未来7天的定期交易数据
+      // 6. 生成未来7天的定期交易数据
       const futureRecurringResult =
         await FutureDataGenerationService.generateFutureRecurringTransactions(
           userId
@@ -94,7 +103,7 @@ export class UnifiedSyncService {
         errorMessages.push(...futureRecurringResult.errors)
       }
 
-      // 6. 生成未来7天的贷款还款数据
+      // 7. 生成未来7天的贷款还款数据
       const futureLoanResult =
         await FutureDataGenerationService.generateFutureLoanPayments(userId)
       processedLoans += futureLoanResult.generated
@@ -102,7 +111,7 @@ export class UnifiedSyncService {
         errorMessages.push(...futureLoanResult.errors)
       }
 
-      // 7. 更新完成状态
+      // 8. 更新完成状态
       await SyncStatusService.updateSyncStatus(userId, 'completed', new Date())
 
       await SyncStatusService.updateProcessingLog(log.id, {
@@ -110,6 +119,7 @@ export class UnifiedSyncService {
         status: 'completed',
         processedRecurring,
         processedLoans,
+        processedExchangeRates,
         failedCount,
         errorMessage:
           errorMessages.length > 0 ? errorMessages.join('; ') : undefined,
@@ -123,12 +133,49 @@ export class UnifiedSyncService {
         status: 'failed',
         processedRecurring,
         processedLoans,
+        processedExchangeRates,
         failedCount,
         errorMessage: error instanceof Error ? error.message : '未知错误',
       })
 
       throw error
     }
+  }
+
+  /**
+   * 处理汇率自动更新
+   */
+  private static async processExchangeRateUpdate(userId: string): Promise<{
+    processed: number
+    errors: string[]
+  }> {
+    const errors: string[] = []
+    let processed = 0
+
+    try {
+      const result = await ExchangeRateAutoUpdateService.updateExchangeRates(userId, false)
+
+      if (result.success && result.data) {
+        processed = result.data.updatedCount
+        if (result.data.errors && result.data.errors.length > 0) {
+          errors.push(...result.data.errors)
+        }
+
+        // 如果跳过了更新，记录原因
+        if (result.data.skipped) {
+          // 使用 console.warn 记录跳过信息
+          console.warn(`汇率更新跳过 - 用户 ${userId}: ${result.data.skipReason}`)
+        }
+      } else if (!result.success) {
+        errors.push(result.message || '汇率更新失败')
+      }
+    } catch (error) {
+      errors.push(
+        `汇率自动更新失败: ${error instanceof Error ? error.message : '未知错误'}`
+      )
+    }
+
+    return { processed, errors }
   }
 
   /**
@@ -144,7 +191,6 @@ export class UnifiedSyncService {
     const errors: string[] = []
     let processed = 0
     let failed = 0
-    const _today = new Date()
 
     const recurringTransactions =
       await RecurringTransactionService.getDueRecurringTransactions(userId)

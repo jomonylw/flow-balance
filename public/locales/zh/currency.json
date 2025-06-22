@@ -8,6 +8,7 @@
   "currency.add.instruction": "请从下方添加您需要使用的货币",
   "currency.custom": "自定义",
   "currency.custom.create": "创建自定义货币",
+  "currency.custom.create.success": "自定义货币创建成功",
   "currency.custom.edit": "编辑自定义货币",
   "currency.custom.update.failed": "更新自定义货币失败",
   "currency.code": "货币代码",

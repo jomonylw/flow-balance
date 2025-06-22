@@ -6,6 +6,7 @@ import {
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
+import { TransactionType, AccountType } from '@/types/core/constants'
 import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       name: account.name,
       category: account.category,
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+        type: t.type as TransactionType,
         amount: parseFloat(t.amount.toString()),
         date: t.date,
         currency: t.currency,
@@ -76,14 +77,14 @@ export async function GET(request: NextRequest) {
         // 分离存量类账户（资产/负债）和流量类账户（收入/支出）
         const stockAccounts = accountsForCalculation.filter(
           account =>
-            account.category.type === 'ASSET' ||
-            account.category.type === 'LIABILITY'
+            account.category.type === AccountType.ASSET ||
+            account.category.type === AccountType.LIABILITY
         )
 
         const flowAccounts = accountsForCalculation.filter(
           account =>
-            account.category.type === 'INCOME' ||
-            account.category.type === 'EXPENSE'
+            account.category.type === AccountType.INCOME ||
+            account.category.type === AccountType.EXPENSE
         )
 
         // 计算该月末的净资产（只包含存量类账户）
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
         flowAccounts.forEach(account => {
           const accountType = account.category.type
 
-          if (accountType === 'INCOME' || accountType === 'EXPENSE') {
+          if (accountType === AccountType.INCOME || accountType === AccountType.EXPENSE) {
             const monthlyTransactions = account.transactions.filter(t => {
               const transactionDate = new Date(t.date)
               return (
@@ -118,14 +119,14 @@ export async function GET(request: NextRequest) {
 
             monthlyTransactions.forEach(transaction => {
               if (transaction.amount > 0) {
-                if (accountType === 'INCOME' && transaction.type === 'INCOME') {
+                if (accountType === AccountType.INCOME && transaction.type === TransactionType.INCOME) {
                   monthlyIncomeAmounts.push({
                     amount: transaction.amount,
                     currency: transaction.currency.code,
                   })
                 } else if (
-                  accountType === 'EXPENSE' &&
-                  transaction.type === 'EXPENSE'
+                  accountType === AccountType.EXPENSE &&
+                  transaction.type === TransactionType.EXPENSE
                 ) {
                   monthlyExpenseAmounts.push({
                     amount: transaction.amount,
@@ -203,10 +204,10 @@ export async function GET(request: NextRequest) {
 
         // 使用已经过滤的存量类账户分别计算资产和负债
         const assetAccounts = stockAccounts.filter(
-          account => account.category.type === 'ASSET'
+          account => account.category.type === AccountType.ASSET
         )
         const liabilityAccounts = stockAccounts.filter(
-          account => account.category.type === 'LIABILITY'
+          account => account.category.type === AccountType.LIABILITY
         )
 
         const [assetResult, liabilityResult] = await Promise.all([

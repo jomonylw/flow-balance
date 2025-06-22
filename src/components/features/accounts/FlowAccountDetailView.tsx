@@ -26,6 +26,7 @@ import {
   TimeRange,
 } from '@/types/business/transaction'
 import type { RecurringTransaction, ExtendedTransaction } from '@/types/core'
+import { convertPrismaAccountType } from '@/types/core/constants'
 
 interface FlowAccountDetailViewProps {
   account: LegacyAccount
@@ -541,7 +542,14 @@ export default function FlowAccountDetailView({
       {/* 账户摘要卡片 */}
       <div className='mb-8'>
         <FlowAccountSummaryCard
-          account={{ ...account, transactions: account.transactions || [] }}
+          account={{
+            ...account,
+            transactions: account.transactions || [],
+            category: {
+              ...account.category,
+              type: account.category.type ? convertPrismaAccountType(account.category.type) : undefined
+            }
+          }}
           balance={flowTotal}
           currencyCode={account.currency?.code || 'USD'}
         />
@@ -553,7 +561,11 @@ export default function FlowAccountDetailView({
           trendData={trendData}
           account={{
             ...account,
-            type: account.category.type || 'INCOME',
+            type: account.category.type ? convertPrismaAccountType(account.category.type) : convertPrismaAccountType('INCOME'),
+            category: {
+              ...account.category,
+              type: account.category.type ? convertPrismaAccountType(account.category.type) : undefined
+            },
             currency: account.currency || {
               id: 'default-usd',
               code: 'USD',
@@ -675,7 +687,13 @@ export default function FlowAccountDetailView({
         onClose={() => setIsTransactionModalOpen(false)}
         onSuccess={handleTransactionSuccess}
         transaction={editingTransaction || undefined}
-        account={account}
+        account={{
+          ...account,
+          category: {
+            ...account.category,
+            type: account.category.type ? convertPrismaAccountType(account.category.type) : undefined
+          }
+        }}
         currencies={currencies}
         tags={tags}
       />

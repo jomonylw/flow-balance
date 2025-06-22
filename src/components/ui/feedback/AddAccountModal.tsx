@@ -276,6 +276,7 @@ export default function AddAccountModal({
               options={currencies.map(currency => ({
                 value: currency.code,
                 label: `${currency.symbol} ${currency.code} - ${currency.name}`,
+                id: currency.id, // 添加唯一标识符
               }))}
               error={errors.currencyCode}
               help={t('account.settings.currency.help')}

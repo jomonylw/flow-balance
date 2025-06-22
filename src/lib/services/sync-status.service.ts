@@ -40,7 +40,36 @@ export class SyncStatusService {
     // 检查是否需要重新生成未来数据
     const needsFutureDataRefresh = await this.needsFutureDataRefresh(userId)
 
-    return hoursSinceLastSync > 6 || needsFutureDataRefresh
+    // 检查是否需要汇率更新
+    const needsExchangeRateUpdate = await this.needsExchangeRateUpdate(userId)
+
+    return hoursSinceLastSync > 6 || needsFutureDataRefresh || needsExchangeRateUpdate
+  }
+
+  /**
+   * 检查是否需要汇率更新
+   */
+  static async needsExchangeRateUpdate(userId: string): Promise<boolean> {
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+    })
+
+    // 如果未启用汇率自动更新，则不需要更新
+    if (!userSettings?.autoUpdateExchangeRates) {
+      return false
+    }
+
+    // 如果从未更新过汇率，则需要更新
+    if (!userSettings.lastExchangeRateUpdate) {
+      return true
+    }
+
+    // 检查是否超过24小时
+    const lastUpdate = new Date(userSettings.lastExchangeRateUpdate)
+    const now = new Date()
+    const hoursSinceLastUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
+
+    return hoursSinceLastUpdate >= 24
   }
 
   /**
@@ -85,6 +114,7 @@ export class SyncStatusService {
       lastSyncTime: userSettings?.lastRecurringSync || undefined,
       processedRecurring: latestLog?.processedRecurring || 0,
       processedLoans: latestLog?.processedLoans || 0,
+      processedExchangeRates: latestLog?.processedExchangeRates || 0,
       failedCount: latestLog?.failedCount || 0,
       errorMessage: latestLog?.errorMessage || undefined,
       futureDataGenerated: futurePendingCount > 0,
@@ -140,6 +170,7 @@ export class SyncStatusService {
       status?: 'processing' | 'completed' | 'failed'
       processedRecurring?: number
       processedLoans?: number
+      processedExchangeRates?: number
       failedCount?: number
       errorMessage?: string
     }
@@ -215,6 +246,7 @@ export class SyncStatusService {
         status: true,
         processedRecurring: true,
         processedLoans: true,
+        processedExchangeRates: true,
         failedCount: true,
       },
     })
@@ -230,7 +262,7 @@ export class SyncStatusService {
     const recentStats = recentLogs.reduce(
       (acc, log) => {
         acc.totalProcessed +=
-          (log.processedRecurring || 0) + (log.processedLoans || 0)
+          (log.processedRecurring || 0) + (log.processedLoans || 0) + (log.processedExchangeRates || 0)
         acc.totalFailed += log.failedCount || 0
         if (log.status === 'completed') acc.completedTasks++
         if (log.status === 'failed') acc.failedTasks++

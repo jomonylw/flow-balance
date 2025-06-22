@@ -9,62 +9,79 @@ async function main() {
   // 1. 创建币种数据
   console.log('📦 创建币种数据...')
 
-  // 先检查是否已存在全局货币，如果不存在则创建
-  const usdCurrency = await prisma.currency.findFirst({
-    where: { code: 'USD', createdBy: null },
-  })
-  if (!usdCurrency) {
-    await prisma.currency.create({
-      data: {
-        code: 'USD',
-        name: 'US Dollar',
-        symbol: '$',
+  // 定义完整的货币数据
+  const currencyData = [
+    { code: 'AUD', name: 'Australian Dollar', symbol: '$', decimalPlaces: 2 },
+    { code: 'BGN', name: 'Bulgarian Lev', symbol: 'лв', decimalPlaces: 2 },
+    { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', decimalPlaces: 2 },
+    { code: 'CAD', name: 'Canadian Dollar', symbol: '$', decimalPlaces: 2 },
+    { code: 'CHF', name: 'Swiss Franc', symbol: 'Fr.', decimalPlaces: 2 },
+    { code: 'CNY', name: 'Chinese Renminbi Yuan', symbol: '¥', decimalPlaces: 2 },
+    { code: 'CZK', name: 'Czech Koruna', symbol: 'Kč', decimalPlaces: 2 },
+    { code: 'DKK', name: 'Danish Krone', symbol: 'kr.', decimalPlaces: 2 },
+    { code: 'EUR', name: 'Euro', symbol: '€', decimalPlaces: 2 },
+    { code: 'GBP', name: 'British Pound', symbol: '£', decimalPlaces: 2 },
+    { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$', decimalPlaces: 2 },
+    { code: 'HUF', name: 'Hungarian Forint', symbol: 'Ft', decimalPlaces: 2 },
+    { code: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp', decimalPlaces: 0 },
+    { code: 'ILS', name: 'Israeli New Sheqel', symbol: '₪', decimalPlaces: 2 },
+    { code: 'INR', name: 'Indian Rupee', symbol: '₹', decimalPlaces: 2 },
+    { code: 'ISK', name: 'Icelandic Króna', symbol: 'kr', decimalPlaces: 2 },
+    { code: 'JPY', name: 'Japanese Yen', symbol: '¥', decimalPlaces: 0 },
+    { code: 'KRW', name: 'South Korean Won', symbol: '₩', decimalPlaces: 0 },
+    { code: 'MXN', name: 'Mexican Peso', symbol: '$', decimalPlaces: 2 },
+    { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM', decimalPlaces: 2 },
+    { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr', decimalPlaces: 2 },
+    { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$', decimalPlaces: 2 },
+    { code: 'PHP', name: 'Philippine Peso', symbol: '₱', decimalPlaces: 2 },
+    { code: 'PLN', name: 'Polish Złoty', symbol: 'zł', decimalPlaces: 2 },
+    { code: 'RON', name: 'Romanian Leu', symbol: 'lei', decimalPlaces: 2 },
+    { code: 'RUB', name: 'Russian Ruble', symbol: '₽', decimalPlaces: 2 },
+    { code: 'SEK', name: 'Swedish Krona', symbol: 'kr', decimalPlaces: 2 },
+    { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$', decimalPlaces: 2 },
+    { code: 'THB', name: 'Thai Baht', symbol: '฿', decimalPlaces: 2 },
+    { code: 'TRY', name: 'Turkish Lira', symbol: '₺', decimalPlaces: 2 },
+    { code: 'TWD', name: 'Taiwan Dollar', symbol: 'NT$', decimalPlaces: 2 },
+    { code: 'USD', name: 'United States Dollar', symbol: '$', decimalPlaces: 2 },
+    { code: 'VND', name: 'Vietnamese Dong', symbol: '₫', decimalPlaces: 0 },
+    { code: 'ZAR', name: 'South African Rand', symbol: 'R', decimalPlaces: 2 },
+  ]
+
+  // 批量创建或更新货币数据
+  for (const currency of currencyData) {
+    // 先查找是否存在
+    const existingCurrency = await prisma.currency.findFirst({
+      where: {
+        code: currency.code,
         createdBy: null,
       },
     })
+
+    if (existingCurrency) {
+      // 更新现有货币
+      await prisma.currency.update({
+        where: { id: existingCurrency.id },
+        data: {
+          name: currency.name,
+          symbol: currency.symbol,
+          decimalPlaces: currency.decimalPlaces,
+        },
+      })
+    } else {
+      // 创建新货币
+      await prisma.currency.create({
+        data: {
+          code: currency.code,
+          name: currency.name,
+          symbol: currency.symbol,
+          decimalPlaces: currency.decimalPlaces,
+          createdBy: null,
+        },
+      })
+    }
   }
 
-  const eurCurrency = await prisma.currency.findFirst({
-    where: { code: 'EUR', createdBy: null },
-  })
-  if (!eurCurrency) {
-    await prisma.currency.create({
-      data: {
-        code: 'EUR',
-        name: 'Euro',
-        symbol: '€',
-        createdBy: null,
-      },
-    })
-  }
-
-  const cnyCurrency = await prisma.currency.findFirst({
-    where: { code: 'CNY', createdBy: null },
-  })
-  if (!cnyCurrency) {
-    await prisma.currency.create({
-      data: {
-        code: 'CNY',
-        name: 'Chinese Yuan',
-        symbol: '¥',
-        createdBy: null,
-      },
-    })
-  }
-
-  const jpyCurrency = await prisma.currency.findFirst({
-    where: { code: 'JPY', createdBy: null },
-  })
-  if (!jpyCurrency) {
-    await prisma.currency.create({
-      data: {
-        code: 'JPY',
-        name: 'Japanese Yen',
-        symbol: '¥',
-        createdBy: null,
-      },
-    })
-  }
+  console.log(`✅ 已创建/更新 ${currencyData.length} 种货币`)
 
   // 获取创建的货币
   const currencies = await Promise.all([
@@ -625,7 +642,7 @@ async function main() {
 
   console.log('✅ 种子数据填充完成!')
   console.log('👤 创建了 2 个用户')
-  console.log(`💱 创建了 ${currencies.length} 种币种`)
+  console.log(`💱 创建了 34 种全局货币（包含完整的货币符号和小数位配置）`)
   console.log('💰 为用户设置了可用货币')
   console.log('📁 创建了分类结构')
   console.log('🏦 创建了 10 个账户（4个资产类 + 2个负债类 + 4个流量类）')
@@ -635,6 +652,7 @@ async function main() {
   console.log('🔄 多货币交易：USD, EUR, CNY, JPY')
   console.log('📊 汇率设置：EUR→USD, CNY→USD, JPY→USD')
   console.log('📊 流量类账户：工资收入、餐饮支出、交通支出、购物支出')
+  console.log('💰 货币精度：JPY/KRW/IDR/VND 使用 0 位小数，其他货币使用 2 位小数')
 }
 
 main()

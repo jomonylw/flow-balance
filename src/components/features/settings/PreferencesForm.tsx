@@ -29,6 +29,7 @@ export default function PreferencesForm({
     fireEnabled: userSettings?.fireEnabled || false,
     fireSWR: userSettings?.fireSWR || 4.0,
     futureDataDays: userSettings?.futureDataDays || 7,
+    autoUpdateExchangeRates: userSettings?.autoUpdateExchangeRates || false,
   })
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -45,6 +46,7 @@ export default function PreferencesForm({
       language: userSettings?.language || savedLanguage || 'zh',
       fireEnabled: userSettings?.fireEnabled || false,
       fireSWR: userSettings?.fireSWR || 4.0,
+      autoUpdateExchangeRates: userSettings?.autoUpdateExchangeRates || false,
     }))
   }, [userSettings])
 
@@ -69,6 +71,7 @@ export default function PreferencesForm({
   const currencyOptions = userCurrencies.map(currency => ({
     value: currency.code,
     label: `${currency.symbol} ${currency.name} (${currency.code})`,
+    id: currency.id, // 添加唯一标识符
   }))
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -273,6 +276,15 @@ export default function PreferencesForm({
               onChange={handleSelectChange}
               options={dateFormatOptions}
               help={t('preferences.date.format.help')}
+            />
+
+            <ToggleSwitch
+              name='autoUpdateExchangeRates'
+              label={t('exchange.rate.auto.update')}
+              checked={formData.autoUpdateExchangeRates}
+              onChange={checked => handleToggleChange('autoUpdateExchangeRates', checked)}
+              help={t('exchange.rate.auto.update.description')}
+              disabled={!formData.baseCurrencyCode}
             />
           </div>
 

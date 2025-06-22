@@ -7,6 +7,7 @@ import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import ColorManager from '@/lib/utils/color'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
+import { AccountType } from '@/types/core/constants'
 
 import type {
   TrendDataPoint,
@@ -229,7 +230,7 @@ export default function FlowAccountTrendChart({
             color: ColorManager.getAccountColor(
               account.id,
               account.color,
-              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+              account.type as AccountType
             ),
             borderRadius: [4, 4, 0, 0], // 流量账户交易金额都是正数，圆角在顶部
           },
@@ -239,7 +240,7 @@ export default function FlowAccountTrendChart({
                 ColorManager.getAccountColor(
                   account.id,
                   account.color,
-                  account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+                  account.type as AccountType
                 ),
                 0.8
               ),
@@ -257,7 +258,7 @@ export default function FlowAccountTrendChart({
               ColorManager.getAccountColor(
                 account.id,
                 account.color,
-                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+                account.type as AccountType
               )
             ),
             width: 3,
@@ -267,7 +268,7 @@ export default function FlowAccountTrendChart({
               ColorManager.getAccountColor(
                 account.id,
                 account.color,
-                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+                account.type as AccountType
               )
             ),
           },
@@ -279,7 +280,7 @@ export default function FlowAccountTrendChart({
                 ColorManager.getAccountColor(
                   account.id,
                   account.color,
-                  account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+                  account.type as AccountType
                 )
               ),
               borderWidth: 2,

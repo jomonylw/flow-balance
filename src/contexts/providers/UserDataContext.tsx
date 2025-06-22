@@ -64,6 +64,8 @@ interface UserDataSettings {
   fireEnabled?: boolean
   fireSWR: number
   futureDataDays: number
+  autoUpdateExchangeRates: boolean
+  lastExchangeRateUpdate: Date | null
   baseCurrency: SimpleCurrency
 }
 

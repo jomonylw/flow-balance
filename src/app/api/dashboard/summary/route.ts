@@ -10,6 +10,7 @@ import {
   calculateAccountBalance,
   validateAccountTypes,
 } from '@/lib/services/account.service'
+import { TransactionType, AccountType } from '@/types/core/constants'
 
 export async function GET() {
   try {
@@ -49,7 +50,7 @@ export async function GET() {
       name: account.name,
       category: account.category,
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+        type: t.type as TransactionType,
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
         currency: t.currency,
@@ -59,13 +60,13 @@ export async function GET() {
     // 分离存量类账户和流量类账户
     const stockAccounts = accountsForCalculation.filter(
       account =>
-        account.category?.type === 'ASSET' ||
-        account.category?.type === 'LIABILITY'
+        account.category?.type === AccountType.ASSET ||
+        account.category?.type === AccountType.LIABILITY
     )
     const flowAccounts = accountsForCalculation.filter(
       account =>
-        account.category?.type === 'INCOME' ||
-        account.category?.type === 'EXPENSE'
+        account.category?.type === AccountType.INCOME ||
+        account.category?.type === AccountType.EXPENSE
     )
 
     // 获取当前日期，确保不包含未来的交易记录
@@ -180,7 +181,7 @@ export async function GET() {
           lte: now, // 添加结束日期限制，确保不包含未来交易
         },
         type: {
-          in: ['INCOME', 'EXPENSE'], // 只统计收入和支出交易，排除余额调整
+          in: [TransactionType.INCOME, TransactionType.EXPENSE], // 只统计收入和支出交易，排除余额调整
         },
       },
       include: {
@@ -213,10 +214,10 @@ export async function GET() {
       // const accountType = transaction.account.category.type // 旧逻辑：根据账户类别类型
 
       // 根据交易类型判断是收入还是支出 (与 personal-cash-flow API 的核心统计逻辑保持一致)
-      if (transaction.type === 'INCOME') {
+      if (transaction.type === TransactionType.INCOME) {
         activitySummary[currencyCode].income += amount
         incomeAmounts.push({ amount, currency: currencyCode })
-      } else if (transaction.type === 'EXPENSE') {
+      } else if (transaction.type === TransactionType.EXPENSE) {
         activitySummary[currencyCode].expense += amount
         expenseAmounts.push({ amount, currency: currencyCode })
       }
@@ -269,10 +270,10 @@ export async function GET() {
 
     // 计算总资产和总负债（本位币）
     const assetAccountsForTotal = stockAccounts.filter(
-      account => account.category?.type === 'ASSET'
+      account => account.category?.type === AccountType.ASSET
     )
     const liabilityAccountsForTotal = stockAccounts.filter(
-      account => account.category?.type === 'LIABILITY'
+      account => account.category?.type === AccountType.LIABILITY
     )
 
     const totalAssetsResult = await calculateTotalBalanceWithConversion(

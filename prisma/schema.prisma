@@ -54,6 +54,9 @@ model UserSettings {
   recurringProcessingStatus String @default("idle") // 定期交易处理状态：idle, processing, completed, failed
   // 未来数据生成设置
   futureDataDays Int @default(7) // 提前生成未来数据的天数，0表示不生成未来数据，默认7天
+  // 汇率自动更新设置
+  autoUpdateExchangeRates Boolean @default(false) // 是否启用汇率自动更新
+  lastExchangeRateUpdate DateTime? // 最后一次汇率更新时间
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -118,7 +121,7 @@ model ExchangeRate {
   toCurrencyId   String   // 目标货币ID
   rate           Decimal  // 汇率，使用 Decimal 类型确保精度
   effectiveDate  DateTime // 汇率生效日期
-  type           String   @default("USER") // 汇率类型：USER（用户输入）, AUTO（自动生成）
+  type           String   @default("USER") // 汇率类型：USER（用户输入）, API（API更新）, AUTO（自动生成）
   sourceRateId   String?  // 源汇率ID（用于自动生成的汇率）
   notes          String?  // 备注
   createdAt      DateTime @default(now())
@@ -350,6 +353,7 @@ model RecurringProcessingLog {
   status            String    @default("processing") // processing, completed, failed
   processedRecurring Int      @default(0)
   processedLoans    Int       @default(0)
+  processedExchangeRates Int  @default(0) // 处理的汇率数量
   failedCount       Int       @default(0)
   errorMessage      String?
   createdAt         DateTime  @default(now())

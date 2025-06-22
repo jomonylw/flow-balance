@@ -6,6 +6,8 @@ import InputField from '@/components/ui/forms/InputField'
 import SelectField from '@/components/ui/forms/SelectField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { ConstantsManager } from '@/lib/utils/constants-manager'
+import { AccountType } from '@/types/core/constants'
 
 interface TopCategoryModalProps {
   isOpen: boolean
@@ -24,13 +26,13 @@ export default function TopCategoryModal({
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<{ name?: string; type?: string }>({})
 
-  // 账户类型选项
-  const ACCOUNT_TYPE_OPTIONS = [
+  // 使用统一的账户类型选项
+  const accountTypeOptions = [
     { value: '', label: t('category.type.select.placeholder') },
-    { value: 'ASSET', label: t('category.type.asset.description') },
-    { value: 'LIABILITY', label: t('category.type.liability.description') },
-    { value: 'INCOME', label: t('category.type.income.description') },
-    { value: 'EXPENSE', label: t('category.type.expense.description') },
+    ...ConstantsManager.getAccountTypeConfigs().map(config => ({
+      value: config.value,
+      label: t(config.descriptionKey),
+    })),
   ]
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function TopCategoryModal({
 
   const getTypeDescription = (selectedType: string) => {
     switch (selectedType) {
-      case 'ASSET':
+      case AccountType.ASSET:
         return {
           title: t('category.type.asset.title'),
           description: t('category.type.asset.detail'),
@@ -93,7 +95,7 @@ export default function TopCategoryModal({
             t('category.type.asset.feature.tracking'),
           ],
         }
-      case 'LIABILITY':
+      case AccountType.LIABILITY:
         return {
           title: t('category.type.liability.title'),
           description: t('category.type.liability.detail'),
@@ -107,7 +109,7 @@ export default function TopCategoryModal({
             t('category.type.liability.feature.repayment'),
           ],
         }
-      case 'INCOME':
+      case AccountType.INCOME:
         return {
           title: t('category.type.income.title'),
           description: t('category.type.income.detail'),
@@ -121,7 +123,7 @@ export default function TopCategoryModal({
             t('category.type.income.feature.budget'),
           ],
         }
-      case 'EXPENSE':
+      case AccountType.EXPENSE:
         return {
           title: t('category.type.expense.title'),
           description: t('category.type.expense.detail'),
@@ -187,7 +189,7 @@ export default function TopCategoryModal({
                 setErrors(prev => ({ ...prev, type: undefined }))
               }
             }}
-            options={ACCOUNT_TYPE_OPTIONS}
+            options={accountTypeOptions}
             error={errors.type}
             required
           />
@@ -224,28 +226,28 @@ export default function TopCategoryModal({
               📝 {t('category.examples.title')}
             </h4>
             <div className='text-sm text-gray-600 dark:text-gray-400'>
-              {type === 'ASSET' && (
+              {type === AccountType.ASSET && (
                 <ul className='list-disc list-inside space-y-1'>
                   <li>{t('category.examples.asset.cash')}</li>
                   <li>{t('category.examples.asset.investment')}</li>
                   <li>{t('category.examples.asset.fixed')}</li>
                 </ul>
               )}
-              {type === 'LIABILITY' && (
+              {type === AccountType.LIABILITY && (
                 <ul className='list-disc list-inside space-y-1'>
                   <li>{t('category.examples.liability.credit')}</li>
                   <li>{t('category.examples.liability.loan')}</li>
                   <li>{t('category.examples.liability.other')}</li>
                 </ul>
               )}
-              {type === 'INCOME' && (
+              {type === AccountType.INCOME && (
                 <ul className='list-disc list-inside space-y-1'>
                   <li>{t('category.examples.income.work')}</li>
                   <li>{t('category.examples.income.investment')}</li>
                   <li>{t('category.examples.income.other')}</li>
                 </ul>
               )}
-              {type === 'EXPENSE' && (
+              {type === AccountType.EXPENSE && (
                 <ul className='list-disc list-inside space-y-1'>
                   <li>{t('category.examples.expense.living')}</li>
                   <li>{t('category.examples.expense.fixed')}</li>

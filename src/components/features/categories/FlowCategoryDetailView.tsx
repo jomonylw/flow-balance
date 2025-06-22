@@ -16,6 +16,7 @@ import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
 import { Transaction, LegacyAccount } from '@/types/business/transaction'
 import type { CategoryTransaction } from '@/types/core'
 import type { FlowMonthlyData, FlowSummaryData } from '@/types/components'
+import { convertPrismaAccountType } from '@/types/core/constants'
 
 // 使用统一的 TimeRange 类型，但限制为此组件支持的值
 type LocalTimeRange = 'lastYear' | 'all'
@@ -760,7 +761,13 @@ export default function FlowCategoryDetailView({
           }}
           onSuccess={handleTransactionSuccess}
           transaction={editingTransaction || undefined}
-          account={editingAccount}
+          account={{
+            ...editingAccount,
+            category: {
+              ...editingAccount.category,
+              type: editingAccount.category.type ? convertPrismaAccountType(editingAccount.category.type) : convertPrismaAccountType('INCOME'),
+            },
+          }}
           currencies={currencies}
           tags={tags}
         />

@@ -1,4 +1,5 @@
 import { COLOR_OPTIONS } from '@/components/ui/forms/ColorPicker'
+import { CHART_COLOR_SEQUENCE, ACCOUNT_TYPE_COLORS, DEFAULT_COLOR } from '@/types/core/constants'
 
 // 颜色缓存接口
 interface ColorCache {
@@ -19,55 +20,7 @@ let colorCache: ColorCache = {
 // 缓存过期时间（5分钟）
 const CACHE_EXPIRY = 5 * 60 * 1000
 
-// 默认颜色配置
-const DEFAULT_COLORS = {
-  ASSET: '#3b82f6', // 蓝色
-  LIABILITY: '#f97316', // 橙色
-  INCOME: '#10b981', // 绿色
-  EXPENSE: '#ef4444', // 红色
-  DEFAULT: '#6b7280', // 灰色
-}
-
-// 优化的图表颜色序列（选择差异较大的颜色，避免相似颜色相邻）
-const CHART_COLOR_SEQUENCE = [
-  // 主要颜色：高对比度，差异明显
-  '#3b82f6', // 蓝色
-  '#ef4444', // 红色
-  '#10b981', // 绿色
-  '#f97316', // 橙色
-  '#8b5cf6', // 紫色
-  '#84cc16', // 柠檬绿
-  '#ec4899', // 粉色
-  '#0891b2', // 天蓝
-
-  // 次要颜色：与主要颜色形成对比
-  '#1e40af', // 深蓝
-  '#dc2626', // 深红
-  '#059669', // 深绿
-  '#ea580c', // 深橙
-  '#7c3aed', // 深紫
-  '#f59e0b', // 琥珀色
-  '#be185d', // 深粉
-  '#7c2d12', // 棕色
-
-  // 补充颜色：填补色彩空间
-  '#60a5fa', // 浅蓝
-  '#f87171', // 浅红
-  '#34d399', // 浅绿
-  '#fb923c', // 浅橙
-  '#a78bfa', // 浅紫
-  '#f43f5e', // 玫瑰红
-  '#f472b6', // 浅粉
-  '#92400e', // 琥珀棕
-
-  // 中性色和特殊色
-  '#374151', // 深灰
-  '#6b7280', // 灰色
-  '#9ca3af', // 浅灰
-  '#78716c', // 石色
-  '#06b6d4', // 青色
-  '#a855f7', // 深紫色
-]
+// 注意：默认颜色和图表颜色序列现在统一从 constants.ts 导入
 
 /**
  * 颜色管理服务类
@@ -125,8 +78,8 @@ export class ColorManager {
 
     // 根据账户类型返回默认颜色
     const defaultColor = accountType
-      ? DEFAULT_COLORS[accountType]
-      : DEFAULT_COLORS.DEFAULT
+      ? ACCOUNT_TYPE_COLORS[accountType]
+      : DEFAULT_COLOR
     colorCache.accounts.set(accountId, defaultColor)
     this.updateCacheTimestamp()
 
@@ -153,7 +106,7 @@ export class ColorManager {
     }
 
     // 返回默认颜色
-    const defaultColor = DEFAULT_COLORS.DEFAULT
+    const defaultColor = DEFAULT_COLOR
     colorCache.tags.set(tagId, defaultColor)
     this.updateCacheTimestamp()
 
@@ -438,7 +391,7 @@ export class ColorManager {
    * 获取默认颜色配置
    */
   static getDefaultColors() {
-    return DEFAULT_COLORS
+    return ACCOUNT_TYPE_COLORS
   }
 
   /**

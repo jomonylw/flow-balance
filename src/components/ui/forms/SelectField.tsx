@@ -4,6 +4,7 @@ interface Option {
   value: string
   label: string
   disabled?: boolean
+  id?: string // 可选的唯一标识符
 }
 
 interface SelectFieldProps {
@@ -63,9 +64,9 @@ export default function SelectField({
         <option value='' disabled>
           {placeholder}
         </option>
-        {options.map(option => (
+        {options.map((option, index) => (
           <option
-            key={option.value}
+            key={option.id || `${option.value}-${index}`}
             value={option.value}
             disabled={option.disabled}
           >

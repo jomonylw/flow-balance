@@ -16,6 +16,7 @@ import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useAllDataListener } from '@/hooks/business/useDataUpdateListener'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
+import { AccountType } from '@/types/core/constants'
 import type { SimpleCategory, SimpleAccount, CategoryType } from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
@@ -325,10 +326,10 @@ const OptimizedCategoryAccountTree = forwardRef<
 
     // 定义账户类型顺序和标签
     const typeOrder: { type: CategoryType; labelKey: string }[] = [
-      { type: 'ASSET', labelKey: 'type.asset' },
-      { type: 'LIABILITY', labelKey: 'type.liability' },
-      { type: 'INCOME', labelKey: 'type.income' },
-      { type: 'EXPENSE', labelKey: 'type.expense' },
+      { type: AccountType.ASSET, labelKey: 'type.asset' },
+      { type: AccountType.LIABILITY, labelKey: 'type.liability' },
+      { type: AccountType.INCOME, labelKey: 'type.income' },
+      { type: AccountType.EXPENSE, labelKey: 'type.expense' },
     ]
 
     typeOrder.forEach(({ type, labelKey }) => {
@@ -377,7 +378,7 @@ const OptimizedCategoryAccountTree = forwardRef<
       }
     }
     // 默认全部展开
-    return new Set(['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE'])
+    return new Set([AccountType.ASSET, AccountType.LIABILITY, AccountType.INCOME, AccountType.EXPENSE])
   })
 
   // 客户端挂载状态
@@ -575,7 +576,7 @@ const OptimizedCategoryAccountTree = forwardRef<
     if (filteredData) {
       // 展开所有分组
       setExpandedTypeGroups(
-        new Set(['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE'])
+        new Set([AccountType.ASSET, AccountType.LIABILITY, AccountType.INCOME, AccountType.EXPENSE])
       )
       // 展开所有分类
       const allIds = getAllCategoryIds(filteredData)
@@ -593,10 +594,10 @@ const OptimizedCategoryAccountTree = forwardRef<
   const checkAllExpanded = useCallback(() => {
     if (!filteredData) return false
     const allTypeGroupsExpanded = [
-      'ASSET',
-      'LIABILITY',
-      'INCOME',
-      'EXPENSE',
+      AccountType.ASSET,
+      AccountType.LIABILITY,
+      AccountType.INCOME,
+      AccountType.EXPENSE,
     ].every(type => expandedTypeGroups.has(type as CategoryType))
     const allIds = getAllCategoryIds(filteredData)
     const allCategoriesExpanded = allIds.every(id => expandedCategories.has(id))

@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useToast } from '@/contexts/providers/ToastContext'
 import ExchangeRateForm from './ExchangeRateForm'
 import ExchangeRateList from './ExchangeRateList'
+import ToggleSwitch from '@/components/ui/forms/ToggleSwitch'
 import { ExchangeRateManagementSkeleton } from '@/components/ui/data-display/page-skeletons'
 import type {
   ExchangeRateData,
@@ -20,16 +22,20 @@ export default function ExchangeRateManagement({
   currencies,
 }: ExchangeRateManagementProps) {
   const { t } = useLanguage()
-  const { currencies: userCurrencies, getBaseCurrency } = useUserData()
+  const { currencies: userCurrencies, getBaseCurrency, userSettings, updateUserSettings } = useUserData()
+  const { showSuccess, showError } = useToast()
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateData[]>([])
   const [missingRates, setMissingRates] = useState<MissingRateInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingRate, setEditingRate] = useState<ExchangeRateData | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
 
-  // 从 UserDataContext 获取基础货币
+  // 从 UserDataContext 获取基础货币和用户设置
   const baseCurrency = getBaseCurrency()
+  const autoUpdateEnabled = userSettings?.autoUpdateExchangeRates || false
+  const lastUpdate = userSettings?.lastExchangeRateUpdate
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -135,6 +141,96 @@ export default function ExchangeRateManagement({
     setEditingRate(null)
   }
 
+  // 处理自动更新开关
+  const handleAutoUpdateToggle = async (enabled: boolean) => {
+    try {
+      const response = await fetch('/api/user/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ autoUpdateExchangeRates: enabled }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // 更新 UserDataContext 中的用户设置
+        if (data.data?.userSettings) {
+          updateUserSettings(data.data.userSettings)
+        }
+        showSuccess(
+          t('exchange.rate.auto.update'),
+          enabled ? '已启用汇率自动更新' : '已禁用汇率自动更新'
+        )
+      } else {
+        showError(t('error.update.failed'), data.error || '更新设置失败')
+      }
+    } catch (error) {
+      console.error('更新自动更新设置失败:', error)
+      showError(t('error.network'), '网络错误，请稍后重试')
+    }
+  }
+
+  // 处理手动更新
+  const handleManualUpdate = async () => {
+    if (!baseCurrency) {
+      showError(t('exchange.rate.base.currency.required'), '请先在偏好设置中设置本位币')
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      const response = await fetch('/api/exchange-rates/auto-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        const { updatedCount, errors } = data.data
+
+        // 刷新汇率数据
+        await fetchData()
+
+        // 更新用户设置中的最后更新时间
+        try {
+          const settingsResponse = await fetch('/api/user/settings')
+          if (settingsResponse.ok) {
+            const settingsData = await settingsResponse.json()
+            if (settingsData.data?.userSettings) {
+              updateUserSettings(settingsData.data.userSettings)
+            }
+          }
+        } catch (error) {
+          console.error('Failed to refresh user settings:', error)
+        }
+
+        if (errors && errors.length > 0) {
+          showError(
+            t('exchange.rate.update.partial'),
+            `成功更新 ${updatedCount} 个汇率，${errors.length} 个失败`
+          )
+        } else {
+          showSuccess(
+            t('exchange.rate.update.success'),
+            `成功更新 ${updatedCount} 个汇率`
+          )
+        }
+      } else {
+        showError(t('exchange.rate.update.failed'), data.error || '更新失败')
+      }
+    } catch (error) {
+      console.error('手动更新汇率失败:', error)
+      showError(t('error.network'), '网络错误，请稍后重试')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   if (loading) {
     return <ExchangeRateManagementSkeleton />
   }
@@ -223,6 +319,92 @@ export default function ExchangeRateManagement({
           </div>
         </div>
       )}
+
+      {/* 汇率自动更新设置 */}
+      <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700'>
+        <h4 className='text-md font-medium text-gray-900 dark:text-gray-100 mb-3'>
+          {t('exchange.rate.auto.update.settings')}
+        </h4>
+
+        <div className='space-y-4'>
+          {/* 自动更新开关 */}
+          <div className='flex items-center justify-between'>
+            <div className='flex-1'>
+              <label className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                {t('exchange.rate.auto.update')}
+              </label>
+              <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                {t('exchange.rate.auto.update.description')}
+              </p>
+            </div>
+            <ToggleSwitch
+              name="autoUpdateExchangeRates"
+              label=""
+              checked={autoUpdateEnabled}
+              onChange={handleAutoUpdateToggle}
+              disabled={!baseCurrency}
+            />
+          </div>
+
+          {/* 手动更新按钮和最后更新时间 */}
+          <div className='flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600'>
+            <div className='flex-1'>
+              <div className='text-sm text-gray-600 dark:text-gray-400'>
+                {t('exchange.rate.last.update')}:{' '}
+                {lastUpdate
+                  ? new Date(lastUpdate).toLocaleString()
+                  : t('exchange.rate.never.updated')
+                }
+              </div>
+              <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                {t('exchange.rate.source.frankfurter')}
+              </div>
+            </div>
+            <button
+              onClick={handleManualUpdate}
+              disabled={isUpdating || !baseCurrency}
+              className='flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-md transition-colors'
+              title={t('exchange.rate.manual.update.description')}
+            >
+              {isUpdating ? (
+                <>
+                  <svg
+                    className='w-4 h-4 mr-1 animate-spin'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
+                    />
+                  </svg>
+                  {t('exchange.rate.updating')}
+                </>
+              ) : (
+                <>
+                  <svg
+                    className='w-4 h-4 mr-1'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
+                    />
+                  </svg>
+                  {t('exchange.rate.manual.update')}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* 操作按钮 */}
       <div className='flex justify-between items-center'>

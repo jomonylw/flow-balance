@@ -67,7 +67,9 @@
   "sync.last.time": "Last Sync",
   "sync.processed.recurring": "Recurring Transactions",
   "sync.processed.loans": "Loan Contracts",
+  "sync.processed.exchange.rates": "Exchange Rates",
   "sync.processed.summary": "Processed {{recurring}} recurring transactions, {{loans}} loan contracts",
+  "sync.processed.summary.with.rates": "Processed {{recurring}} recurring transactions, {{loans}} loan contracts, {{exchangeRates}} exchange rate updates",
   "sync.future.data.generated": "Future data generated until {{until}}",
-  "sync.processing.message": "Processing recurring transactions and loan contracts..."
+  "sync.processing.message": "Processing recurring transactions, loan contracts and exchange rates..."
 }

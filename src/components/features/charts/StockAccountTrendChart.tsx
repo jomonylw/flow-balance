@@ -7,6 +7,7 @@ import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import ColorManager from '@/lib/utils/color'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
+import { AccountType } from '@/types/core/constants'
 
 import type {
   TrendDataPoint,
@@ -193,7 +194,7 @@ export default function StockAccountTrendChart({
             color: ColorManager.getAccountColor(
               account.id,
               account.color,
-              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+              account.type as AccountType
             ),
             width: 3,
           },
@@ -201,7 +202,7 @@ export default function StockAccountTrendChart({
             color: ColorManager.getAccountColor(
               account.id,
               account.color,
-              account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+              account.type as AccountType
             ),
           },
           areaStyle: {
@@ -218,11 +219,7 @@ export default function StockAccountTrendChart({
                     ColorManager.getAccountColor(
                       account.id,
                       account.color,
-                      account.type as
-                        | 'ASSET'
-                        | 'LIABILITY'
-                        | 'INCOME'
-                        | 'EXPENSE'
+                      account.type as AccountType
                     ),
                     0.3
                   ),
@@ -233,11 +230,7 @@ export default function StockAccountTrendChart({
                     ColorManager.getAccountColor(
                       account.id,
                       account.color,
-                      account.type as
-                        | 'ASSET'
-                        | 'LIABILITY'
-                        | 'INCOME'
-                        | 'EXPENSE'
+                      account.type as AccountType
                     ),
                     0.05
                   ),
@@ -252,7 +245,7 @@ export default function StockAccountTrendChart({
               borderColor: ColorManager.getAccountColor(
                 account.id,
                 account.color,
-                account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+                account.type as AccountType
               ),
               borderWidth: 2,
             },

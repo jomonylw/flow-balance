@@ -11,9 +11,9 @@ import TagFormModal from '@/components/ui/feedback/TagFormModal'
 import {
   RecurrenceFrequency,
   type RecurringTransaction,
-  // type TransactionType, // 未使用，已注释
   // type SimpleTag, // 未使用，已注释
 } from '@/types/core'
+import { TransactionType } from '@/types/core/constants'
 
 interface RecurringTransactionModalProps {
   isOpen: boolean
@@ -123,7 +123,7 @@ export default function RecurringTransactionModal({
       const transactionData = {
         accountId,
         currencyCode: accountCurrency,
-        type: accountType, // 使用传入的账户类型
+        type: (accountType === 'INCOME' ? TransactionType.INCOME : TransactionType.EXPENSE) as TransactionType.INCOME | TransactionType.EXPENSE, // 转换为 TransactionType 枚举并断言类型
         amount: parseFloat(formData.amount),
         description: formData.name.trim(), // 使用name作为description
         notes: formData.notes.trim() || undefined,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import { z } from 'zod'
+import { TransactionType } from '@/types/core/constants'
 
 // 创建模板验证schema
 const createTemplateSchema = z.object({
@@ -12,7 +13,7 @@ const createTemplateSchema = z.object({
   accountId: z.string().min(1, '账户ID不能为空'),
   categoryId: z.string().min(1, '分类ID不能为空'),
   currencyCode: z.string().min(1, '货币代码不能为空'),
-  type: z.enum(['INCOME', 'EXPENSE'], {
+  type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE], {
     errorMap: () => ({ message: '交易类型必须是收入或支出' }),
   }),
   description: z.string().min(1, '描述不能为空'),
@@ -39,13 +40,13 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type') as 'INCOME' | 'EXPENSE' | null
+    const type = searchParams.get('type') as TransactionType.INCOME | TransactionType.EXPENSE | null
     const accountId = searchParams.get('accountId')
 
     // 构建查询条件
     const where: {
       userId: string
-      type?: 'INCOME' | 'EXPENSE'
+      type?: TransactionType.INCOME | TransactionType.EXPENSE
       accountId?: string
     } = {
       userId: user.id,
@@ -150,8 +151,8 @@ export async function POST(request: NextRequest) {
     // 验证交易类型与账户类型是否匹配
     const accountType = account.category.type
     if (
-      (validatedData.type === 'INCOME' && accountType !== 'INCOME') ||
-      (validatedData.type === 'EXPENSE' && accountType !== 'EXPENSE')
+      (validatedData.type === TransactionType.INCOME && accountType !== 'INCOME') ||
+      (validatedData.type === TransactionType.EXPENSE && accountType !== 'EXPENSE')
     ) {
       return NextResponse.json(
         { success: false, error: '交易类型与账户类型不匹配' },

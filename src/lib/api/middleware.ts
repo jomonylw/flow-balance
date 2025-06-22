@@ -6,6 +6,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { errorResponse, unauthorizedResponse } from '@/lib/api/response'
+import { ConstantsManager } from '@/lib/utils/constants-manager'
 import type { User } from '@/types/core'
 import type { ValidationSchema, ApiContext, ApiHandler } from '@/types/api'
 
@@ -32,17 +33,8 @@ export function withApiHandler(handler: ApiHandler) {
           settings: user.settings
             ? {
                 ...user.settings,
-                language:
-                  user.settings.language === 'zh' ||
-                  user.settings.language === 'en'
-                    ? user.settings.language
-                    : ('zh' as const),
-                theme:
-                  user.settings.theme === 'light' ||
-                  user.settings.theme === 'dark' ||
-                  user.settings.theme === 'system'
-                    ? user.settings.theme
-                    : ('system' as const),
+                language: ConstantsManager.safeConvertLanguage(user.settings.language),
+                theme: ConstantsManager.safeConvertTheme(user.settings.theme),
                 baseCurrency: user.settings.baseCurrency || undefined,
               }
             : undefined, // 转换 null 为 undefined
@@ -62,17 +54,8 @@ export function withApiHandler(handler: ApiHandler) {
           settings: user.settings
             ? {
                 ...user.settings,
-                language:
-                  user.settings.language === 'zh' ||
-                  user.settings.language === 'en'
-                    ? user.settings.language
-                    : ('zh' as const),
-                theme:
-                  user.settings.theme === 'light' ||
-                  user.settings.theme === 'dark' ||
-                  user.settings.theme === 'system'
-                    ? user.settings.theme
-                    : ('system' as const),
+                language: ConstantsManager.safeConvertLanguage(user.settings.language),
+                theme: ConstantsManager.safeConvertTheme(user.settings.theme),
                 baseCurrency: user.settings.baseCurrency || undefined,
               }
             : undefined,
