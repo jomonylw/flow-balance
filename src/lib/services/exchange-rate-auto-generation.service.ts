@@ -48,6 +48,10 @@ export async function generateAutoExchangeRates(
         userId,
         type: 'USER',
       },
+      include: {
+        fromCurrencyRef: true,
+        toCurrencyRef: true,
+      },
       orderBy: {
         effectiveDate: 'desc',
       },
@@ -94,7 +98,7 @@ export async function generateAutoExchangeRates(
  */
 async function generateReverseRates(
   userId: string,
-  userRates: ExchangeRate[],
+  userRates: any[], // Use any for now since we need the included relations
   effectiveDate: Date
 ) {
   const result = { count: 0, errors: [] as string[] }

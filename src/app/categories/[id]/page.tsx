@@ -12,7 +12,8 @@ interface CategoryPageProps {
   params: Promise<{ id: string }>
 }
 
-type PrismaTransaction = {
+// 定义页面特定的 Prisma 查询结果类型
+type PrismaTransactionWithRelations = {
   id: string
   type: 'INCOME' | 'EXPENSE' | 'BALANCE'
   amount: Decimal
@@ -64,7 +65,7 @@ type PrismaTransaction = {
 
 // Helper function to serialize transactions
 const serializeTransactions = (
-  transactions: PrismaTransaction[]
+  transactions: PrismaTransactionWithRelations[]
 ): SerializedTransactionWithBasic[] => {
   return transactions.map(transaction => ({
     ...transaction,
@@ -105,7 +106,7 @@ const serializeTransactions = (
           type: 'ASSET' as const,
         },
     tags: transaction.tags
-      ? transaction.tags.map(tt => ({
+      ? transaction.tags.map((tt: any) => ({
           id: tt.id,
           tagId: tt.tagId,
           transactionId: tt.transactionId,
@@ -321,7 +322,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             createdBy: null,
           },
           transactions: serializeTransactions(
-            account.transactions as unknown as PrismaTransaction[]
+            account.transactions as unknown as PrismaTransactionWithRelations[]
           ),
         })),
       })
@@ -354,11 +355,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         createdBy: null,
       },
       transactions: serializeTransactions(
-        account.transactions as unknown as PrismaTransaction[]
+        account.transactions as unknown as PrismaTransactionWithRelations[]
       ),
     })),
     transactions: serializeTransactions(
-      allTransactions as unknown as PrismaTransaction[]
+      allTransactions as unknown as PrismaTransactionWithRelations[]
     ),
   }
 

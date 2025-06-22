@@ -64,17 +64,11 @@ export interface SerializedAccountWithTransactions
   transactions: SerializedTransactionWithBasic[]
 }
 
-// 存量类分类（资产/负债）
-export type StockCategory = CategoryWithTransactions
-
-// 流量类分类（收入/支出）
-export type FlowCategory = CategoryWithTransactions
-
 // 存量类账户（资产/负债）
 export type StockAccount = AccountWithTransactions
 
-// 流量类账户（收入/支出）
-export type FlowAccount = AccountWithTransactions
+// 重新导出统一类型定义，避免重复
+export type { StockCategory, FlowCategory, FlowAccount } from '@/types/core'
 
 export interface CategoryDetailViewProps {
   category: CategoryWithTransactions

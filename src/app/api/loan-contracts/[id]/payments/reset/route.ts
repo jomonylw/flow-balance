@@ -8,7 +8,7 @@ import { LoanContractService } from '@/lib/services/loan-contract.service'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -19,7 +19,7 @@ export async function POST(
       )
     }
 
-    const { id: loanContractId } = params
+    const { id: loanContractId } = await params
     const body = await request.json()
     const { paymentIds, resetAll } = body
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-interface DashboardSummaryResponse {
+interface LocalDashboardSummaryResponse {
   success: boolean
   data?: {
     netWorth?: {
@@ -35,7 +35,7 @@ interface DashboardSummaryResponse {
 
 export default function DebugAPIPage() {
   const [apiResponse, setApiResponse] =
-    useState<DashboardSummaryResponse | null>(null)
+    useState<LocalDashboardSummaryResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 

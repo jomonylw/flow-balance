@@ -388,6 +388,67 @@ export interface MissingRateInfo {
 }
 
 // ============================================================================
+// Prisma 相关类型
+// ============================================================================
+
+/** Prisma 事务类型 - 统一定义，避免重复 */
+export type PrismaTransaction = Parameters<
+  Parameters<import('@prisma/client').PrismaClient['$transaction']>[0]
+>[0]
+
+/** 认证状态类型 - 统一定义，避免重复 */
+export interface AuthState {
+  user?: User | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  error?: string | null
+}
+
+/** 分类交易数据类型 - 统一定义，避免重复 */
+export interface CategoryTransaction {
+  id: string
+  type: TransactionType
+  date: string
+  amount: number
+  notes?: string | null
+  currency: {
+    code: string
+    symbol: string
+    name: string
+  }
+  tags: Array<{
+    tag: {
+      id: string
+      name: string
+    }
+  }>
+}
+
+/** 流量类分类（收入/支出） - 统一定义，避免重复 */
+export interface FlowCategory {
+  id: string
+  name: string
+  type: 'INCOME' | 'EXPENSE'
+  transactions?: SimpleTransaction[]
+}
+
+/** 存量类分类（资产/负债） - 统一定义，避免重复 */
+export interface StockCategory {
+  id: string
+  name: string
+  type: 'ASSET' | 'LIABILITY'
+  transactions?: SimpleTransaction[]
+}
+
+/** 流量类账户（收入/支出） - 统一定义，避免重复 */
+export interface FlowAccount {
+  id: string
+  name: string
+  color?: string | null
+  type?: string
+}
+
+// ============================================================================
 // 扩展类型定义（用于特定场景）
 // ============================================================================
 

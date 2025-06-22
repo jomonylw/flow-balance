@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/data-display/card'
 import { Button } from '@/components/ui/forms/button'
-import { Download, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN, enUS } from 'date-fns/locale'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
@@ -246,6 +246,9 @@ export default function CashFlowCard() {
     isExpense: boolean = false,
     level: number = 0
   ) => {
+    // 使用 data.baseCurrency 而不是参数中的 baseCurrency
+    const currentBaseCurrency = data?.baseCurrency
+    if (!currentBaseCurrency) return null
     return categories.map(category => (
       <div key={category.id} className='mb-4'>
         {/* 分类标题和汇总 */}
@@ -283,7 +286,7 @@ export default function CashFlowCard() {
                   {isExpense ? '-' : '+'}
                   {formatCurrency(
                     Math.abs(category.totalInBaseCurrency),
-                    baseCurrency.code
+                    currentBaseCurrency.code
                   )}
                 </span>
               </div>
@@ -322,7 +325,7 @@ export default function CashFlowCard() {
                           {isExpense ? '-' : '+'}
                           {formatCurrencyWithCode(total, currencyCode)}
                         </div>
-                        {currencyCode !== baseCurrency.code && (
+                        {currencyCode !== currentBaseCurrency.code && (
                           <div className='text-xs text-gray-400 whitespace-nowrap'>
                             ≈ {isExpense ? '-' : '+'}
                             {formatCurrency(
@@ -332,7 +335,7 @@ export default function CashFlowCard() {
                                   (account.totalAmountInBaseCurrency || 0),
                                 0
                               ),
-                              baseCurrency.code
+                              currentBaseCurrency.code
                             )}
                           </div>
                         )}
@@ -391,12 +394,13 @@ export default function CashFlowCard() {
                               )}
                             </div>
                             {account.totalAmountInBaseCurrency !== undefined &&
-                              account.currency.code !== baseCurrency.code && (
+                              account.currency.code !==
+                                currentBaseCurrency.code && (
                                 <div className='text-xs text-gray-400 whitespace-nowrap'>
                                   ≈{' '}
                                   {formatCurrency(
                                     Math.abs(account.totalAmountInBaseCurrency),
-                                    baseCurrency.code
+                                    currentBaseCurrency.code
                                   )}
                                 </div>
                               )}
@@ -646,13 +650,13 @@ export default function CashFlowCard() {
                   className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
                 />
               </Button>
-              <Button
+              {/* <Button
                 variant='outline'
                 size='sm'
                 title={t('reports.cash.flow.download')}
               >
                 <Download className='h-4 w-4' />
-              </Button>
+              </Button> */}
             </div>
           </div>
           <p className='text-sm text-gray-500 dark:text-gray-400'>

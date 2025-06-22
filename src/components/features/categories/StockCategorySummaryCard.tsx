@@ -6,7 +6,7 @@ import type { SimpleTransaction, SimpleCurrency } from '@/types/core'
 import type { StockSummaryData } from '@/types/components'
 
 // 本地类型定义（用于这个组件的特定需求）
-interface StockCategory {
+interface LocalStockCategory {
   id: string
   name: string
   type: 'ASSET' | 'LIABILITY'
@@ -14,7 +14,7 @@ interface StockCategory {
 }
 
 interface StockCategorySummaryCardProps {
-  category: StockCategory
+  category: LocalStockCategory
   currencyCode: string
   summaryData?: StockSummaryData | null
   baseCurrency?: SimpleCurrency

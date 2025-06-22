@@ -14,7 +14,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
 import { Transaction, LegacyAccount } from '@/types/business/transaction'
-import type { TransactionType } from '@prisma/client'
+import type { CategoryTransaction } from '@/types/core'
 import type { FlowMonthlyData, FlowSummaryData } from '@/types/components'
 
 // 使用统一的 TimeRange 类型，但限制为此组件支持的值
@@ -32,25 +32,7 @@ interface EditingTransactionData {
   tagIds?: string[]
 }
 
-// 分类交易数据类型
-interface CategoryTransaction {
-  id: string
-  type: TransactionType
-  date: string
-  amount: number
-  notes?: string | null
-  currency: {
-    code: string
-    symbol: string
-    name: string
-  }
-  tags: Array<{
-    tag: {
-      id: string
-      name: string
-    }
-  }>
-}
+// 分类交易数据类型 - 使用统一定义
 
 import type { FlowCategoryDetailViewProps } from './types'
 

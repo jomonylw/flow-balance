@@ -18,8 +18,11 @@ import {
   useTransactionListener,
 } from '@/hooks/business/useDataUpdateListener'
 import { Transaction } from '@/types/business/transaction'
-import type { TransactionType } from '@prisma/client'
-import type { MonthlyDataItem, StockCategoryMonthlyData } from '@/types/core'
+import type {
+  MonthlyDataItem,
+  StockCategoryMonthlyData,
+  CategoryTransaction,
+} from '@/types/core'
 import type { StockMonthlyData, StockSummaryData } from '@/types/components'
 
 // 新的 API 数据格式 - 使用统一的 MonthlyDataItem 类型
@@ -27,25 +30,7 @@ import type { StockMonthlyData, StockSummaryData } from '@/types/components'
 // 使用统一的类型定义
 type MonthlyData = StockCategoryMonthlyData
 
-// 分类交易数据类型
-interface CategoryTransaction {
-  id: string
-  type: TransactionType
-  date: string
-  amount: number | string
-  notes?: string | null
-  currency: {
-    code: string
-    symbol: string
-    name: string
-  }
-  tags: Array<{
-    tag: {
-      id: string
-      name: string
-    }
-  }>
-}
+// 分类交易数据类型 - 使用统一定义
 
 import type { StockCategoryDetailViewProps } from './types'
 

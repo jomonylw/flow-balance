@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Currency, User } from '@prisma/client'
+import { Currency } from '@prisma/client'
+import type { User } from '@/types/core'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import SetupLayout from './SetupLayout'
 

@@ -81,5 +81,10 @@ export default function SetupPage() {
     return <LoadingScreen messageType='redirecting' variant='dots' />
   }
 
+  // 如果用户信息不存在，显示加载状态
+  if (!user) {
+    return <LoadingScreen messageType='loading' />
+  }
+
   return <InitialSetup user={user} />
 }

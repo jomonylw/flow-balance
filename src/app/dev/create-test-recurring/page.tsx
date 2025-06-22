@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-interface Account {
+interface SimpleAccountForDev {
   id: string
   name: string
   currencyCode: string
@@ -10,11 +10,14 @@ interface Account {
 
 export default function CreateTestRecurringPage() {
   const [loading, setLoading] = useState(false)
-  const [accounts, setAccounts] = useState<Account[]>([])
+  const [accounts, setAccounts] = useState<SimpleAccountForDev[]>([])
   const [result, setResult] = useState<{
-    success: boolean
-    message?: string
-    error?: string
+    id: string
+    description: string
+    amount: number
+    frequency: string
+    startDate: string
+    nextDate: string
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
 

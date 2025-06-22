@@ -8,7 +8,7 @@ interface AuthGuardProps {
   children: React.ReactNode
 }
 
-interface AuthState {
+interface SimpleAuthState {
   isAuthenticated: boolean | null
   isLoading: boolean
 }
@@ -16,7 +16,7 @@ interface AuthState {
 export default function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const [authState, setAuthState] = useState<AuthState>({
+  const [authState, setAuthState] = useState<SimpleAuthState>({
     isAuthenticated: null,
     isLoading: true,
   })

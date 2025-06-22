@@ -4,11 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
-
-// 定义具体类型以替代 any
-type PrismaTransaction = Parameters<
-  Parameters<PrismaClient['$transaction']>[0]
->[0]
+import type { PrismaTransaction } from '@/types/core'
 
 const prisma = new PrismaClient()
 

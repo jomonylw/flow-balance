@@ -120,6 +120,10 @@ export class FutureDataGenerationService {
       amount: number
       description: string
       frequency: string
+      interval: number
+      dayOfMonth?: number | null
+      dayOfWeek?: number | null
+      monthOfYear?: number | null
       startDate: Date
       endDate?: Date | null
       isActive: boolean
@@ -206,12 +210,13 @@ export class FutureDataGenerationService {
       }
 
       // 计算下次日期
-      currentDate = RecurringTransactionService.calculateNextDate(
-        currentDate,
-        recurring as Parameters<
-          typeof RecurringTransactionService.calculateNextDate
-        >[1]
-      )
+      currentDate = RecurringTransactionService.calculateNextDate(currentDate, {
+        frequency: recurring.frequency,
+        interval: recurring.interval,
+        dayOfMonth: recurring.dayOfMonth,
+        dayOfWeek: recurring.dayOfWeek,
+        monthOfYear: recurring.monthOfYear,
+      })
     }
 
     // 批量创建遗漏的交易记录

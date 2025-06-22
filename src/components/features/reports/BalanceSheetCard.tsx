@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/data-display/card'
 import { Button } from '@/components/ui/forms/button'
-import { Download, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN, enUS } from 'date-fns/locale'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
@@ -574,13 +574,13 @@ export default function BalanceSheetCard() {
                   className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
                 />
               </Button>
-              <Button
+              {/* <Button
                 variant='outline'
                 size='sm'
                 title={t('reports.balance.sheet.download')}
               >
                 <Download className='h-4 w-4' />
-              </Button>
+              </Button> */}
             </div>
           </div>
           <p className='text-sm text-gray-500 dark:text-gray-400'>

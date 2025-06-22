@@ -73,7 +73,6 @@ export default function UserSettingsPage({
           label: t('settings.profile'),
           description: t('settings.profile.description'),
           icon: '👤',
-          status: user.email ? 'complete' : 'incomplete',
         },
         {
           id: 'security',
@@ -86,7 +85,6 @@ export default function UserSettingsPage({
           label: t('settings.preferences.tab'),
           description: t('settings.preferences.description'),
           icon: '⚙️',
-          status: userSettings?.baseCurrencyId ? 'complete' : 'warning',
         },
         {
           id: 'currencies',
@@ -254,46 +252,23 @@ export default function UserSettingsPage({
                             </p>
                           </div>
                         </div>
-                        <div className='flex items-center space-x-2'>
-                          {item.status && (
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
-                                item.status === 'complete'
-                                  ? 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
-                                  : item.status === 'warning'
-                                    ? 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-                                    : item.status === 'incomplete'
-                                      ? 'text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800'
-                                      : 'text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                              }`}
-                            >
-                              {item.status === 'complete'
-                                ? '✓'
-                                : item.status === 'warning'
-                                  ? '⚠'
-                                  : item.status === 'incomplete'
-                                    ? '!'
-                                    : ''}
-                            </span>
-                          )}
-                          <svg
-                            className={`w-5 h-5 transition-colors ${
-                              activeTab === item.id
-                                ? 'text-blue-400'
-                                : 'text-gray-400'
-                            }`}
-                            fill='none'
-                            stroke='currentColor'
-                            viewBox='0 0 24 24'
-                          >
-                            <path
-                              strokeLinecap='round'
-                              strokeLinejoin='round'
-                              strokeWidth={2}
-                              d='M9 5l7 7-7 7'
-                            />
-                          </svg>
-                        </div>
+                        <svg
+                          className={`w-5 h-5 transition-colors ${
+                            activeTab === item.id
+                              ? 'text-blue-400'
+                              : 'text-gray-400'
+                          }`}
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M9 5l7 7-7 7'
+                          />
+                        </svg>
                       </div>
                     </button>
                   ))}

@@ -10,14 +10,7 @@ import React, {
 import { useRouter, usePathname } from 'next/navigation'
 import LoadingScreen from '@/components/ui/feedback/LoadingScreen'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
-import type { User } from '@/types/core'
-
-interface AuthState {
-  user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  error: string | null
-}
+import type { AuthState } from '@/types/core'
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>

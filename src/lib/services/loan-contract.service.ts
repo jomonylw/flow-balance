@@ -4,15 +4,14 @@
  */
 
 import { PrismaClient } from '@prisma/client'
-import { LoanContractFormData, RepaymentType } from '@/types/core'
+import {
+  LoanContractFormData,
+  RepaymentType,
+  PrismaTransaction,
+} from '@/types/core'
 import { LoanCalculationService } from './loan-calculation.service'
 import { calculateLoanPaymentDateForPeriod } from '@/lib/utils/format'
 import { DuplicateCheckService, CheckType } from './duplicate-check.service'
-
-// 定义具体类型以替代 any
-type PrismaTransaction = Parameters<
-  Parameters<PrismaClient['$transaction']>[0]
->[0]
 
 interface LoanContractUpdateData {
   contractName?: string
@@ -726,7 +725,7 @@ export class LoanContractService {
   ) {
     return await prisma.$transaction(async tx => {
       // 获取贷款合约信息
-      console.log(`Looking for loan contract: id=${id}, userId=${userId}`)
+      console.warn(`Looking for loan contract: id=${id}, userId=${userId}`)
 
       const loanContract = await tx.loanContract.findFirst({
         where: {
@@ -745,7 +744,7 @@ export class LoanContractService {
         },
       })
 
-      console.log('Found loan contract:', loanContract ? 'YES' : 'NO')
+      console.warn('Found loan contract:', loanContract ? 'YES' : 'NO')
 
       if (!loanContract) {
         // Let's also check if the contract exists without userId filter
@@ -753,7 +752,7 @@ export class LoanContractService {
           where: { id },
           select: { id: true, userId: true },
         })
-        console.log('Contract exists with different userId:', contractExists)
+        console.warn('Contract exists with different userId:', contractExists)
         throw new Error('贷款合约不存在')
       }
 

@@ -6,7 +6,7 @@ import type { SimpleTransaction, SimpleCurrency } from '@/types/core'
 import type { FlowSummaryData } from '@/types/components'
 
 // 本地类型定义（用于这个组件的特定需求）
-interface FlowCategory {
+interface LocalFlowCategory {
   id: string
   name: string
   type: 'INCOME' | 'EXPENSE'
@@ -14,7 +14,7 @@ interface FlowCategory {
 }
 
 interface FlowCategorySummaryCardProps {
-  category: FlowCategory
+  category: LocalFlowCategory
   currencyCode: string
   summaryData?: FlowSummaryData | null
   baseCurrency?: SimpleCurrency

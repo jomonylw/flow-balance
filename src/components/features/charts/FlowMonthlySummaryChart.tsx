@@ -10,7 +10,7 @@ import type { SimpleCurrency, CategoryType } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
 import type { FlowMonthlyData } from '@/types/components'
 
-interface FlowAccount {
+interface LocalFlowAccount {
   id: string
   name: string
   color?: string | null
@@ -22,7 +22,7 @@ interface FlowMonthlySummaryChartProps {
   baseCurrency: SimpleCurrency
   title?: string
   height?: number
-  accounts?: FlowAccount[] // 新增账户信息，用于获取颜色
+  accounts?: LocalFlowAccount[] // 新增账户信息，用于获取颜色
 }
 
 export default function FlowMonthlySummaryChart({
