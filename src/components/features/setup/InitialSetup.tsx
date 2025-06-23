@@ -199,9 +199,13 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
               {allCurrencies
                 .filter(currency => commonCurrencies.includes(currency.code))
-                .map(currency => (
+                .filter(
+                  (currency, index, self) =>
+                    index === self.findIndex(c => c.code === currency.code)
+                )
+                .map((currency, index) => (
                   <label
-                    key={currency.code}
+                    key={`common-${currency.code}-${index}`}
                     className='flex items-center p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200'
                   >
                     <input
@@ -231,28 +235,33 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
                 {t('setup.other.currencies')}
               </h4>
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto'>
-                {otherCurrencies.map(currency => (
-                  <label
-                    key={currency.code}
-                    className='flex items-center p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200'
-                  >
-                    <input
-                      type='checkbox'
-                      checked={selectedCurrencies.includes(currency.code)}
-                      onChange={() => handleCurrencyToggle(currency.code)}
-                      className='mr-3'
-                    />
-                    <span className='text-lg mr-3'>{currency.symbol}</span>
-                    <div>
-                      <div className='font-medium text-gray-900 dark:text-white'>
-                        {currency.code}
+                {otherCurrencies
+                  .filter(
+                    (currency, index, self) =>
+                      index === self.findIndex(c => c.code === currency.code)
+                  )
+                  .map((currency, index) => (
+                    <label
+                      key={`other-${currency.code}-${index}`}
+                      className='flex items-center p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200'
+                    >
+                      <input
+                        type='checkbox'
+                        checked={selectedCurrencies.includes(currency.code)}
+                        onChange={() => handleCurrencyToggle(currency.code)}
+                        className='mr-3'
+                      />
+                      <span className='text-lg mr-3'>{currency.symbol}</span>
+                      <div>
+                        <div className='font-medium text-gray-900 dark:text-white'>
+                          {currency.code}
+                        </div>
+                        <div className='text-sm text-gray-600 dark:text-gray-400'>
+                          {currency.name}
+                        </div>
                       </div>
-                      <div className='text-sm text-gray-600 dark:text-gray-400'>
-                        {currency.name}
-                      </div>
-                    </div>
-                  </label>
-                ))}
+                    </label>
+                  ))}
               </div>
             </div>
           )}
@@ -273,13 +282,13 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
           </p>
 
           <div className='space-y-3'>
-            {selectedCurrencies.map(currencyCode => {
+            {selectedCurrencies.map((currencyCode, index) => {
               const currency = allCurrencies.find(c => c.code === currencyCode)
               if (!currency) return null
 
               return (
                 <label
-                  key={currency.code}
+                  key={`base-${currency.code}-${index}`}
                   className='flex items-center p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200'
                 >
                   <input

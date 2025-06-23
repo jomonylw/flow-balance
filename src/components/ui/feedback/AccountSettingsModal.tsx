@@ -226,11 +226,19 @@ export default function AccountSettingsModal({
                   {t('account.settings.currency.select')}
                 </option>
               )}
-              {currencies.map(currency => (
-                <option key={currency.code} value={currency.code}>
-                  {currency.symbol} {currency.code} - {currency.name}
-                </option>
-              ))}
+              {currencies
+                .filter(
+                  (currency, index, self) =>
+                    index === self.findIndex(c => c.code === currency.code)
+                )
+                .map((currency, index) => (
+                  <option
+                    key={`${currency.code}-${currency.id || index}`}
+                    value={currency.code}
+                  >
+                    {currency.symbol} {currency.code} - {currency.name}
+                  </option>
+                ))}
             </select>
 
             {selectedCurrency && (
