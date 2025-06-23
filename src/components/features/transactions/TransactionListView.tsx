@@ -58,7 +58,6 @@ export default function TransactionListView({
   const [stats, setStats] = useState(null)
   const [isLoadingStats, setIsLoadingStats] = useState(true)
 
-  const currencyCode = user.settings?.baseCurrency?.code || 'USD'
   const currencyId = user.settings?.baseCurrency?.id || ''
 
   // 加载统计数据

@@ -81,9 +81,12 @@ export class ExchangeRateAutoUpdateService {
 
       // 检查24小时限制（除非强制更新）
       if (!forceUpdate && (userSettings as any).lastExchangeRateUpdate) {
-        const lastUpdate = new Date((userSettings as any).lastExchangeRateUpdate)
+        const lastUpdate = new Date(
+          (userSettings as any).lastExchangeRateUpdate
+        )
         const now = new Date()
-        const hoursSinceLastUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
+        const hoursSinceLastUpdate =
+          (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
 
         if (hoursSinceLastUpdate < 24) {
           return {
@@ -135,7 +138,10 @@ export class ExchangeRateAutoUpdateService {
             // 检查响应内容是否包含"not found"消息
             try {
               const errorData = await response.json()
-              if (errorData.message && errorData.message.includes('not found')) {
+              if (
+                errorData.message &&
+                errorData.message.includes('not found')
+              ) {
                 return {
                   success: false,
                   message: `本位币 ${baseCurrencyCode} 不支持自动汇率更新，请检查货币代码是否正确或手动输入汇率`,
@@ -143,7 +149,7 @@ export class ExchangeRateAutoUpdateService {
                   errorParams: { currencyCode: baseCurrencyCode },
                 }
               }
-            } catch (parseError) {
+            } catch {
               // 如果无法解析响应，使用默认的404错误信息
             }
 
@@ -194,7 +200,9 @@ export class ExchangeRateAutoUpdateService {
       effectiveDate.setHours(0, 0, 0, 0)
 
       // 生成更新备注
-      const updateTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
+      const updateTime = new Date().toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+      })
       const updateType = forceUpdate ? '手动更新' : '自动更新'
       const notePrefix = `${updateType} - ${updateTime} - API日期: ${frankfurterData.date}`
 
@@ -328,7 +336,8 @@ export class ExchangeRateAutoUpdateService {
 
       const lastUpdate = new Date((userSettings as any).lastExchangeRateUpdate)
       const now = new Date()
-      const hoursSinceLastUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
+      const hoursSinceLastUpdate =
+        (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
 
       return hoursSinceLastUpdate >= 24
     } catch (error) {
@@ -369,7 +378,8 @@ export class ExchangeRateAutoUpdateService {
 
       if (lastUpdate) {
         const now = new Date()
-        hoursSinceLastUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
+        hoursSinceLastUpdate =
+          (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
         needsUpdate = enabled && hoursSinceLastUpdate >= 24
       } else {
         needsUpdate = enabled

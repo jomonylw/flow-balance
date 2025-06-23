@@ -9,7 +9,6 @@ import {
 import {
   getMissingExchangeRates,
   getUserCurrencies,
-  getUserCurrencyRecords,
 } from '@/lib/services/currency.service'
 
 /**
@@ -36,9 +35,6 @@ export async function GET(_request: NextRequest) {
 
     // 获取用户使用的所有货币
     const userCurrencies = await getUserCurrencies(user.id)
-
-    // 获取用户使用的所有货币记录（包含ID信息，用于准确匹配）
-    const userCurrencyRecords = await getUserCurrencyRecords(user.id)
 
     // 获取所有货币信息（包括用户自定义货币）
     const currencies = await prisma.currency.findMany({
