@@ -36,6 +36,7 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
         const data = await response.json()
         // 从带有 isSelected 状态的货币列表中提取基本货币信息
         const currencies = data.data.currencies.map((currency: Currency) => ({
+          id: currency.id,
           code: currency.code,
           name: currency.name,
           symbol: currency.symbol,
@@ -199,13 +200,9 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
               {allCurrencies
                 .filter(currency => commonCurrencies.includes(currency.code))
-                .filter(
-                  (currency, index, self) =>
-                    index === self.findIndex(c => c.code === currency.code)
-                )
-                .map((currency, index) => (
+                .map(currency => (
                   <label
-                    key={`common-${currency.code}-${index}`}
+                    key={currency.id}
                     className='flex items-center p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200'
                   >
                     <input
@@ -235,33 +232,28 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
                 {t('setup.other.currencies')}
               </h4>
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto'>
-                {otherCurrencies
-                  .filter(
-                    (currency, index, self) =>
-                      index === self.findIndex(c => c.code === currency.code)
-                  )
-                  .map((currency, index) => (
-                    <label
-                      key={`other-${currency.code}-${index}`}
-                      className='flex items-center p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200'
-                    >
-                      <input
-                        type='checkbox'
-                        checked={selectedCurrencies.includes(currency.code)}
-                        onChange={() => handleCurrencyToggle(currency.code)}
-                        className='mr-3'
-                      />
-                      <span className='text-lg mr-3'>{currency.symbol}</span>
-                      <div>
-                        <div className='font-medium text-gray-900 dark:text-white'>
-                          {currency.code}
-                        </div>
-                        <div className='text-sm text-gray-600 dark:text-gray-400'>
-                          {currency.name}
-                        </div>
+                {otherCurrencies.map(currency => (
+                  <label
+                    key={currency.id}
+                    className='flex items-center p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200'
+                  >
+                    <input
+                      type='checkbox'
+                      checked={selectedCurrencies.includes(currency.code)}
+                      onChange={() => handleCurrencyToggle(currency.code)}
+                      className='mr-3'
+                    />
+                    <span className='text-lg mr-3'>{currency.symbol}</span>
+                    <div>
+                      <div className='font-medium text-gray-900 dark:text-white'>
+                        {currency.code}
                       </div>
-                    </label>
-                  ))}
+                      <div className='text-sm text-gray-600 dark:text-gray-400'>
+                        {currency.name}
+                      </div>
+                    </div>
+                  </label>
+                ))}
               </div>
             </div>
           )}
@@ -282,13 +274,13 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
           </p>
 
           <div className='space-y-3'>
-            {selectedCurrencies.map((currencyCode, index) => {
+            {selectedCurrencies.map(currencyCode => {
               const currency = allCurrencies.find(c => c.code === currencyCode)
               if (!currency) return null
 
               return (
                 <label
-                  key={`base-${currency.code}-${index}`}
+                  key={currency.id}
                   className='flex items-center p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200'
                 >
                   <input
