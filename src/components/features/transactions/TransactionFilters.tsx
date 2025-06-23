@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
+import DateInput from '@/components/ui/forms/DateInput'
 import type { TransactionFilters } from '@/types/components'
 
 interface TransactionFiltersProps {
@@ -237,40 +238,24 @@ export default function TransactionFilters({
         </h4>
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
           {/* 开始日期 */}
-          <div>
-            <label
-              htmlFor='dateFrom'
-              className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
-            >
-              {t('time.date.from')}
-            </label>
-            <input
-              type='date'
-              id='dateFrom'
-              name='dateFrom'
-              value={filters.dateFrom}
-              onChange={handleInputChange}
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-            />
-          </div>
+          <DateInput
+            name='dateFrom'
+            label={t('time.date.from')}
+            value={filters.dateFrom}
+            onChange={handleInputChange}
+            showCalendar={true}
+            showFormatHint={false}
+          />
 
           {/* 结束日期 */}
-          <div>
-            <label
-              htmlFor='dateTo'
-              className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
-            >
-              {t('time.date.to')}
-            </label>
-            <input
-              type='date'
-              id='dateTo'
-              name='dateTo'
-              value={filters.dateTo}
-              onChange={handleInputChange}
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-            />
-          </div>
+          <DateInput
+            name='dateTo'
+            label={t('time.date.to')}
+            value={filters.dateTo}
+            onChange={handleInputChange}
+            showCalendar={true}
+            showFormatHint={false}
+          />
         </div>
       </div>
 

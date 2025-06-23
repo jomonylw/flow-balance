@@ -9,12 +9,14 @@ import {
   CardTitle,
 } from '@/components/ui/data-display/card'
 import { Button } from '@/components/ui/forms/button'
+import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
+import DateInput from '@/components/ui/forms/DateInput'
 import { RefreshCw } from 'lucide-react'
-import { format } from 'date-fns'
-import { zhCN, enUS } from 'date-fns/locale'
+
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import ColorManager from '@/lib/utils/color'
 import WithTranslation from '@/components/ui/data-display/WithTranslation'
 import { AccountType } from '@/types/core/constants'
@@ -67,9 +69,10 @@ interface PersonalCashFlowResponse {
 }
 
 export default function CashFlowCard() {
-  const { t, language } = useLanguage()
+  const { t } = useLanguage()
   const { categories, accounts, getBaseCurrency } = useUserData()
-  const { formatCurrency } = useUserCurrencyFormatter()
+  const { formatCurrencyById, findCurrencyByCode } = useUserCurrencyFormatter()
+  const { formatDate, formatInputDate } = useUserDateFormatter()
   const [data, setData] = useState<PersonalCashFlowResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [startDate, setStartDate] = useState<Date>(() => {
@@ -82,8 +85,6 @@ export default function CashFlowCard() {
   })
   const [endDate, setEndDate] = useState<Date>(new Date())
 
-  // Get the appropriate locale for date formatting
-  const dateLocale = language === 'zh' ? zhCN : enUS
   const baseCurrency = getBaseCurrency()
 
   // 将所有 hooks 移到条件判断之前
@@ -229,16 +230,21 @@ export default function CashFlowCard() {
     }
   }, [data, categories, accounts])
 
-  // 使用统一的格式化函数
+  // 使用基于ID的格式化函数
   const formatCurrencyWithSymbol = (
     amount: number,
     currency: SimpleCurrency
   ) => {
-    return formatCurrency(amount, currency.code)
+    return currency.id
+      ? formatCurrencyById(amount, currency.id)
+      : formatCurrencyWithCode(amount, currency.code)
   }
 
   const formatCurrencyWithCode = (amount: number, currencyCode: string) => {
-    return formatCurrency(amount, currencyCode)
+    const currencyInfo = findCurrencyByCode(currencyCode)
+    return currencyInfo?.id
+      ? formatCurrencyById(amount, currencyInfo.id)
+      : `${amount} ${currencyCode}`
   }
 
   // 新的层级渲染函数
@@ -285,7 +291,7 @@ export default function CashFlowCard() {
                   }`}
                 >
                   {isExpense ? '-' : '+'}
-                  {formatCurrency(
+                  {formatCurrencyWithCode(
                     Math.abs(category.totalInBaseCurrency),
                     currentBaseCurrency.code
                   )}
@@ -329,7 +335,7 @@ export default function CashFlowCard() {
                         {currencyCode !== currentBaseCurrency.code && (
                           <div className='text-xs text-gray-400 whitespace-nowrap'>
                             ≈ {isExpense ? '-' : '+'}
-                            {formatCurrency(
+                            {formatCurrencyWithCode(
                               currencyAccounts.reduce(
                                 (sum, account) =>
                                   sum +
@@ -394,7 +400,7 @@ export default function CashFlowCard() {
                                 currentBaseCurrency.code && (
                                 <div className='text-xs text-gray-400 whitespace-nowrap'>
                                   ≈{' '}
-                                  {formatCurrency(
+                                  {formatCurrencyWithCode(
                                     Math.abs(account.totalAmountInBaseCurrency),
                                     currentBaseCurrency.code
                                   )}
@@ -478,7 +484,7 @@ export default function CashFlowCard() {
                         currencyCode !== baseCurrency.code && (
                           <span className='text-xs text-gray-400'>
                             ≈ {isExpense ? '-' : '+'}
-                            {formatCurrency(
+                            {formatCurrencyWithCode(
                               Math.abs(category.totalInBaseCurrency),
                               baseCurrency.code
                             )}
@@ -534,7 +540,7 @@ export default function CashFlowCard() {
                               account.currency.code !== baseCurrency.code && (
                                 <span className='text-xs text-gray-400'>
                                   ≈{' '}
-                                  {formatCurrency(
+                                  {formatCurrencyWithCode(
                                     Math.abs(account.totalAmountInBaseCurrency),
                                     baseCurrency.code
                                   )}
@@ -590,9 +596,11 @@ export default function CashFlowCard() {
                 disabled={loading}
                 title={t('reports.cash.flow.refresh')}
               >
-                <RefreshCw
-                  className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
-                />
+                {loading ? (
+                  <LoadingSpinnerSVG size='sm' color='current' className='h-4 w-4' />
+                ) : (
+                  <RefreshCw className='h-4 w-4' />
+                )}
               </Button>
             </CardTitle>
           </CardHeader>
@@ -612,35 +620,61 @@ export default function CashFlowCard() {
     <WithTranslation>
       <Card className='mt-4'>
         <CardHeader>
-          <div className='flex justify-between items-center'>
-            <CardTitle>{t('reports.cash.flow.title')}</CardTitle>
+          <div className='flex flex-col md:flex-row md:justify-between md:items-center'>
+            {/* 左侧：标题和期间 */}
+            <div className="mb-2 md:mb-0">
+              <CardTitle>{t('reports.cash.flow.title')}</CardTitle>
+              <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
+                {t('reports.cash.flow.period')}:{' '}
+                {formatDate(new Date(data.period.start))}{' '}
+                {t('reports.cash.flow.to')}{' '}
+                {formatDate(new Date(data.period.end))}
+              </p>
+            </div>
+            {/* 右侧：日期选择和按钮 */}
             <div className='flex gap-2 items-center'>
-              <input
-                type='date'
-                value={startDate.toISOString().split('T')[0]}
-                onChange={e => setStartDate(new Date(e.target.value))}
-                className='px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-              />
+              <div className='w-40'>
+                <DateInput
+                  name='startDate'
+                  label=''
+                  value={formatInputDate(startDate)}
+                  onChange={e => setStartDate(new Date(e.target.value))}
+                  showCalendar={true}
+                  showFormatHint={false}
+                  className='text-sm'
+                />
+              </div>
               <span className='text-gray-500 dark:text-gray-400'>
                 {t('reports.cash.flow.to')}
               </span>
-              <input
-                type='date'
-                value={endDate.toISOString().split('T')[0]}
-                onChange={e => setEndDate(new Date(e.target.value))}
-                className='px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-              />
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={fetchCashFlow}
-                disabled={loading}
-                title={t('reports.cash.flow.refresh')}
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
-                />
-              </Button>
+              <div className='flex gap-2 items-end'>
+                <div className='w-40'>
+                  <DateInput
+                    name='endDate'
+                    label=''
+                    value={formatInputDate(endDate)}
+                    onChange={e => setEndDate(new Date(e.target.value))}
+                    showCalendar={true}
+                    showFormatHint={false}
+                    className='text-sm'
+                  />
+                </div>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={fetchCashFlow}
+                  disabled={loading}
+                  title={t('reports.cash.flow.refresh')}
+                  className='h-12'
+                >
+                  {loading ? (
+                    <LoadingSpinnerSVG size='sm' color='current' className='h-4 w-4' />
+                  ) : (
+                    <RefreshCw className='h-4 w-4' />
+                  )}
+                </Button>
+              </div>
+
               {/* <Button
                 variant='outline'
                 size='sm'
@@ -650,20 +684,6 @@ export default function CashFlowCard() {
               </Button> */}
             </div>
           </div>
-          <p className='text-sm text-gray-500 dark:text-gray-400'>
-            {t('reports.cash.flow.period')}:{' '}
-            {format(
-              new Date(data.period.start),
-              language === 'zh' ? 'yyyy年MM月dd日' : 'MMM dd, yyyy',
-              { locale: dateLocale }
-            )}{' '}
-            {t('reports.cash.flow.to')}{' '}
-            {format(
-              new Date(data.period.end),
-              language === 'zh' ? 'yyyy年MM月dd日' : 'MMM dd, yyyy',
-              { locale: dateLocale }
-            )}
-          </p>
         </CardHeader>
         <CardContent>
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
@@ -730,9 +750,9 @@ export default function CashFlowCard() {
                               incomeBaseCurrencyAmount > 0 && (
                                 <div className='text-xs text-gray-400'>
                                   ≈ +
-                                  {formatCurrency(
+                                  {formatCurrencyById(
                                     Math.abs(incomeBaseCurrencyAmount),
-                                    data.baseCurrency.code
+                                    data.baseCurrency.id
                                   )}
                                 </div>
                               )}
@@ -826,9 +846,9 @@ export default function CashFlowCard() {
                               expenseBaseCurrencyAmount > 0 && (
                                 <div className='text-xs text-gray-400'>
                                   ≈ -
-                                  {formatCurrency(
+                                  {formatCurrencyById(
                                     Math.abs(expenseBaseCurrencyAmount),
-                                    data.baseCurrency.code
+                                    data.baseCurrency.id
                                   )}
                                 </div>
                               )}
@@ -921,9 +941,9 @@ export default function CashFlowCard() {
                           Math.abs(netBaseCurrencyAmount) > 0.01 && (
                             <div className='text-xs text-gray-400'>
                               ≈ {netBaseCurrencyAmount >= 0 ? '+' : '-'}
-                              {formatCurrency(
+                              {formatCurrencyById(
                                 Math.abs(netBaseCurrencyAmount),
-                                data.baseCurrency.code
+                                data.baseCurrency.id
                               )}
                             </div>
                           )}
@@ -1009,9 +1029,9 @@ export default function CashFlowCard() {
                             incomeBaseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
                                 ≈ +
-                                {formatCurrency(
+                                {formatCurrencyById(
                                   Math.abs(incomeBaseCurrencyAmount),
-                                  data.baseCurrency.code
+                                  data.baseCurrency.id
                                 )}
                               </div>
                             )}
@@ -1060,9 +1080,9 @@ export default function CashFlowCard() {
                             expenseBaseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
                                 ≈ -
-                                {formatCurrency(
+                                {formatCurrencyById(
                                   Math.abs(expenseBaseCurrencyAmount),
-                                  data.baseCurrency.code
+                                  data.baseCurrency.id
                                 )}
                               </div>
                             )}
@@ -1132,9 +1152,9 @@ export default function CashFlowCard() {
                             Math.abs(netBaseCurrencyAmount) > 0.01 && (
                               <div className='text-xs text-gray-400'>
                                 ≈ {netBaseCurrencyAmount >= 0 ? '+' : '-'}
-                                {formatCurrency(
+                                {formatCurrencyById(
                                   Math.abs(netBaseCurrencyAmount),
-                                  data.baseCurrency.code
+                                  data.baseCurrency.id
                                 )}
                               </div>
                             )}

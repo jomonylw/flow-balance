@@ -4,7 +4,10 @@ import { useState } from 'react'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
+import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
+import { Z_INDEX } from '@/lib/constants/dimensions'
 import type { ExchangeRateData } from '@/types/core'
 
 interface ExchangeRateListProps {
@@ -22,24 +25,27 @@ export default function ExchangeRateList({
 }: ExchangeRateListProps) {
   const { t } = useLanguage()
   const { formatNumber, getUserLocale } = useUserCurrencyFormatter()
+  const { formatDate: formatUserDate } = useUserDateFormatter()
   const { showSuccess, showError } = useToast()
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
-    null
-  )
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [rateToDelete, setRateToDelete] = useState<string | null>(null)
 
-  const handleDelete = async (rateId: string) => {
-    setDeletingId(rateId)
+  const handleDelete = async () => {
+    if (!rateToDelete) return
+
+    setDeletingId(rateToDelete)
 
     try {
-      const response = await fetch(`/api/exchange-rates/${rateId}`, {
+      const response = await fetch(`/api/exchange-rates/${rateToDelete}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
         showSuccess(t('success.deleted'), t('exchange.rate.deleted'))
-        onDelete(rateId)
-        setShowDeleteConfirm(null)
+        onDelete(rateToDelete)
+        setShowDeleteConfirm(false)
+        setRateToDelete(null)
       } else {
         const data = await response.json()
         showError(t('error.delete.failed'), data.error || t('error.unknown'))
@@ -52,9 +58,18 @@ export default function ExchangeRateList({
     }
   }
 
+  const handleDeleteClick = (rateId: string) => {
+    setRateToDelete(rateId)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false)
+    setRateToDelete(null)
+  }
+
   const formatDate = (dateString: string) => {
-    const locale = getUserLocale()
-    return new Date(dateString).toLocaleDateString(locale)
+    return formatUserDate(new Date(dateString))
   }
 
   const formatRate = (rate: number) => {
@@ -233,7 +248,7 @@ export default function ExchangeRateList({
                             </svg>
                           </button>
                           <button
-                            onClick={() => setShowDeleteConfirm(rate.id)}
+                            onClick={() => handleDeleteClick(rate.id)}
                             className='p-1 text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50'
                             disabled={deletingId === rate.id}
                             title={
@@ -293,54 +308,21 @@ export default function ExchangeRateList({
       )}
 
       {/* 删除确认对话框 */}
-      {showDeleteConfirm && (
-        <div className='fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-gray-900 dark:bg-opacity-75 overflow-y-auto h-full w-full z-50'>
-          <div className='relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-600 w-96 shadow-lg rounded-md bg-white dark:bg-gray-800'>
-            <div className='mt-3 text-center'>
-              <div className='mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900'>
-                <svg
-                  className='h-6 w-6 text-red-600 dark:text-red-400'
-                  fill='none'
-                  viewBox='0 0 24 24'
-                  stroke='currentColor'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z'
-                  />
-                </svg>
-              </div>
-              <h3 className='text-lg font-medium text-gray-900 dark:text-gray-100 mt-4'>
-                {t('exchange.rate.delete.confirm.title')}
-              </h3>
-              <div className='mt-2 px-7 py-3'>
-                <p className='text-sm text-gray-500 dark:text-gray-400'>
-                  {t('exchange.rate.delete.confirm.message')}
-                </p>
-              </div>
-              <div className='flex justify-center space-x-4 mt-4'>
-                <button
-                  onClick={() => setShowDeleteConfirm(null)}
-                  className='px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-500 transition-colors'
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  onClick={() => handleDelete(showDeleteConfirm)}
-                  disabled={deletingId === showDeleteConfirm}
-                  className='px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-base font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
-                >
-                  {deletingId === showDeleteConfirm
-                    ? t('common.deleting')
-                    : t('exchange.rate.delete.confirm')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        title={t('exchange.rate.delete.confirm.title')}
+        message={t('exchange.rate.delete.confirm.message')}
+        confirmLabel={
+          deletingId === rateToDelete
+            ? t('common.deleting')
+            : t('exchange.rate.delete.confirm')
+        }
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleDelete}
+        onCancel={handleDeleteCancel}
+        variant='danger'
+        zIndex={Z_INDEX.MAX}
+      />
     </div>
   )
 }

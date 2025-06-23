@@ -56,6 +56,26 @@ export async function POST(request: NextRequest) {
       return validationErrorResponse('您已创建过该货币代码')
     }
 
+    // 检查用户是否已经选择了相同货币代码的其他货币
+    const existingCurrenciesWithSameCode = await prisma.userCurrency.findMany({
+      where: {
+        userId: user.id,
+        isActive: true,
+        currency: {
+          code: code.toUpperCase(),
+        },
+      },
+      include: {
+        currency: true,
+      },
+    })
+
+    if (existingCurrenciesWithSameCode.length > 0) {
+      return validationErrorResponse(
+        `您已选择了货币代码为 ${code.toUpperCase()} 的其他货币，同一货币代码只能选择一次`
+      )
+    }
+
     // 创建自定义货币
     const currency = await prisma.currency.create({
       data: {

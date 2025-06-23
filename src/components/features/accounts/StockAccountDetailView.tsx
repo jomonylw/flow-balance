@@ -14,6 +14,7 @@ import LoanContractModal from './LoanContractModal'
 import { calculateAccountBalance } from '@/lib/services/account.service'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { SkeletonTable } from '@/components/ui/data-display/skeleton'
 import {
   useBalanceUpdateListener,
@@ -46,6 +47,7 @@ export default function StockAccountDetailView({
 }: StockAccountDetailViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { formatInputDate } = useUserDateFormatter()
   const router = useRouter()
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] =
     useState(false)
@@ -674,7 +676,7 @@ export default function StockAccountDetailView({
                   'USD',
                 date:
                   editingTransaction.date instanceof Date
-                    ? editingTransaction.date.toISOString().split('T')[0]
+                    ? formatInputDate(editingTransaction.date)
                     : editingTransaction.date,
                 notes: editingTransaction.notes || undefined,
                 type: editingTransaction.type,

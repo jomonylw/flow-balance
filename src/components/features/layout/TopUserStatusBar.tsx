@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useAuth } from '@/contexts/providers/AuthContext'
+import { useUserData } from '@/contexts/providers/UserDataContext'
 import UserMenuDropdown from './UserMenuDropdown'
 import LanguageToggle from './LanguageToggle'
 import ThemeToggle from './ThemeToggle'
@@ -33,6 +34,10 @@ export default function TopUserStatusBar({
   const router = useRouter()
   const { t } = useLanguage()
   const { logout } = useAuth()
+  const { getBaseCurrency } = useUserData()
+
+  // 从 UserDataContext 获取最新的本位币信息，优先于 props 传递的数据
+  const baseCurrency = getBaseCurrency() || user.settings?.baseCurrency
 
   const handleLogout = async () => {
     try {
@@ -106,7 +111,7 @@ export default function TopUserStatusBar({
         {/* 右侧：用户信息和菜单 */}
         <div className='flex items-center space-x-4'>
           {/* 本位币显示 */}
-          {user.settings?.baseCurrency && (
+          {baseCurrency && (
             <button
               ref={currencyButtonRef}
               onClick={() =>
@@ -130,9 +135,9 @@ export default function TopUserStatusBar({
               </svg>
               <span className='text-xs md:text-sm font-medium text-blue-700 dark:text-blue-300'>
                 <span className='hidden sm:inline'>
-                  {user.settings.baseCurrency.symbol}{' '}
+                  {baseCurrency.symbol}{' '}
                 </span>
-                {user.settings.baseCurrency.code}
+                {baseCurrency.code}
               </span>
               <svg
                 className={`h-3 w-3 text-blue-600 dark:text-blue-400 ml-1 transition-transform duration-200 ${isCurrencyConverterOpen ? 'rotate-180' : ''}`}
@@ -216,11 +221,11 @@ export default function TopUserStatusBar({
       </div>
 
       {/* 货币转换弹窗 */}
-      {user.settings?.baseCurrency && (
+      {baseCurrency && (
         <CurrencyConverterPopover
           isOpen={isCurrencyConverterOpen}
           onClose={() => setIsCurrencyConverterOpen(false)}
-          baseCurrency={user.settings.baseCurrency}
+          baseCurrency={baseCurrency}
           anchorElement={currencyButtonRef.current}
         />
       )}

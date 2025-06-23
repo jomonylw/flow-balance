@@ -21,8 +21,8 @@ export const USER_ENDPOINTS = {
   PROFILE: `${API_BASE}/user/profile`,
   SETTINGS: `${API_BASE}/user/settings`,
   CURRENCIES: `${API_BASE}/user/currencies`,
-  CURRENCIES_DELETE: (currencyCode: string) =>
-    `${API_BASE}/user/currencies/${currencyCode}`,
+  CURRENCIES_DELETE: (currencyCodeOrId: string) =>
+    `${API_BASE}/user/currencies/${currencyCodeOrId}`,
   DELETE: `${API_BASE}/user/delete`,
   CHANGE_PASSWORD: `${API_BASE}/user/change-password`,
 } as const
@@ -72,8 +72,8 @@ export const TAG_ENDPOINTS = {
 /** 货币相关端点 */
 export const CURRENCY_ENDPOINTS = {
   LIST: `${API_BASE}/currencies`,
-  EXCHANGE_RATES: `${API_BASE}/currencies/exchange-rates`,
-  UPDATE_RATES: `${API_BASE}/currencies/exchange-rates/update`,
+  EXCHANGE_RATES: `${API_BASE}/exchange-rates`, // 修复汇率API端点
+  UPDATE_RATES: `${API_BASE}/exchange-rates/auto-update`, // 修复汇率更新端点
   DETAIL: (code: string) => `${API_BASE}/currencies/${code}`,
   CUSTOM_CREATE: `${API_BASE}/currencies/custom`,
   CUSTOM_UPDATE: (currencyCode: string) =>

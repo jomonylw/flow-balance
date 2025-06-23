@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import * as echarts from 'echarts'
 import type { SimpleCurrency, FireParams } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
@@ -18,6 +19,7 @@ export default function JourneyVisualization({
 }: JourneyVisualizationProps) {
   const { t } = useLanguage()
   const { formatCurrency } = useUserCurrencyFormatter()
+  const { formatChartDate } = useUserDateFormatter()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
 
@@ -44,9 +46,7 @@ export default function JourneyVisualization({
     for (let i = 0; i <= months; i++) {
       const futureDate = new Date(today)
       futureDate.setMonth(futureDate.getMonth() + i)
-      dates.push(
-        `${futureDate.getFullYear()}/${String(futureDate.getMonth() + 1).padStart(2, '0')}`
-      )
+      dates.push(formatChartDate(futureDate, 'month'))
 
       // 计算未来价值: FV = PV * (1 + r)^n + PMT * [((1 + r)^n - 1) / r]
       const pv = params.currentInvestableAssets
@@ -201,7 +201,7 @@ export default function JourneyVisualization({
     return () => {
       window.removeEventListener('resize', handleResize)
     }
-  }, [params, currency, t])
+  }, [params, currency, t, formatCurrency, formatChartDate])
 
   useEffect(() => {
     return () => {

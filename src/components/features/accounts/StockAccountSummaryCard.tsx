@@ -42,7 +42,7 @@ export default function StockAccountSummaryCard({
   currencyCode,
 }: StockAccountSummaryCardProps) {
   const { t } = useLanguage()
-  const { formatCurrency, formatNumber } = useUserCurrencyFormatter()
+  const { formatCurrencyById, formatNumber, findCurrencyByCode } = useUserCurrencyFormatter()
   const accountType = account.category.type
 
   // 本地状态管理最新的交易数据和余额
@@ -272,6 +272,10 @@ export default function StockAccountSummaryCard({
 
   const stockStats = calculateStockStats()
 
+  // 获取货币ID用于格式化
+  const currency = findCurrencyByCode(currencyCode)
+  const currencyId = currency?.id || ''
+
   return (
     <div className='bg-white dark:bg-gray-800 shadow rounded-lg p-6 relative'>
       {/* 加载指示器 */}
@@ -309,7 +313,9 @@ export default function StockAccountSummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {formatCurrency(Math.abs(stockStats.currentBalance), currencyCode)}
+            {currencyId
+              ? formatCurrencyById(Math.abs(stockStats.currentBalance), currencyId)
+              : `${Math.abs(stockStats.currentBalance)} ${currencyCode}`}
           </div>
         </div>
 
@@ -319,10 +325,9 @@ export default function StockAccountSummaryCard({
             {t('account.balance.last.month')}
           </div>
           <div className='text-2xl font-semibold text-gray-600 dark:text-gray-300'>
-            {formatCurrency(
-              Math.abs(stockStats.lastMonthBalance),
-              currencyCode
-            )}
+            {currencyId
+              ? formatCurrencyById(Math.abs(stockStats.lastMonthBalance), currencyId)
+              : `${Math.abs(stockStats.lastMonthBalance)} ${currencyCode}`}
           </div>
         </div>
 
@@ -351,10 +356,9 @@ export default function StockAccountSummaryCard({
             {stockStats.currentBalance - stockStats.lastMonthBalance >= 0
               ? '+'
               : '-'}
-            {formatCurrency(
-              Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance),
-              currencyCode
-            )}
+            {currencyId
+              ? formatCurrencyById(Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance), currencyId)
+              : `${Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance)} ${currencyCode}`}
           </div>
         </div>
 
@@ -375,10 +379,9 @@ export default function StockAccountSummaryCard({
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
             {t('account.balance.year.start')}:{' '}
-            {formatCurrency(
-              Math.abs(stockStats.yearStartBalance),
-              currencyCode
-            )}
+            {currencyId
+              ? formatCurrencyById(Math.abs(stockStats.yearStartBalance), currencyId)
+              : `${Math.abs(stockStats.yearStartBalance)} ${currencyCode}`}
           </div>
         </div>
       </div>

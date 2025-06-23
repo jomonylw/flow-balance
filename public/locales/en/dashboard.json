@@ -59,7 +59,7 @@
   "sync.retry": "Retry",
   "sync.manual.trigger": "Manual Update",
   "sync.manual.triggered": "Manual Update Triggered",
-  "sync.manual.triggered.message": "System is processing recurring transactions and loan contracts",
+  "sync.manual.triggered.message": "The system is processing update transactions...",
   "sync.manual.failed": "Manual Update Failed",
   "sync.manual.failed.message": "Please try again later or contact administrator",
   "sync.processing": "Updating",

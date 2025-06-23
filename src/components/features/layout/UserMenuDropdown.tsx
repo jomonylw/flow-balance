@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useBreakpoint } from '@/hooks/ui/useResponsive'
+import { Z_INDEX } from '@/lib/constants/dimensions'
 import ThemeToggle from './ThemeToggle'
 import LanguageToggle from './LanguageToggle'
 
@@ -46,12 +47,13 @@ export default function UserMenuDropdown({
       ref={menuRef}
       className={`
         absolute right-0 mt-3 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-gray-200 dark:ring-gray-700
-        focus:outline-none z-50 transform transition-all duration-200 ease-out
+        focus:outline-none transform transition-all duration-200 ease-out
         ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}
       `}
       style={{
         boxShadow:
           '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        zIndex: Z_INDEX.DROPDOWN,
       }}
     >
       <div className='py-2'>

@@ -5,5 +5,7 @@
   "sidebar.updating": "更新中...",
   "sidebar.expand.categories": "展开分类",
   "sidebar.collapse.categories": "收起分类",
-  "sidebar.search.no.results": "未找到匹配的分类或账户"
+  "sidebar.search.no.results": "未找到匹配的分类或账户",
+  "sidebar.view.tree": "切换到树状视图",
+  "sidebar.view.accounts": "切换到账户视图"
 }

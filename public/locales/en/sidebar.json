@@ -5,5 +5,7 @@
   "sidebar.updating": "Updating...",
   "sidebar.expand.categories": "Expand Categories",
   "sidebar.collapse.categories": "Collapse Categories",
-  "sidebar.search.no.results": "No matching categories or accounts found"
+  "sidebar.search.no.results": "No matching categories or accounts found",
+  "sidebar.view.tree": "Switch to Tree View",
+  "sidebar.view.accounts": "Switch to Accounts View"
 }

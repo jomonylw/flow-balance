@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import type { SimpleCurrency } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
 import type { FlowMonthlyData, StockMonthlyData } from '@/types/components'
@@ -37,6 +38,7 @@ export default function MonthlySummaryChart({
     formatNumber: _formatNumber,
     getUserLocale: _getUserLocale,
   } = useUserCurrencyFormatter()
+  const { formatChartDate } = useUserDateFormatter()
 
   // 根据图表类型设置默认标题
   const defaultTitle =
@@ -70,7 +72,7 @@ export default function MonthlySummaryChart({
       window.removeEventListener('resize', handleResize)
       chartInstance.current?.dispose()
     }
-  }, [monthlyData, stockMonthlyData, baseCurrency, chartType])
+  }, [monthlyData, stockMonthlyData, baseCurrency, chartType, formatChartDate])
 
   const renderFlowChart = () => {
     if (!monthlyData || !chartInstance.current) return
@@ -94,10 +96,10 @@ export default function MonthlySummaryChart({
       balanceData.push(currencyData.balance)
     })
 
-    // 格式化月份显示
+    // 格式化月份显示，遵循用户日期格式偏好
     const formattedMonths = months.map(month => {
-      const [year, monthNum] = month.split('-')
-      return `${year}/${monthNum.padStart(2, '0')}`
+      const date = new Date(month + '-01') // 添加日期部分以创建有效的日期
+      return formatChartDate(date, 'month')
     })
 
     // 配置图表选项
@@ -229,8 +231,8 @@ export default function MonthlySummaryChart({
     // 准备数据
     const months = Object.keys(stockMonthlyData).sort()
     const formattedMonths = months.map(month => {
-      const [year, monthNum] = month.split('-')
-      return `${year}/${monthNum.padStart(2, '0')}`
+      const date = new Date(month + '-01') // 添加日期部分以创建有效的日期
+      return formatChartDate(date, 'month')
     })
 
     // 获取所有账户名称

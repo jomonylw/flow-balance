@@ -6,8 +6,11 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import TagSelector from '@/components/ui/forms/TagSelector'
 import TagFormModal from '@/components/ui/feedback/TagFormModal'
+import DateInput from '@/components/ui/forms/DateInput'
+import { Z_INDEX } from '@/lib/constants/dimensions'
 import {
   RecurrenceFrequency,
   type RecurringTransaction,
@@ -38,11 +41,12 @@ export default function RecurringTransactionModal({
   const { theme: _theme } = useTheme()
   const { showSuccess } = useToast()
   const { tags, addTag } = useUserData()
+  const { formatInputDate } = useUserDateFormatter()
 
   // 获取当前日期的字符串格式 (YYYY-MM-DD)
   const getCurrentDate = () => {
     const today = new Date()
-    return today.toISOString().split('T')[0]
+    return formatInputDate(today)
   }
 
   const [formData, setFormData] = useState({
@@ -68,9 +72,9 @@ export default function RecurringTransactionModal({
         notes: editingTransaction.notes || '',
         amount: editingTransaction.amount.toString(),
         frequency: editingTransaction.frequency as RecurrenceFrequency,
-        startDate: editingTransaction.startDate.toString().split('T')[0],
+        startDate: formatInputDate(new Date(editingTransaction.startDate)),
         endDate: editingTransaction.endDate
-          ? editingTransaction.endDate.toString().split('T')[0]
+          ? formatInputDate(new Date(editingTransaction.endDate))
           : '',
         status: editingTransaction.isActive ? 'ACTIVE' : 'PAUSED',
         tagIds: editingTransaction.tagIds || [],
@@ -194,8 +198,9 @@ export default function RecurringTransactionModal({
 
   const modalContent = (
     <div
-      className='fixed inset-0 flex items-center justify-center z-[9999] p-4'
+      className='fixed inset-0 flex items-center justify-center p-4'
       style={{
+        zIndex: Z_INDEX.MAX,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
       }}
       onClick={e => {
@@ -293,34 +298,24 @@ export default function RecurringTransactionModal({
               </select>
             </div>
 
-            <div>
-              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
-                {t('recurring.start.date')} *
-              </label>
-              <input
-                type='date'
-                value={formData.startDate}
-                onChange={e => handleInputChange('startDate', e.target.value)}
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                         bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                required
-              />
-            </div>
+            <DateInput
+              name='startDate'
+              label={`${t('recurring.start.date')} *`}
+              value={formData.startDate}
+              onChange={e => handleInputChange('startDate', e.target.value)}
+              required
+              showCalendar={true}
+              showFormatHint={false}
+            />
 
-            <div>
-              <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
-                {t('recurring.end.date')}
-              </label>
-              <input
-                type='date'
-                value={formData.endDate}
-                onChange={e => handleInputChange('endDate', e.target.value)}
-                className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                         bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-              />
-            </div>
+            <DateInput
+              name='endDate'
+              label={t('recurring.end.date')}
+              value={formData.endDate}
+              onChange={e => handleInputChange('endDate', e.target.value)}
+              showCalendar={true}
+              showFormatHint={false}
+            />
 
             <div>
               <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
@@ -403,7 +398,7 @@ export default function RecurringTransactionModal({
         isOpen={showTagFormModal}
         onClose={() => setShowTagFormModal(false)}
         onSuccess={handleTagFormSuccess}
-        zIndex='z-[10000]'
+        zIndex={Z_INDEX.MAX}
       />
     </div>
   )

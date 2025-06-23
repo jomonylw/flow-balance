@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useTheme, type Theme } from '@/contexts/providers/ThemeContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { Z_INDEX } from '@/lib/constants/dimensions'
 import { Theme as ThemeEnum } from '@/types/core/constants'
 
 interface ThemeToggleProps {
@@ -157,8 +158,9 @@ export default function ThemeToggle({ className = '' }: ThemeToggleProps) {
           className='
           absolute top-full right-0 mt-2 w-40 bg-white dark:bg-gray-800
           border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg
-          py-1 z-50
+          py-1
         '
+          style={{ zIndex: Z_INDEX.DROPDOWN }}
         >
           {themes.map(themeOption => (
             <button

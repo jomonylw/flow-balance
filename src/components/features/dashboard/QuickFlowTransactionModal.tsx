@@ -12,6 +12,8 @@ import TemplateSelector from '@/components/ui/forms/TemplateSelector'
 import TemplateUpdateConfirm from '@/components/ui/forms/TemplateUpdateConfirm'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
+import { Z_INDEX } from '@/lib/constants/dimensions'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useAuth } from '@/contexts/providers/AuthContext'
@@ -35,6 +37,7 @@ export default function QuickFlowTransactionModal({
 }: QuickFlowTransactionModalProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { formatInputDate } = useUserDateFormatter()
   const { user } = useAuth()
   const {
     accounts,
@@ -55,7 +58,7 @@ export default function QuickFlowTransactionModal({
     accountId: '',
     amount: '',
     description: '',
-    date: new Date().toISOString().split('T')[0],
+    date: formatInputDate(new Date()),
     notes: '',
     tagIds: [] as string[],
   })
@@ -166,7 +169,7 @@ export default function QuickFlowTransactionModal({
           amount: '',
           description: '',
           notes: '',
-          date: new Date().toISOString().split('T')[0],
+          date: formatInputDate(new Date()),
           tagIds: [],
         })
 
@@ -355,7 +358,7 @@ export default function QuickFlowTransactionModal({
         amount: '',
         description: '',
         notes: '',
-        date: new Date().toISOString().split('T')[0],
+        date: formatInputDate(new Date()),
         tagIds: [],
       })
       setErrors({})
@@ -892,7 +895,7 @@ export default function QuickFlowTransactionModal({
         isOpen={showTagFormModal}
         onClose={() => setShowTagFormModal(false)}
         onSuccess={handleTagFormSuccess}
-        zIndex='z-[60]'
+        zIndex={Z_INDEX.POPOVER}
       />
 
       {/* 删除模板确认模态框 */}

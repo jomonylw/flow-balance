@@ -61,6 +61,7 @@ interface UserDataSettings {
   userId: string
   baseCurrencyId: string
   baseCurrencyCode: string
+  dateFormat: string
   language: Language
   theme: Theme
   fireEnabled?: boolean

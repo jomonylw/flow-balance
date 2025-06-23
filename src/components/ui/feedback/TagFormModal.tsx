@@ -8,6 +8,7 @@ import ColorPicker from '@/components/ui/forms/ColorPicker'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { ApiEndpoints, VALIDATION } from '@/lib/constants'
+import { Z_INDEX } from '@/lib/constants/dimensions'
 import type { TagFormModalProps } from '@/types/components'
 import type { TagFormData } from '@/types/core'
 
@@ -16,7 +17,7 @@ export default function TagFormModal({
   onClose,
   onSuccess,
   editingTag,
-  zIndex = 'z-50',
+  zIndex = Z_INDEX.MODAL,
 }: TagFormModalProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()

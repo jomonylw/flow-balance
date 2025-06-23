@@ -27,6 +27,44 @@ export type { ConversionResult }
  * @param asOfDate 查询日期（可选，默认为当前日期）
  * @returns 汇率数据或null
  */
+/**
+ * 根据货币代码查找用户实际使用的货币记录
+ * @param userId 用户ID
+ * @param currencyCode 货币代码
+ * @returns 货币记录或null
+ */
+async function findUserActiveCurrency(userId: string, currencyCode: string) {
+  // 首先查找用户在 userCurrency 表中选择的货币
+  const userCurrency = await prisma.userCurrency.findFirst({
+    where: {
+      userId,
+      isActive: true,
+      currency: {
+        code: currencyCode,
+      },
+    },
+    include: {
+      currency: true,
+    },
+  })
+
+  if (userCurrency) {
+    return userCurrency.currency
+  }
+
+  // 如果用户没有在 userCurrency 表中选择该货币，则回退到默认查找逻辑
+  return await prisma.currency.findFirst({
+    where: {
+      code: currencyCode,
+      OR: [
+        { createdBy: userId }, // 用户自定义货币
+        { createdBy: null }, // 全局货币
+      ],
+    },
+    orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+  })
+}
+
 export async function getUserExchangeRate(
   userId: string,
   fromCurrency: string,
@@ -34,45 +72,26 @@ export async function getUserExchangeRate(
   asOfDate?: Date
 ): Promise<ServiceExchangeRateData | null> {
   try {
-    // 如果源货币和目标货币相同，返回1:1汇率
-    if (fromCurrency === toCurrency) {
+    const targetDate = asOfDate || new Date()
+
+    // 查找用户实际使用的货币记录
+    const fromCurrencyRecord = await findUserActiveCurrency(userId, fromCurrency)
+    const toCurrencyRecord = await findUserActiveCurrency(userId, toCurrency)
+
+    if (!fromCurrencyRecord || !toCurrencyRecord) {
+      return null
+    }
+
+    // 如果源货币和目标货币是同一个货币记录，返回1:1汇率
+    if (fromCurrencyRecord.id === toCurrencyRecord.id) {
       return {
         id: 'same-currency',
         fromCurrency,
         toCurrency,
         rate: 1,
-        effectiveDate: asOfDate || new Date(),
+        effectiveDate: targetDate,
         notes: '同币种转换',
       }
-    }
-
-    const targetDate = asOfDate || new Date()
-
-    // 首先查找货币 ID
-    const fromCurrencyRecord = await prisma.currency.findFirst({
-      where: {
-        code: fromCurrency,
-        OR: [
-          { createdBy: userId }, // 用户自定义货币
-          { createdBy: null }, // 全局货币
-        ],
-      },
-      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
-    })
-
-    const toCurrencyRecord = await prisma.currency.findFirst({
-      where: {
-        code: toCurrency,
-        OR: [
-          { createdBy: userId }, // 用户自定义货币
-          { createdBy: null }, // 全局货币
-        ],
-      },
-      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
-    })
-
-    if (!fromCurrencyRecord || !toCurrencyRecord) {
-      return null
     }
 
     // 查找最近的有效汇率
@@ -267,9 +286,73 @@ export async function getUserCurrencies(userId: string): Promise<string[]> {
 }
 
 /**
+ * 获取用户使用的所有货币记录（包含ID信息）
+ * @param userId 用户ID
+ * @returns 货币记录数组
+ */
+export async function getUserCurrencyRecords(userId: string): Promise<Array<{ id: string; code: string; name: string; symbol: string }>> {
+  try {
+    // 首先获取用户设置的可用货币
+    const userCurrencies = await prisma.userCurrency.findMany({
+      where: {
+        userId,
+        isActive: true,
+      },
+      include: {
+        currency: {
+          select: { id: true, code: true, name: true, symbol: true },
+        },
+      },
+    })
+
+    if (userCurrencies.length > 0) {
+      return userCurrencies.map(uc => uc.currency)
+    }
+
+    // 如果用户没有设置可用货币，则回退到从交易记录中获取
+    const transactions = await prisma.transaction.findMany({
+      where: { userId },
+      select: {
+        currency: {
+          select: { id: true, code: true, name: true, symbol: true },
+        },
+      },
+      distinct: ['currencyId'],
+    })
+
+    // 获取用户的本位币
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      include: {
+        baseCurrency: {
+          select: { id: true, code: true, name: true, symbol: true },
+        },
+      },
+    })
+
+    const currencyMap = new Map<string, { id: string; code: string; name: string; symbol: string }>()
+
+    // 添加交易中的货币
+    transactions.forEach(t => {
+      currencyMap.set(t.currency.id, t.currency)
+    })
+
+    // 添加本位币
+    if (userSettings?.baseCurrency) {
+      currencyMap.set(userSettings.baseCurrency.id, userSettings.baseCurrency)
+    }
+
+    return Array.from(currencyMap.values())
+  } catch (error) {
+    console.error('获取用户货币记录失败:', error)
+    return []
+  }
+}
+
+/**
  * 检查用户是否需要设置汇率
  * @param userId 用户ID
- * @param baseCurrency 本位币
+ * @param baseCurrency 本位币代码
  * @returns 需要设置汇率的货币对数组
  */
 export async function getMissingExchangeRates(
@@ -277,15 +360,45 @@ export async function getMissingExchangeRates(
   baseCurrency: string
 ): Promise<Array<{ fromCurrency: string; toCurrency: string }>> {
   try {
-    const userCurrencies = await getUserCurrencies(userId)
+    // 获取用户的所有货币记录（包含ID）
+    const userCurrencyRecords = await getUserCurrencyRecords(userId)
+
+    // 获取用户设置以确定实际使用的本位币记录
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      include: { baseCurrency: true },
+    })
+
+    let baseCurrencyRecord = userSettings?.baseCurrency
+
+    // 如果用户设置中没有本位币，则查找匹配的货币记录
+    if (!baseCurrencyRecord) {
+      baseCurrencyRecord = await prisma.currency.findFirst({
+        where: {
+          code: baseCurrency,
+          OR: [
+            { createdBy: userId }, // 用户自定义货币
+            { createdBy: null }, // 全局货币
+          ],
+        },
+        orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+      })
+    }
+
+    if (!baseCurrencyRecord) {
+      console.error(`本位币 ${baseCurrency} 不存在`)
+      return []
+    }
+
     const missingRates: Array<{ fromCurrency: string; toCurrency: string }> = []
 
-    for (const currency of userCurrencies) {
-      if (currency !== baseCurrency) {
-        const rate = await getUserExchangeRate(userId, currency, baseCurrency)
+    for (const currencyRecord of userCurrencyRecords) {
+      // 使用货币ID进行比较，避免相同代码不同ID的问题
+      if (currencyRecord.id !== baseCurrencyRecord.id) {
+        const rate = await getUserExchangeRate(userId, currencyRecord.code, baseCurrency)
         if (!rate) {
           missingRates.push({
-            fromCurrency: currency,
+            fromCurrency: currencyRecord.code,
             toCurrency: baseCurrency,
           })
         }

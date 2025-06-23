@@ -10,6 +10,7 @@ interface TypeGroupHeaderProps {
   currencySymbol: string
   isExpanded: boolean
   onToggle: () => void
+  isWrapped?: boolean // 是否被外层容器包裹
 }
 
 export default function TypeGroupHeader({
@@ -19,6 +20,7 @@ export default function TypeGroupHeader({
   currencySymbol,
   isExpanded,
   onToggle,
+  isWrapped = false,
 }: TypeGroupHeaderProps) {
   const { getUserLocale } = useUserCurrencyFormatter()
   // 根据账户类型获取样式
@@ -98,9 +100,12 @@ export default function TypeGroupHeader({
   return (
     <div
       className={`
-        flex items-center justify-between px-3 py-2.5 mx-1 rounded-lg border cursor-pointer
-        transition-all duration-200 hover:shadow-md group
-        ${style.bgColor} ${style.borderColor}
+        flex items-center justify-between px-3 py-2.5 cursor-pointer
+        transition-all duration-200 group
+        ${isWrapped
+          ? `hover:bg-white/20 dark:hover:bg-black/10 ${isExpanded ? 'rounded-t-lg' : 'rounded-lg'}`
+          : `mx-1 rounded-lg border hover:shadow-md ${style.bgColor} ${style.borderColor}`
+        }
       `}
       onClick={onToggle}
     >

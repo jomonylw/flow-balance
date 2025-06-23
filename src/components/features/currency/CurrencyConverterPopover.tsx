@@ -34,12 +34,12 @@ export default function CurrencyConverterPopover({
 
     // 为每个非本位币计算转换结果
     for (const currency of currencies) {
-      if (currency.code === baseCurrency.code) continue
+      if (currency.id === baseCurrency.id) continue
 
-      // 查找从其他货币到本位币的汇率
+      // 查找从其他货币到本位币的汇率（使用货币ID进行精确匹配）
       let rate = exchangeRates.find(
         r =>
-          r.fromCurrency === currency.code && r.toCurrency === baseCurrency.code
+          r.fromCurrencyId === currency.id && r.toCurrencyId === baseCurrency.id
       )
 
       let isReverse = false
@@ -48,17 +48,188 @@ export default function CurrencyConverterPopover({
       if (!rate) {
         const reverseRate = exchangeRates.find(
           r =>
-            r.fromCurrency === baseCurrency.code &&
-            r.toCurrency === currency.code
+            r.fromCurrencyId === baseCurrency.id &&
+            r.toCurrencyId === currency.id
         )
         if (reverseRate) {
           rate = {
             ...reverseRate,
+            fromCurrencyId: currency.id,
+            toCurrencyId: baseCurrency.id,
             fromCurrency: currency.code,
             toCurrency: baseCurrency.code,
             rate: 1 / reverseRate.rate,
           }
           isReverse = true
+        }
+      }
+
+      // 如果仍然没有找到汇率，尝试通过相同货币代码查找
+      if (!rate && currency.code === baseCurrency.code && currency.id !== baseCurrency.id) {
+        // 对于相同货币代码但不同ID的情况（如两个CNY），假设汇率为1
+        rate = {
+          id: `same-code-${currency.id}-${baseCurrency.id}`,
+          fromCurrencyId: currency.id,
+          toCurrencyId: baseCurrency.id,
+          fromCurrency: currency.code,
+          toCurrency: baseCurrency.code,
+          rate: 1,
+          effectiveDate: new Date().toISOString(),
+          type: 'USER',
+          notes: '相同货币代码，汇率为1',
+          fromCurrencyRef: {
+            id: currency.id,
+            code: currency.code,
+            name: currency.name,
+            symbol: currency.symbol,
+            decimalPlaces: currency.decimalPlaces,
+            isCustom: currency.isCustom,
+          },
+          toCurrencyRef: {
+            id: baseCurrency.id,
+            code: baseCurrency.code,
+            name: baseCurrency.name,
+            symbol: baseCurrency.symbol,
+            decimalPlaces: baseCurrency.decimalPlaces,
+            isCustom: baseCurrency.isCustom,
+          },
+        }
+        isReverse = false
+      }
+
+      // 如果还是没有找到汇率，尝试通过货币代码间接查找
+      if (!rate) {
+        // 查找从当前货币代码到本位币代码的汇率
+        const codeBasedRate = exchangeRates.find(
+          r =>
+            r.fromCurrency === currency.code && r.toCurrency === baseCurrency.code
+        )
+
+        if (codeBasedRate) {
+          rate = {
+            ...codeBasedRate,
+            fromCurrencyId: currency.id,
+            toCurrencyId: baseCurrency.id,
+          }
+        } else {
+          // 查找反向的代码匹配
+          const reverseCodeRate = exchangeRates.find(
+            r =>
+              r.fromCurrency === baseCurrency.code && r.toCurrency === currency.code
+          )
+          if (reverseCodeRate) {
+            rate = {
+              ...reverseCodeRate,
+              fromCurrencyId: currency.id,
+              toCurrencyId: baseCurrency.id,
+              fromCurrency: currency.code,
+              toCurrency: baseCurrency.code,
+              rate: 1 / reverseCodeRate.rate,
+            }
+            isReverse = true
+          }
+        }
+      }
+
+      // 如果仍然没有找到直接汇率，尝试通过中介货币（如USD）进行转换
+      if (!rate) {
+        // 查找常见的中介货币（USD, EUR等）
+        const intermediateCurrencies = ['USD', 'EUR', 'CNY']
+
+        for (const intermediateCurrency of intermediateCurrencies) {
+          if (intermediateCurrency === currency.code || intermediateCurrency === baseCurrency.code) {
+            continue
+          }
+
+          // 查找 currency -> intermediate 的汇率
+          const toIntermediate = exchangeRates.find(r =>
+            (r.fromCurrencyId === currency.id || r.fromCurrency === currency.code) &&
+            (r.toCurrency === intermediateCurrency)
+          )
+
+          // 查找 intermediate -> baseCurrency 的汇率
+          const fromIntermediate = exchangeRates.find(r =>
+            (r.fromCurrency === intermediateCurrency) &&
+            (r.toCurrencyId === baseCurrency.id || r.toCurrency === baseCurrency.code)
+          )
+
+          if (toIntermediate && fromIntermediate) {
+            // 计算通过中介货币的汇率
+            const intermediateRate = parseFloat(toIntermediate.rate.toString()) * parseFloat(fromIntermediate.rate.toString())
+            rate = {
+              id: `intermediate-${currency.id}-${baseCurrency.id}`,
+              fromCurrencyId: currency.id,
+              toCurrencyId: baseCurrency.id,
+              fromCurrency: currency.code,
+              toCurrency: baseCurrency.code,
+              rate: intermediateRate,
+              effectiveDate: new Date().toISOString(),
+              type: 'AUTO',
+              notes: `通过${intermediateCurrency}中介转换`,
+              fromCurrencyRef: {
+                id: currency.id,
+                code: currency.code,
+                name: currency.name,
+                symbol: currency.symbol,
+                decimalPlaces: currency.decimalPlaces,
+                isCustom: currency.isCustom,
+              },
+              toCurrencyRef: {
+                id: baseCurrency.id,
+                code: baseCurrency.code,
+                name: baseCurrency.name,
+                symbol: baseCurrency.symbol,
+                decimalPlaces: baseCurrency.decimalPlaces,
+                isCustom: baseCurrency.isCustom,
+              },
+            }
+            break
+          }
+
+          // 尝试反向中介转换
+          const fromIntermediateReverse = exchangeRates.find(r =>
+            (r.fromCurrency === intermediateCurrency) &&
+            (r.toCurrencyId === currency.id || r.toCurrency === currency.code)
+          )
+
+          const toIntermediateReverse = exchangeRates.find(r =>
+            (r.fromCurrencyId === baseCurrency.id || r.fromCurrency === baseCurrency.code) &&
+            (r.toCurrency === intermediateCurrency)
+          )
+
+          if (fromIntermediateReverse && toIntermediateReverse) {
+            // 计算通过中介货币的反向汇率
+            const intermediateRate = (1 / parseFloat(fromIntermediateReverse.rate.toString())) * parseFloat(toIntermediateReverse.rate.toString())
+            rate = {
+              id: `intermediate-reverse-${currency.id}-${baseCurrency.id}`,
+              fromCurrencyId: currency.id,
+              toCurrencyId: baseCurrency.id,
+              fromCurrency: currency.code,
+              toCurrency: baseCurrency.code,
+              rate: intermediateRate,
+              effectiveDate: new Date().toISOString(),
+              type: 'AUTO',
+              notes: `通过${intermediateCurrency}中介反向转换`,
+              fromCurrencyRef: {
+                id: currency.id,
+                code: currency.code,
+                name: currency.name,
+                symbol: currency.symbol,
+                decimalPlaces: currency.decimalPlaces,
+                isCustom: currency.isCustom,
+              },
+              toCurrencyRef: {
+                id: baseCurrency.id,
+                code: baseCurrency.code,
+                name: baseCurrency.name,
+                symbol: baseCurrency.symbol,
+                decimalPlaces: baseCurrency.decimalPlaces,
+                isCustom: baseCurrency.isCustom,
+              },
+            }
+            isReverse = true
+            break
+          }
         }
       }
 
@@ -163,7 +334,7 @@ export default function CurrencyConverterPopover({
           <div className='py-1'>
             {conversions.map((conversion, index) => (
               <div
-                key={conversion.currency.code}
+                key={conversion.currency.id}
                 className={`px-4 py-2.5 hover:bg-blue-50/80 dark:hover:bg-blue-900/20 transition-all duration-200 ${
                   index !== conversions.length - 1
                     ? 'border-b border-gray-100/60 dark:border-gray-700/60'

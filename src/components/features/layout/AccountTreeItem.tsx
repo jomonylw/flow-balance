@@ -74,6 +74,78 @@ export default function AccountTreeItem({
     }
   }
 
+  // 生成账户颜色的透明背景色用于hover效果
+  const _getAccountHoverStyle = () => {
+    if (!account.color) {
+      return 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-800/50 dark:hover:to-gray-700/30'
+    }
+
+    // 将hex颜色转换为RGB并添加透明度
+    const hexToRgb = (hex: string) => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null
+    }
+
+    const rgb = hexToRgb(account.color)
+    if (!rgb) {
+      return 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-800/50 dark:hover:to-gray-700/30'
+    }
+
+    // 创建透明背景色
+    const _lightBg = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`
+    const _darkBg = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`
+
+    return 'hover:bg-gradient-to-r'
+  }
+
+  // 获取账户颜色的内联样式
+  const getAccountInlineStyle = () => {
+    if (!account.color) return {}
+
+    const hexToRgb = (hex: string) => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null
+    }
+
+    const rgb = hexToRgb(account.color)
+    if (!rgb) return {}
+
+    // 计算更深的颜色用于文字
+    const darkerRgb = {
+      r: Math.max(0, rgb.r - 40),
+      g: Math.max(0, rgb.g - 40),
+      b: Math.max(0, rgb.b - 40)
+    }
+
+    return {
+      '--hover-bg-from': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`,
+      '--hover-bg-to': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.12)`,
+      '--active-bg-from': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`,
+      '--active-bg-to': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.20)`,
+      '--active-border': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`,
+      '--active-text-color': `rgb(${darkerRgb.r}, ${darkerRgb.g}, ${darkerRgb.b})`,
+    } as React.CSSProperties
+  }
+
+  // 获取选中状态的文字颜色
+  const getActiveTextColor = () => {
+    if (!isActive) return ''
+
+    if (account.color) {
+      return 'account-active-text'
+    } else {
+      return 'text-blue-700 dark:text-blue-300'
+    }
+  }
+
   // 数据现在从UserDataContext获取，无需额外的API调用
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -259,11 +331,18 @@ export default function AccountTreeItem({
           mx-1 my-0.5 border border-transparent
           ${
             isActive
-              ? 'bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border-blue-200 dark:border-blue-700/50 shadow-sm'
-              : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-800/50 dark:hover:to-gray-700/30 hover:border-gray-200 dark:hover:border-gray-600/50 hover:shadow-sm'
+              ? account.color
+                ? 'account-active-item shadow-sm'
+                : 'bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border-blue-200 dark:border-blue-700/50 shadow-sm'
+              : account.color
+                ? 'account-hover-item hover:shadow-sm hover:border-gray-200 dark:hover:border-gray-600/50'
+                : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-800/50 dark:hover:to-gray-700/30 hover:border-gray-200 dark:hover:border-gray-600/50 hover:shadow-sm'
           }
         `}
-        style={{ paddingLeft: `${level * 16 + 20}px` }}
+        style={{
+          paddingLeft: `${level * 16 + 20}px`,
+          ...getAccountInlineStyle()
+        }}
         onClick={e => {
           e.preventDefault()
           // 添加轻微的过渡效果，减少视觉跳跃
@@ -294,7 +373,7 @@ export default function AccountTreeItem({
               text-sm font-medium truncate transition-colors duration-200
               ${
                 isActive
-                  ? 'text-blue-700 dark:text-blue-300'
+                  ? getActiveTextColor()
                   : 'text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100'
               }
             `}

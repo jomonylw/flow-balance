@@ -59,7 +59,7 @@
   "sync.retry": "重试",
   "sync.manual.trigger": "手动更新",
   "sync.manual.triggered": "手动更新已触发",
-  "sync.manual.triggered.message": "系统正在处理定期交易和贷款合约",
+  "sync.manual.triggered.message": "系统正在处理更新交易...",
   "sync.manual.failed": "手动更新失败",
   "sync.manual.failed.message": "请稍后重试或联系管理员",
   "sync.processing": "更新中",

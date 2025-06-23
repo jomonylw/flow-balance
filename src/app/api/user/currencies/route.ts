@@ -60,6 +60,17 @@ export async function PUT(request: NextRequest) {
       return validationErrorResponse('货币代码列表格式错误')
     }
 
+    // 检查货币代码列表中是否有重复项
+    const uniqueCodes = new Set(currencyCodes)
+    if (uniqueCodes.size !== currencyCodes.length) {
+      const duplicates = currencyCodes.filter((code, index) =>
+        currencyCodes.indexOf(code) !== index
+      )
+      return validationErrorResponse(
+        `货币代码列表中存在重复项: ${[...new Set(duplicates)].join(', ')}`
+      )
+    }
+
     // 验证所有货币代码是否有效（优先查找用户自定义货币）
     const validCurrencies = await prisma.currency.findMany({
       where: {
@@ -80,6 +91,31 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // 检查是否会导致同一货币代码有多个选择
+    // 为每个货币代码选择优先级最高的货币（用户自定义 > 全局）
+    const selectedCurrencies: any[] = []
+    const codeToSelectedCurrency = new Map<string, any>()
+
+    for (const code of currencyCodes) {
+      const candidateCurrencies = validCurrencies.filter(c => c.code === code)
+      // 按优先级排序：用户自定义货币优先
+      candidateCurrencies.sort((a, b) => {
+        if (a.createdBy === user.id && b.createdBy !== user.id) return -1
+        if (a.createdBy !== user.id && b.createdBy === user.id) return 1
+        return 0
+      })
+
+      const selectedCurrency = candidateCurrencies[0]
+      if (codeToSelectedCurrency.has(code)) {
+        return validationErrorResponse(
+          `货币代码 ${code} 存在多个可选项，请确保每个货币代码只选择一次`
+        )
+      }
+
+      codeToSelectedCurrency.set(code, selectedCurrency)
+      selectedCurrencies.push(selectedCurrency)
+    }
+
     // 使用事务处理
     await prisma.$transaction(async tx => {
       // 删除现有的用户货币设置
@@ -88,20 +124,14 @@ export async function PUT(request: NextRequest) {
       })
 
       // 创建新的用户货币设置
-      if (currencyCodes.length > 0) {
+      if (selectedCurrencies.length > 0) {
         await tx.userCurrency.createMany({
-          data: currencyCodes.map((code: string, index: number) => {
-            const currency = validCurrencies.find(c => c.code === code)
-            if (!currency) {
-              throw new Error(`Currency not found: ${code}`)
-            }
-            return {
-              userId: user.id,
-              currencyId: currency.id,
-              order: index,
-              isActive: true,
-            }
-          }),
+          data: selectedCurrencies.map((currency, index) => ({
+            userId: user.id,
+            currencyId: currency.id,
+            order: index,
+            isActive: true,
+          })),
         })
       }
     })
@@ -124,29 +154,79 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { currencyCode } = body
+    const { currencyId, currencyCode } = body
 
-    if (!currencyCode) {
-      return validationErrorResponse('货币代码不能为空')
+    // 支持新的货币ID字段，同时保持向后兼容
+    if (!currencyId && !currencyCode) {
+      return validationErrorResponse('货币ID或货币代码不能为空')
     }
 
-    // 验证货币代码是否有效（优先查找用户自定义货币，然后查找全局货币）
-    const currency = await prisma.currency.findFirst({
+    let currency
+    if (currencyId) {
+      // 优先使用货币ID（精确匹配）
+      currency = await prisma.currency.findFirst({
+        where: {
+          id: currencyId,
+          OR: [
+            { createdBy: user.id }, // 用户自定义货币
+            { createdBy: null }, // 全局货币
+          ],
+        },
+      })
+
+      if (!currency) {
+        return validationErrorResponse('无效的货币ID')
+      }
+    } else {
+      // 向后兼容：使用货币代码（优先选择用户自定义货币）
+      currency = await prisma.currency.findFirst({
+        where: {
+          code: currencyCode,
+          OR: [
+            { createdBy: user.id }, // 用户自定义货币
+            { createdBy: null }, // 全局货币
+          ],
+        },
+        orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+      })
+
+      if (!currency) {
+        return validationErrorResponse('无效的货币代码')
+      }
+    }
+
+    // 检查用户是否已经选择了相同货币代码的其他货币
+    const existingCurrenciesWithSameCode = await prisma.userCurrency.findMany({
       where: {
-        code: currencyCode,
-        OR: [
-          { createdBy: user.id }, // 用户自定义货币
-          { createdBy: null }, // 全局货币
-        ],
+        userId: user.id,
+        isActive: true,
+        currency: {
+          code: currency.code, // 使用实际找到的货币代码
+        },
       },
-      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
+      include: {
+        currency: true,
+      },
     })
 
-    if (!currency) {
-      return validationErrorResponse('无效的货币代码')
+    // 如果已经存在相同代码的货币，检查是否是同一个货币
+    if (existingCurrenciesWithSameCode.length > 0) {
+      const existingCurrency = existingCurrenciesWithSameCode.find(
+        uc => uc.currencyId === currency.id
+      )
+
+      if (existingCurrency) {
+        // 如果是同一个货币且已激活
+        return validationErrorResponse('该货币已在您的可用列表中')
+      } else {
+        // 如果是不同的货币但代码相同
+        return validationErrorResponse(
+          `您已选择了货币代码为 ${currency.code} 的其他货币，同一货币代码只能选择一次`
+        )
+      }
     }
 
-    // 检查是否已存在
+    // 检查是否已存在相同货币ID但未激活的记录
     const existingUserCurrency = await prisma.userCurrency.findUnique({
       where: {
         userId_currencyId: {
@@ -156,17 +236,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    if (existingUserCurrency) {
+    if (existingUserCurrency && !existingUserCurrency.isActive) {
       // 如果已存在但未激活，则激活它
-      if (!existingUserCurrency.isActive) {
-        await prisma.userCurrency.update({
-          where: { id: existingUserCurrency.id },
-          data: { isActive: true },
-        })
-        return successResponse({ message: '货币已激活' })
-      } else {
-        return validationErrorResponse('该货币已在您的可用列表中')
-      }
+      await prisma.userCurrency.update({
+        where: { id: existingUserCurrency.id },
+        data: { isActive: true },
+      })
+      return successResponse({ message: '货币已激活' })
     }
 
     // 获取当前最大排序值

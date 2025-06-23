@@ -5,10 +5,11 @@ import type { UserSettings, Currency } from '@prisma/client'
 import SelectField from '@/components/ui/forms/SelectField'
 import ToggleSwitch from '@/components/ui/forms/ToggleSwitch'
 import Slider from '@/components/ui/forms/Slider'
+import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
-import { Theme } from '@/types/core/constants'
+import { Theme, Language } from '@/types/core/constants'
 import { VALIDATION, ApiEndpoints } from '@/lib/constants'
 
 interface PreferencesFormProps {
@@ -20,11 +21,11 @@ export default function PreferencesForm({
   userSettings,
   currencies, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: PreferencesFormProps) {
-  const { t } = useLanguage()
+  const { t, setLanguage } = useLanguage()
   const { setTheme } = useTheme()
-  const { currencies: userCurrencies, updateUserSettings } = useUserData()
+  const { currencies: userCurrencies, updateUserSettings, refreshAll } = useUserData()
   const [formData, setFormData] = useState({
-    baseCurrencyCode: userSettings?.baseCurrency?.code || '',
+    baseCurrencyId: userSettings?.baseCurrency?.id || '', // 使用货币ID
     dateFormat: userSettings?.dateFormat || 'YYYY-MM-DD',
     theme: userSettings?.theme || 'system',
     language: userSettings?.language || 'zh',
@@ -71,9 +72,9 @@ export default function PreferencesForm({
   ]
 
   const currencyOptions = userCurrencies.map(currency => ({
-    value: currency.code,
+    value: currency.id, // 使用货币ID作为选项值
     label: `${currency.symbol} ${currency.name} (${currency.code})`,
-    id: currency.id, // 添加唯一标识符
+    id: currency.id,
   }))
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -133,6 +134,14 @@ export default function PreferencesForm({
         // 更新UserDataContext中的用户设置
         if (data.data?.userSettings) {
           updateUserSettings(data.data.userSettings)
+
+          // 如果更新了本位币，需要刷新所有相关数据
+          const oldBaseCurrencyId = userSettings?.baseCurrency?.id
+          const newBaseCurrencyId = data.data.userSettings.baseCurrency?.id
+          if (oldBaseCurrencyId !== newBaseCurrencyId) {
+            // 本位币发生变化，刷新所有数据以确保汇率、余额等数据正确更新
+            await refreshAll()
+          }
         }
 
         // 应用主题设置
@@ -142,8 +151,7 @@ export default function PreferencesForm({
 
         // 应用语言设置
         if (formData.language) {
-          localStorage.setItem('language', formData.language)
-          // 这里可以添加实际的语言切换逻辑
+          setLanguage(formData.language as Language)
         }
       } else {
         setError(data.error || t('settings.update.failed'))
@@ -237,9 +245,9 @@ export default function PreferencesForm({
 
           <div className='space-y-4'>
             <SelectField
-              name='baseCurrencyCode'
+              name='baseCurrencyId'
               label={t('preferences.base.currency')}
-              value={formData.baseCurrencyCode}
+              value={formData.baseCurrencyId}
               onChange={handleSelectChange}
               options={currencyOptions}
               help={t('preferences.base.currency.help')}
@@ -280,7 +288,7 @@ export default function PreferencesForm({
               help={t('preferences.date.format.help')}
             />
 
-            <ToggleSwitch
+            {/* <ToggleSwitch
               name='autoUpdateExchangeRates'
               label={t('exchange.rate.auto.update')}
               checked={formData.autoUpdateExchangeRates}
@@ -288,8 +296,8 @@ export default function PreferencesForm({
                 handleToggleChange('autoUpdateExchangeRates', checked)
               }
               help={t('exchange.rate.auto.update.description')}
-              disabled={!formData.baseCurrencyCode}
-            />
+              disabled={!formData.baseCurrencyId}
+            /> */}
           </div>
 
           {/* FIRE 设置 */}
@@ -393,25 +401,7 @@ export default function PreferencesForm({
             >
               {isLoading ? (
                 <span className='flex items-center'>
-                  <svg
-                    className='animate-spin -ml-1 mr-2 h-4 w-4 text-white'
-                    fill='none'
-                    viewBox='0 0 24 24'
-                  >
-                    <circle
-                      className='opacity-25'
-                      cx='12'
-                      cy='12'
-                      r='10'
-                      stroke='currentColor'
-                      strokeWidth='4'
-                    ></circle>
-                    <path
-                      className='opacity-75'
-                      fill='currentColor'
-                      d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-                    ></path>
-                  </svg>
+                  <LoadingSpinnerSVG size='sm' color='white' className='-ml-1 mr-2' />
                   {t('common.loading')}
                 </span>
               ) : (

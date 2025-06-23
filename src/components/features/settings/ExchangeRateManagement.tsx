@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import ExchangeRateForm from './ExchangeRateForm'
 import ExchangeRateList from './ExchangeRateList'
 import ToggleSwitch from '@/components/ui/forms/ToggleSwitch'
+import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
 import { ExchangeRateManagementSkeleton } from '@/components/ui/data-display/page-skeletons'
 import type {
   ExchangeRateData,
@@ -24,6 +26,7 @@ export default function ExchangeRateManagement({
   const { t } = useLanguage()
   const { currencies: userCurrencies, getBaseCurrency, userSettings, updateUserSettings } = useUserData()
   const { showSuccess, showError } = useToast()
+  const { formatInputDate } = useUserDateFormatter()
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateData[]>([])
   const [missingRates, setMissingRates] = useState<MissingRateInfo[]>([])
   const [loading, setLoading] = useState(true)
@@ -129,7 +132,7 @@ export default function ExchangeRateManagement({
       fromCurrency: missing.fromCurrency,
       toCurrency: missing.toCurrency,
       rate: 1,
-      effectiveDate: new Date().toISOString().split('T')[0],
+      effectiveDate: formatInputDate(new Date()),
       fromCurrencyRef: missing.fromCurrencyInfo,
       toCurrencyRef: missing.toCurrencyInfo,
     })
@@ -161,21 +164,21 @@ export default function ExchangeRateManagement({
         }
         showSuccess(
           t('exchange.rate.auto.update'),
-          enabled ? '已启用汇率自动更新' : '已禁用汇率自动更新'
+          enabled ? t('exchange.rate.auto.update.enabled') : t('exchange.rate.auto.update.disabled')
         )
       } else {
-        showError(t('error.update.failed'), data.error || '更新设置失败')
+        showError(t('error.update.failed'), data.error || t('exchange.rate.settings.update.failed'))
       }
     } catch (error) {
       console.error('更新自动更新设置失败:', error)
-      showError(t('error.network'), '网络错误，请稍后重试')
+      showError(t('error.network'), t('exchange.rate.network.error'))
     }
   }
 
   // 处理手动更新
   const handleManualUpdate = async () => {
     if (!baseCurrency) {
-      showError(t('exchange.rate.base.currency.required'), '请先在偏好设置中设置本位币')
+      showError(t('exchange.rate.base.currency.required'), t('exchange.rate.base.currency.setup.required'))
       return
     }
 
@@ -212,20 +215,45 @@ export default function ExchangeRateManagement({
         if (errors && errors.length > 0) {
           showError(
             t('exchange.rate.update.partial'),
-            `成功更新 ${updatedCount} 个汇率，${errors.length} 个失败`
+            t('exchange.rate.update.partial.message', { updatedCount, errorCount: errors.length })
           )
         } else {
           showSuccess(
             t('exchange.rate.update.success'),
-            `成功更新 ${updatedCount} 个汇率`
+            t('exchange.rate.update.success.message', { updatedCount })
           )
         }
       } else {
-        showError(t('exchange.rate.update.failed'), data.error || '更新失败')
+        // 根据错误代码显示国际化错误信息
+        let errorMessage = data.error || t('exchange.rate.update.general.failed')
+
+        if (data.errorCode) {
+          switch (data.errorCode) {
+            case 'CURRENCY_NOT_SUPPORTED':
+              errorMessage = t('exchange.rate.api.currency.not.supported', data.errorParams || {})
+              break
+            case 'SERVICE_UNAVAILABLE':
+              errorMessage = t('exchange.rate.api.service.unavailable')
+              break
+            case 'API_ERROR':
+              errorMessage = t('exchange.rate.api.error.with.code', data.errorParams || {})
+              break
+            case 'NETWORK_CONNECTION_FAILED':
+              errorMessage = t('exchange.rate.network.connection.failed')
+              break
+            case 'API_FETCH_FAILED':
+              errorMessage = t('exchange.rate.api.fetch.failed')
+              break
+            default:
+              errorMessage = data.error || t('exchange.rate.update.general.failed')
+          }
+        }
+
+        showError(t('exchange.rate.update.failed'), errorMessage)
       }
     } catch (error) {
       console.error('手动更新汇率失败:', error)
-      showError(t('error.network'), '网络错误，请稍后重试')
+      showError(t('error.network'), t('exchange.rate.network.error'))
     } finally {
       setIsUpdating(false)
     }
@@ -368,19 +396,7 @@ export default function ExchangeRateManagement({
             >
               {isUpdating ? (
                 <>
-                  <svg
-                    className='w-4 h-4 mr-1 animate-spin'
-                    fill='none'
-                    stroke='currentColor'
-                    viewBox='0 0 24 24'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                    />
-                  </svg>
+                  <LoadingSpinnerSVG size='sm' color='white' className='w-4 h-4 mr-1' />
                   {t('exchange.rate.updating')}
                 </>
               ) : (

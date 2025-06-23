@@ -24,16 +24,32 @@ export async function DELETE(
 
     const { currencyCode } = await params
 
-    // 先查找货币以获取 ID
-    const currency = await prisma.currency.findFirst({
+    // 智能判断传入的是货币代码还是货币ID
+    let currency
+
+    // 首先尝试作为货币ID查找
+    currency = await prisma.currency.findFirst({
       where: {
-        code: currencyCode,
+        id: currencyCode, // 这里实际上可能是货币ID
         OR: [
           { createdBy: user.id }, // 用户自定义货币
           { createdBy: null }, // 全局货币
         ],
       },
     })
+
+    // 如果按ID没找到，再尝试按货币代码查找
+    if (!currency) {
+      currency = await prisma.currency.findFirst({
+        where: {
+          code: currencyCode, // 作为货币代码查找
+          OR: [
+            { createdBy: user.id }, // 用户自定义货币
+            { createdBy: null }, // 全局货币
+          ],
+        },
+      })
+    }
 
     if (!currency) {
       return validationErrorResponse('货币不存在')

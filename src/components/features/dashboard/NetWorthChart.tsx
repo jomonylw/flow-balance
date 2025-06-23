@@ -36,13 +36,21 @@ export default function NetWorthChart({
 }: NetWorthChartProps) {
   const { t } = useLanguage()
   const { resolvedTheme } = useTheme()
-  const { formatCurrency, getUserLocale: _getUserLocale } =
+  const { formatCurrencyById, findCurrencyByCode, getUserLocale: _getUserLocale } =
     useUserCurrencyFormatter()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
   const [chartError, setChartError] = useState<string | null>(null)
   const isMobile = useIsMobile()
   const chartHeight = getChartHeight()
+
+  // 辅助函数：智能格式化货币
+  const formatCurrencyAmount = (amount: number) => {
+    const currencyInfo = findCurrencyByCode(currency.code)
+    return currencyInfo?.id
+      ? formatCurrencyById(amount, currencyInfo.id)
+      : `${amount} ${currency.code}`
+  }
 
   useEffect(() => {
     if (!chartRef.current || !data || loading) return
@@ -135,7 +143,7 @@ export default function NetWorthChart({
               if (typeof numericValue !== 'number' || isNaN(numericValue))
                 return
 
-              const value = formatCurrency(numericValue, currency.code)
+              const value = formatCurrencyAmount(numericValue)
               result += `<div style="margin: 2px 0;">
               <span style="display: inline-block; width: 10px; height: 10px; background-color: ${param.color}; border-radius: 50%; margin-right: 5px;"></span>
               ${param.seriesName}: ${value}
@@ -188,9 +196,9 @@ export default function NetWorthChart({
             fontSize: isMobile ? 10 : 12,
             formatter: function (value: number) {
               if (Math.abs(value) >= 1000) {
-                return `${formatCurrency(value / 1000, currency.code)}k`
+                return `${formatCurrencyAmount(value / 1000)}k`
               }
-              return formatCurrency(value, currency.code)
+              return formatCurrencyAmount(value)
             },
           },
           axisLine: {

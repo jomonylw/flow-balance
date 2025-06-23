@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useToast } from '@/contexts/providers/ToastContext'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import Modal from '@/components/ui/feedback/Modal'
 import CircularCheckbox from '@/components/ui/forms/CircularCheckbox'
 import type { LoanPayment } from '@/types/core'
-import { format } from 'date-fns'
-import { zhCN, enUS } from 'date-fns/locale'
+
 
 interface PaginationInfo {
   page: number
@@ -35,10 +35,11 @@ export default function LoanPaymentHistory({
   isOpen,
   onClose,
 }: LoanPaymentHistoryProps) {
-  const { t, language } = useLanguage()
+  const { t } = useLanguage()
   const { currencies: _currencies } = useUserData()
-  const { formatCurrency, getCurrencySymbol: _getCurrencySymbol } =
+  const { formatCurrencyById, findCurrencyByCode, getCurrencySymbol: _getCurrencySymbol } =
     useUserCurrencyFormatter()
+  const { formatDate } = useUserDateFormatter()
   const { showSuccess, showError } = useToast()
   const [payments, setPayments] = useState<LoanPayment[]>([])
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -58,7 +59,7 @@ export default function LoanPaymentHistory({
   const [showResetAllConfirm, setShowResetAllConfirm] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
 
-  const locale = language === 'zh' ? zhCN : enUS
+
 
   // 获取还款记录
   const fetchPayments = async (page: number = 1) => {
@@ -207,16 +208,16 @@ export default function LoanPaymentHistory({
     }
   }
 
-  // 格式化金额 - 使用统一的货币格式化
+  // 格式化金额 - 使用基于ID的货币格式化
   const formatAmount = (amount: number) => {
-    return formatCurrency(amount, currencyCode)
+    const currencyInfo = findCurrencyByCode(currencyCode)
+    return currencyInfo?.id
+      ? formatCurrencyById(amount, currencyInfo.id)
+      : `${amount} ${currencyCode}`
   }
 
-  // 格式化日期
-  const formatDate = (date: Date | string) => {
-    const dateObj = typeof date === 'string' ? new Date(date) : date
-    return format(dateObj, 'yyyy-MM-dd', { locale })
-  }
+  // 使用统一的日期格式化Hook，遵循用户设置的日期格式偏好
+  // formatDate 已从 useUserDateFormatter Hook 中获取
 
   if (!isOpen) return null
 

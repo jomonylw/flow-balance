@@ -43,5 +43,10 @@
   "currency.converter.title": "货币转换器",
   "currency.converter.amount": "金额",
   "currency.converter.no.rates": "暂无可用汇率",
-  "currency.converter.reverse.note": "基于反向汇率计算"
+  "currency.converter.reverse.note": "基于反向汇率计算",
+  "currency.add.success": "货币添加成功",
+  "currency.remove.success": "货币移除成功",
+  "currency.custom.delete.success": "自定义货币删除成功",
+  "currency.invalid.currency": "无效的货币",
+  "currency.decimal.places.invalid": "小数位数必须在 0-10 之间"
 }

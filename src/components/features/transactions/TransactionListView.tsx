@@ -9,10 +9,12 @@ import TransactionStats from './TransactionStats'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import PageContainer from '@/components/ui/layout/PageContainer'
 import TranslationLoader from '@/components/ui/data-display/TranslationLoader'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import { TransactionListSkeleton } from '@/components/ui/data-display/page-skeletons'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { Transaction, User } from '@/types/business/transaction'
 import { PAGINATION } from '@/lib/constants/app-config'
 import type { TransactionFilters } from '@/types/components'
@@ -27,6 +29,7 @@ export default function TransactionListView({
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const { currencies, tags } = useUserData()
+  const { formatInputDate } = useUserDateFormatter()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -56,6 +59,7 @@ export default function TransactionListView({
   const [isLoadingStats, setIsLoadingStats] = useState(true)
 
   const currencyCode = user.settings?.baseCurrency?.code || 'USD'
+  const currencyId = user.settings?.baseCurrency?.id || ''
 
   // 加载统计数据
   const loadStats = useCallback(async () => {
@@ -284,7 +288,7 @@ export default function TransactionListView({
         <div className='mb-8'>
           <TransactionStats
             stats={stats}
-            currencyCode={currencyCode}
+            currencyId={currencyId}
             isLoading={isLoadingStats}
           />
         </div>
@@ -314,10 +318,7 @@ export default function TransactionListView({
 
           {isLoading ? (
             <div className='p-8 text-center'>
-              <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400'></div>
-              <p className='mt-2 text-gray-500 dark:text-gray-400'>
-                {t('common.loading')}
-              </p>
+              <LoadingSpinner size='lg' showText text={t('common.loading')} />
             </div>
           ) : (
             <TransactionList
@@ -359,7 +360,7 @@ export default function TransactionListView({
               notes: editingTransaction.notes || undefined,
               date:
                 editingTransaction.date instanceof Date
-                  ? editingTransaction.date.toISOString().split('T')[0]
+                  ? formatInputDate(editingTransaction.date)
                   : editingTransaction.date,
               tagIds: editingTransaction.tags.map(t => t.tag.id),
             }}

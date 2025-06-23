@@ -21,7 +21,26 @@ export async function POST(_request: NextRequest) {
     const result = await ExchangeRateAutoUpdateService.updateExchangeRates(user.id, true)
 
     if (!result.success) {
-      return errorResponse(result.message || '汇率更新失败', 500)
+      // 构建包含错误代码和参数的响应
+      const errorData: any = {
+        error: result.message || '汇率更新失败'
+      }
+
+      if (result.errorCode) {
+        errorData.errorCode = result.errorCode
+      }
+
+      if (result.errorParams) {
+        errorData.errorParams = result.errorParams
+      }
+
+      return new Response(JSON.stringify({
+        success: false,
+        ...errorData
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
     }
 
     return successResponse(

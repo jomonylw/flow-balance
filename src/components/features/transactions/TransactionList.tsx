@@ -6,6 +6,7 @@ import CircularCheckbox from '@/components/ui/forms/CircularCheckbox'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { ExtendedTransaction } from '@/types/core'
 
 interface TransactionListProps {
@@ -48,8 +49,9 @@ export default function TransactionList({
 }: TransactionListProps) {
   const { t } = useLanguage()
   const { tags: userTags } = useUserData()
-  const { formatCurrency, getUserLocale: _getUserLocale } =
+  const { formatCurrencyById, getUserLocale: _getUserLocale } =
     useUserCurrencyFormatter()
+  const { formatSmartDate } = useUserDateFormatter()
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(
     new Set()
   )
@@ -145,10 +147,10 @@ export default function TransactionList({
   }
 
   const getAmountDisplay = (transaction: ExtendedTransaction) => {
-    // 使用统一的货币格式化，基于用户语言设置
-    const formattedAmount = formatCurrency(
+    // 使用基于ID的货币格式化，避免重复货币代码问题
+    const formattedAmount = formatCurrencyById(
       Number(transaction.amount),
-      transaction.currency.code
+      transaction.currency.id
     )
 
     switch (transaction.type) {
@@ -244,37 +246,10 @@ export default function TransactionList({
     return tags
   }
 
+  // 使用统一的日期格式化Hook，遵循用户设置的日期格式偏好
   const formatDate = (date: string | Date) => {
     const transactionDate = typeof date === 'string' ? new Date(date) : date
-    const now = new Date()
-    // 设置时间为当天的开始，避免时间部分的影响
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const normalizedTransactionDate = new Date(
-      transactionDate.getFullYear(),
-      transactionDate.getMonth(),
-      transactionDate.getDate()
-    )
-
-    const diffTime = normalizedTransactionDate.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-    if (diffDays === 0) {
-      return t('common.date.today')
-    } else if (diffDays === -1) {
-      return t('common.date.yesterday')
-    } else if (diffDays === 1) {
-      return t('common.date.tomorrow')
-    } else if (diffDays > 1 && diffDays <= 7) {
-      return t('common.date.days.later', { days: diffDays })
-    } else if (diffDays < -1 && diffDays >= -7) {
-      return t('common.date.days.ago', { days: Math.abs(diffDays) })
-    } else {
-      return transactionDate.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      })
-    }
+    return formatSmartDate(transactionDate)
   }
 
   const handlePageChange = (page: number) => {

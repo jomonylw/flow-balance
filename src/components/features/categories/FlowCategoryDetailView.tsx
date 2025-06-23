@@ -9,9 +9,11 @@ import CategorySummaryItem from './CategorySummaryItem'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import FlowMonthlySummaryChart from '@/components/features/charts/FlowMonthlySummaryChart'
 import DetailPageLayout from '@/components/ui/layout/DetailPageLayout'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
 import { Transaction, LegacyAccount } from '@/types/business/transaction'
 import type { CategoryTransaction } from '@/types/core'
@@ -44,6 +46,7 @@ export default function FlowCategoryDetailView({
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const { accounts, categories, currencies, tags } = useUserData()
+  const { formatInputDate } = useUserDateFormatter()
   const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] =
     useState(false)
   const [isQuickTransactionModalOpen, setIsQuickTransactionModalOpen] =
@@ -274,7 +277,7 @@ export default function FlowCategoryDetailView({
       notes: transaction.notes || undefined,
       date:
         transaction.date instanceof Date
-          ? transaction.date.toISOString().split('T')[0]
+          ? formatInputDate(transaction.date)
           : transaction.date,
       tagIds: transaction.tags.map(t => t.tag.id),
     }
@@ -722,8 +725,7 @@ export default function FlowCategoryDetailView({
 
         {isLoadingTransactions ? (
           <div className='p-8 text-center'>
-            <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
-            <p className='mt-2 text-gray-500'>{t('common.loading')}</p>
+            <LoadingSpinner size='lg' showText text={t('common.loading')} />
           </div>
         ) : (
           <TransactionList

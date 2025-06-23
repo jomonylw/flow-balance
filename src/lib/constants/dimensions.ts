@@ -162,17 +162,20 @@ export const COMPONENT_SIZE = {
   SLIDER: {
     TRACK_HEIGHT: 8,
     THUMB_SIZE: 20,
+    /** 移动端滑块尺寸 */
+    MOBILE_THUMB_SIZE: 28,
+    MOBILE_TRACK_HEIGHT: 12,
   },
   /** 开关组件尺寸 */
   TOGGLE: {
     /** 开关高度 */
-    HEIGHT: 28,
+    HEIGHT: 24,
     /** 开关宽度 */
-    WIDTH: 48,
+    WIDTH: 44,
     /** 开关拖拽点大小 */
     THUMB_SIZE: 20,
-    /** 开关拖拽点偏移量 */
-    THUMB_OFFSET: 20,
+    /** 开关内边距 */
+    PADDING: 2,
   },
 } as const
 

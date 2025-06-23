@@ -8,11 +8,12 @@ import CategorySummaryItem from './CategorySummaryItem'
 import QuickBalanceUpdateModal from '@/components/features/dashboard/QuickBalanceUpdateModal'
 import BalanceUpdateModal from '@/components/features/accounts/BalanceUpdateModal'
 import DetailPageLayout from '@/components/ui/layout/DetailPageLayout'
-
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import {
   useBalanceUpdateListener,
   useTransactionListener,
@@ -42,6 +43,7 @@ export default function StockCategoryDetailView({
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const { accounts, categories } = useUserData()
+  const { formatInputDate } = useUserDateFormatter()
   const [summaryData, setSummaryData] = useState<StockSummaryData | null>(null)
   const [monthlyData, setMonthlyData] = useState<MonthlyData | null>(null)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] =
@@ -617,8 +619,7 @@ export default function StockCategoryDetailView({
 
         {isLoadingTransactions ? (
           <div className='p-8 text-center'>
-            <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
-            <p className='mt-2 text-gray-500'>{t('common.loading')}</p>
+            <LoadingSpinner size='lg' showText text={t('common.loading')} />
           </div>
         ) : (
           <TransactionList
@@ -684,7 +685,7 @@ export default function StockCategoryDetailView({
                   currencyCode: editingTransaction.currency?.code || 'USD',
                   date:
                     editingTransaction.date instanceof Date
-                      ? editingTransaction.date.toISOString().split('T')[0]
+                      ? formatInputDate(editingTransaction.date)
                       : editingTransaction.date,
                   notes: editingTransaction.notes || undefined,
                 }

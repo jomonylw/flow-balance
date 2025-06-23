@@ -50,6 +50,7 @@
   "error.profile.update.failed": "个人资料更新失败",
   "error.session.expired": "会话已过期，请重新登录",
   "error.concurrent.modification": "数据已被其他用户修改，请刷新后重试",
+  "error.operation.failed": "操作失败",
   "error.operation.not.allowed": "不允许此操作",
   "error.maintenance.mode": "系统维护中，请稍后访问",
   "error.feature.not.available": "功能暂不可用",

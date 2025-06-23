@@ -129,11 +129,17 @@ html {
   /* 优化触摸目标大小 */
   button,
   a,
-  input,
+  input:not([type="range"]),
   select,
   textarea {
     min-height: 40px;
     min-width: 40px;
+  }
+
+  /* 滑块组件在移动端的特殊处理 */
+  input[type="range"] {
+    min-height: auto;
+    min-width: auto;
   }
 
   /* 优化表格在移动端的显示 */
@@ -207,6 +213,57 @@ html {
   will-change: auto;
   /* 减少重绘 */
   contain: layout style;
+}
+
+/* 账户项目hover效果 - 使用账户颜色 */
+.account-hover-item:hover {
+  background: linear-gradient(
+    to right,
+    var(--hover-bg-from, rgb(249 250 251)),
+    var(--hover-bg-to, rgb(243 244 246))
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  .account-hover-item:hover {
+    background: linear-gradient(
+      to right,
+      var(--hover-bg-from, rgba(31, 41, 55, 0.5)),
+      var(--hover-bg-to, rgba(55, 65, 81, 0.3))
+    );
+  }
+}
+
+/* 账户项目选中状态 - 使用账户颜色 */
+.account-active-item {
+  background: linear-gradient(
+    to right,
+    var(--active-bg-from, rgb(239 246 255)),
+    var(--active-bg-to, rgb(219 234 254))
+  );
+  border-color: var(--active-border, rgb(147 197 253));
+}
+
+@media (prefers-color-scheme: dark) {
+  .account-active-item {
+    background: linear-gradient(
+      to right,
+      var(--active-bg-from, rgba(30, 58, 138, 0.3)),
+      var(--active-bg-to, rgba(30, 64, 175, 0.2))
+    );
+    border-color: var(--active-border, rgba(59, 130, 246, 0.5));
+  }
+}
+
+/* 账户项目选中状态文字颜色 */
+.account-active-text {
+  color: var(--active-text-color, rgb(29, 78, 216));
+}
+
+@media (prefers-color-scheme: dark) {
+  .account-active-text {
+    color: var(--active-text-color, rgb(147, 197, 253));
+  }
 }
 
 /* 隐藏滚动条工具类 */

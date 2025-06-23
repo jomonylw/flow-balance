@@ -53,6 +53,7 @@ interface EnrichedAccount extends SimpleAccount {
 
 interface OptimizedCategoryAccountTreeProps {
   searchQuery: string
+  viewMode?: 'tree' | 'accounts'
   onNavigate?: () => void
 }
 
@@ -65,7 +66,7 @@ export interface OptimizedCategoryAccountTreeRef {
 const OptimizedCategoryAccountTree = forwardRef<
   OptimizedCategoryAccountTreeRef,
   OptimizedCategoryAccountTreeProps
->(({ searchQuery, onNavigate }, ref) => {
+>(({ searchQuery, viewMode = 'tree', onNavigate }, ref) => {
   // 使用语言上下文
   const { t } = useLanguage()
 
@@ -524,6 +525,51 @@ const OptimizedCategoryAccountTree = forwardRef<
     }
   }, [searchQuery, filteredData, isMounted])
 
+  // 获取展开分组的背景样式
+  const getExpandedGroupStyle = (type: CategoryType) => {
+    switch (type) {
+      case 'ASSET':
+        return 'bg-blue-50/20 dark:bg-blue-950/15 border-blue-200/50 dark:border-blue-700/30'
+      case 'LIABILITY':
+        return 'bg-red-50/20 dark:bg-red-950/15 border-red-200/50 dark:border-red-700/30'
+      case 'INCOME':
+        return 'bg-green-50/20 dark:bg-green-950/15 border-green-200/50 dark:border-green-700/30'
+      case 'EXPENSE':
+        return 'bg-orange-50/20 dark:bg-orange-950/15 border-orange-200/50 dark:border-orange-700/30'
+      default:
+        return 'bg-gray-50/20 dark:bg-gray-950/15 border-gray-200/50 dark:border-gray-700/30'
+    }
+  }
+
+  // 获取账户模式下的扁平账户列表
+  const getAccountsForAccountsView = (group: TypeGroup) => {
+    const accounts: EnrichedAccount[] = []
+
+    // 递归收集所有账户的函数
+    const collectAccountsFromCategory = (category: EnrichedCategory) => {
+      // 添加当前分类下的直接账户
+      if (category.accounts) {
+        category.accounts.forEach(account => {
+          accounts.push(account)
+        })
+      }
+
+      // 递归处理子分类
+      if (category.children) {
+        category.children.forEach(childCategory => {
+          collectAccountsFromCategory(childCategory)
+        })
+      }
+    }
+
+    // 遍历该分组下的所有顶级分类
+    group.categories.forEach(category => {
+      collectAccountsFromCategory(category)
+    })
+
+    return accounts
+  }
+
   // 切换分组展开状态
   const toggleTypeGroup = (type: CategoryType) => {
     setExpandedTypeGroups(prev => {
@@ -693,24 +739,48 @@ const OptimizedCategoryAccountTree = forwardRef<
 
   return (
     <div className='space-y-3'>
-      {filteredData.map(group => (
-        <div key={group.type} className='space-y-1'>
-          <TypeGroupHeader
-            type={group.type}
-            label={group.label}
-            totalBalance={group.totalBalance}
-            currencySymbol={group.currencySymbol}
-            isExpanded={expandedTypeGroups.has(group.type)}
-            onToggle={() => toggleTypeGroup(group.type)}
-          />
+      {filteredData.map(group => {
+        const isExpanded = expandedTypeGroups.has(group.type)
+        return (
+          <div
+            key={group.type}
+            className={`
+              rounded-lg border transition-all duration-200 mx-1
+              ${getExpandedGroupStyle(group.type)}
+            `}
+          >
+            <TypeGroupHeader
+              type={group.type}
+              label={group.label}
+              totalBalance={group.totalBalance}
+              currencySymbol={group.currencySymbol}
+              isExpanded={isExpanded}
+              onToggle={() => toggleTypeGroup(group.type)}
+              isWrapped={true}
+            />
 
-          {expandedTypeGroups.has(group.type) && (
-            <div className='ml-1 space-y-1'>
-              {group.categories.map(category => renderCategory(category))}
-            </div>
-          )}
-        </div>
-      ))}
+            {isExpanded && (
+              <div className="space-y-1 px-2 pb-2">
+                {viewMode === 'tree' ? (
+                  // 树状视图：显示分类层级结构
+                  group.categories.map(category => renderCategory(category))
+                ) : (
+                  // 账户视图：直接显示所有账户
+                  getAccountsForAccountsView(group).map(account => (
+                    <AccountTreeItem
+                      key={account.id}
+                      account={account}
+                      level={0}
+                      onNavigate={onNavigate}
+                      baseCurrency={getBaseCurrency() || undefined}
+                    />
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 })

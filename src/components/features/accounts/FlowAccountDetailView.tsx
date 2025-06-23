@@ -13,6 +13,7 @@ import RecurringTransactionModal from './RecurringTransactionModal'
 import { calculateAccountBalance } from '@/lib/services/account.service'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { SkeletonTable } from '@/components/ui/data-display/skeleton'
 import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
 
@@ -45,6 +46,7 @@ export default function FlowAccountDetailView({
 }: FlowAccountDetailViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { formatInputDate } = useUserDateFormatter()
   const router = useRouter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<{
@@ -140,7 +142,7 @@ export default function FlowAccountDetailView({
       notes: transaction.notes || undefined,
       date:
         transaction.date instanceof Date
-          ? transaction.date.toISOString().split('T')[0]
+          ? formatInputDate(transaction.date)
           : transaction.date,
       tagIds: transaction.tags
         ? transaction.tags.map((tt: { tag: { id: string } }) => tt.tag.id)

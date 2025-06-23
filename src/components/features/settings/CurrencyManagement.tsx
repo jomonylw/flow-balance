@@ -58,7 +58,7 @@ export default function CurrencyManagement({
     fetchAllCurrencies()
   }, [fetchAllCurrencies])
 
-  const handleAddCurrency = async (currencyCode: string) => {
+  const handleAddCurrency = async (currencyId: string) => {
     try {
       setError('')
       setSuccessMessage('')
@@ -68,7 +68,7 @@ export default function CurrencyManagement({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ currencyCode }),
+        body: JSON.stringify({ currencyId }),
       })
 
       const data = await response.json()
@@ -93,13 +93,13 @@ export default function CurrencyManagement({
     }
   }
 
-  const handleRemoveCurrency = async (currencyCode: string) => {
+  const handleRemoveCurrency = async (currencyId: string) => {
     try {
       setError('')
       setSuccessMessage('')
 
       const response = await fetch(
-        ApiEndpoints.user.CURRENCIES_DELETE(currencyCode),
+        ApiEndpoints.user.CURRENCIES_DELETE(currencyId),
         {
           method: 'DELETE',
         }
@@ -186,7 +186,7 @@ export default function CurrencyManagement({
         customCurrencyForm.decimalPlaces < 0 ||
         customCurrencyForm.decimalPlaces > 10
       ) {
-        setError('小数位数必须在 0-10 之间')
+        setError(t('currency.decimal.places.invalid'))
         return
       }
 
@@ -384,7 +384,7 @@ export default function CurrencyManagement({
                     </button>
                   )}
                   <button
-                    onClick={() => handleRemoveCurrency(currency.code)}
+                    onClick={() => handleRemoveCurrency(currency.id)}
                     className='p-1 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors'
                     title={t('currency.remove')}
                   >
@@ -594,7 +594,7 @@ export default function CurrencyManagement({
                 </div>
                 <div className='flex space-x-1'>
                   <button
-                    onClick={() => handleAddCurrency(currency.code)}
+                    onClick={() => handleAddCurrency(currency.id)}
                     className='p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors'
                     title={t('currency.add')}
                   >

@@ -43,5 +43,10 @@
   "currency.converter.title": "Currency Converter",
   "currency.converter.amount": "Amount",
   "currency.converter.no.rates": "No exchange rates available",
-  "currency.converter.reverse.note": "Calculated from reverse rate"
+  "currency.converter.reverse.note": "Calculated from reverse rate",
+  "currency.add.success": "Currency added successfully",
+  "currency.remove.success": "Currency removed successfully",
+  "currency.custom.delete.success": "Custom currency deleted successfully",
+  "currency.invalid.currency": "Invalid currency",
+  "currency.decimal.places.invalid": "Decimal places must be between 0-10"
 }

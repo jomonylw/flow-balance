@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import ColorManager from '@/lib/utils/color'
 import { CHART } from '@/lib/constants/app-config'
@@ -42,6 +43,7 @@ export default function StockAccountTrendChart({
   const { t, isLoading: langLoading } = useLanguage()
   const { getCurrencySymbol, getUserLocale, formatCurrency } =
     useUserCurrencyFormatter()
+  const { formatChartDate } = useUserDateFormatter()
   const { resolvedTheme } = useTheme()
 
   const chartRef = useRef<HTMLDivElement>(null)
@@ -145,13 +147,13 @@ export default function StockAccountTrendChart({
         axisLabel: {
           color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
           formatter: function (value: string) {
+            const date = new Date(value)
             if (timeRange === 'lastMonth') {
-              // 日期格式：显示月-日
-              const date = new Date(value)
-              return `${date.getMonth() + 1}/${date.getDate()}`
+              // 日期格式：显示月-日，遵循用户日期格式偏好
+              return formatChartDate(date, 'day')
             } else {
-              // 月份格式：显示年/月
-              return value.replace('-', '/')
+              // 月份格式：显示年/月，遵循用户日期格式偏好
+              return formatChartDate(date, 'month')
             }
           },
         },
@@ -270,6 +272,7 @@ export default function StockAccountTrendChart({
     langLoading,
     getCurrencySymbol,
     getUserLocale,
+    formatChartDate,
   ])
 
   useEffect(() => {

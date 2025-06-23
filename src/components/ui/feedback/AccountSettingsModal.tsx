@@ -36,11 +36,14 @@ export default function AccountSettingsModal({
   const handleSave = async () => {
     setIsLoading(true)
     try {
+      // 将货币代码转换为货币ID
+      const selectedCurrencyRecord = currencies.find(c => c.code === selectedCurrency)
+
       const updates: Partial<SimpleAccount> = {
         name: name.trim(),
         description: description.trim() || undefined,
         color: selectedColor,
-        currencyId: selectedCurrency || undefined,
+        currencyId: selectedCurrencyRecord?.id || undefined,
       }
 
       await onSave(updates)

@@ -6,8 +6,11 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import TagSelector from '@/components/ui/forms/TagSelector'
 import TagFormModal from '@/components/ui/feedback/TagFormModal'
+import DateInput from '@/components/ui/forms/DateInput'
+import { Z_INDEX } from '@/lib/constants/dimensions'
 import type {
   LoanContract,
   LoanContractFormData,
@@ -36,6 +39,7 @@ export default function MortgageLoanModal({
   const { theme: _theme } = useTheme()
   const { accounts, tags, addTag } = useUserData()
   const { showSuccess } = useToast()
+  const { formatInputDate } = useUserDateFormatter()
 
   const [formData, setFormData] = useState<LoanContractFormData>(() => {
     const today = new Date()
@@ -47,7 +51,7 @@ export default function MortgageLoanModal({
       interestRate: 0,
       totalPeriods: 360, // 房贷默认30年
       repaymentType: 'EQUAL_PAYMENT' as RepaymentType,
-      startDate: today.toISOString().split('T')[0],
+      startDate: formatInputDate(today),
       paymentDay: today.getDate(), // 使用当前日期的"日"部分作为默认值
       paymentAccountId: '',
       transactionDescription: '',
@@ -90,12 +94,12 @@ export default function MortgageLoanModal({
         startDate: (() => {
           const date = editingContract.startDate as Date | string
           if (date instanceof Date) {
-            return date.toISOString().split('T')[0]
+            return formatInputDate(date)
           }
           if (typeof date === 'string') {
-            return date.split('T')[0]
+            return formatInputDate(new Date(date))
           }
-          return new Date().toISOString().split('T')[0]
+          return formatInputDate(new Date())
         })(),
         paymentDay: editingContract.paymentDay,
         paymentAccountId: editingContract.paymentAccountId || '',
@@ -116,7 +120,7 @@ export default function MortgageLoanModal({
         interestRate: 4.5, // 房贷默认利率
         totalPeriods: 360, // 30年
         repaymentType: 'EQUAL_PAYMENT' as RepaymentType,
-        startDate: today.toISOString().split('T')[0],
+        startDate: formatInputDate(today),
         paymentDay: today.getDate(), // 使用当前日期的"日"部分作为默认值
         paymentAccountId: '',
         transactionDescription: '房贷还款',
@@ -254,8 +258,9 @@ export default function MortgageLoanModal({
 
   const modalContent = (
     <div
-      className='fixed inset-0 flex items-center justify-center z-[9999] p-4'
+      className='fixed inset-0 flex items-center justify-center p-4'
       style={{
+        zIndex: Z_INDEX.MAX,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
       }}
       onClick={e => {
@@ -454,25 +459,16 @@ export default function MortgageLoanModal({
                 {t('mortgage.loan.payment.settings')}
               </h3>
               <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                <div>
-                  <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
-                    {t('mortgage.loan.start.date')} *
-                  </label>
-                  <input
-                    type='date'
-                    value={formData.startDate}
-                    onChange={e =>
-                      handleInputChange('startDate', e.target.value)
-                    }
-                    className={`w-full px-3 py-2 border rounded-md text-gray-900 dark:text-gray-100 ${
-                      editingContract
-                        ? 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 cursor-not-allowed'
-                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                    }`}
-                    required
-                    readOnly={!!editingContract}
-                  />
-                </div>
+                <DateInput
+                  name='startDate'
+                  label={`${t('mortgage.loan.start.date')} *`}
+                  value={formData.startDate}
+                  onChange={e => handleInputChange('startDate', e.target.value)}
+                  required
+                  disabled={!!editingContract}
+                  showCalendar={!editingContract}
+                  showFormatHint={false}
+                />
 
                 <div>
                   <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
@@ -627,7 +623,7 @@ export default function MortgageLoanModal({
         isOpen={showTagFormModal}
         onClose={() => setShowTagFormModal(false)}
         onSuccess={handleTagFormSuccess}
-        zIndex='z-[10000]'
+        zIndex={Z_INDEX.MAX}
       />
     </div>
   )

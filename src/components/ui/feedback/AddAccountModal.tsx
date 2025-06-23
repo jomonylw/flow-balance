@@ -26,7 +26,7 @@ export default function AddAccountModal({
     name: '',
     description: '',
     color: COLOR_OPTIONS[0].value,
-    currencyCode: '',
+    currencyId: '', // 现在存储货币ID
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -37,7 +37,7 @@ export default function AddAccountModal({
         name: '',
         description: '',
         color: COLOR_OPTIONS[0].value,
-        currencyCode: '',
+        currencyId: '',
       })
       setErrors({})
     }
@@ -70,7 +70,7 @@ export default function AddAccountModal({
       newErrors.description = t('validation.account.description.max.length')
     }
 
-    if (!formData.currencyCode) {
+    if (!formData.currencyId) {
       newErrors.currencyCode = t('validation.account.currency.required')
     }
 
@@ -88,6 +88,13 @@ export default function AddAccountModal({
     setIsLoading(true)
 
     try {
+      // 将货币ID转换为货币代码（保持API兼容性）
+      const selectedCurrency = currencies.find(c => c.id === formData.currencyId)
+      if (!selectedCurrency) {
+        setErrors({ general: t('validation.account.currency.invalid') })
+        return
+      }
+
       const response = await fetch(ApiEndpoints.account.CREATE, {
         method: 'POST',
         headers: {
@@ -98,7 +105,7 @@ export default function AddAccountModal({
           categoryId: category.id,
           description: formData.description.trim() || undefined,
           color: formData.color,
-          currencyCode: formData.currencyCode,
+          currencyCode: selectedCurrency.code,
         }),
       })
 
@@ -106,9 +113,7 @@ export default function AddAccountModal({
 
       if (response.ok) {
         // 转换为 SimpleAccount 类型
-        const selectedCurrency = currencies.find(
-          c => c.code === formData.currencyCode
-        )
+        // selectedCurrency 已经在上面定义了
         const simpleAccount: SimpleAccount = {
           id: result.data.id,
           name: result.data.name,
@@ -270,14 +275,14 @@ export default function AddAccountModal({
             </h3>
 
             <SelectField
-              name='currencyCode'
+              name='currencyId'
               label={t('account.settings.currency')}
-              value={formData.currencyCode}
+              value={formData.currencyId}
               onChange={handleChange}
               options={currencies.map(currency => ({
-                value: currency.code,
+                value: currency.id, // 使用货币ID作为选项值
                 label: `${currency.symbol} ${currency.code} - ${currency.name}`,
-                id: currency.id, // 添加唯一标识符
+                id: currency.id,
               }))}
               error={errors.currencyCode}
               help={t('account.settings.currency.help')}
@@ -305,7 +310,7 @@ export default function AddAccountModal({
             type='submit'
             label={isLoading ? t('account.creating') : t('account.create')}
             isLoading={isLoading}
-            disabled={!formData.name.trim() || isLoading}
+            disabled={!formData.name.trim() || !formData.currencyId || isLoading}
             variant='primary'
           />
         </div>

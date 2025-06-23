@@ -1,6 +1,7 @@
 'use client'
 
 import { forwardRef } from 'react'
+import DateInput from './DateInput'
 import {
   COMPONENT_SIZE,
   SPACING,
@@ -23,6 +24,7 @@ interface InputFieldProps {
   step?: string
   minLength?: number
   maxLength?: number
+  showDateFormatHint?: boolean // 是否显示日期格式提示
 }
 
 const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
@@ -43,9 +45,35 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
       step,
       minLength,
       maxLength,
+      showDateFormatHint = true,
     },
     ref
   ) => {
+
+
+    // 如果是日期类型，使用DateInput组件
+    if (type === 'date') {
+      return (
+        <DateInput
+          name={name}
+          label={label}
+          value={value}
+          onChange={onChange}
+          error={error}
+          required={required}
+          disabled={disabled}
+          className={className}
+          help={help}
+          autoFocus={autoFocus}
+          showFormatHint={showDateFormatHint}
+          placeholder={placeholder}
+          showCalendar={true}
+        />
+      )
+    }
+
+
+
     return (
       <div className={`space-y-2 ${className}`}>
         <label
@@ -87,7 +115,8 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
           }}
         />
 
-        {help && !error && (
+        {/* 显示帮助文本 */}
+        {!error && help && (
           <p className='text-sm text-gray-500 dark:text-gray-400'>{help}</p>
         )}
 

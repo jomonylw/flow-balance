@@ -40,6 +40,30 @@ export default function NavigationSidebar({
   const categoryTreeRef = useRef<OptimizedCategoryAccountTreeRef>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
 
+  // 视图模式状态管理 - 从 localStorage 初始化
+  const [viewMode, setViewMode] = useState<'tree' | 'accounts'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedMode = localStorage.getItem('sidebarViewMode')
+        return (savedMode as 'tree' | 'accounts') || 'tree'
+      } catch (error) {
+        console.error('Error loading view mode from localStorage:', error)
+      }
+    }
+    return 'tree'
+  })
+
+  // 保存视图模式到 localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('sidebarViewMode', viewMode)
+      } catch (error) {
+        console.error('Error saving view mode to localStorage:', error)
+      }
+    }
+  }, [viewMode])
+
   // 侧边栏宽度管理
   const { width, isDragging, startDragging, stopDragging, handleDrag } =
     useSidebarWidth()
@@ -259,15 +283,63 @@ export default function NavigationSidebar({
                     </svg>
                   </button>
                 </div>
-                <button
-                  onClick={toggleAllCategories}
-                  className='group/toggle flex items-center justify-center w-7 h-7 rounded-md bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600/60 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md'
-                  title={
-                    areAllCategoriesExpanded
-                      ? t('sidebar.collapse.categories')
-                      : t('sidebar.expand.categories')
-                  }
-                >
+                <div className='flex items-center space-x-2'>
+                  <button
+                    onClick={() => setViewMode(viewMode === 'tree' ? 'accounts' : 'tree')}
+                    className='group/view flex items-center justify-center w-7 h-7 rounded-md bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600/60 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md'
+                    title={
+                      viewMode === 'tree'
+                        ? t('sidebar.view.accounts')
+                        : t('sidebar.view.tree')
+                    }
+                  >
+                    {viewMode === 'tree' ? (
+                      // 树状视图图标 - 切换到账户视图
+                      <svg
+                        className='w-4 h-4 transition-all duration-300 group-hover/view:scale-110'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'
+                        />
+                      </svg>
+                    ) : (
+                      // 账户视图图标 - 切换到树状视图
+                      <svg
+                        className='w-4 h-4 transition-all duration-300 group-hover/view:scale-110'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z'
+                        />
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z'
+                        />
+                      </svg>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={toggleAllCategories}
+                    className='group/toggle flex items-center justify-center w-7 h-7 rounded-md bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600/60 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md'
+                    title={
+                      areAllCategoriesExpanded
+                        ? t('sidebar.collapse.categories')
+                        : t('sidebar.expand.categories')
+                    }
+                  >
                   {areAllCategoriesExpanded ? (
                     // 收起所有 - 统一图标大小
                     <svg
@@ -299,13 +371,15 @@ export default function NavigationSidebar({
                       />
                     </svg>
                   )}
-                </button>
+                  </button>
+                </div>
               </div>
 
               <OptimizedCategoryAccountTree
                 key='category-tree-stable'
                 ref={categoryTreeRef}
                 searchQuery={searchQuery}
+                viewMode={viewMode}
                 onNavigate={onNavigate}
               />
             </div>

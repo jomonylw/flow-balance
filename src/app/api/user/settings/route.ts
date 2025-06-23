@@ -39,7 +39,8 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json()
     const {
-      baseCurrencyCode,
+      baseCurrencyId, // 直接使用货币ID
+      baseCurrencyCode, // 保持向后兼容
       dateFormat,
       theme,
       language,
@@ -49,9 +50,28 @@ export async function PUT(request: NextRequest) {
       autoUpdateExchangeRates,
     } = body
 
-    // 验证币种代码并获取货币ID
-    let baseCurrencyId: string | undefined
-    if (baseCurrencyCode) {
+    // 验证货币ID或代码并获取最终的货币ID
+    let finalBaseCurrencyId: string | undefined
+
+    if (baseCurrencyId) {
+      // 如果提供了货币ID，验证其有效性
+      const currency = await prisma.currency.findFirst({
+        where: {
+          id: baseCurrencyId,
+          OR: [
+            { createdBy: user.id }, // 用户自定义货币
+            { createdBy: null }, // 全局货币
+          ],
+        },
+      })
+
+      if (!currency) {
+        return validationErrorResponse('无效的货币ID')
+      }
+
+      finalBaseCurrencyId = currency.id
+    } else if (baseCurrencyCode) {
+      // 向后兼容：如果提供了货币代码，查找对应的货币ID
       const currency = await prisma.currency.findFirst({
         where: {
           code: baseCurrencyCode,
@@ -67,7 +87,7 @@ export async function PUT(request: NextRequest) {
         return validationErrorResponse('无效的币种代码')
       }
 
-      baseCurrencyId = currency.id
+      finalBaseCurrencyId = currency.id
     }
 
     // 验证日期格式
@@ -129,7 +149,7 @@ export async function PUT(request: NextRequest) {
       userSettings = await prisma.userSettings.update({
         where: { userId: user.id },
         data: {
-          ...(baseCurrencyId && { baseCurrencyId }),
+          ...(finalBaseCurrencyId && { baseCurrencyId: finalBaseCurrencyId }),
           ...(dateFormat && { dateFormat }),
           ...(theme && { theme }),
           ...(language && { language }),
@@ -143,7 +163,7 @@ export async function PUT(request: NextRequest) {
     } else {
       // 创建新设置
       // 如果没有指定货币，使用默认的 USD
-      let defaultBaseCurrencyId = baseCurrencyId
+      let defaultBaseCurrencyId = finalBaseCurrencyId
       if (!defaultBaseCurrencyId) {
         const defaultCurrency = await prisma.currency.findFirst({
           where: {

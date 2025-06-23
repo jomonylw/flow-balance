@@ -8,6 +8,7 @@ import AuthButton from '@/components/ui/forms/AuthButton'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { publishBalanceUpdate } from '@/lib/services/data-update.service'
@@ -36,6 +37,7 @@ export default function QuickBalanceUpdateModal({
   } = useUserData()
   const { formatCurrency, formatNumber: _formatNumber } =
     useUserCurrencyFormatter()
+  const { formatInputDate } = useUserDateFormatter()
   const { resolvedTheme } = useTheme()
 
   // Hooks MUST be called at the top level
@@ -45,7 +47,7 @@ export default function QuickBalanceUpdateModal({
     accountId: '',
     newBalance: '',
     currencyCode: baseCurrency?.code || '',
-    updateDate: new Date().toISOString().split('T')[0],
+    updateDate: formatInputDate(new Date()),
     notes: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -77,7 +79,7 @@ export default function QuickBalanceUpdateModal({
         accountId: '',
         newBalance: '',
         currencyCode: baseCurrency.code,
-        updateDate: new Date().toISOString().split('T')[0],
+        updateDate: formatInputDate(new Date()),
         notes: '',
       })
       setErrors({})

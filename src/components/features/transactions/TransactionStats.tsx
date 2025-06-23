@@ -18,17 +18,17 @@ interface TransactionStatsData {
 
 interface TransactionStatsProps {
   stats: TransactionStatsData | null
-  currencyCode: string
+  currencyId: string
   isLoading?: boolean
 }
 
 export default function TransactionStats({
   stats,
-  currencyCode,
+  currencyId,
   isLoading = false,
 }: TransactionStatsProps) {
   const { t } = useLanguage()
-  const { formatCurrency, formatNumber: _formatNumber } =
+  const { formatCurrencyById, formatNumber: _formatNumber } =
     useUserCurrencyFormatter()
 
   // 如果正在加载或没有数据，显示加载状态
@@ -84,7 +84,7 @@ export default function TransactionStats({
                 {t('transaction.stats.total.income')}
               </dt>
               <dd className='text-2xl font-semibold text-green-600 dark:text-green-400'>
-                {formatCurrency(stats.totalIncome, currencyCode)}
+                {formatCurrencyById(stats.totalIncome, currencyId)}
               </dd>
               <dd className='text-xs text-gray-500 dark:text-gray-400'>
                 {t('transaction.stats.count.transactions', {
@@ -122,7 +122,7 @@ export default function TransactionStats({
                 {t('transaction.stats.total.expense')}
               </dt>
               <dd className='text-2xl font-semibold text-red-600 dark:text-red-400'>
-                {formatCurrency(stats.totalExpense, currencyCode)}
+                {formatCurrencyById(stats.totalExpense, currencyId)}
               </dd>
               <dd className='text-xs text-gray-500 dark:text-gray-400'>
                 {t('transaction.stats.count.transactions', {
@@ -177,7 +177,7 @@ export default function TransactionStats({
                 }`}
               >
                 {stats.totalNet >= 0 ? '+' : ''}
-                {formatCurrency(Math.abs(stats.totalNet), currencyCode)}
+                {formatCurrencyById(Math.abs(stats.totalNet), currencyId)}
               </dd>
               <dd className='text-xs text-gray-500 dark:text-gray-400'>
                 {t('transaction.stats.total.records', {

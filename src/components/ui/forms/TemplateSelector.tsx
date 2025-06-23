@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
-import { SPACING } from '@/lib/constants/dimensions'
+import { SPACING, Z_INDEX } from '@/lib/constants/dimensions'
 import type { SimpleTransactionTemplate } from '@/types/core'
 
 interface TemplateSelectorProps {
@@ -239,7 +239,10 @@ export default function TemplateSelector({
 
         {/* 下拉选项 */}
         {isOpen && (
-          <div className='absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-80 overflow-hidden'>
+          <div
+            className='absolute w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-80 overflow-hidden'
+            style={{ zIndex: Z_INDEX.DROPDOWN }}
+          >
             {/* 选项列表 */}
             <div className='max-h-80 overflow-y-auto'>
               {filteredTemplates.length > 0 ? (

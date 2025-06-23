@@ -36,7 +36,7 @@ export default function DashboardContent({
 }: DashboardContentProps) {
   const { t } = useLanguage()
   const { resolvedTheme } = useTheme()
-  const { formatCurrency } = useUserCurrencyFormatter()
+  const { formatCurrencyById, findCurrencyByCode } = useUserCurrencyFormatter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] =
     useState(false)
@@ -56,6 +56,19 @@ export default function DashboardContent({
     // 重新获取仪表板数据
     await handleTransactionSuccess()
   })
+
+  // 辅助函数：智能格式化货币
+  const formatCurrencyAmount = (amount: number, currency: { code: string; id?: string }) => {
+    if (currency.id) {
+      return formatCurrencyById(amount, currency.id)
+    } else {
+      // 回退到基于代码的查找
+      const currencyInfo = findCurrencyByCode(currency.code)
+      return currencyInfo?.id
+        ? formatCurrencyById(amount, currencyInfo.id)
+        : `${amount} ${currency.code}`
+    }
+  }
 
   const handleQuickTransaction = (
     type: TransactionType.INCOME | TransactionType.EXPENSE
@@ -317,11 +330,11 @@ export default function DashboardContent({
             className={`text-xl font-semibold mb-4 ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
           >
             {t('dashboard.financial.overview')}
-            <span
+            {/* <span
               className={`ml-2 text-sm font-normal ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
             >
               ({t('dashboard.api.data.note')})
-            </span>
+            </span> */}
           </h2>
           {isLoadingSummary ? (
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
@@ -379,11 +392,11 @@ export default function DashboardContent({
                     className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-blue-100' : 'text-blue-900'}`}
                   >
                     {summaryData.totalAssets
-                      ? formatCurrency(
+                      ? formatCurrencyAmount(
                           summaryData.totalAssets.amount,
-                          summaryData.totalAssets.currency.code
+                          summaryData.totalAssets.currency
                         )
-                      : formatCurrency(0, summaryData.netWorth.currency.code)}
+                      : formatCurrencyAmount(0, summaryData.netWorth.currency)}
                   </p>
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
@@ -433,11 +446,11 @@ export default function DashboardContent({
                     className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900'}`}
                   >
                     {summaryData.totalLiabilities
-                      ? formatCurrency(
+                      ? formatCurrencyAmount(
                           summaryData.totalLiabilities.amount,
-                          summaryData.totalLiabilities.currency.code
+                          summaryData.totalLiabilities.currency
                         )
-                      : formatCurrency(0, summaryData.netWorth.currency.code)}
+                      : formatCurrencyAmount(0, summaryData.netWorth.currency)}
                   </p>
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600'}`}
@@ -519,9 +532,9 @@ export default function DashboardContent({
                     }`}
                   >
                     {summaryData.netWorth.amount >= 0 ? '+' : '-'}
-                    {formatCurrency(
+                    {formatCurrencyAmount(
                       Math.abs(summaryData.netWorth.amount),
-                      summaryData.netWorth.currency.code
+                      summaryData.netWorth.currency
                     )}
                   </p>
                   <p
@@ -583,11 +596,11 @@ export default function DashboardContent({
                     {summaryData.recentActivity.summaryInBaseCurrency.net >= 0
                       ? '+'
                       : '-'}
-                    {formatCurrency(
+                    {formatCurrencyAmount(
                       Math.abs(
                         summaryData.recentActivity.summaryInBaseCurrency.net
                       ),
-                      summaryData.recentActivity.baseCurrency.code
+                      summaryData.recentActivity.baseCurrency
                     )}
                   </p>
                   <p
@@ -609,9 +622,9 @@ export default function DashboardContent({
                       className={`font-medium ${resolvedTheme === 'dark' ? 'text-green-300' : 'text-green-800'}`}
                     >
                       +
-                      {formatCurrency(
+                      {formatCurrencyAmount(
                         summaryData.recentActivity.summaryInBaseCurrency.income,
-                        summaryData.recentActivity.baseCurrency.code
+                        summaryData.recentActivity.baseCurrency
                       )}
                     </span>
                   </div>
@@ -625,10 +638,10 @@ export default function DashboardContent({
                       className={`font-medium ${resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-800'}`}
                     >
                       -
-                      {formatCurrency(
+                      {formatCurrencyAmount(
                         summaryData.recentActivity.summaryInBaseCurrency
                           .expense,
-                        summaryData.recentActivity.baseCurrency.code
+                        summaryData.recentActivity.baseCurrency
                       )}
                     </span>
                   </div>

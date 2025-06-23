@@ -2,6 +2,7 @@
 
 import Modal from '@/components/ui/feedback/Modal'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { Z_INDEX } from '@/lib/constants/dimensions'
 
 interface ConfirmationModalProps {
   isOpen: boolean
@@ -15,7 +16,7 @@ interface ConfirmationModalProps {
   children?: React.ReactNode
   variant?: 'danger' | 'warning' | 'info'
   icon?: React.ReactNode
-  zIndex?: string
+  zIndex?: number
 }
 
 export default function ConfirmationModal({
@@ -30,7 +31,7 @@ export default function ConfirmationModal({
   children,
   variant = 'danger',
   icon,
-  zIndex = 'z-[10000]',
+  zIndex = Z_INDEX.MAX,
 }: ConfirmationModalProps) {
   const { t } = useLanguage()
   // 根据变体设置默认样式

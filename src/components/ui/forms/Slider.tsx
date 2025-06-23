@@ -123,6 +123,43 @@ export default function Slider({
           .dark .slider::-moz-range-thumb:hover {
             background: ${COLORS.PRIMARY};
           }
+
+          /* 移动端优化 */
+          @media (max-width: 768px) {
+            .slider {
+              height: ${COMPONENT_SIZE.SLIDER.MOBILE_TRACK_HEIGHT}px !important;
+            }
+
+            .slider::-webkit-slider-thumb {
+              height: ${COMPONENT_SIZE.SLIDER.MOBILE_THUMB_SIZE}px;
+              width: ${COMPONENT_SIZE.SLIDER.MOBILE_THUMB_SIZE}px;
+              border: 3px solid ${COLORS.BACKGROUND};
+              box-shadow: ${SHADOW.MD};
+            }
+
+            .slider::-webkit-slider-thumb:hover {
+              box-shadow: ${SHADOW.LG};
+            }
+
+            .slider::-moz-range-thumb {
+              height: ${COMPONENT_SIZE.SLIDER.MOBILE_THUMB_SIZE}px;
+              width: ${COMPONENT_SIZE.SLIDER.MOBILE_THUMB_SIZE}px;
+              border: 3px solid ${COLORS.BACKGROUND};
+              box-shadow: ${SHADOW.MD};
+            }
+
+            .slider::-moz-range-thumb:hover {
+              box-shadow: ${SHADOW.LG};
+            }
+
+            .dark .slider::-webkit-slider-thumb {
+              border: 3px solid ${COLORS.BACKGROUND_DARK};
+            }
+
+            .dark .slider::-moz-range-thumb {
+              border: 3px solid ${COLORS.BACKGROUND_DARK};
+            }
+          }
         `}</style>
       </div>
 

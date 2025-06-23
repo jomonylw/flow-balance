@@ -17,6 +17,8 @@ interface FrankfurterResponse {
 interface ExchangeRateUpdateResult {
   success: boolean
   message: string
+  errorCode?: string
+  errorParams?: Record<string, any>
   data?: {
     updatedCount: number
     errors: string[]
@@ -122,19 +124,68 @@ export class ExchangeRateAutoUpdateService {
 
       // 调用 Frankfurter API 获取汇率
       const frankfurterUrl = `https://api.frankfurter.dev/v1/latest?base=${baseCurrencyCode}`
-      
+
       let frankfurterData: FrankfurterResponse
       try {
         const response = await fetch(frankfurterUrl)
+
         if (!response.ok) {
-          throw new Error(`Frankfurter API error: ${response.status}`)
+          // 处理不同类型的HTTP错误
+          if (response.status === 404) {
+            // 检查响应内容是否包含"not found"消息
+            try {
+              const errorData = await response.json()
+              if (errorData.message && errorData.message.includes('not found')) {
+                return {
+                  success: false,
+                  message: `本位币 ${baseCurrencyCode} 不支持自动汇率更新，请检查货币代码是否正确或手动输入汇率`,
+                  errorCode: 'CURRENCY_NOT_SUPPORTED',
+                  errorParams: { currencyCode: baseCurrencyCode },
+                }
+              }
+            } catch (parseError) {
+              // 如果无法解析响应，使用默认的404错误信息
+            }
+
+            return {
+              success: false,
+              message: `本位币 ${baseCurrencyCode} 不支持自动汇率更新，请检查货币代码是否正确或手动输入汇率`,
+              errorCode: 'CURRENCY_NOT_SUPPORTED',
+              errorParams: { currencyCode: baseCurrencyCode },
+            }
+          } else if (response.status >= 500) {
+            return {
+              success: false,
+              message: '汇率服务暂时不可用，请稍后重试',
+              errorCode: 'SERVICE_UNAVAILABLE',
+            }
+          } else {
+            return {
+              success: false,
+              message: `获取汇率数据失败（错误代码：${response.status}），请稍后重试`,
+              errorCode: 'API_ERROR',
+              errorParams: { statusCode: response.status },
+            }
+          }
         }
+
         frankfurterData = await response.json()
       } catch (error) {
         console.error('Failed to fetch exchange rates from Frankfurter:', error)
+
+        // 区分网络错误和其他错误
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          return {
+            success: false,
+            message: '网络连接失败，请检查网络连接后重试',
+            errorCode: 'NETWORK_CONNECTION_FAILED',
+          }
+        }
+
         return {
           success: false,
           message: '获取汇率数据失败，请稍后重试',
+          errorCode: 'API_FETCH_FAILED',
         }
       }
 

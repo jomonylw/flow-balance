@@ -3,6 +3,7 @@
 import { createPortal } from 'react-dom'
 import { useEffect, useState } from 'react'
 import Toast, { ToastProps } from './Toast'
+import { Z_INDEX } from '@/lib/constants/dimensions'
 
 interface ToastContainerProps {
   toasts: Omit<ToastProps, 'onClose'>[]
@@ -24,7 +25,10 @@ export default function ToastContainer({
   }
 
   return createPortal(
-    <div className='fixed top-4 left-1/2 transform -translate-x-1/2 z-50 space-y-2 w-full max-w-md px-4 sm:px-0'>
+    <div
+      className='fixed top-4 left-1/2 transform -translate-x-1/2 space-y-2 w-full max-w-md px-4 sm:px-0'
+      style={{ zIndex: Z_INDEX.NOTIFICATION }}
+    >
       {toasts.map(toast => (
         <Toast key={toast.id} {...toast} onClose={onRemoveToast} />
       ))}

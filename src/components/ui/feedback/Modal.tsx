@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { SPACING } from '@/lib/constants/dimensions'
+import { SPACING, Z_INDEX } from '@/lib/constants/dimensions'
 
 interface ModalProps {
   isOpen: boolean
@@ -10,7 +10,7 @@ interface ModalProps {
   title: string
   children: React.ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
-  zIndex?: string
+  zIndex?: number
 }
 
 export default function Modal({
@@ -19,7 +19,7 @@ export default function Modal({
   title,
   children,
   size = 'md',
-  zIndex = 'z-50',
+  zIndex = Z_INDEX.MODAL,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   const [isMounted, setIsMounted] = useState(false)
@@ -69,7 +69,7 @@ export default function Modal({
   }
 
   const modalContent = (
-    <div className={`fixed inset-0 ${zIndex} overflow-y-auto`}>
+    <div className='fixed inset-0 overflow-y-auto' style={{ zIndex }}>
       <div className='flex min-h-screen items-center justify-center p-2 sm:p-4'>
         {/* 背景遮罩 */}
         <div className='modal-backdrop fixed inset-0 bg-black/50 dark:bg-black/70 transition-opacity' />
@@ -82,6 +82,7 @@ export default function Modal({
             mx-2 sm:mx-0 rounded-lg sm:rounded-lg
             max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col
           `}
+          style={{ zIndex: 1 }}
         >
           {/* 头部 */}
           <div

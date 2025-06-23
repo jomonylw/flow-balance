@@ -137,7 +137,7 @@ export interface TagFormModalProps {
   onClose: () => void
   onSuccess: (tag: SimpleTag) => void
   editingTag?: SimpleTag | null
-  zIndex?: string
+  zIndex?: number
 }
 
 // ============================================================================

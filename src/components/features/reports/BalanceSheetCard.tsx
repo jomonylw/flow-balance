@@ -9,12 +9,14 @@ import {
   CardTitle,
 } from '@/components/ui/data-display/card'
 import { Button } from '@/components/ui/forms/button'
+import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
+import DateInput from '@/components/ui/forms/DateInput'
 import { RefreshCw } from 'lucide-react'
-import { format } from 'date-fns'
-import { zhCN, enUS } from 'date-fns/locale'
+
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import ColorManager from '@/lib/utils/color'
 import WithTranslation from '@/components/ui/data-display/WithTranslation'
 import { AccountType } from '@/types/core/constants'
@@ -42,15 +44,14 @@ interface BalanceSheetResponse {
 }
 
 export default function BalanceSheetCard() {
-  const { t, language } = useLanguage()
+  const { t } = useLanguage()
   const { categories, accounts, getBaseCurrency } = useUserData()
-  const { formatCurrency } = useUserCurrencyFormatter()
+  const { formatCurrencyById, findCurrencyByCode } = useUserCurrencyFormatter()
+  const { formatDate, formatInputDate } = useUserDateFormatter()
   const [data, setData] = useState<BalanceSheetResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [asOfDate, setAsOfDate] = useState<Date>(new Date())
 
-  // Get the appropriate locale for date formatting
-  const dateLocale = language === 'zh' ? zhCN : enUS
   const baseCurrency = getBaseCurrency()
 
   // 构建分类树并汇总余额数据
@@ -221,7 +222,10 @@ export default function BalanceSheetCard() {
 
   // 使用统一的格式化函数
   const formatCurrencyWithCode = (amount: number, currencyCode: string) => {
-    return formatCurrency(amount, currencyCode)
+    const currency = findCurrencyByCode(currencyCode)
+    return currency?.id
+      ? formatCurrencyById(amount, currency.id)
+      : `${amount} ${currencyCode}`
   }
 
   const formatCurrencyWithSymbol = (
@@ -229,7 +233,10 @@ export default function BalanceSheetCard() {
     currencyCode: string,
     _symbol: string
   ) => {
-    return formatCurrency(amount, currencyCode)
+    const currency = findCurrencyByCode(currencyCode)
+    return currency?.id
+      ? formatCurrencyById(amount, currency.id)
+      : `${amount} ${currencyCode}`
   }
 
   // 新的层级渲染函数
@@ -530,9 +537,11 @@ export default function BalanceSheetCard() {
                 disabled={loading}
                 title={t('reports.balance.sheet.refresh')}
               >
-                <RefreshCw
-                  className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
-                />
+                {loading ? (
+                  <LoadingSpinnerSVG size='sm' color='current' className='h-4 w-4' />
+                ) : (
+                  <RefreshCw className='h-4 w-4' />
+                )}
               </Button>
             </CardTitle>
           </CardHeader>
@@ -554,23 +563,31 @@ export default function BalanceSheetCard() {
         <CardHeader>
           <div className='flex justify-between items-center'>
             <CardTitle>{t('reports.balance.sheet.title')}</CardTitle>
-            <div className='flex gap-2 items-center'>
-              <input
-                type='date'
-                value={asOfDate.toISOString().split('T')[0]}
-                onChange={e => setAsOfDate(new Date(e.target.value))}
-                className='px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-              />
+            <div className='flex gap-2 items-end'>
+              <div className='w-40'>
+                <DateInput
+                  name='asOfDate'
+                  label=''
+                  value={formatInputDate(asOfDate)}
+                  onChange={e => setAsOfDate(new Date(e.target.value))}
+                  showCalendar={true}
+                  showFormatHint={false}
+                  className='text-sm'
+                />
+              </div>
               <Button
                 variant='outline'
                 size='sm'
                 onClick={fetchBalanceSheet}
                 disabled={loading}
                 title={t('reports.balance.sheet.refresh')}
+                className='h-12'
               >
-                <RefreshCw
-                  className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
-                />
+                {loading ? (
+                  <LoadingSpinnerSVG size='sm' color='current' className='h-4 w-4' />
+                ) : (
+                  <RefreshCw className='h-4 w-4' />
+                )}
               </Button>
               {/* <Button
                 variant='outline'
@@ -583,11 +600,7 @@ export default function BalanceSheetCard() {
           </div>
           <p className='text-sm text-gray-500 dark:text-gray-400'>
             {t('reports.balance.sheet.as.of')}{' '}
-            {format(
-              new Date(data.asOfDate),
-              language === 'zh' ? 'yyyy年MM月dd日' : 'MMM dd, yyyy',
-              { locale: dateLocale }
-            )}
+            {formatDate(new Date(data.asOfDate))}
           </p>
         </CardHeader>
         <CardContent>
@@ -736,9 +749,9 @@ export default function BalanceSheetCard() {
                             baseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
                                 ≈{' '}
-                                {formatCurrency(
+                                {formatCurrencyById(
                                   Math.abs(baseCurrencyAmount),
-                                  data.baseCurrency.code
+                                  data.baseCurrency.id
                                 )}
                               </div>
                             )}
@@ -757,9 +770,9 @@ export default function BalanceSheetCard() {
                         {data.baseCurrency.code})
                       </span>
                       <div className='text-red-600 dark:text-red-400'>
-                        {formatCurrency(
+                        {formatCurrencyById(
                           data.summary.baseCurrencyTotals.totalLiabilities,
-                          data.baseCurrency.code
+                          data.baseCurrency.id
                         )}
                       </div>
                     </div>
@@ -830,9 +843,9 @@ export default function BalanceSheetCard() {
                               Math.abs(netBaseCurrencyAmount) > 0.01 && (
                                 <div className='text-xs text-gray-400'>
                                   ≈{' '}
-                                  {formatCurrency(
+                                  {formatCurrencyById(
                                     Math.abs(netBaseCurrencyAmount),
-                                    data.baseCurrency.code
+                                    data.baseCurrency.id
                                   )}
                                 </div>
                               )}
@@ -858,9 +871,9 @@ export default function BalanceSheetCard() {
                             : 'text-red-600 dark:text-red-400'
                         }
                       >
-                        {formatCurrency(
+                        {formatCurrencyById(
                           data.summary.baseCurrencyTotals.netWorth,
-                          data.baseCurrency.code
+                          data.baseCurrency.id
                         )}
                       </div>
                     </div>
@@ -910,9 +923,9 @@ export default function BalanceSheetCard() {
                             baseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
                                 ≈{' '}
-                                {formatCurrency(
+                                {formatCurrencyById(
                                   Math.abs(baseCurrencyAmount),
-                                  data.baseCurrency.code
+                                  data.baseCurrency.id
                                 )}
                               </div>
                             )}
@@ -954,9 +967,9 @@ export default function BalanceSheetCard() {
                             baseCurrencyAmount > 0 && (
                               <div className='text-xs text-gray-400'>
                                 ≈{' '}
-                                {formatCurrency(
+                                {formatCurrencyById(
                                   Math.abs(baseCurrencyAmount),
-                                  data.baseCurrency.code
+                                  data.baseCurrency.id
                                 )}
                               </div>
                             )}
@@ -1023,9 +1036,9 @@ export default function BalanceSheetCard() {
                             Math.abs(netBaseCurrencyAmount) > 0.01 && (
                               <div className='text-xs text-gray-400'>
                                 ≈{' '}
-                                {formatCurrency(
+                                {formatCurrencyById(
                                   Math.abs(netBaseCurrencyAmount),
-                                  data.baseCurrency.code
+                                  data.baseCurrency.id
                                 )}
                               </div>
                             )}
@@ -1047,9 +1060,9 @@ export default function BalanceSheetCard() {
                       {data.baseCurrency.code})
                     </span>
                     <div className='font-semibold text-gray-900 dark:text-gray-100'>
-                      {formatCurrency(
+                      {formatCurrencyById(
                         data.summary.baseCurrencyTotals.totalAssets,
-                        data.baseCurrency.code
+                        data.baseCurrency.id
                       )}
                     </div>
                   </div>
@@ -1059,9 +1072,9 @@ export default function BalanceSheetCard() {
                       {data.baseCurrency.code})
                     </span>
                     <div className='font-semibold text-red-600 dark:text-red-400'>
-                      {formatCurrency(
+                      {formatCurrencyById(
                         data.summary.baseCurrencyTotals.totalLiabilities,
-                        data.baseCurrency.code
+                        data.baseCurrency.id
                       )}
                     </div>
                   </div>
@@ -1073,9 +1086,9 @@ export default function BalanceSheetCard() {
                     <div
                       className={`font-semibold ${data.summary.baseCurrencyTotals.netWorth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
                     >
-                      {formatCurrency(
+                      {formatCurrencyById(
                         data.summary.baseCurrencyTotals.netWorth,
-                        data.baseCurrency.code
+                        data.baseCurrency.id
                       )}
                     </div>
                   </div>

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 
 interface CashFlowChartProps {
@@ -25,11 +26,20 @@ interface CashFlowChartProps {
 
 export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
   const { t } = useLanguage()
-  const { formatCurrency, getUserLocale: _getUserLocale } =
+  const { formatCurrencyById, findCurrencyByCode, getUserLocale: _getUserLocale } =
     useUserCurrencyFormatter()
+  const { formatChartDate } = useUserDateFormatter()
   const { resolvedTheme } = useTheme()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
+
+  // 辅助函数：智能格式化货币
+  const formatCurrencyAmount = (amount: number) => {
+    const currencyInfo = findCurrencyByCode(currency.code)
+    return currencyInfo?.id
+      ? formatCurrencyById(amount, currencyInfo.id)
+      : `${amount} ${currency.code}`
+  }
 
   useEffect(() => {
     if (!chartRef.current || !data) return
@@ -75,7 +85,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
           let result = `<div style="font-weight: bold; margin-bottom: 5px;">${params[0].axisValue}</div>`
           params.forEach(param => {
             const value = param.value
-            const formattedValue = `${value < 0 ? '-' : ''}${formatCurrency(Math.abs(value), currency.code)}`
+            const formattedValue = `${value < 0 ? '-' : ''}${formatCurrencyAmount(Math.abs(value))}`
             result += `<div style="margin: 2px 0;">
               <span style="display: inline-block; width: 10px; height: 10px; background-color: ${param.color}; border-radius: 50%; margin-right: 5px;"></span>
               ${param.seriesName}: ${formattedValue}
@@ -110,8 +120,9 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
           fontSize: window.innerWidth < 768 ? 10 : 12,
           interval: window.innerWidth < 768 ? 'auto' : 0,
           formatter: function (value: string) {
-            // 将 YYYY-MM 格式转换为 YYYY/MM
-            return value.replace('-', '/')
+            // 使用用户设置的日期格式显示月份
+            const date = new Date(value + '-01') // 添加日期部分以创建有效的日期
+            return formatChartDate(date, 'month')
           },
         },
         axisLine: {
@@ -130,9 +141,9 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
             formatter: function (value: number) {
               const absValue = Math.abs(value)
               if (absValue >= 1000) {
-                return `${value < 0 ? '-' : ''}${formatCurrency(absValue / 1000, currency.code)}k`
+                return `${value < 0 ? '-' : ''}${formatCurrencyAmount(absValue / 1000)}k`
               }
-              return `${value < 0 ? '-' : ''}${formatCurrency(absValue, currency.code)}`
+              return `${value < 0 ? '-' : ''}${formatCurrencyAmount(absValue)}`
             },
           },
           nameTextStyle: {
@@ -192,7 +203,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
     return () => {
       window.removeEventListener('resize', handleResize)
     }
-  }, [data, currency, resolvedTheme, t])
+  }, [data, currency, resolvedTheme, t, formatChartDate])
 
   useEffect(() => {
     return () => {

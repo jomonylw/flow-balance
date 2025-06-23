@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Z_INDEX } from '@/lib/constants/dimensions'
 
 interface MobileSidebarOverlayProps {
   isOpen: boolean
@@ -61,7 +62,10 @@ export default function MobileSidebarOverlay({
   if (!isOpen && !isAnimating) return null
 
   return (
-    <div className='fixed inset-0 z-50 lg:hidden'>
+    <div
+      className='fixed inset-0 lg:hidden'
+      style={{ zIndex: Z_INDEX.MODAL }}
+    >
       {/* 背景遮罩 */}
       <div
         className={`

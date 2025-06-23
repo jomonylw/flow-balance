@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { ApiEndpoints } from '@/lib/constants'
 import InputField from '@/components/ui/forms/InputField'
 import SelectField from '@/components/ui/forms/SelectField'
@@ -26,11 +27,12 @@ export default function ExchangeRateForm({
 }: ExchangeRateFormProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { formatInputDate } = useUserDateFormatter()
   const [formData, setFormData] = useState({
-    fromCurrency: '',
-    toCurrency: baseCurrency?.code || '',
+    fromCurrency: '', // 现在存储货币ID
+    toCurrency: baseCurrency?.id || '', // 现在存储货币ID
     rate: '',
-    effectiveDate: new Date().toISOString().split('T')[0],
+    effectiveDate: formatInputDate(new Date()),
     notes: '',
   })
   const { currencies: userCurrencies } = useUserData()
@@ -40,16 +42,16 @@ export default function ExchangeRateForm({
   useEffect(() => {
     if (editingRate) {
       setFormData({
-        fromCurrency: editingRate.fromCurrency,
-        toCurrency: editingRate.toCurrency,
+        fromCurrency: editingRate.fromCurrencyId, // 使用货币ID
+        toCurrency: editingRate.toCurrencyId, // 使用货币ID
         rate: editingRate.rate.toString(),
-        effectiveDate: editingRate.effectiveDate.split('T')[0],
+        effectiveDate: formatInputDate(new Date(editingRate.effectiveDate)),
         notes: editingRate.notes || '',
       })
     } else {
       setFormData(prev => ({
         ...prev,
-        toCurrency: baseCurrency?.code || '',
+        toCurrency: baseCurrency?.id || '', // 使用货币ID
       }))
     }
   }, [editingRate, baseCurrency])
@@ -104,9 +106,18 @@ export default function ExchangeRateForm({
         return
       }
 
+      // 将货币ID转换为货币代码（保持API兼容性）
+      const fromCurrencyRecord = userCurrencies.find(c => c.id === formData.fromCurrency)
+      const toCurrencyRecord = userCurrencies.find(c => c.id === formData.toCurrency)
+
+      if (!fromCurrencyRecord || !toCurrencyRecord) {
+        setError(t('exchange.rate.invalid.currency'))
+        return
+      }
+
       const requestData = {
-        fromCurrency: formData.fromCurrency,
-        toCurrency: formData.toCurrency,
+        fromCurrency: fromCurrencyRecord.code,
+        toCurrency: toCurrencyRecord.code,
         rate: rateValue,
         effectiveDate: formData.effectiveDate,
         notes: formData.notes || null,
@@ -177,9 +188,9 @@ export default function ExchangeRateForm({
 
   // 准备货币选项
   const currencyOptions = userCurrencies.map(currency => ({
-    value: currency.code,
+    value: currency.id, // 使用货币ID作为选项值
     label: `${currency.symbol} ${currency.name} (${currency.code})`,
-    id: currency.id, // 添加唯一标识符
+    id: currency.id,
   }))
 
   // 过滤源货币选项（排除目标货币）
