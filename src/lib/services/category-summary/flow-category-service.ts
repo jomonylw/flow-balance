@@ -16,6 +16,7 @@ import type {
 } from './types'
 import { getAllCategoryIds } from './utils'
 import { Decimal } from '@prisma/client/runtime/library'
+import { AccountType } from '@/types/core/constants'
 
 type FlowTransaction = {
   date: string | Date
@@ -260,8 +261,7 @@ export async function getFlowCategorySummary(
 
     // 聚合子分类数据
     const validChildren = category.children.filter(
-      (child): child is typeof child & { type: 'INCOME' | 'EXPENSE' } =>
-        child.type === 'INCOME' || child.type === 'EXPENSE'
+      child => child.type === 'INCOME' || child.type === 'EXPENSE'
     )
     await Promise.all(
       validChildren.map(async child => {
@@ -273,7 +273,7 @@ export async function getFlowCategorySummary(
         const summary: MonthlyChildCategorySummary = {
           id: child.id,
           name: child.name,
-          type: child.type,
+          type: child.type as AccountType,
           order: child.order,
           accountCount: childAccounts.length,
           balances: { original: {}, converted: {} },

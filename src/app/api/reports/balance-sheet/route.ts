@@ -114,12 +114,29 @@ export async function GET(request: NextRequest) {
       // 序列化账户数据，将 Decimal 转换为 number，并映射交易类型
       const serializedAccount = {
         ...account,
+        category: account.category
+          ? {
+              id: account.category.id,
+              name: account.category.name,
+              type: account.category.type as AccountType | undefined,
+            }
+          : {
+              id: 'unknown',
+              name: 'Unknown',
+              type: undefined,
+            },
         transactions: account.transactions.map(transaction => ({
-          ...transaction,
+          id: transaction.id,
+          type: transaction.type as TransactionType,
           amount: parseFloat(transaction.amount.toString()),
           date: transaction.date.toISOString(),
-          // 交易类型已经是正确的格式
-          type: transaction.type as TransactionType,
+          description: transaction.description,
+          notes: transaction.notes,
+          currency: {
+            code: transaction.currency.code,
+            symbol: transaction.currency.symbol,
+            name: transaction.currency.name,
+          },
         })),
       }
 

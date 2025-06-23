@@ -4,6 +4,10 @@
  */
 
 import { ReactNode, MouseEvent, ChangeEvent, FormEvent } from 'react'
+import {
+  Theme as CoreTheme,
+  Language as CoreLanguage,
+} from '@/types/core/constants'
 
 // ============================================================================
 // 基础 UI 类型
@@ -16,11 +20,11 @@ export interface BaseComponentProps {
   'data-testid'?: string
 }
 
-/** 主题类型 */
-export type Theme = 'light' | 'dark' | 'system'
+/** 主题类型 - 重新导出核心类型 */
+export type Theme = CoreTheme
 
-/** 语言类型 */
-export type Language = 'zh' | 'en'
+/** 语言类型 - 重新导出核心类型 */
+export type Language = CoreLanguage
 
 /** 尺寸类型 */
 export type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl'

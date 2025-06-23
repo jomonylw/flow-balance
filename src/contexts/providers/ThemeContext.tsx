@@ -8,6 +8,7 @@ import React, {
   ReactNode,
 } from 'react'
 import type { Theme } from '@/types/ui'
+import { Theme as ThemeEnum } from '@/types/core/constants'
 
 export type { Theme }
 
@@ -24,7 +25,7 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>('system')
+  const [theme, setThemeState] = useState<Theme>(ThemeEnum.SYSTEM)
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
   const [mounted, setMounted] = useState(false)
 
@@ -43,7 +44,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     root.classList.remove('dark', 'light')
     console.log('After removing classes:', root.classList.toString())
 
-    if (theme === 'system') {
+    if (theme === ThemeEnum.SYSTEM) {
       const systemPrefersDark = window.matchMedia(
         '(prefers-color-scheme: dark)'
       ).matches
@@ -56,7 +57,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         console.log('Added light class for system theme')
       }
       setResolvedTheme(systemPrefersDark ? 'dark' : 'light')
-    } else if (theme === 'dark') {
+    } else if (theme === ThemeEnum.DARK) {
       root.classList.add('dark')
       console.log('Added dark class')
       setResolvedTheme('dark')
@@ -95,9 +96,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     const initializeTheme = async () => {
       // 首先从localStorage获取当前主题，如果没有则默认为system
       const savedTheme = localStorage.getItem('theme') as Theme
-      let currentTheme: Theme = 'system'
+      let currentTheme: Theme = ThemeEnum.SYSTEM
 
-      if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+      if (
+        savedTheme &&
+        [ThemeEnum.LIGHT, ThemeEnum.DARK, ThemeEnum.SYSTEM].includes(savedTheme)
+      ) {
         currentTheme = savedTheme
       }
 
@@ -139,9 +143,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   // 监听系统主题变化
   useEffect(() => {
-    if (theme === 'system') {
+    if (theme === ThemeEnum.SYSTEM) {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      const handleChange = () => applyTheme('system')
+      const handleChange = () => applyTheme(ThemeEnum.SYSTEM)
       mediaQuery.addEventListener('change', handleChange)
       return () => mediaQuery.removeEventListener('change', handleChange)
     }
@@ -174,7 +178,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   if (!mounted) {
     return (
       <ThemeContext.Provider
-        value={{ theme: 'system', setTheme: () => {}, resolvedTheme: 'light' }}
+        value={{
+          theme: ThemeEnum.SYSTEM,
+          setTheme: () => {},
+          resolvedTheme: 'light',
+        }}
       >
         {children}
       </ThemeContext.Provider>

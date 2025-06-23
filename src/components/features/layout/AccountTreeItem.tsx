@@ -18,6 +18,7 @@ import {
   publishAccountUpdate,
 } from '@/lib/services/data-update.service'
 import CurrencyTag from '@/components/ui/data-display/CurrencyTag'
+import { CURRENCY_SYMBOLS } from '@/types/core/constants'
 import type { AccountTreeItemProps } from '@/types/components'
 import type { SimpleAccount } from '@/types/core'
 
@@ -43,7 +44,7 @@ export default function AccountTreeItem({
 
   // 使用传入的基础货币或从Context获取
   const baseCurrency = propBaseCurrency ||
-    getBaseCurrency() || { symbol: '¥', code: 'CNY' }
+    getBaseCurrency() || { symbol: CURRENCY_SYMBOLS.CNY, code: 'CNY' }
 
   // 模态框状态
   const [showContextMenu, setShowContextMenu] = useState(false)
@@ -57,7 +58,7 @@ export default function AccountTreeItem({
 
   // 使用传入的余额数据
   const balance = account.balanceInBaseCurrency || 0
-  const _currencySymbol = baseCurrency?.symbol || '¥'
+  const _currencySymbol = baseCurrency?.symbol || CURRENCY_SYMBOLS.CNY
 
   // 获取账户原始货币的余额（用于余额更新模态框）
   const accountCurrency = account.currency?.code || baseCurrency?.code || 'USD'

@@ -9,6 +9,7 @@ export { getFlowCategorySummary } from './flow-category-service'
 
 import { getStockCategorySummary } from './stock-category-service'
 import { getFlowCategorySummary } from './flow-category-service'
+import { AccountType } from '@/types/core/constants'
 import {
   MonthlyReport,
   StockCategorySummary,
@@ -25,9 +26,12 @@ import {
 export async function getCategorySummary(
   categoryId: string,
   userId: string,
-  categoryType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  categoryType: AccountType
 ): Promise<MonthlyReport[] | StockCategorySummary | FlowCategorySummary> {
-  if (categoryType === 'ASSET' || categoryType === 'LIABILITY') {
+  if (
+    categoryType === AccountType.ASSET ||
+    categoryType === AccountType.LIABILITY
+  ) {
     return await getStockCategorySummary(categoryId, userId)
   } else {
     return await getFlowCategorySummary(categoryId, userId)

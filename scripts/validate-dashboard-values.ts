@@ -6,8 +6,9 @@
 import { PrismaClient } from '@prisma/client'
 import {
   calculateAccountBalance,
-  calculateTotalBalanceWithConversion,
+  // calculateTotalBalanceWithConversion,
 } from '../src/lib/services/account.service'
+import { AccountType, TransactionType } from '../src/types/core/constants'
 
 const prisma = new PrismaClient()
 
@@ -27,7 +28,7 @@ async function validateDashboardValues() {
       where: { userId: user.id },
       include: { baseCurrency: true },
     })
-    const baseCurrency = userSettings?.baseCurrency || {
+    const _baseCurrency = userSettings?.baseCurrency || {
       code: 'CNY',
       symbol: '¥',
       name: '人民币',
@@ -74,14 +75,10 @@ async function validateDashboardValues() {
         name: account.name,
         category: {
           name: account.category?.name || '',
-          type: account.category?.type as
-            | 'ASSET'
-            | 'LIABILITY'
-            | 'INCOME'
-            | 'EXPENSE',
+          type: account.category?.type as AccountType | undefined,
         },
         transactions: account.transactions.map(t => ({
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          type: t.type as TransactionType,
           amount: parseFloat(t.amount.toString()),
           date: t.date.toISOString(),
           currency: t.currency,
@@ -114,7 +111,7 @@ async function validateDashboardValues() {
         t => t.type !== 'BALANCE'
       )
 
-      console.log(`     计算逻辑: 存量类账户`)
+      console.log('     计算逻辑: 存量类账户')
       if (balanceAdjustments.length > 0) {
         const latest = balanceAdjustments[0]
         console.log(
@@ -135,14 +132,10 @@ async function validateDashboardValues() {
         name: account.name,
         category: {
           name: account.category?.name || '',
-          type: account.category?.type as
-            | 'ASSET'
-            | 'LIABILITY'
-            | 'INCOME'
-            | 'EXPENSE',
+          type: account.category?.type as AccountType | undefined,
         },
         transactions: account.transactions.map(t => ({
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          type: t.type as TransactionType,
           amount: parseFloat(t.amount.toString()),
           date: t.date.toISOString(),
           currency: t.currency,
@@ -159,7 +152,7 @@ async function validateDashboardValues() {
         totalLiabilities += balance.amount // 负债已经是正数
       })
 
-      console.log(`     计算逻辑: 存量类账户`)
+      console.log('     计算逻辑: 存量类账户')
     }
 
     console.log('\n💰 收入账户分析:')
@@ -171,14 +164,10 @@ async function validateDashboardValues() {
         name: account.name,
         category: {
           name: account.category?.name || '',
-          type: account.category?.type as
-            | 'ASSET'
-            | 'LIABILITY'
-            | 'INCOME'
-            | 'EXPENSE',
+          type: account.category?.type as AccountType | undefined,
         },
         transactions: account.transactions.map(t => ({
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          type: t.type as TransactionType,
           amount: parseFloat(t.amount.toString()),
           date: t.date.toISOString(),
           currency: t.currency,
@@ -195,7 +184,7 @@ async function validateDashboardValues() {
         totalIncome += balance.amount
       })
 
-      console.log(`     计算逻辑: 流量类账户 - 累计所有收入交易`)
+      console.log('     计算逻辑: 流量类账户 - 累计所有收入交易')
     }
 
     console.log('\n💸 支出账户分析:')
@@ -207,14 +196,10 @@ async function validateDashboardValues() {
         name: account.name,
         category: {
           name: account.category?.name || '',
-          type: account.category?.type as
-            | 'ASSET'
-            | 'LIABILITY'
-            | 'INCOME'
-            | 'EXPENSE',
+          type: account.category?.type as AccountType | undefined,
         },
         transactions: account.transactions.map(t => ({
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          type: t.type as TransactionType,
           amount: parseFloat(t.amount.toString()),
           date: t.date.toISOString(),
           currency: t.currency,
@@ -231,7 +216,7 @@ async function validateDashboardValues() {
         totalExpense += balance.amount
       })
 
-      console.log(`     计算逻辑: 流量类账户 - 累计所有支出交易`)
+      console.log('     计算逻辑: 流量类账户 - 累计所有支出交易')
     }
 
     console.log('\n📋 汇总结果:')

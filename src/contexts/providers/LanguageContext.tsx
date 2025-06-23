@@ -8,6 +8,7 @@ import React, {
   ReactNode,
 } from 'react'
 import type { Language } from '@/types/ui'
+import { Language as LanguageEnum } from '@/types/core/constants'
 
 interface LanguageContextType {
   language: Language
@@ -63,7 +64,7 @@ const namespaces = [
 ]
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
-  const [language, setLanguageState] = useState<Language>('zh')
+  const [language, setLanguageState] = useState<Language>(LanguageEnum.ZH)
   const [mounted, setMounted] = useState(false)
   const [translations, setTranslations] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -73,21 +74,28 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
     const getInitialLanguage = (): Language => {
       const initialLanguage = window.__INITIAL_LANGUAGE__
-      if (initialLanguage === 'en' || initialLanguage === 'zh') {
+      if (
+        initialLanguage === LanguageEnum.EN ||
+        initialLanguage === LanguageEnum.ZH
+      ) {
         return initialLanguage
       }
 
       const savedLanguage = localStorage.getItem('language') as Language
-      if (savedLanguage === 'en' || savedLanguage === 'zh') {
+      if (
+        savedLanguage === LanguageEnum.EN ||
+        savedLanguage === LanguageEnum.ZH
+      ) {
         return savedLanguage
       }
 
-      return 'zh'
+      return LanguageEnum.ZH
     }
 
     const initialLanguage = getInitialLanguage()
     setLanguageState(initialLanguage)
-    document.documentElement.lang = initialLanguage === 'zh' ? 'zh-CN' : 'en'
+    document.documentElement.lang =
+      initialLanguage === LanguageEnum.ZH ? 'zh-CN' : 'en'
 
     const initializeLanguage = async () => {
       try {
@@ -99,7 +107,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
               setLanguageState(data.userSettings.language)
               localStorage.setItem('language', data.userSettings.language)
               document.documentElement.lang =
-                data.userSettings.language === 'zh' ? 'zh-CN' : 'en'
+                data.userSettings.language === LanguageEnum.ZH ? 'zh-CN' : 'en'
             }
           }
         }
@@ -151,7 +159,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     setLanguageState(lang)
     localStorage.setItem('language', lang)
 
-    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
+    document.documentElement.lang = lang === LanguageEnum.ZH ? 'zh-CN' : 'en'
 
     try {
       await fetch('/api/user/settings', {
@@ -198,7 +206,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     return (
       <LanguageContext.Provider
         value={{
-          language: 'zh',
+          language: LanguageEnum.ZH,
           setLanguage: () => {},
           t: () => '',
           isLoading: true,

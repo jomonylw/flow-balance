@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useTheme, type Theme } from '@/contexts/providers/ThemeContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { Theme as ThemeEnum } from '@/types/core/constants'
 
 interface ThemeToggleProps {
   className?: string
@@ -54,7 +55,7 @@ export default function ThemeToggle({ className = '' }: ThemeToggleProps) {
 
   const themes: { value: Theme; label: string; icon: React.ReactElement }[] = [
     {
-      value: 'light',
+      value: ThemeEnum.LIGHT,
       label: t('common.theme.light'),
       icon: (
         <svg
@@ -73,7 +74,7 @@ export default function ThemeToggle({ className = '' }: ThemeToggleProps) {
       ),
     },
     {
-      value: 'dark',
+      value: ThemeEnum.DARK,
       label: t('common.theme.dark'),
       icon: (
         <svg
@@ -92,7 +93,7 @@ export default function ThemeToggle({ className = '' }: ThemeToggleProps) {
       ),
     },
     {
-      value: 'system',
+      value: ThemeEnum.SYSTEM,
       label: t('common.theme.system'),
       icon: (
         <svg

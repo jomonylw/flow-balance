@@ -17,6 +17,7 @@ import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import ColorManager from '@/lib/utils/color'
 import WithTranslation from '@/components/ui/data-display/WithTranslation'
+import { AccountType } from '@/types/core/constants'
 import type { SimpleCurrency } from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
@@ -359,12 +360,7 @@ export default function CashFlowCard() {
                                     acc => acc.id === account.id
                                   )
                                   const accountType = fullAccount?.category
-                                    ?.type as
-                                    | 'ASSET'
-                                    | 'LIABILITY'
-                                    | 'INCOME'
-                                    | 'EXPENSE'
-                                    | undefined
+                                    ?.type as AccountType | undefined
                                   return ColorManager.getAccountColor(
                                     account.id,
                                     fullAccount?.color,
@@ -512,12 +508,7 @@ export default function CashFlowCard() {
                                     acc => acc.id === account.id
                                   )
                                   const accountType = fullAccount?.category
-                                    ?.type as
-                                    | 'ASSET'
-                                    | 'LIABILITY'
-                                    | 'INCOME'
-                                    | 'EXPENSE'
-                                    | undefined
+                                    ?.type as AccountType | undefined
                                   return ColorManager.getAccountColor(
                                     account.id,
                                     fullAccount?.color,

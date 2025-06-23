@@ -4,6 +4,7 @@
  */
 
 import type { Prisma } from '@prisma/client'
+import { AccountType } from '@/types/core/constants'
 
 // ============================================================================
 // 基础 Prisma 类型重导出
@@ -307,7 +308,7 @@ export interface AccountBalanceAggregate {
 export interface CategorySummaryAggregate {
   categoryId: string
   categoryName: string
-  categoryType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  categoryType: AccountType
   accountCount: number
   transactionCount: number
   totalAmount: number

@@ -2,6 +2,8 @@
  * 分类汇总相关的类型定义
  */
 
+import { AccountType, TransactionType } from '@/types/core/constants'
+
 export type ServiceBalance = Record<string, number>
 
 /** 月度余额数据结构 */
@@ -14,7 +16,7 @@ export interface MonthlyBalance {
 export interface MonthlyChildCategorySummary {
   id: string
   name: string
-  type: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  type: AccountType
   balances: MonthlyBalance
   accountCount: number
   order: number
@@ -47,7 +49,7 @@ export interface ServiceCategorySummaryBase {
   category: {
     id: string
     name: string
-    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+    type?: AccountType
     parent?: {
       id: string
       name: string
@@ -93,7 +95,7 @@ export interface AccountSummary {
 export interface ChildCategorySummary {
   id: string
   name: string
-  type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  type?: AccountType
   balances:
     | Record<string, number>
     | {
@@ -116,7 +118,7 @@ export interface ChildCategorySummary {
 // 服务层专用的最近交易类型（date 为 string 类型）
 export interface ServiceRecentTransaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
+  type: TransactionType
   amount: number
   description: string
   notes?: string
@@ -182,11 +184,11 @@ export interface AccountWithTransactions {
   category: {
     id: string
     name: string
-    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+    type?: AccountType
   }
   transactions: Array<{
     id: string
-    type: 'INCOME' | 'EXPENSE' | 'BALANCE'
+    type: TransactionType
     amount: number
     description: string
     notes?: string
@@ -203,7 +205,7 @@ export interface AccountWithTransactions {
 export interface ServiceCategoryWithChildren {
   id: string
   name: string
-  type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  type?: AccountType
   order: number
   parent?: {
     id: string
@@ -212,7 +214,7 @@ export interface ServiceCategoryWithChildren {
   children: Array<{
     id: string
     name: string
-    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+    type?: AccountType
     order: number
   }>
 }

@@ -7,6 +7,7 @@ import {
   calculateAccountBalance,
   calculateTotalBalanceWithConversion,
 } from '../src/lib/services/account.service'
+import { AccountType, TransactionType } from '../src/types/core/constants'
 
 const prisma = new PrismaClient()
 
@@ -74,14 +75,10 @@ async function debugStepByStep() {
       name: testAccount.name,
       category: {
         name: testAccount.category?.name || '',
-        type: testAccount.category?.type as
-          | 'ASSET'
-          | 'LIABILITY'
-          | 'INCOME'
-          | 'EXPENSE',
+        type: testAccount.category?.type as AccountType | undefined,
       },
       transactions: testAccount.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+        type: t.type as TransactionType,
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
         currency: t.currency,
@@ -164,14 +161,10 @@ async function debugStepByStep() {
       name: account.name,
       category: {
         name: account.category?.name || '',
-        type: account.category?.type as
-          | 'ASSET'
-          | 'LIABILITY'
-          | 'INCOME'
-          | 'EXPENSE',
+        type: account.category?.type as AccountType | undefined,
       },
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+        type: t.type as TransactionType,
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
         currency: t.currency,

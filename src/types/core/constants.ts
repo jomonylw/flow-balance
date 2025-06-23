@@ -10,29 +10,29 @@
 /** 账户类型枚举 */
 export enum AccountType {
   ASSET = 'ASSET',
-  LIABILITY = 'LIABILITY', 
+  LIABILITY = 'LIABILITY',
   INCOME = 'INCOME',
-  EXPENSE = 'EXPENSE'
+  EXPENSE = 'EXPENSE',
 }
 
 /** 交易类型枚举 */
 export enum TransactionType {
   INCOME = 'INCOME',
   EXPENSE = 'EXPENSE',
-  BALANCE = 'BALANCE'
+  BALANCE = 'BALANCE',
 }
 
 /** 主题类型枚举 */
 export enum Theme {
   LIGHT = 'light',
   DARK = 'dark',
-  SYSTEM = 'system'
+  SYSTEM = 'system',
 }
 
 /** 语言类型枚举 */
 export enum Language {
   ZH = 'zh',
-  EN = 'en'
+  EN = 'en',
 }
 
 /** 加载状态枚举 */
@@ -40,7 +40,7 @@ export enum LoadingState {
   IDLE = 'idle',
   LOADING = 'loading',
   SUCCESS = 'success',
-  ERROR = 'error'
+  ERROR = 'error',
 }
 
 /** 尺寸枚举 */
@@ -49,7 +49,7 @@ export enum Size {
   SM = 'sm',
   MD = 'md',
   LG = 'lg',
-  XL = 'xl'
+  XL = 'xl',
 }
 
 /** 颜色变体枚举 */
@@ -60,20 +60,20 @@ export enum ColorVariant {
   SUCCESS = 'success',
   WARNING = 'warning',
   ERROR = 'error',
-  INFO = 'info'
+  INFO = 'info',
 }
 
 /** 排序顺序枚举 */
 export enum SortOrder {
   ASC = 'asc',
-  DESC = 'desc'
+  DESC = 'desc',
 }
 
 /** 导出格式枚举 */
 export enum ExportFormat {
   CSV = 'csv',
   JSON = 'json',
-  XLSX = 'xlsx'
+  XLSX = 'xlsx',
 }
 
 // ============================================================================
@@ -81,10 +81,16 @@ export enum ExportFormat {
 // ============================================================================
 
 /** 存量账户类型 */
-export const STOCK_ACCOUNT_TYPES = [AccountType.ASSET, AccountType.LIABILITY] as const
+export const STOCK_ACCOUNT_TYPES = [
+  AccountType.ASSET,
+  AccountType.LIABILITY,
+] as const
 
 /** 流量账户类型 */
-export const FLOW_ACCOUNT_TYPES = [AccountType.INCOME, AccountType.EXPENSE] as const
+export const FLOW_ACCOUNT_TYPES = [
+  AccountType.INCOME,
+  AccountType.EXPENSE,
+] as const
 
 /** 所有账户类型 */
 export const ALL_ACCOUNT_TYPES = Object.values(AccountType)
@@ -113,11 +119,70 @@ export const ACCOUNT_TYPE_COLORS = {
 /** 默认颜色 */
 export const DEFAULT_COLOR = '#6b7280' // 灰色
 
+/**
+ * 统一颜色管理系统
+ * 注意：这里的硬编码颜色值是预期的，因为这是定义颜色常量的地方
+ */
+export const COLORS = {
+  // 主色调
+  PRIMARY: '#3b82f6',
+  SECONDARY: '#6b7280',
+  SUCCESS: '#10b981',
+  WARNING: '#f59e0b',
+  ERROR: '#ef4444',
+  INFO: '#06b6d4',
+
+  // 灰度色阶
+  GRAY_50: '#f9fafb',
+  GRAY_100: '#f3f4f6',
+  GRAY_200: '#e5e7eb',
+  GRAY_300: '#d1d5db',
+  GRAY_400: '#9ca3af',
+  GRAY_500: '#6b7280',
+  GRAY_600: '#4b5563',
+  GRAY_700: '#374151',
+  GRAY_800: '#1f2937',
+  GRAY_900: '#111827',
+
+  // 语义化颜色
+  BACKGROUND: '#ffffff',
+  BACKGROUND_DARK: '#1f2937',
+  TEXT: '#111827',
+  TEXT_DARK: '#f9fafb',
+  BORDER: '#e5e7eb',
+  BORDER_DARK: '#374151',
+
+  // 状态颜色
+  POSITIVE: '#10b981',
+  NEGATIVE: '#ef4444',
+  NEUTRAL: '#6b7280',
+
+  // 透明度变体
+  PRIMARY_10: 'rgba(59, 130, 246, 0.1)',
+  PRIMARY_20: 'rgba(59, 130, 246, 0.2)',
+  PRIMARY_50: 'rgba(59, 130, 246, 0.5)',
+
+  SUCCESS_10: 'rgba(16, 185, 129, 0.1)',
+  SUCCESS_20: 'rgba(16, 185, 129, 0.2)',
+  SUCCESS_50: 'rgba(16, 185, 129, 0.5)',
+
+  ERROR_10: 'rgba(239, 68, 68, 0.1)',
+  ERROR_20: 'rgba(239, 68, 68, 0.2)',
+  ERROR_50: 'rgba(239, 68, 68, 0.5)',
+
+  WARNING_10: 'rgba(245, 158, 11, 0.1)',
+  WARNING_20: 'rgba(245, 158, 11, 0.2)',
+  WARNING_50: 'rgba(245, 158, 11, 0.5)',
+} as const
+
 // ============================================================================
 // 货币相关常量
 // ============================================================================
 
-/** 常见货币符号映射 */
+/**
+ * 常见货币符号映射
+ * 注意：这里的硬编码符号是预期的，因为这是定义常量的地方
+ */
 export const CURRENCY_SYMBOLS = {
   AUD: '$', // 澳大利亚元 | Australian Dollar
   BGN: 'лв', // 保加利亚列弗 | Bulgarian Lev
@@ -295,7 +360,9 @@ export function convertPrismaAccountType(prismaType: string): AccountType {
 }
 
 /** 转换 Prisma TransactionType 到我们的 TransactionType */
-export function convertPrismaTransactionType(prismaType: string): TransactionType {
+export function convertPrismaTransactionType(
+  prismaType: string
+): TransactionType {
   switch (prismaType) {
     case 'INCOME':
       return TransactionType.INCOME

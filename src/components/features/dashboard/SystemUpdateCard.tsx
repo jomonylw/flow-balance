@@ -13,9 +13,13 @@ import LoadingSpinner, {
 export default function SystemUpdateCard() {
   const { t } = useLanguage()
   const { resolvedTheme: _resolvedTheme } = useTheme()
-  const { syncStatus, triggerSync } = useUserData()
+  const { syncStatus, triggerSync, userSettings } = useUserData()
   const { showSuccess, showError } = useToast()
   const [isManualSyncing, setIsManualSyncing] = useState(false)
+
+  // 检查是否启用了汇率自动更新
+  const isExchangeRateAutoUpdateEnabled =
+    userSettings?.autoUpdateExchangeRates || false
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -186,12 +190,15 @@ export default function SystemUpdateCard() {
                 </div>
                 <div>{t('sync.processed.loans')}</div>
               </div>
-              <div className='text-center'>
-                <div className='font-semibold text-orange-600 dark:text-orange-400'>
-                  {syncStatus.processedExchangeRates || 0}
+              {/* 只有在启用汇率自动更新时才显示汇率更新统计 */}
+              {isExchangeRateAutoUpdateEnabled && (
+                <div className='text-center'>
+                  <div className='font-semibold text-orange-600 dark:text-orange-400'>
+                    {syncStatus.processedExchangeRates || 0}
+                  </div>
+                  <div>{t('sync.processed.exchange.rates')}</div>
                 </div>
-                <div>{t('sync.processed.exchange.rates')}</div>
-              </div>
+              )}
             </div>
           )}
 

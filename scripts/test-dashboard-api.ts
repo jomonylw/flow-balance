@@ -7,6 +7,7 @@ import {
   calculateAccountBalance,
   calculateTotalBalanceWithConversion,
 } from '../src/lib/services/account.service'
+import { AccountType, TransactionType } from '../src/types/core/constants'
 
 const prisma = new PrismaClient()
 
@@ -48,9 +49,12 @@ async function testDashboardAPI() {
     const accountsForCalculation = accounts.map(account => ({
       id: account.id,
       name: account.name,
-      category: account.category,
+      category: {
+        ...account.category,
+        type: account.category?.type as AccountType | undefined,
+      },
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+        type: t.type as TransactionType,
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
         currency: t.currency,
@@ -84,7 +88,7 @@ async function testDashboardAPI() {
     console.log(
       `  净资产 (本位币): ${baseCurrency.symbol}${netWorthResult.totalInBaseCurrency.toFixed(2)}`
     )
-    console.log(`  按原币种分组:`)
+    console.log('  按原币种分组:')
     Object.values(netWorthResult.totalsByOriginalCurrency).forEach(balance => {
       console.log(
         `    ${balance.currency.symbol}${balance.amount.toFixed(2)} ${balance.currencyCode}`

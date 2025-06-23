@@ -6,20 +6,22 @@
  * 🌐 支持国际化 - 使用翻译键生成多语言错误信息
  */
 
+import { AccountType, TransactionType } from '@/types/core/constants'
+
 interface ValidationAccount {
   id: string
   name: string
   category: {
     id: string
     name: string
-    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+    type?: AccountType
   }
   transactions: ValidationTransaction[]
 }
 
 interface ValidationTransaction {
   id: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
+  type: TransactionType
   amount: number
   date: string
   description: string
@@ -125,13 +127,15 @@ export function validateAccountDataWithI18n(
 
     // 验证流量类账户的特殊规则
     if (
-      account.category.type === 'INCOME' ||
-      account.category.type === 'EXPENSE'
+      account.category.type === AccountType.INCOME ||
+      account.category.type === AccountType.EXPENSE
     ) {
       const relevantTransactions = account.transactions.filter(
         t =>
-          (account.category.type === 'INCOME' && t.type === 'INCOME') ||
-          (account.category.type === 'EXPENSE' && t.type === 'EXPENSE')
+          (account.category.type === AccountType.INCOME &&
+            t.type === TransactionType.INCOME) ||
+          (account.category.type === AccountType.EXPENSE &&
+            t.type === TransactionType.EXPENSE)
       )
 
       if (relevantTransactions.length !== account.transactions.length) {
@@ -240,13 +244,15 @@ export function validateAccountData(
 
     // 验证流量类账户的特殊规则
     if (
-      account.category.type === 'INCOME' ||
-      account.category.type === 'EXPENSE'
+      account.category.type === AccountType.INCOME ||
+      account.category.type === AccountType.EXPENSE
     ) {
       const relevantTransactions = account.transactions.filter(
         t =>
-          (account.category.type === 'INCOME' && t.type === 'INCOME') ||
-          (account.category.type === 'EXPENSE' && t.type === 'EXPENSE')
+          (account.category.type === AccountType.INCOME &&
+            t.type === TransactionType.INCOME) ||
+          (account.category.type === AccountType.EXPENSE &&
+            t.type === TransactionType.EXPENSE)
       )
 
       if (relevantTransactions.length !== account.transactions.length) {
@@ -287,25 +293,25 @@ export function validateAccountData(
  * 验证交易类型与账户类型的匹配性
  */
 function validateTransactionAccountType(
-  transactionType: 'INCOME' | 'EXPENSE' | 'BALANCE',
-  accountType: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  transactionType: TransactionType,
+  accountType: AccountType
 ): boolean {
   switch (accountType) {
-    case 'ASSET':
-    case 'LIABILITY':
+    case AccountType.ASSET:
+    case AccountType.LIABILITY:
       // 存量类账户：普通交易应该被禁止，只允许余额调整
-      if (transactionType === 'BALANCE') {
+      if (transactionType === TransactionType.BALANCE) {
         return true
       } else {
         // 普通交易在存量类账户中应该被标记为问题
         return false
       }
-    case 'INCOME':
+    case AccountType.INCOME:
       // 收入类账户只应该有收入交易
-      return transactionType === 'INCOME'
-    case 'EXPENSE':
+      return transactionType === TransactionType.INCOME
+    case AccountType.EXPENSE:
       // 支出类账户只应该有支出交易
-      return transactionType === 'EXPENSE'
+      return transactionType === TransactionType.EXPENSE
     default:
       return false
   }
@@ -433,7 +439,7 @@ function calculateDataQualityScore(
 
 interface CategoryData {
   name: string
-  type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  type?: AccountType
 }
 
 interface CategorySummaryData {
@@ -476,7 +482,10 @@ export function validateCategorySummary(
   }
 
   // 验证存量类分类
-  if (category.type === 'ASSET' || category.type === 'LIABILITY') {
+  if (
+    category.type === AccountType.ASSET ||
+    category.type === AccountType.LIABILITY
+  ) {
     if (!summaryData.currentNetValue && summaryData.currentNetValue !== 0) {
       warnings.push(`存量类分类 "${category.name}" 缺少当前净值数据`)
     }
@@ -489,7 +498,10 @@ export function validateCategorySummary(
   }
 
   // 验证流量类分类
-  if (category.type === 'INCOME' || category.type === 'EXPENSE') {
+  if (
+    category.type === AccountType.INCOME ||
+    category.type === AccountType.EXPENSE
+  ) {
     if (!summaryData.totalFlow && summaryData.totalFlow !== 0) {
       warnings.push(`流量类分类 "${category.name}" 缺少流量数据`)
     }

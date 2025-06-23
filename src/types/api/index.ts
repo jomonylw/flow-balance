@@ -4,6 +4,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  AccountType,
+  TransactionType,
+  Language,
+  Theme,
+} from '@/types/core/constants'
 import type {
   User,
   Account,
@@ -141,8 +147,8 @@ export type UserProfileResponse = ApiSuccessResponse<User>
 
 export interface UserSettingsUpdateRequest {
   baseCurrencyCode?: string
-  language?: 'zh' | 'en'
-  theme?: 'light' | 'dark' | 'system'
+  language?: Language
+  theme?: Theme
 }
 
 // 账户相关 API
@@ -181,7 +187,7 @@ export type CategoryDetailResponse = ApiSuccessResponse<Category>
 
 export interface CategoryCreateRequest {
   name: string
-  type: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  type: AccountType
   icon?: string
   color?: string
   description?: string
@@ -199,7 +205,7 @@ export interface TransactionListParams
     FilterParams {
   accountId?: string
   categoryId?: string
-  type?: 'INCOME' | 'EXPENSE' | 'BALANCE'
+  type?: TransactionType
   tagIds?: string[]
 }
 
@@ -213,7 +219,7 @@ export interface TransactionCreateRequest {
   accountId: string
   categoryId: string
   currencyCode: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
+  type: TransactionType
   amount: number
   description: string
   notes?: string
@@ -225,7 +231,7 @@ export type TransactionUpdateRequest = Partial<TransactionCreateRequest>
 
 /** API 响应中的交易数据 */
 export interface ApiTransaction {
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
+  type: TransactionType
   amount: number | string
   date: string
   notes?: string | null
@@ -288,7 +294,7 @@ export interface TreeStructureNode {
   id: string
   name: string
   type: 'category' | 'account'
-  categoryType?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  categoryType?: AccountType
   color?: string
   currencyCode?: string
   children?: TreeStructureNode[]
@@ -307,7 +313,7 @@ export interface CategoryWithChildren {
   userId: string
   name: string
   parentId: string | null
-  type: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  type: AccountType
   order: number
   createdAt: Date
   updatedAt: Date
@@ -326,7 +332,7 @@ export interface TreeAccountInfo {
   category: {
     id: string
     name: string
-    type: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+    type: AccountType
   }
 }
 

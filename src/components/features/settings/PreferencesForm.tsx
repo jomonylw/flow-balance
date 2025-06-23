@@ -8,6 +8,7 @@ import Slider from '@/components/ui/forms/Slider'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
+import { Theme } from '@/types/core/constants'
 
 interface PreferencesFormProps {
   userSettings: (UserSettings & { baseCurrency: Currency | null }) | null
@@ -135,7 +136,7 @@ export default function PreferencesForm({
 
         // 应用主题设置
         if (formData.theme) {
-          setTheme(formData.theme as 'light' | 'dark' | 'system')
+          setTheme(formData.theme as Theme)
         }
 
         // 应用语言设置
@@ -282,7 +283,9 @@ export default function PreferencesForm({
               name='autoUpdateExchangeRates'
               label={t('exchange.rate.auto.update')}
               checked={formData.autoUpdateExchangeRates}
-              onChange={checked => handleToggleChange('autoUpdateExchangeRates', checked)}
+              onChange={checked =>
+                handleToggleChange('autoUpdateExchangeRates', checked)
+              }
               help={t('exchange.rate.auto.update.description')}
               disabled={!formData.baseCurrencyCode}
             />

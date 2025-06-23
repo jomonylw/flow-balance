@@ -6,6 +6,7 @@ import {
   unauthorizedResponse,
 } from '@/lib/api/response'
 import type { CategoryWithChildren, TreeAccountInfo } from '@/types/api'
+import { AccountType } from '@/types/core/constants'
 
 /**
  * 获取完整的分类+账户树状结构
@@ -61,6 +62,7 @@ export async function GET() {
     categories.forEach(category => {
       categoryMap.set(category.id, {
         ...category,
+        type: category.type as AccountType,
         children: [],
         accounts: [],
       })
@@ -92,7 +94,10 @@ export async function GET() {
           color: account.color,
           currencyCode: account.currency.code,
           categoryId: account.categoryId,
-          category: account.category,
+          category: {
+            ...account.category,
+            type: account.category.type as AccountType,
+          },
         }
         category.accounts.push(accountInfo)
       }

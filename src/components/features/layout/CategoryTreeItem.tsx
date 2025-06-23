@@ -20,6 +20,7 @@ import {
   publishAccountCreate,
   publishCategoryUpdate,
 } from '@/lib/services/data-update.service'
+import { CURRENCY_SYMBOLS } from '@/types/core/constants'
 import type { CategoryTreeItemProps } from '@/types/components'
 import type { SimpleAccount, SimpleCategory } from '@/types/core'
 
@@ -57,7 +58,7 @@ export default function CategoryTreeItem({
 
   // 使用传入的基础货币或从Context获取
   const baseCurrency = propBaseCurrency ||
-    getBaseCurrency() || { symbol: '¥', code: 'CNY' }
+    getBaseCurrency() || { symbol: CURRENCY_SYMBOLS.CNY, code: 'CNY' }
 
   // 模态框状态
   const [showContextMenu, setShowContextMenu] = useState(false)

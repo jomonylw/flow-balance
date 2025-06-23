@@ -9,6 +9,7 @@ import React, {
   useMemo,
 } from 'react'
 import { useAuth } from './AuthContext'
+import { Language, Theme } from '@/types/core/constants'
 import type {
   SimpleCurrency,
   SimpleTag,
@@ -59,8 +60,8 @@ interface UserDataSettings {
   userId: string
   baseCurrencyId: string
   baseCurrencyCode: string
-  language: 'zh' | 'en'
-  theme: 'light' | 'dark' | 'system'
+  language: Language
+  theme: Theme
   fireEnabled?: boolean
   fireSWR: number
   futureDataDays: number

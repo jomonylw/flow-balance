@@ -1,5 +1,11 @@
 import { COLOR_OPTIONS } from '@/components/ui/forms/ColorPicker'
-import { CHART_COLOR_SEQUENCE, ACCOUNT_TYPE_COLORS, DEFAULT_COLOR } from '@/types/core/constants'
+import {
+  CHART_COLOR_SEQUENCE,
+  ACCOUNT_TYPE_COLORS,
+  DEFAULT_COLOR,
+  COLORS,
+  AccountType,
+} from '@/types/core/constants'
 
 // 颜色缓存接口
 interface ColorCache {
@@ -62,7 +68,7 @@ export class ColorManager {
   static getAccountColor(
     accountId: string,
     accountColor?: string | null,
-    accountType?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+    accountType?: AccountType
   ): string {
     // 优先使用自定义颜色
     if (accountColor) {
@@ -557,6 +563,90 @@ export class ColorManager {
       const newB = Math.max(0, b - 100)
       return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`
     }
+  }
+
+  /**
+   * 获取主题相关的颜色
+   */
+  static getThemeColor(colorKey: string, isDark: boolean = false): string {
+    // 根据主题返回相应的颜色
+    const themeColors = {
+      background: isDark ? COLORS.BACKGROUND_DARK : COLORS.BACKGROUND,
+      text: isDark ? COLORS.TEXT_DARK : COLORS.TEXT,
+      border: isDark ? COLORS.BORDER_DARK : COLORS.BORDER,
+      muted: isDark ? COLORS.GRAY_500 : COLORS.GRAY_400,
+    }
+
+    return themeColors[colorKey as keyof typeof themeColors] || colorKey
+  }
+
+  /**
+   * 获取语义化颜色
+   */
+  static getSemanticColor(
+    type: 'success' | 'error' | 'warning' | 'info' | 'primary'
+  ): string {
+    const semanticColors = {
+      success: COLORS.SUCCESS,
+      error: COLORS.ERROR,
+      warning: COLORS.WARNING,
+      info: COLORS.INFO,
+      primary: COLORS.PRIMARY,
+    }
+    return semanticColors[type]
+  }
+
+  /**
+   * 获取带透明度的颜色
+   */
+  static getColorWithOpacity(
+    type: 'primary' | 'success' | 'error' | 'warning',
+    opacity: 10 | 20 | 50
+  ): string {
+    const colorMap = {
+      primary: {
+        10: COLORS.PRIMARY_10,
+        20: COLORS.PRIMARY_20,
+        50: COLORS.PRIMARY_50,
+      },
+      success: {
+        10: COLORS.SUCCESS_10,
+        20: COLORS.SUCCESS_20,
+        50: COLORS.SUCCESS_50,
+      },
+      error: {
+        10: COLORS.ERROR_10,
+        20: COLORS.ERROR_20,
+        50: COLORS.ERROR_50,
+      },
+      warning: {
+        10: COLORS.WARNING_10,
+        20: COLORS.WARNING_20,
+        50: COLORS.WARNING_50,
+      },
+    }
+    return colorMap[type][opacity]
+  }
+
+  /**
+   * 获取灰度颜色
+   */
+  static getGrayColor(
+    shade: 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900
+  ): string {
+    const grayMap = {
+      50: COLORS.GRAY_50,
+      100: COLORS.GRAY_100,
+      200: COLORS.GRAY_200,
+      300: COLORS.GRAY_300,
+      400: COLORS.GRAY_400,
+      500: COLORS.GRAY_500,
+      600: COLORS.GRAY_600,
+      700: COLORS.GRAY_700,
+      800: COLORS.GRAY_800,
+      900: COLORS.GRAY_900,
+    }
+    return grayMap[shade]
   }
 }
 

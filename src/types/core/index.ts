@@ -488,8 +488,8 @@ export interface SimpleUser {
 /** 简化的用户设置信息（用于显示） */
 export interface SimpleUserSettings {
   baseCurrencyId: string | null
-  language: 'zh' | 'en'
-  theme: 'light' | 'dark' | 'system'
+  language: Language
+  theme: Theme
   fireSWR: number
   futureDataDays: number
   baseCurrency?: SimpleCurrency

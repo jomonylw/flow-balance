@@ -22,6 +22,7 @@ import {
   type Transaction,
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
+import { AccountType } from '@/types/core/constants'
 
 type BalanceAdjustmentTransaction = {
   date: string | Date
@@ -278,8 +279,7 @@ export async function getStockCategorySummary(
 
     // 聚合子分类数据
     const validChildren = category.children.filter(
-      (child): child is typeof child & { type: 'ASSET' | 'LIABILITY' } =>
-        child.type === 'ASSET' || child.type === 'LIABILITY'
+      child => child.type === 'ASSET' || child.type === 'LIABILITY'
     )
     await Promise.all(
       validChildren.map(async child => {
@@ -291,7 +291,7 @@ export async function getStockCategorySummary(
         const summary: MonthlyChildCategorySummary = {
           id: child.id,
           name: child.name,
-          type: child.type,
+          type: child.type as AccountType,
           order: child.order,
           accountCount: childAccounts.length,
           balances: { original: {}, converted: {} },

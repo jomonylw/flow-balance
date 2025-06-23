@@ -54,12 +54,29 @@ export async function GET(request: NextRequest) {
     const accountsForCalculation = accounts.map(account => ({
       id: account.id,
       name: account.name,
-      category: account.category,
+      category: account.category
+        ? {
+            id: account.category.id,
+            name: account.category.name,
+            type: account.category.type as AccountType | undefined,
+          }
+        : {
+            id: 'unknown',
+            name: 'Unknown',
+            type: undefined,
+          },
       transactions: account.transactions.map(t => ({
+        id: t.id,
         type: t.type as TransactionType,
         amount: parseFloat(t.amount.toString()),
-        date: t.date,
-        currency: t.currency,
+        date: t.date.toISOString(),
+        description: t.description,
+        notes: t.notes,
+        currency: {
+          code: t.currency.code,
+          symbol: t.currency.symbol,
+          name: t.currency.name,
+        },
       })),
     }))
 
@@ -109,7 +126,10 @@ export async function GET(request: NextRequest) {
         flowAccounts.forEach(account => {
           const accountType = account.category.type
 
-          if (accountType === AccountType.INCOME || accountType === AccountType.EXPENSE) {
+          if (
+            accountType === AccountType.INCOME ||
+            accountType === AccountType.EXPENSE
+          ) {
             const monthlyTransactions = account.transactions.filter(t => {
               const transactionDate = new Date(t.date)
               return (
@@ -119,7 +139,10 @@ export async function GET(request: NextRequest) {
 
             monthlyTransactions.forEach(transaction => {
               if (transaction.amount > 0) {
-                if (accountType === AccountType.INCOME && transaction.type === TransactionType.INCOME) {
+                if (
+                  accountType === AccountType.INCOME &&
+                  transaction.type === TransactionType.INCOME
+                ) {
                   monthlyIncomeAmounts.push({
                     amount: transaction.amount,
                     currency: transaction.currency.code,

@@ -10,6 +10,7 @@ import {
 } from '../src/lib/services/account.service'
 import { getStockCategorySummary } from '../src/lib/services/category-summary/stock-category-service'
 import { getFlowCategorySummary } from '../src/lib/services/category-summary/flow-category-service'
+import { AccountType, TransactionType } from '../src/types/core/constants'
 
 const prisma = new PrismaClient()
 
@@ -81,14 +82,10 @@ async function testDashboardCalculations() {
           name: account.name,
           category: {
             name: account.category?.name || '',
-            type: account.category?.type as
-              | 'ASSET'
-              | 'LIABILITY'
-              | 'INCOME'
-              | 'EXPENSE',
+            type: account.category?.type as AccountType | undefined,
           },
           transactions: account.transactions.map(t => ({
-            type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+            type: t.type as TransactionType,
             amount: parseFloat(t.amount.toString()),
             date: t.date.toISOString(),
             currency: t.currency,
@@ -96,7 +93,7 @@ async function testDashboardCalculations() {
         }
 
         const balances = calculateAccountBalance(serializedAccount)
-        console.log(`     当前余额:`)
+        console.log('     当前余额:')
         Object.values(balances).forEach(balance => {
           console.log(
             `       ${balance.currency.symbol}${balance.amount.toFixed(2)} ${balance.currencyCode}`
@@ -104,7 +101,7 @@ async function testDashboardCalculations() {
         })
 
         // 显示最近的几笔交易
-        console.log(`     最近交易:`)
+        console.log('     最近交易:')
         account.transactions.slice(0, 3).forEach(t => {
           console.log(
             `       ${t.date.toISOString().split('T')[0]} ${t.type} ${t.currency.symbol}${parseFloat(t.amount.toString()).toFixed(2)}`
@@ -129,14 +126,10 @@ async function testDashboardCalculations() {
           name: account.name,
           category: {
             name: account.category?.name || '',
-            type: account.category?.type as
-              | 'ASSET'
-              | 'LIABILITY'
-              | 'INCOME'
-              | 'EXPENSE',
+            type: account.category?.type as AccountType | undefined,
           },
           transactions: account.transactions.map(t => ({
-            type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+            type: t.type as TransactionType,
             amount: parseFloat(t.amount.toString()),
             date: t.date.toISOString(),
             currency: t.currency,
@@ -144,7 +137,7 @@ async function testDashboardCalculations() {
         }
 
         const balances = calculateAccountBalance(serializedAccount)
-        console.log(`     累计金额:`)
+        console.log('     累计金额:')
         Object.values(balances).forEach(balance => {
           console.log(
             `       ${balance.currency.symbol}${balance.amount.toFixed(2)} ${balance.currencyCode}`
@@ -152,7 +145,7 @@ async function testDashboardCalculations() {
         })
 
         // 显示最近的几笔交易
-        console.log(`     最近交易:`)
+        console.log('     最近交易:')
         account.transactions.slice(0, 3).forEach(t => {
           console.log(
             `       ${t.date.toISOString().split('T')[0]} ${t.type} ${t.currency.symbol}${parseFloat(t.amount.toString()).toFixed(2)}`
@@ -170,14 +163,10 @@ async function testDashboardCalculations() {
       name: account.name,
       category: {
         name: account.category?.name || '',
-        type: account.category?.type as
-          | 'ASSET'
-          | 'LIABILITY'
-          | 'INCOME'
-          | 'EXPENSE',
+        type: account.category?.type as AccountType | undefined,
       },
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+        type: t.type as TransactionType,
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
         currency: t.currency,
@@ -193,7 +182,7 @@ async function testDashboardCalculations() {
     console.log(
       `  净资产 (本位币): ${baseCurrency.symbol}${netWorthResult.totalInBaseCurrency.toFixed(2)}`
     )
-    console.log(`  按原币种分组:`)
+    console.log('  按原币种分组:')
     Object.values(netWorthResult.totalsByOriginalCurrency).forEach(balance => {
       console.log(
         `    ${balance.currency.symbol}${balance.amount.toFixed(2)} ${balance.currencyCode}`
@@ -201,7 +190,7 @@ async function testDashboardCalculations() {
     })
 
     if (netWorthResult.hasConversionErrors) {
-      console.log(`  ⚠️  存在汇率转换错误`)
+      console.log('  ⚠️  存在汇率转换错误')
     }
 
     // 测试分类汇总服务

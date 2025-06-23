@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import type { SimpleTag } from '@/types/core'
+import { DEFAULT_COLOR } from '@/types/core/constants'
 
 interface TagSelectorProps {
   tags: SimpleTag[]
@@ -41,7 +42,7 @@ export default function TagSelector({
       <div className='flex flex-wrap gap-2'>
         {tags.map(tag => {
           const isSelected = selectedTagIds.includes(tag.id)
-          const tagColor = tag.color || '#6B7280' // 默认灰色
+          const tagColor = tag.color || DEFAULT_COLOR // 默认灰色
 
           return (
             <button

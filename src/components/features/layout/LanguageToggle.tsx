@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useState, useEffect } from 'react'
+import { Language } from '@/types/core/constants'
 
 interface LanguageToggleProps {
   className?: string
@@ -19,16 +20,16 @@ export default function LanguageToggle({
   }, [])
 
   const toggleLanguage = () => {
-    const newLanguage = language === 'zh' ? 'en' : 'zh'
+    const newLanguage = language === Language.ZH ? Language.EN : Language.ZH
     setLanguage(newLanguage)
   }
 
-  const getLanguageLabel = (lang: 'zh' | 'en') => {
-    return lang === 'zh' ? '中文' : 'English'
+  const getLanguageLabel = (lang: Language) => {
+    return lang === Language.ZH ? '中文' : 'English'
   }
 
-  const getLanguageIcon = (lang: 'zh' | 'en') => {
-    if (lang === 'zh') {
+  const getLanguageIcon = (lang: Language) => {
+    if (lang === Language.ZH) {
       return (
         <svg className='w-4 h-4' viewBox='0 0 24 24' fill='currentColor'>
           <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z' />
@@ -74,10 +75,10 @@ export default function LanguageToggle({
         transition-all duration-200 group relative
         ${className}
       `}
-      title={`${t('common.switch.to')} ${getLanguageLabel(language === 'zh' ? 'en' : 'zh')}`}
+      title={`${t('common.switch.to')} ${getLanguageLabel(language === Language.ZH ? Language.EN : Language.ZH)}`}
     >
       <div className='flex items-center space-x-1'>
-        {getLanguageIcon(language)}
+        {getLanguageIcon(language as Language)}
         <span className='text-xs font-medium hidden sm:block'>
           {language.toUpperCase()}
         </span>
@@ -85,7 +86,7 @@ export default function LanguageToggle({
 
       {/* 悬停提示 */}
       <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-200 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap'>
-        {getLanguageLabel(language === 'zh' ? 'en' : 'zh')}
+        {getLanguageLabel(language === Language.ZH ? Language.EN : Language.ZH)}
       </div>
     </button>
   )

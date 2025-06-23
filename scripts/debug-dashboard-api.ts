@@ -3,6 +3,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
+import { AccountType, TransactionType } from '../src/types/core/constants'
 
 const prisma = new PrismaClient()
 
@@ -43,7 +44,7 @@ async function debugDashboardAPI() {
       },
     })
 
-    console.log(`\n📊 数据库中的账户:`)
+    console.log('\n📊 数据库中的账户:')
     console.log(`  总账户数: ${accounts.length}`)
 
     // 按类型分组
@@ -60,7 +61,7 @@ async function debugDashboardAPI() {
     console.log(`  - 支出账户: ${accountsByType.EXPENSE.length}`)
 
     // 检查每个账户的交易数量
-    console.log(`\n📋 账户详情:`)
+    console.log('\n📋 账户详情:')
     accounts.forEach(account => {
       console.log(
         `  ${account.name} (${account.category?.type || 'UNKNOWN'}): ${account.transactions.length} 笔交易`
@@ -74,7 +75,7 @@ async function debugDashboardAPI() {
     })
 
     // 检查API端点逻辑
-    console.log(`\n🔧 模拟API端点逻辑:`)
+    console.log('\n🔧 模拟API端点逻辑:')
 
     // 转换账户数据格式（模拟API中的逻辑）
     const accountsForCalculation = accounts.map(account => ({
@@ -82,7 +83,7 @@ async function debugDashboardAPI() {
       name: account.name,
       category: account.category,
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+        type: t.type as TransactionType,
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
         currency: t.currency,
@@ -105,7 +106,7 @@ async function debugDashboardAPI() {
     console.log(`  流量类账户: ${flowAccounts.length}`)
 
     // 检查存量类账户的余额计算
-    console.log(`\n💰 存量类账户余额计算:`)
+    console.log('\n💰 存量类账户余额计算:')
     const { calculateAccountBalance } = await import(
       '../src/lib/services/account.service'
     )
@@ -115,9 +116,13 @@ async function debugDashboardAPI() {
       // 转换账户数据格式以匹配类型
       const accountForCalculation = {
         ...account,
+        category: {
+          ...account.category,
+          type: account.category.type as AccountType | undefined,
+        },
         transactions: account.transactions.map(t => ({
           ...t,
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          type: t.type as TransactionType,
           amount: parseFloat(t.amount.toString()),
           date:
             typeof t.date === 'string'
@@ -145,11 +150,11 @@ async function debugDashboardAPI() {
     }
 
     if (!hasStockBalances) {
-      console.log(`  ⚠️  所有存量类账户都没有余额！`)
+      console.log('  ⚠️  所有存量类账户都没有余额！')
     }
 
     // 检查流量类账户的余额计算
-    console.log(`\n💸 流量类账户余额计算 (当月):`)
+    console.log('\n💸 流量类账户余额计算 (当月):')
     const now = new Date()
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
     const periodEnd = new Date(
@@ -171,9 +176,13 @@ async function debugDashboardAPI() {
       // 转换账户数据格式以匹配类型
       const accountForCalculation = {
         ...account,
+        category: {
+          ...account.category,
+          type: account.category.type as AccountType | undefined,
+        },
         transactions: account.transactions.map(t => ({
           ...t,
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          type: t.type as TransactionType,
           amount: parseFloat(t.amount.toString()),
           date:
             typeof t.date === 'string'
@@ -205,11 +214,11 @@ async function debugDashboardAPI() {
     }
 
     if (!hasFlowBalances) {
-      console.log(`  ⚠️  所有流量类账户在当月都没有余额！`)
+      console.log('  ⚠️  所有流量类账户在当月都没有余额！')
     }
 
     // 检查API返回的accountBalances数组
-    console.log(`\n📋 API accountBalances 数组模拟:`)
+    console.log('\n📋 API accountBalances 数组模拟:')
     const accountBalances = []
 
     // 添加存量类账户
@@ -217,9 +226,13 @@ async function debugDashboardAPI() {
       // 转换账户数据格式以匹配类型
       const accountForCalculation = {
         ...account,
+        category: {
+          ...account.category,
+          type: account.category.type as AccountType | undefined,
+        },
         transactions: account.transactions.map(t => ({
           ...t,
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          type: t.type as TransactionType,
           amount: parseFloat(t.amount.toString()),
           date:
             typeof t.date === 'string'
@@ -251,9 +264,13 @@ async function debugDashboardAPI() {
       // 转换账户数据格式以匹配类型
       const accountForCalculation = {
         ...account,
+        category: {
+          ...account.category,
+          type: account.category.type as AccountType | undefined,
+        },
         transactions: account.transactions.map(t => ({
           ...t,
-          type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+          type: t.type as TransactionType,
           amount: parseFloat(t.amount.toString()),
           date:
             typeof t.date === 'string'
@@ -287,9 +304,9 @@ async function debugDashboardAPI() {
     console.log(`  accountBalances 数组长度: ${accountBalances.length}`)
 
     if (accountBalances.length === 0) {
-      console.log(`  ❌ accountBalances 数组为空！这就是前端显示0的原因！`)
+      console.log('  ❌ accountBalances 数组为空！这就是前端显示0的原因！')
     } else {
-      console.log(`  ✓ accountBalances 包含以下账户:`)
+      console.log('  ✓ accountBalances 包含以下账户:')
       accountBalances.forEach((acc: any) => {
         console.log(
           `    - ${acc.name} (${acc.category.type}): ${JSON.stringify(acc.balances)}`

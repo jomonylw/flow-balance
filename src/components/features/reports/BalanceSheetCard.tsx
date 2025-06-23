@@ -17,6 +17,7 @@ import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import ColorManager from '@/lib/utils/color'
 import WithTranslation from '@/components/ui/data-display/WithTranslation'
+import { AccountType } from '@/types/core/constants'
 import type {
   BalanceSheetAccountInfo,
   BalanceSheetData,
@@ -56,10 +57,12 @@ export default function BalanceSheetCard() {
   const enrichedCategoryTree = useMemo(() => {
     if (!data || !categories || !accounts) return null
 
-    const buildCategoryTree = (type: 'ASSET' | 'LIABILITY') => {
+    const buildCategoryTree = (
+      type: AccountType.ASSET | AccountType.LIABILITY
+    ) => {
       // 获取该类型的原始分类数据
       const rawCategories =
-        data.balanceSheet[type === 'ASSET' ? 'assets' : 'liabilities']
+        data.balanceSheet[type === AccountType.ASSET ? 'assets' : 'liabilities']
           .categories
 
       // 构建分类映射
@@ -167,8 +170,8 @@ export default function BalanceSheetCard() {
     }
 
     return {
-      assets: buildCategoryTree('ASSET'),
-      liabilities: buildCategoryTree('LIABILITY'),
+      assets: buildCategoryTree(AccountType.ASSET),
+      liabilities: buildCategoryTree(AccountType.LIABILITY),
     }
   }, [data, categories, accounts])
 
@@ -335,12 +338,7 @@ export default function BalanceSheetCard() {
                                     acc => acc.id === account.id
                                   )
                                   const accountType = fullAccount?.category
-                                    ?.type as
-                                    | 'ASSET'
-                                    | 'LIABILITY'
-                                    | 'INCOME'
-                                    | 'EXPENSE'
-                                    | undefined
+                                    ?.type as AccountType | undefined
                                   return ColorManager.getAccountColor(
                                     account.id,
                                     fullAccount?.color,

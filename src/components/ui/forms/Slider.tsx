@@ -1,5 +1,7 @@
 'use client'
 
+import { COLORS } from '@/types/core/constants'
+
 interface SliderProps {
   name: string
   label: string
@@ -65,7 +67,7 @@ export default function Slider({
             slider
           `}
           style={{
-            background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${percentage}%, #e5e7eb ${percentage}%, #e5e7eb 100%)`,
+            background: `linear-gradient(to right, ${COLORS.PRIMARY} 0%, ${COLORS.PRIMARY} ${percentage}%, ${COLORS.BORDER} ${percentage}%, ${COLORS.BORDER} 100%)`,
           }}
         />
 
@@ -77,46 +79,48 @@ export default function Slider({
             height: 20px;
             width: 20px;
             border-radius: 50%;
-            background: #3b82f6;
+            background: ${COLORS.PRIMARY};
             cursor: pointer;
-            border: 2px solid #ffffff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 2px solid ${COLORS.BACKGROUND};
+            box-shadow: 0 2px 4px ${COLORS.GRAY_900}1a;
           }
 
           .slider::-webkit-slider-thumb:hover {
-            background: #2563eb;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            background: ${COLORS.PRIMARY};
+            box-shadow: 0 4px 8px ${COLORS.GRAY_900}26;
           }
 
           .slider::-moz-range-thumb {
             height: 20px;
             width: 20px;
             border-radius: 50%;
-            background: #3b82f6;
+            background: ${COLORS.PRIMARY};
             cursor: pointer;
-            border: 2px solid #ffffff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 2px solid ${COLORS.BACKGROUND};
+            box-shadow: 0 2px 4px ${COLORS.GRAY_900}1a;
           }
 
           .slider::-moz-range-thumb:hover {
-            background: #2563eb;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            background: ${COLORS.PRIMARY};
+            box-shadow: 0 4px 8px ${COLORS.GRAY_900}26;
           }
 
           .dark .slider::-webkit-slider-thumb {
-            background: #60a5fa;
+            background: ${COLORS.PRIMARY};
+            border: 2px solid ${COLORS.BACKGROUND_DARK};
           }
 
           .dark .slider::-webkit-slider-thumb:hover {
-            background: #3b82f6;
+            background: ${COLORS.PRIMARY};
           }
 
           .dark .slider::-moz-range-thumb {
-            background: #60a5fa;
+            background: ${COLORS.PRIMARY};
+            border: 2px solid ${COLORS.BACKGROUND_DARK};
           }
 
           .dark .slider::-moz-range-thumb:hover {
-            background: #3b82f6;
+            background: ${COLORS.PRIMARY};
           }
         `}</style>
       </div>

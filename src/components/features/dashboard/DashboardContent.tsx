@@ -19,6 +19,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useAllDataListener } from '@/hooks/business/useDataUpdateListener'
+import { AccountType, TransactionType } from '@/types/core/constants'
 import type {
   DashboardContentProps,
   ChartData,
@@ -40,8 +41,8 @@ export default function DashboardContent({
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] =
     useState(false)
   const [defaultTransactionType, setDefaultTransactionType] = useState<
-    'INCOME' | 'EXPENSE'
-  >('EXPENSE')
+    TransactionType.INCOME | TransactionType.EXPENSE
+  >(TransactionType.EXPENSE)
   const [chartData, setChartData] = useState<ChartData | null>(null)
   const [isLoadingCharts, setIsLoadingCharts] = useState(true)
   const [chartError, setChartError] = useState<string | null>(null)
@@ -56,7 +57,9 @@ export default function DashboardContent({
     await handleTransactionSuccess()
   })
 
-  const handleQuickTransaction = (type: 'INCOME' | 'EXPENSE') => {
+  const handleQuickTransaction = (
+    type: TransactionType.INCOME | TransactionType.EXPENSE
+  ) => {
     setDefaultTransactionType(type)
     setIsTransactionModalOpen(true)
   }
@@ -158,15 +161,11 @@ export default function DashboardContent({
       category: {
         id: account.id, // 使用账户 ID 作为分类 ID 的占位符
         name: account.category.name,
-        type: account.category.type as
-          | 'ASSET'
-          | 'LIABILITY'
-          | 'INCOME'
-          | 'EXPENSE',
+        type: account.category.type as AccountType,
       },
       transactions: (account.transactions || []).map((t, index) => ({
         id: `${account.id}-${index}`, // 生成假的交易 ID
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+        type: t.type as TransactionType,
         amount: t.amount,
         date: new Date().toISOString(), // 使用当前日期作为占位符
         description: '交易记录', // 使用默认描述
@@ -802,7 +801,7 @@ export default function DashboardContent({
           </h2>
           <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4'>
             <button
-              onClick={() => handleQuickTransaction('INCOME')}
+              onClick={() => handleQuickTransaction(TransactionType.INCOME)}
               className={`flex items-center justify-center px-4 py-3 border rounded-md text-sm font-medium transition-colors touch-manipulation ${
                 resolvedTheme === 'dark'
                   ? 'border-green-700 text-green-300 bg-green-900/20 hover:bg-green-900/30'
@@ -825,7 +824,7 @@ export default function DashboardContent({
               {t('dashboard.record.income')}
             </button>
             <button
-              onClick={() => handleQuickTransaction('EXPENSE')}
+              onClick={() => handleQuickTransaction(TransactionType.EXPENSE)}
               className={`flex items-center justify-center px-4 py-3 border rounded-md text-sm font-medium transition-colors touch-manipulation ${
                 resolvedTheme === 'dark'
                   ? 'border-red-700 text-red-300 bg-red-900/20 hover:bg-red-900/30'

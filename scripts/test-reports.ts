@@ -4,6 +4,7 @@ import {
   calculateNetWorth,
   validateAccountTypes,
 } from '../src/lib/services/account.service'
+import { AccountType, TransactionType } from '../src/types/core/constants'
 
 const prisma = new PrismaClient()
 
@@ -41,14 +42,10 @@ async function testReports() {
       name: account.name,
       category: {
         name: account.category.name,
-        type: account.category.type as
-          | 'ASSET'
-          | 'LIABILITY'
-          | 'INCOME'
-          | 'EXPENSE',
+        type: account.category.type as AccountType | undefined,
       },
       transactions: account.transactions.map(t => ({
-        type: t.type as 'INCOME' | 'EXPENSE' | 'BALANCE',
+        type: t.type as TransactionType,
         amount: parseFloat(t.amount.toString()),
         currency: t.currency,
       })),

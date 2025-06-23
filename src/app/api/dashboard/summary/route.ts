@@ -48,12 +48,29 @@ export async function GET() {
     const accountsForCalculation = accounts.map(account => ({
       id: account.id,
       name: account.name,
-      category: account.category,
+      category: account.category
+        ? {
+            id: account.category.id,
+            name: account.category.name,
+            type: account.category.type as AccountType | undefined,
+          }
+        : {
+            id: 'unknown',
+            name: 'Unknown',
+            type: undefined,
+          },
       transactions: account.transactions.map(t => ({
+        id: t.id,
         type: t.type as TransactionType,
         amount: parseFloat(t.amount.toString()),
         date: t.date.toISOString(),
-        currency: t.currency,
+        description: t.description,
+        notes: t.notes,
+        currency: {
+          code: t.currency.code,
+          symbol: t.currency.symbol,
+          name: t.currency.name,
+        },
       })),
     }))
 

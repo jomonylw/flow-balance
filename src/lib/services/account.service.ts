@@ -10,6 +10,7 @@ import {
   convertMultipleCurrencies,
   ConversionResult,
 } from '@/lib/services/currency.service'
+import { AccountType, TransactionType } from '@/types/core/constants'
 
 /**
  * 计算存量类账户的余额
@@ -50,7 +51,7 @@ function calculateStockAccountBalance(
       let latestBalanceDate = new Date(0)
 
       currencyTransactions.forEach(transaction => {
-        if (transaction.type === 'BALANCE') {
+        if (transaction.type === TransactionType.BALANCE) {
           const transactionDate = new Date(transaction.date || 0)
           if (transactionDate > latestBalanceDate) {
             latestBalanceAdjustment = transaction
@@ -78,7 +79,7 @@ function calculateStockAccountBalance(
 
       // 累加基准日期之后的其他交易
       currencyTransactions.forEach(transaction => {
-        if (transaction.type === 'BALANCE') {
+        if (transaction.type === TransactionType.BALANCE) {
           // 跳过BALANCE，因为已经在上面处理了
           return
         }
@@ -93,16 +94,16 @@ function calculateStockAccountBalance(
         const accountType = account.category.type
 
         // 根据账户类型和交易类型计算余额变化
-        if (accountType === 'ASSET') {
-          if (transaction.type === 'INCOME') {
+        if (accountType === AccountType.ASSET) {
+          if (transaction.type === TransactionType.INCOME) {
             currentBalance += amount
-          } else if (transaction.type === 'EXPENSE') {
+          } else if (transaction.type === TransactionType.EXPENSE) {
             currentBalance -= amount
           }
-        } else if (accountType === 'LIABILITY') {
-          if (transaction.type === 'INCOME') {
+        } else if (accountType === AccountType.LIABILITY) {
+          if (transaction.type === TransactionType.INCOME) {
             currentBalance += amount
-          } else if (transaction.type === 'EXPENSE') {
+          } else if (transaction.type === TransactionType.EXPENSE) {
             currentBalance -= amount
           }
         }
@@ -122,7 +123,7 @@ function calculateStockAccountBalance(
 
 export interface ServiceTransaction {
   id?: string
-  type: 'INCOME' | 'EXPENSE' | 'BALANCE'
+  type: TransactionType
   amount: number
   date?: string | Date
   description?: string
@@ -140,7 +141,7 @@ export interface ServiceAccount {
   category: {
     id?: string
     name: string
-    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+    type?: AccountType
   }
   transactions: ServiceTransaction[]
 }
@@ -229,11 +230,14 @@ function calculateFlowAccountBalance(
     // 根据账户类型和交易类型计算余额
     try {
       switch (accountType) {
-        case 'INCOME':
+        case AccountType.INCOME:
           // 收入类账户：只记录收入交易
-          if (transaction.type === 'INCOME') {
+          if (transaction.type === TransactionType.INCOME) {
             balances[currencyCode].amount += amount
-          } else if (validateData && transaction.type !== 'BALANCE') {
+          } else if (
+            validateData &&
+            transaction.type !== TransactionType.BALANCE
+          ) {
             console.warn(
               `收入类账户 ${account.name} 中发现非收入交易:`,
               transaction
@@ -241,11 +245,14 @@ function calculateFlowAccountBalance(
           }
           break
 
-        case 'EXPENSE':
+        case AccountType.EXPENSE:
           // 支出类账户：只记录支出交易
-          if (transaction.type === 'EXPENSE') {
+          if (transaction.type === TransactionType.EXPENSE) {
             balances[currencyCode].amount += amount
-          } else if (validateData && transaction.type !== 'BALANCE') {
+          } else if (
+            validateData &&
+            transaction.type !== TransactionType.BALANCE
+          ) {
             console.warn(
               `支出类账户 ${account.name} 中发现非支出交易:`,
               transaction
@@ -325,8 +332,10 @@ export function calculateAccountBalance(
 
   // 区分存量类账户和流量类账户
   const accountType = account.category.type
-  const isStockAccount = accountType === 'ASSET' || accountType === 'LIABILITY'
-  const isFlowAccount = accountType === 'INCOME' || accountType === 'EXPENSE'
+  const isStockAccount =
+    accountType === AccountType.ASSET || accountType === AccountType.LIABILITY
+  const isFlowAccount =
+    accountType === AccountType.INCOME || accountType === AccountType.EXPENSE
 
   if (isStockAccount) {
     // 存量类账户：使用最新的BALANCE作为基准，然后累加其他交易
@@ -371,7 +380,7 @@ export function calculateAccountBalance(
         categoryName.includes('银行') ||
         categoryName.includes('投资')
       ) {
-        accountType = 'ASSET'
+        accountType = AccountType.ASSET
         if (validateData) {
           console.log(`推断账户 ${account.name} 为资产类账户`)
         }
@@ -380,7 +389,7 @@ export function calculateAccountBalance(
         categoryName.includes('贷款') ||
         categoryName.includes('信用卡')
       ) {
-        accountType = 'LIABILITY'
+        accountType = AccountType.LIABILITY
         if (validateData) {
           console.log(`推断账户 ${account.name} 为负债类账户`)
         }
@@ -389,7 +398,7 @@ export function calculateAccountBalance(
         categoryName.includes('工资') ||
         categoryName.includes('奖金')
       ) {
-        accountType = 'INCOME'
+        accountType = AccountType.INCOME
         if (validateData) {
           console.log(`推断账户 ${account.name} 为收入类账户`)
         }
@@ -398,7 +407,7 @@ export function calculateAccountBalance(
         categoryName.includes('费用') ||
         categoryName.includes('消费')
       ) {
-        accountType = 'EXPENSE'
+        accountType = AccountType.EXPENSE
         if (validateData) {
           console.log(`推断账户 ${account.name} 为支出类账户`)
         }
@@ -407,35 +416,35 @@ export function calculateAccountBalance(
 
     try {
       switch (accountType) {
-        case 'ASSET':
+        case AccountType.ASSET:
           // 资产类账户：收入增加余额，支出减少余额，余额调整直接应用
-          if (transaction.type === 'INCOME') {
+          if (transaction.type === TransactionType.INCOME) {
             balances[currencyCode].amount += amount
-          } else if (transaction.type === 'EXPENSE') {
+          } else if (transaction.type === TransactionType.EXPENSE) {
             balances[currencyCode].amount -= amount
-          } else if (transaction.type === 'BALANCE') {
+          } else if (transaction.type === TransactionType.BALANCE) {
             // 余额调整：直接使用存储的变化金额（已包含正负号）
             balances[currencyCode].amount += amount
           }
           break
 
-        case 'LIABILITY':
+        case AccountType.LIABILITY:
           // 负债类账户：借入（收入）增加余额，偿还（支出）减少余额，余额调整直接应用
-          if (transaction.type === 'INCOME') {
+          if (transaction.type === TransactionType.INCOME) {
             balances[currencyCode].amount += amount
-          } else if (transaction.type === 'EXPENSE') {
+          } else if (transaction.type === TransactionType.EXPENSE) {
             balances[currencyCode].amount -= amount
-          } else if (transaction.type === 'BALANCE') {
+          } else if (transaction.type === TransactionType.BALANCE) {
             // 余额调整：直接使用存储的变化金额（已包含正负号）
             balances[currencyCode].amount += amount
           }
           break
 
-        case 'INCOME':
+        case AccountType.INCOME:
           // 收入类账户：只记录收入交易（累计收入），不应该有余额调整
-          if (transaction.type === 'INCOME') {
+          if (transaction.type === TransactionType.INCOME) {
             balances[currencyCode].amount += amount
-          } else if (transaction.type === 'BALANCE') {
+          } else if (transaction.type === TransactionType.BALANCE) {
             if (validateData) {
               console.warn(
                 `收入类账户 ${account.name} 不应该有余额调整交易:`,
@@ -451,11 +460,11 @@ export function calculateAccountBalance(
           }
           break
 
-        case 'EXPENSE':
+        case AccountType.EXPENSE:
           // 支出类账户：只记录支出交易（累计支出），不应该有余额调整
-          if (transaction.type === 'EXPENSE') {
+          if (transaction.type === TransactionType.EXPENSE) {
             balances[currencyCode].amount += amount
-          } else if (transaction.type === 'BALANCE') {
+          } else if (transaction.type === TransactionType.BALANCE) {
             if (validateData) {
               console.warn(
                 `支出类账户 ${account.name} 不应该有余额调整交易:`,
@@ -478,11 +487,11 @@ export function calculateAccountBalance(
               `账户 ${account.name} 未设置账户类型，按资产类账户处理`
             )
           }
-          if (transaction.type === 'INCOME') {
+          if (transaction.type === TransactionType.INCOME) {
             balances[currencyCode].amount += amount
-          } else if (transaction.type === 'EXPENSE') {
+          } else if (transaction.type === TransactionType.EXPENSE) {
             balances[currencyCode].amount -= amount
-          } else if (transaction.type === 'BALANCE') {
+          } else if (transaction.type === TransactionType.BALANCE) {
             // 余额调整：直接使用存储的变化金额（已包含正负号）
             balances[currencyCode].amount += amount
           }

@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from 'react'
 import Modal from '@/components/ui/feedback/Modal'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { AccountType } from '@/types/core/constants'
 
 // 本地Category接口，用于组件内部
 interface LocalCategory {
   id: string
   name: string
   parentId: string | null
-  type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+  type?: AccountType
   children?: LocalCategory[]
 }
 
@@ -19,7 +20,7 @@ interface CategorySelectorProps {
   title: string
   currentCategoryId?: string
   excludeCategoryId?: string // 排除的分类ID（用于移动时排除自己和子分类）
-  filterByAccountType?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE' // 按账户类型过滤
+  filterByAccountType?: AccountType // 按账户类型过滤
   onSelect: (categoryId: string) => void
   onCancel: () => void
 }

@@ -12,6 +12,7 @@ import {
   type ConversionResult,
 } from '@/lib/services/currency.service'
 import type { Prisma } from '@prisma/client'
+import { AccountType, TransactionType } from '@/types/core/constants'
 
 // 这个函数已经不需要了，因为我们现在使用统一的 calculateAccountBalance 函数
 // 保留注释以便理解之前的逻辑
@@ -107,10 +108,29 @@ export async function GET(request: NextRequest) {
       // 序列化账户数据，将 Decimal 转换为 number
       const serializedAccount = {
         ...account,
+        category: account.category
+          ? {
+              id: account.category.id,
+              name: account.category.name,
+              type: account.category.type as AccountType | undefined,
+            }
+          : {
+              id: 'unknown',
+              name: 'Unknown',
+              type: undefined,
+            },
         transactions: account.transactions.map(transaction => ({
-          ...transaction,
+          id: transaction.id,
+          type: transaction.type as TransactionType,
           amount: parseFloat(transaction.amount.toString()),
           date: transaction.date.toISOString(),
+          description: transaction.description,
+          notes: transaction.notes,
+          currency: {
+            code: transaction.currency.code,
+            symbol: transaction.currency.symbol,
+            name: transaction.currency.name,
+          },
         })),
       }
 

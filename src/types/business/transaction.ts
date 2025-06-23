@@ -14,6 +14,7 @@ import type {
   TrendDataPoint as CoreTrendDataPoint,
   TransactionTagInfo,
 } from '@/types/core'
+import { AccountType } from '@/types/core/constants'
 
 // 为了完全兼容，创建适配器类型
 export interface LegacyCategory
@@ -40,7 +41,7 @@ export interface LegacyAccount
   category: {
     id: string
     name: string
-    type?: 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+    type?: AccountType
   }
   transactions?: LegacyTransaction[]
   currencyCode: string // 改为必需字段

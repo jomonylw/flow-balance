@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import ColorManager from '@/lib/utils/color'
+import { AccountType } from '@/types/core/constants'
 import type { SimpleCurrency } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
 import type { ChartStockAccount, StockMonthlyData } from '@/types/components'
@@ -127,7 +128,7 @@ export default function StockMonthlySummaryChart({
           return ColorManager.getAccountColor(
             account.id,
             account.color,
-            account.type as 'ASSET' | 'LIABILITY' | 'INCOME' | 'EXPENSE'
+            account.type as AccountType
           )
         }
         return null // 如果没有找到账户或账户没有自定义颜色，使用智能颜色分配
