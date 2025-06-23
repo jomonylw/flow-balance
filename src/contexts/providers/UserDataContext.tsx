@@ -121,7 +121,7 @@ interface UserData {
   isInitialSyncComplete: boolean
 }
 
-interface UserDataContextType extends UserData {
+export interface UserDataContextType extends UserData {
   // 刷新所有数据
   refreshAll: () => Promise<void>
   // 刷新特定数据

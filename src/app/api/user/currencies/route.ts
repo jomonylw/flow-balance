@@ -63,8 +63,8 @@ export async function PUT(request: NextRequest) {
     // 检查货币代码列表中是否有重复项
     const uniqueCodes = new Set(currencyCodes)
     if (uniqueCodes.size !== currencyCodes.length) {
-      const duplicates = currencyCodes.filter((code, index) =>
-        currencyCodes.indexOf(code) !== index
+      const duplicates = currencyCodes.filter(
+        (code, index) => currencyCodes.indexOf(code) !== index
       )
       return validationErrorResponse(
         `货币代码列表中存在重复项: ${[...new Set(duplicates)].join(', ')}`
@@ -93,8 +93,25 @@ export async function PUT(request: NextRequest) {
 
     // 检查是否会导致同一货币代码有多个选择
     // 为每个货币代码选择优先级最高的货币（用户自定义 > 全局）
-    const selectedCurrencies: any[] = []
-    const codeToSelectedCurrency = new Map<string, any>()
+    const selectedCurrencies: Array<{
+      id: string
+      code: string
+      name: string
+      symbol: string
+      decimalPlaces: number
+      userId?: string | null
+    }> = []
+    const codeToSelectedCurrency = new Map<
+      string,
+      {
+        id: string
+        code: string
+        name: string
+        symbol: string
+        decimalPlaces: number
+        userId?: string | null
+      }
+    >()
 
     for (const code of currencyCodes) {
       const candidateCurrencies = validCurrencies.filter(c => c.code === code)

@@ -2,7 +2,7 @@
  * 测试日期比较逻辑，确保只比较日期部分而不包含时间
  */
 
-import { describe, it, expect } from '@jest/globals'
+// Jest globals are available in the test environment
 import {
   DuplicateCheckService,
   CheckType as _CheckType,

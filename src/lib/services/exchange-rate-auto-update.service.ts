@@ -18,7 +18,7 @@ interface ExchangeRateUpdateResult {
   success: boolean
   message: string
   errorCode?: string
-  errorParams?: Record<string, any>
+  errorParams?: Record<string, unknown>
   data?: {
     updatedCount: number
     errors: string[]
@@ -56,7 +56,7 @@ export class ExchangeRateAutoUpdateService {
       }
 
       // 检查是否启用了汇率自动更新
-      if (!(userSettings as any).autoUpdateExchangeRates && !forceUpdate) {
+      if (!userSettings.autoUpdateExchangeRates && !forceUpdate) {
         return {
           success: true,
           message: '汇率自动更新未启用',
@@ -80,10 +80,8 @@ export class ExchangeRateAutoUpdateService {
       }
 
       // 检查24小时限制（除非强制更新）
-      if (!forceUpdate && (userSettings as any).lastExchangeRateUpdate) {
-        const lastUpdate = new Date(
-          (userSettings as any).lastExchangeRateUpdate
-        )
+      if (!forceUpdate && userSettings.lastExchangeRateUpdate) {
+        const lastUpdate = new Date(userSettings.lastExchangeRateUpdate)
         const now = new Date()
         const hoursSinceLastUpdate =
           (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
@@ -274,7 +272,7 @@ export class ExchangeRateAutoUpdateService {
         where: { userId },
         data: {
           lastExchangeRateUpdate: new Date(),
-        } as any,
+        },
       })
 
       // 重新生成自动汇率（反向汇率和传递汇率）
@@ -326,15 +324,15 @@ export class ExchangeRateAutoUpdateService {
         where: { userId },
       })
 
-      if (!(userSettings as any)?.autoUpdateExchangeRates) {
+      if (!userSettings?.autoUpdateExchangeRates) {
         return false
       }
 
-      if (!(userSettings as any).lastExchangeRateUpdate) {
+      if (!userSettings.lastExchangeRateUpdate) {
         return true
       }
 
-      const lastUpdate = new Date((userSettings as any).lastExchangeRateUpdate)
+      const lastUpdate = new Date(userSettings.lastExchangeRateUpdate)
       const now = new Date()
       const hoursSinceLastUpdate =
         (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
@@ -371,8 +369,8 @@ export class ExchangeRateAutoUpdateService {
         }
       }
 
-      const enabled = (userSettings as any).autoUpdateExchangeRates
-      const lastUpdate = (userSettings as any).lastExchangeRateUpdate
+      const enabled = userSettings.autoUpdateExchangeRates
+      const lastUpdate = userSettings.lastExchangeRateUpdate
       let hoursSinceLastUpdate: number | null = null
       let needsUpdate = false
 

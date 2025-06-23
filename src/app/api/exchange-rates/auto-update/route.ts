@@ -18,12 +18,19 @@ export async function POST(_request: NextRequest) {
     }
 
     // 调用汇率自动更新服务
-    const result = await ExchangeRateAutoUpdateService.updateExchangeRates(user.id, true)
+    const result = await ExchangeRateAutoUpdateService.updateExchangeRates(
+      user.id,
+      true
+    )
 
     if (!result.success) {
       // 构建包含错误代码和参数的响应
-      const errorData: any = {
-        error: result.message || '汇率更新失败'
+      const errorData: {
+        error: string
+        errorCode?: string
+        errorParams?: Record<string, unknown>
+      } = {
+        error: result.message || '汇率更新失败',
       }
 
       if (result.errorCode) {
@@ -34,19 +41,19 @@ export async function POST(_request: NextRequest) {
         errorData.errorParams = result.errorParams
       }
 
-      return new Response(JSON.stringify({
-        success: false,
-        ...errorData
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      })
+      return new Response(
+        JSON.stringify({
+          success: false,
+          ...errorData,
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
     }
 
-    return successResponse(
-      result.data,
-      result.message
-    )
+    return successResponse(result.data, result.message)
   } catch (error) {
     console.error('Manual update exchange rates failed:', error)
     return errorResponse('汇率手动更新失败', 500)

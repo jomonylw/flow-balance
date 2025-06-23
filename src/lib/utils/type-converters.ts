@@ -4,7 +4,12 @@
  */
 
 import { ConstantsManager } from './constants-manager'
-import type { AccountType, TransactionType, Language, Theme } from '@/types/core/constants'
+import type {
+  AccountType,
+  TransactionType,
+  Language,
+  Theme,
+} from '@/types/core/constants'
 
 /**
  * 转换 Prisma 对象中的枚举字段
@@ -13,7 +18,9 @@ export class TypeConverters {
   /**
    * 转换账户对象，将 Prisma 枚举转换为我们的枚举
    */
-  static convertAccount<T extends { category: { type: string } }>(account: T): T & {
+  static convertAccount<T extends { category: { type: string } }>(
+    account: T
+  ): T & {
     category: T['category'] & { type: AccountType }
   } {
     return {
@@ -28,7 +35,9 @@ export class TypeConverters {
   /**
    * 转换分类对象，将 Prisma 枚举转换为我们的枚举
    */
-  static convertCategory<T extends { type: string }>(category: T): T & { type: AccountType } {
+  static convertCategory<T extends { type: string }>(
+    category: T
+  ): T & { type: AccountType } {
     return {
       ...category,
       type: ConstantsManager.convertPrismaAccountType(category.type),
@@ -38,7 +47,9 @@ export class TypeConverters {
   /**
    * 转换交易对象，将 Prisma 枚举转换为我们的枚举
    */
-  static convertTransaction<T extends { type: string }>(transaction: T): T & { type: TransactionType } {
+  static convertTransaction<T extends { type: string }>(
+    transaction: T
+  ): T & { type: TransactionType } {
     return {
       ...transaction,
       type: ConstantsManager.convertPrismaTransactionType(transaction.type),
@@ -92,8 +103,10 @@ export class TypeConverters {
     T extends {
       category: { type: string }
       transactions: Array<{ type: string }>
-    }
-  >(account: T): T & {
+    },
+  >(
+    account: T
+  ): T & {
     category: T['category'] & { type: AccountType }
     transactions: Array<T['transactions'][0] & { type: TransactionType }>
   } {
@@ -117,11 +130,15 @@ export class TypeConverters {
     T extends {
       category: { type: string }
       transactions: Array<{ type: string }>
+    },
+  >(
+    accounts: T[]
+  ): Array<
+    T & {
+      category: T['category'] & { type: AccountType }
+      transactions: Array<T['transactions'][0] & { type: TransactionType }>
     }
-  >(accounts: T[]): Array<T & {
-    category: T['category'] & { type: AccountType }
-    transactions: Array<T['transactions'][0] & { type: TransactionType }>
-  }> {
+  > {
     return accounts.map(account => this.convertAccountWithTransactions(account))
   }
 
@@ -180,24 +197,32 @@ export const convertPrismaUserSettings = TypeConverters.convertUserSettings
 export const convertPrismaAccounts = TypeConverters.convertAccounts
 export const convertPrismaCategories = TypeConverters.convertCategories
 export const convertPrismaTransactions = TypeConverters.convertTransactions
-export const convertPrismaAccountWithTransactions = TypeConverters.convertAccountWithTransactions
-export const convertPrismaAccountsWithTransactions = TypeConverters.convertAccountsWithTransactions
+export const convertPrismaAccountWithTransactions =
+  TypeConverters.convertAccountWithTransactions
+export const convertPrismaAccountsWithTransactions =
+  TypeConverters.convertAccountsWithTransactions
 
 /**
  * 类型守卫函数 - 检查是否为我们的枚举类型
  */
-export function isOurAccountType(type: any): type is AccountType {
-  return Object.values(ConstantsManager.getAllAccountTypes()).includes(type)
+export function isOurAccountType(type: unknown): type is AccountType {
+  return Object.values(ConstantsManager.getAllAccountTypes()).includes(
+    type as AccountType
+  )
 }
 
-export function isOurTransactionType(type: any): type is TransactionType {
-  return Object.values(ConstantsManager.getAllTransactionTypes()).includes(type)
+export function isOurTransactionType(type: unknown): type is TransactionType {
+  return Object.values(ConstantsManager.getAllTransactionTypes()).includes(
+    type as TransactionType
+  )
 }
 
-export function isOurLanguage(language: any): language is Language {
-  return Object.values(ConstantsManager.getAllLanguages()).includes(language)
+export function isOurLanguage(language: unknown): language is Language {
+  return Object.values(ConstantsManager.getAllLanguages()).includes(
+    language as Language
+  )
 }
 
-export function isOurTheme(theme: any): theme is Theme {
-  return Object.values(ConstantsManager.getAllThemes()).includes(theme)
+export function isOurTheme(theme: unknown): theme is Theme {
+  return Object.values(ConstantsManager.getAllThemes()).includes(theme as Theme)
 }
