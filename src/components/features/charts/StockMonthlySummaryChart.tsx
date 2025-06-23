@@ -10,6 +10,7 @@ import { AccountType } from '@/types/core/constants'
 import type { SimpleCurrency } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
 import type { ChartStockAccount, StockMonthlyData } from '@/types/components'
+import { CHART } from '@/lib/constants/app-config'
 
 // 本地类型定义（用于这个组件的特定需求）
 type StockTimeRange = 'last12months' | 'all'
@@ -26,7 +27,7 @@ export default function StockMonthlySummaryChart({
   stockMonthlyData,
   baseCurrency,
   title,
-  height = 400,
+  height = CHART.DEFAULT_HEIGHT,
   accounts = [],
 }: StockMonthlySummaryChartProps) {
   const { t, isLoading } = useLanguage()

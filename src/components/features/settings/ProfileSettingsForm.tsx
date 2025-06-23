@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { User } from '@prisma/client'
 import InputField from '@/components/ui/forms/InputField'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { ApiEndpoints, VALIDATION } from '@/lib/constants'
 
 interface ProfileSettingsFormProps {
   user: User
@@ -40,7 +41,7 @@ export default function ProfileSettingsForm({
     setError('')
 
     try {
-      const response = await fetch('/api/user/profile', {
+      const response = await fetch(ApiEndpoints.user.PROFILE, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -133,6 +134,7 @@ export default function ProfileSettingsForm({
             placeholder={t('settings.name.placeholder')}
             value={formData.nickname}
             onChange={handleInputChange}
+            maxLength={VALIDATION.USERNAME_MAX_LENGTH}
             help={t('settings.name.help')}
           />
 

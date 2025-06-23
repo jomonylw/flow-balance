@@ -1,5 +1,7 @@
 'use client'
 
+import { COMPONENT_SIZE } from '@/lib/constants/dimensions'
+
 interface ToggleSwitchProps {
   name: string
   label: string
@@ -37,7 +39,7 @@ export default function ToggleSwitch({
           disabled={disabled}
           onClick={() => onChange(!checked)}
           className={`
-            relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
+            relative inline-flex flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
             transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2
             disabled:opacity-50 disabled:cursor-not-allowed shadow-sm
             ${
@@ -46,15 +48,26 @@ export default function ToggleSwitch({
                 : 'bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500'
             }
           `}
+          style={{
+            height: `${COMPONENT_SIZE.TOGGLE.HEIGHT}px`,
+            width: `${COMPONENT_SIZE.TOGGLE.WIDTH}px`,
+          }}
         >
           <span className='sr-only'>{label}</span>
           <span
             aria-hidden='true'
             className={`
-              pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0
+              pointer-events-none inline-block transform rounded-full bg-white shadow-lg ring-0
               transition-all duration-300 ease-in-out
-              ${checked ? 'translate-x-5 shadow-blue-500/20' : 'translate-x-0'}
+              ${checked ? 'shadow-blue-500/20' : 'translate-x-0'}
             `}
+            style={{
+              height: `${COMPONENT_SIZE.TOGGLE.THUMB_SIZE}px`,
+              width: `${COMPONENT_SIZE.TOGGLE.THUMB_SIZE}px`,
+              transform: checked
+                ? `translateX(${COMPONENT_SIZE.TOGGLE.THUMB_OFFSET}px)`
+                : 'translateX(0)',
+            }}
           />
         </button>
       </div>

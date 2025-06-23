@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { ApiEndpoints } from '@/lib/constants'
 import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 
@@ -45,7 +46,7 @@ export default function ForgotPasswordForm() {
     setSuccessMessage('')
 
     try {
-      const response = await fetch('/api/auth/request-password-reset', {
+      const response = await fetch(ApiEndpoints.auth.REQUEST_PASSWORD_RESET, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

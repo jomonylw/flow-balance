@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
+import { SPACING } from '@/lib/constants/dimensions'
 import type { SimpleTransactionTemplate } from '@/types/core'
 
 interface TemplateSelectorProps {
@@ -128,7 +129,13 @@ export default function TemplateSelector({
   }
 
   return (
-    <div className='space-y-2'>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: `${SPACING.MD}px`,
+      }}
+    >
       {label && (
         <label
           className={`block text-sm font-medium ${resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
@@ -159,11 +166,15 @@ export default function TemplateSelector({
           />
 
           {/* 右侧按钮组 */}
-          <div className='absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1'>
+          <div
+            className='absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center'
+            style={{ gap: `${SPACING.XS}px` }}
+          >
             {inputValue && (
               <button
                 onClick={handleClear}
-                className='p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'
+                className='text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'
+                style={{ padding: `${SPACING.XS}px` }}
                 title={t('common.clear')}
               >
                 <svg

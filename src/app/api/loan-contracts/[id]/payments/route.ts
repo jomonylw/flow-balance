@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { PAGINATION } from '@/lib/constants/app-config'
 
 export async function GET(
   request: NextRequest,
@@ -21,11 +22,13 @@ export async function GET(
 
     // 分页参数
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseInt(
+      searchParams.get('limit') || PAGINATION.DEFAULT_PAGE_SIZE.toString()
+    )
     const status = searchParams.get('status') // 可选的状态过滤
 
     // 验证分页参数
-    if (page < 1 || limit < 1 || limit > 100) {
+    if (page < 1 || limit < 1 || limit > PAGINATION.MAX_PAGE_SIZE) {
       return NextResponse.json(
         { success: false, error: '分页参数无效' },
         { status: 400 }

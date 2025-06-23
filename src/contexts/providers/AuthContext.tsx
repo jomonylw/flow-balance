@@ -11,6 +11,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import LoadingScreen from '@/components/ui/feedback/LoadingScreen'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import type { AuthState } from '@/types/core'
+import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>
@@ -58,7 +59,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
 
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch(ApiEndpoints.auth.ME, {
         method: 'GET',
         credentials: 'include',
       })
@@ -101,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
 
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch(ApiEndpoints.auth.LOGIN, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -153,7 +154,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error: null,
       })
 
-      await fetch('/api/auth/logout', {
+      await fetch(ApiEndpoints.auth.LOGOUT, {
         method: 'POST',
         credentials: 'include',
       })
@@ -188,7 +189,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         // 对于根路径和其他需要认证的路径，都进行认证检查
         try {
-          const response = await fetch('/api/auth/me', {
+          const response = await fetch(ApiEndpoints.auth.ME, {
             method: 'GET',
             credentials: 'include',
           })
@@ -287,7 +288,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await originalFetch(...args)
 
       const url = args[0]?.toString() || ''
-      if (response.status === 401 && !url.includes('/api/auth/logout')) {
+      if (response.status === 401 && !url.includes(ApiEndpoints.auth.LOGOUT)) {
         handleUnauthorized()
       }
 

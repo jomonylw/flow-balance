@@ -88,7 +88,10 @@ export class ConstantsManager {
    * 获取货币符号
    */
   static getCurrencySymbol(currencyCode: string): string {
-    return CURRENCY_SYMBOLS[currencyCode as keyof typeof CURRENCY_SYMBOLS] || currencyCode
+    return (
+      CURRENCY_SYMBOLS[currencyCode as keyof typeof CURRENCY_SYMBOLS] ||
+      currencyCode
+    )
   }
 
   /**
@@ -226,7 +229,11 @@ export class ConstantsManager {
   static getValidTransactionTypes(accountType: AccountType): TransactionType[] {
     if (this.isStockAccount(accountType)) {
       // 存量账户支持所有交易类型
-      return [TransactionType.INCOME, TransactionType.EXPENSE, TransactionType.BALANCE]
+      return [
+        TransactionType.INCOME,
+        TransactionType.EXPENSE,
+        TransactionType.BALANCE,
+      ]
     } else {
       // 流量账户只支持收入和支出
       return [TransactionType.INCOME, TransactionType.EXPENSE]
@@ -248,7 +255,7 @@ export class ConstantsManager {
    * 获取账户类型的统计方法描述键
    */
   static getAccountTypeStatsKey(accountType: AccountType): string {
-    return this.isStockAccount(accountType) 
+    return this.isStockAccount(accountType)
       ? 'category.settings.stock.statistics'
       : 'category.settings.flow.statistics'
   }
@@ -385,3 +392,5 @@ export class ConstantsManager {
     }
   }
 }
+
+export default ConstantsManager

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import { ApiEndpoints } from '@/lib/constants'
 import InputField from '@/components/ui/forms/InputField'
 import SelectField from '@/components/ui/forms/SelectField'
 import type { SimpleCurrency, ExchangeRateData } from '@/types/core'
@@ -123,7 +124,7 @@ export default function ExchangeRateForm({
         })
       } else {
         // 创建新汇率
-        response = await fetch('/api/exchange-rates', {
+        response = await fetch(ApiEndpoints.currency.EXCHANGE_RATES, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

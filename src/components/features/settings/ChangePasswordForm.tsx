@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import InputField from '@/components/ui/forms/InputField'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
 
 export default function ChangePasswordForm() {
@@ -73,7 +74,7 @@ export default function ChangePasswordForm() {
     setMessage('')
 
     try {
-      const response = await fetch('/api/user/change-password', {
+      const response = await fetch(ApiEndpoints.user.CHANGE_PASSWORD, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

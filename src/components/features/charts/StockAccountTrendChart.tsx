@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import ColorManager from '@/lib/utils/color'
+import { CHART } from '@/lib/constants/app-config'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import { AccountType } from '@/types/core/constants'
 
@@ -33,7 +34,7 @@ export default function StockAccountTrendChart({
   trendData,
   account,
   displayCurrency,
-  height = 400,
+  height = CHART.DEFAULT_HEIGHT,
   timeRange,
   setTimeRange,
   isLoading,
@@ -88,6 +89,8 @@ export default function StockAccountTrendChart({
 
     const option: echarts.EChartsOption = {
       backgroundColor: 'transparent',
+      animation: true,
+      animationDuration: CHART.ANIMATION_DURATION,
       title: {
         text: t('chart.balance.change.trend'),
         left: 'center',

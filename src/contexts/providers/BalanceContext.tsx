@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useCallback,
 } from 'react'
+import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 import type {
   BalanceCategorySummary,
   ContextAccountBalance,
@@ -85,7 +86,7 @@ export function BalanceProvider({
     setError(null)
 
     try {
-      const response = await fetch('/api/accounts/balances')
+      const response = await fetch(ApiEndpoints.account.BALANCES)
       if (!response.ok) {
         throw new Error('获取账户余额失败')
       }

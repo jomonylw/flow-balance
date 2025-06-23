@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useAuth } from '@/contexts/providers/AuthContext'
+import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 import InitialSetup from '@/components/features/setup/InitialSetup'
 import LoadingScreen from '@/components/ui/feedback/LoadingScreen'
 
@@ -31,7 +32,7 @@ export default function SetupPage() {
       if (!user) return
 
       try {
-        const response = await fetch('/api/user/settings')
+        const response = await fetch(ApiEndpoints.user.SETTINGS)
         if (response.ok) {
           const data = await response.json()
           const hasBaseCurrency = !!data.userSettings?.baseCurrencyId

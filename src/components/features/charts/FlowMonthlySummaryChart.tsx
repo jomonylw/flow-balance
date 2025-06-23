@@ -9,6 +9,7 @@ import ColorManager from '@/lib/utils/color'
 import type { SimpleCurrency, CategoryType } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
 import type { FlowMonthlyData } from '@/types/components'
+import { CHART } from '@/lib/constants/app-config'
 
 interface LocalFlowAccount {
   id: string
@@ -29,7 +30,7 @@ export default function FlowMonthlySummaryChart({
   monthlyData,
   baseCurrency,
   title,
-  height = 400,
+  height = CHART.DEFAULT_HEIGHT,
   accounts = [],
 }: FlowMonthlySummaryChartProps) {
   const { t, isLoading } = useLanguage()

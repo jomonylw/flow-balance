@@ -14,6 +14,7 @@ import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { Transaction, User } from '@/types/business/transaction'
+import { PAGINATION } from '@/lib/constants/app-config'
 import type { TransactionFilters } from '@/types/components'
 
 interface TransactionListViewProps {
@@ -38,7 +39,7 @@ export default function TransactionListView({
   >(null)
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: PAGINATION.PAGE_SIZE_OPTIONS[0], // 使用配置的第一个选项 (10)
     total: 0,
     totalPages: 0,
   })

@@ -7,6 +7,7 @@ import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 
 export default function SignupForm() {
   const { t } = useLanguage()
@@ -81,7 +82,7 @@ export default function SignupForm() {
     setSuccessMessage('')
 
     try {
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch(ApiEndpoints.auth.REGISTER, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

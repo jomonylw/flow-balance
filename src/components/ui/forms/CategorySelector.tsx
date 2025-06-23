@@ -5,6 +5,7 @@ import Modal from '@/components/ui/feedback/Modal'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { AccountType } from '@/types/core/constants'
+import { SPACING } from '@/lib/constants/dimensions'
 
 // 本地Category接口，用于组件内部
 interface LocalCategory {
@@ -198,10 +199,13 @@ export default function CategorySelector({
       <div key={category.id}>
         <label
           className={`
-            flex items-center p-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700
+            flex items-center rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700
             ${selectedCategoryId === category.id ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700' : ''}
           `}
-          style={{ paddingLeft: `${level * 20 + 8}px` }}
+          style={{
+            padding: `${SPACING.MD}px`,
+            paddingLeft: `${level * 20 + SPACING.MD}px`,
+          }}
         >
           <input
             type='radio'
@@ -230,8 +234,17 @@ export default function CategorySelector({
 
   return (
     <Modal isOpen={isOpen} onClose={onCancel} title={title}>
-      <div className='space-y-4'>
-        <div className='max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md p-2 bg-white dark:bg-gray-800'>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACING.XL}px`,
+        }}
+      >
+        <div
+          className='max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800'
+          style={{ padding: `${SPACING.MD}px` }}
+        >
           {isLoading ? (
             <div className='text-center py-4 text-gray-500 dark:text-gray-400'>
               {t('common.loading')}

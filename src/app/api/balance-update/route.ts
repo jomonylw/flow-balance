@@ -234,7 +234,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const accountId = searchParams.get('accountId')
     const currencyCode = searchParams.get('currencyCode')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const limit = parseInt(searchParams.get('limit') || '10') // 保持较小的默认值用于余额更新
 
     if (!accountId) {
       return errorResponse('缺少账户ID', 400)

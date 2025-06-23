@@ -9,6 +9,7 @@ import AuthButton from '@/components/ui/forms/AuthButton'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import ColorPicker, { COLOR_OPTIONS } from '@/components/ui/forms/ColorPicker'
+import { ApiEndpoints } from '@/lib/constants'
 import type { AddAccountModalProps } from '@/types/components'
 import type { SimpleAccount } from '@/types/core'
 
@@ -87,7 +88,7 @@ export default function AddAccountModal({
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/accounts', {
+      const response = await fetch(ApiEndpoints.account.CREATE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -10,6 +10,7 @@ import React, {
 } from 'react'
 import { useAuth } from './AuthContext'
 import { Language, Theme } from '@/types/core/constants'
+import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 import type {
   SimpleCurrency,
   SimpleTag,
@@ -219,7 +220,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
 
   // API调用函数
   const fetchCurrencies = async (): Promise<SimpleCurrency[]> => {
-    const response = await fetch('/api/user/currencies')
+    const response = await fetch(ApiEndpoints.user.CURRENCIES)
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('UNAUTHORIZED')
@@ -231,7 +232,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
   }
 
   const fetchTags = async (): Promise<UserDataTag[]> => {
-    const response = await fetch('/api/tags')
+    const response = await fetch(ApiEndpoints.tag.LIST)
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('UNAUTHORIZED')
@@ -243,7 +244,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
   }
 
   const fetchAccounts = async (): Promise<UserDataAccount[]> => {
-    const response = await fetch('/api/accounts')
+    const response = await fetch(ApiEndpoints.account.LIST)
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('UNAUTHORIZED')
@@ -278,7 +279,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
   }
 
   const fetchCategories = async (): Promise<UserDataCategory[]> => {
-    const response = await fetch('/api/categories')
+    const response = await fetch(ApiEndpoints.category.LIST)
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('UNAUTHORIZED')
@@ -290,7 +291,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
   }
 
   const fetchUserSettings = async (): Promise<UserDataSettings | null> => {
-    const response = await fetch('/api/user/settings')
+    const response = await fetch(ApiEndpoints.user.SETTINGS)
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('UNAUTHORIZED')
@@ -302,7 +303,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
   }
 
   const fetchTemplates = async (): Promise<UserDataTemplate[]> => {
-    const response = await fetch('/api/transaction-templates')
+    const response = await fetch(ApiEndpoints.transaction.TEMPLATES)
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('UNAUTHORIZED')
@@ -322,7 +323,10 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
       params.append('toCurrency', baseCurrencyCode)
     }
 
-    const url = `/api/exchange-rates${params.toString() ? `?${params.toString()}` : ''}`
+    const url = ApiEndpoints.buildUrl(
+      ApiEndpoints.currency.EXCHANGE_RATES,
+      params.toString() ? Object.fromEntries(params) : {}
+    )
     const response = await fetch(url)
     if (!response.ok) {
       if (response.status === 401) {
@@ -338,7 +342,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
     accountBalances: UserDataAccountBalances
     baseCurrency: SimpleCurrency
   }> => {
-    const response = await fetch('/api/accounts/balances')
+    const response = await fetch(ApiEndpoints.account.BALANCES)
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('UNAUTHORIZED')
@@ -352,7 +356,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
 
   // 同步相关API调用
   const fetchSyncStatus = async (): Promise<SyncStatus> => {
-    const response = await fetch('/api/sync/status')
+    const response = await fetch(ApiEndpoints.sync.STATUS)
     if (!response.ok) throw new Error('获取同步状态失败')
     const result = await response.json()
     if (!result.success) throw new Error(result.error || '获取同步状态失败')
@@ -360,7 +364,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
   }
 
   const checkNeedsSync = async (): Promise<boolean> => {
-    const response = await fetch('/api/sync/check')
+    const response = await fetch(ApiEndpoints.sync.CHECK)
     if (!response.ok) throw new Error('检查同步状态失败')
     const result = await response.json()
     if (!result.success) throw new Error(result.error || '检查同步状态失败')
@@ -368,7 +372,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
   }
 
   const triggerSyncAPI = async (force: boolean = false): Promise<void> => {
-    const response = await fetch('/api/sync/trigger', {
+    const response = await fetch(ApiEndpoints.sync.TRIGGER, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ force }),
@@ -420,7 +424,10 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
         if (baseCurrencyCode) {
           const params = new URLSearchParams()
           params.append('toCurrency', baseCurrencyCode)
-          const url = `/api/exchange-rates?${params.toString()}`
+          const url = ApiEndpoints.buildUrl(
+            ApiEndpoints.currency.EXCHANGE_RATES,
+            { toCurrency: baseCurrencyCode }
+          )
           const response = await fetch(url)
           if (response.ok) {
             const result = await response.json()

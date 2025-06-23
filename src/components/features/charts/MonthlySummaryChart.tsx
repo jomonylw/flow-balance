@@ -6,6 +6,7 @@ import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import type { SimpleCurrency } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
 import type { FlowMonthlyData, StockMonthlyData } from '@/types/components'
+import { CHART } from '@/lib/constants/app-config'
 
 interface MonthlySummaryChartProps {
   monthlyData?: FlowMonthlyData
@@ -27,7 +28,7 @@ export default function MonthlySummaryChart({
   stockMonthlyData,
   baseCurrency,
   title,
-  height = 400,
+  height = CHART.DEFAULT_HEIGHT,
   showCategories = false, // eslint-disable-line @typescript-eslint/no-unused-vars
   chartType = 'flow',
 }: MonthlySummaryChartProps) {

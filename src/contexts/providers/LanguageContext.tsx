@@ -9,6 +9,7 @@ import React, {
 } from 'react'
 import type { Language } from '@/types/ui'
 import { Language as LanguageEnum } from '@/types/core/constants'
+import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 
 interface LanguageContextType {
   language: Language
@@ -99,7 +100,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
     const initializeLanguage = async () => {
       try {
-        const response = await fetch('/api/user/settings')
+        const response = await fetch(ApiEndpoints.user.SETTINGS)
         if (response.ok) {
           const data = await response.json()
           if (data.userSettings?.language) {
@@ -162,7 +163,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     document.documentElement.lang = lang === LanguageEnum.ZH ? 'zh-CN' : 'en'
 
     try {
-      await fetch('/api/user/settings', {
+      await fetch(ApiEndpoints.user.SETTINGS, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

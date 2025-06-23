@@ -5,6 +5,7 @@ import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import { TransactionType } from '@/types/core/constants'
+import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 
 import type {
   SimpleCategory,
@@ -41,7 +42,9 @@ export default function FlowAccountSummaryCard({
     setIsLoading(true)
     try {
       const response = await fetch(
-        `/api/accounts/${account.id}/transactions?limit=1000`
+        ApiEndpoints.buildUrl(ApiEndpoints.account.TRANSACTIONS(account.id), {
+          limit: 1000,
+        })
       )
       const result = await response.json()
       if (result.success) {
@@ -103,8 +106,10 @@ export default function FlowAccountSummaryCard({
       const amount = transaction.amount
       // 流量类账户只关注对应类型的交易
       const isRelevantTransaction =
-        (accountType === 'INCOME' && transaction.type === TransactionType.INCOME) ||
-        (accountType === 'EXPENSE' && transaction.type === TransactionType.EXPENSE)
+        (accountType === 'INCOME' &&
+          transaction.type === TransactionType.INCOME) ||
+        (accountType === 'EXPENSE' &&
+          transaction.type === TransactionType.EXPENSE)
       if (isRelevantTransaction) {
         // 只统计截止当前日期的交易，排除未来交易
         if (transactionDate <= now) {

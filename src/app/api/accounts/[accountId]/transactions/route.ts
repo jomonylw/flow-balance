@@ -7,6 +7,7 @@ import {
   unauthorizedResponse,
   notFoundResponse,
 } from '@/lib/api/response'
+import { PAGINATION } from '@/lib/constants/app-config'
 import { Prisma, TransactionType } from '@prisma/client'
 
 export async function GET(
@@ -39,7 +40,9 @@ export async function GET(
     const search = searchParams.get('search')
     const recurringTransactionId = searchParams.get('recurringTransactionId')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseInt(
+      searchParams.get('limit') || PAGINATION.DEFAULT_PAGE_SIZE.toString()
+    )
     const skip = (page - 1) * limit
 
     // 构建基础查询条件

@@ -1,6 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { SPACING } from '@/lib/constants/dimensions'
 import type { SimpleTag } from '@/types/core'
 import { DEFAULT_COLOR } from '@/types/core/constants'
 
@@ -39,7 +40,7 @@ export default function TagSelector({
         </label>
       )}
 
-      <div className='flex flex-wrap gap-2'>
+      <div className='flex flex-wrap' style={{ gap: `${SPACING.MD}px` }}>
         {tags.map(tag => {
           const isSelected = selectedTagIds.includes(tag.id)
           const tagColor = tag.color || DEFAULT_COLOR // 默认灰色

@@ -9,6 +9,7 @@ import React, {
 } from 'react'
 import type { Theme } from '@/types/ui'
 import { Theme as ThemeEnum } from '@/types/core/constants'
+import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 
 export type { Theme }
 
@@ -111,7 +112,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
       // 然后尝试从API获取用户设置并同步（仅在用户已登录时）
       try {
-        const response = await fetch('/api/user/settings')
+        const response = await fetch(ApiEndpoints.user.SETTINGS)
         if (response.ok) {
           const data = await response.json()
           if (
@@ -161,7 +162,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
     // 尝试更新用户设置（如果用户已登录）
     try {
-      const response = await fetch('/api/user/settings', {
+      const response = await fetch(ApiEndpoints.user.SETTINGS, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

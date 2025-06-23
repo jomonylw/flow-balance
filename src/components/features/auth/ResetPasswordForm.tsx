@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { ApiEndpoints, VALIDATION } from '@/lib/constants'
 import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 
@@ -87,7 +88,7 @@ export default function ResetPasswordForm() {
     setMessage('')
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const response = await fetch(ApiEndpoints.auth.RESET_PASSWORD, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,6 +146,8 @@ export default function ResetPasswordForm() {
             placeholder='请输入新密码'
             value={formData.password}
             onChange={handleInputChange}
+            minLength={VALIDATION.PASSWORD_MIN_LENGTH}
+            maxLength={VALIDATION.PASSWORD_MAX_LENGTH}
             error={errors.password}
           />
 
@@ -155,6 +158,8 @@ export default function ResetPasswordForm() {
             placeholder='请再次输入新密码'
             value={formData.confirmPassword}
             onChange={handleInputChange}
+            minLength={VALIDATION.PASSWORD_MIN_LENGTH}
+            maxLength={VALIDATION.PASSWORD_MAX_LENGTH}
             error={errors.confirmPassword}
           />
 

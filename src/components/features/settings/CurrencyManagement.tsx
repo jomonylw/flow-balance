@@ -5,6 +5,7 @@ import { Currency } from '@prisma/client'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import { ApiEndpoints } from '@/lib/constants'
 import { CurrencyManagementSkeleton } from '@/components/ui/data-display/page-skeletons'
 import type { CurrencyManagementProps } from '@/types/components'
 
@@ -37,7 +38,7 @@ export default function CurrencyManagement({
       setError('')
 
       // 只获取所有货币，用户货币从 UserDataContext 获取
-      const allCurrenciesRes = await fetch('/api/currencies')
+      const allCurrenciesRes = await fetch(ApiEndpoints.currency.LIST)
 
       if (!allCurrenciesRes.ok) {
         throw new Error(t('error.fetch.failed'))
@@ -62,7 +63,7 @@ export default function CurrencyManagement({
       setError('')
       setSuccessMessage('')
 
-      const response = await fetch('/api/user/currencies', {
+      const response = await fetch(ApiEndpoints.user.CURRENCIES, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,9 +98,12 @@ export default function CurrencyManagement({
       setError('')
       setSuccessMessage('')
 
-      const response = await fetch(`/api/user/currencies/${currencyCode}`, {
-        method: 'DELETE',
-      })
+      const response = await fetch(
+        ApiEndpoints.user.CURRENCIES_DELETE(currencyCode),
+        {
+          method: 'DELETE',
+        }
+      )
 
       const data = await response.json()
 
@@ -128,7 +132,7 @@ export default function CurrencyManagement({
       setError('')
       setSuccessMessage('')
 
-      const response = await fetch('/api/user/currencies', {
+      const response = await fetch(ApiEndpoints.user.CURRENCIES, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -188,8 +192,8 @@ export default function CurrencyManagement({
 
       const isEditing = !!editingCurrency
       const url = isEditing
-        ? `/api/currencies/custom/${editingCurrency}`
-        : '/api/currencies/custom'
+        ? ApiEndpoints.currency.CUSTOM_UPDATE(editingCurrency)
+        : ApiEndpoints.currency.CUSTOM_CREATE
       const method = isEditing ? 'PUT' : 'POST'
 
       const response = await fetch(url, {
@@ -268,9 +272,12 @@ export default function CurrencyManagement({
       setError('')
       setSuccessMessage('')
 
-      const response = await fetch(`/api/currencies/custom/${currencyCode}`, {
-        method: 'DELETE',
-      })
+      const response = await fetch(
+        ApiEndpoints.currency.CUSTOM_DELETE(currencyCode),
+        {
+          method: 'DELETE',
+        }
+      )
 
       const data = await response.json()
 

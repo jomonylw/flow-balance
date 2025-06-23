@@ -6,6 +6,7 @@ import {
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
+import { PAGINATION } from '@/lib/constants/app-config'
 import { TransactionType, Prisma } from '@prisma/client'
 
 // 辅助函数：递归获取所有后代分类的ID
@@ -42,7 +43,9 @@ export async function GET(request: NextRequest) {
     const excludeBalanceAdjustment =
       searchParams.get('excludeBalanceAdjustment') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseInt(
+      searchParams.get('limit') || PAGINATION.DEFAULT_PAGE_SIZE.toString()
+    )
     const skip = (page - 1) * limit
 
     // 构建基础查询条件

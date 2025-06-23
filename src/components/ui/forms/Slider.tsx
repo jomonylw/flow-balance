@@ -1,6 +1,7 @@
 'use client'
 
 import { COLORS } from '@/types/core/constants'
+import { COMPONENT_SIZE, SHADOW } from '@/lib/constants/dimensions'
 
 interface SliderProps {
   name: string
@@ -76,33 +77,33 @@ export default function Slider({
         <style jsx={true}>{`
           .slider::-webkit-slider-thumb {
             appearance: none;
-            height: 20px;
-            width: 20px;
+            height: ${COMPONENT_SIZE.SLIDER.THUMB_SIZE}px;
+            width: ${COMPONENT_SIZE.SLIDER.THUMB_SIZE}px;
             border-radius: 50%;
             background: ${COLORS.PRIMARY};
             cursor: pointer;
             border: 2px solid ${COLORS.BACKGROUND};
-            box-shadow: 0 2px 4px ${COLORS.GRAY_900}1a;
+            box-shadow: ${SHADOW.SM};
           }
 
           .slider::-webkit-slider-thumb:hover {
             background: ${COLORS.PRIMARY};
-            box-shadow: 0 4px 8px ${COLORS.GRAY_900}26;
+            box-shadow: ${SHADOW.MD};
           }
 
           .slider::-moz-range-thumb {
-            height: 20px;
-            width: 20px;
+            height: ${COMPONENT_SIZE.SLIDER.THUMB_SIZE}px;
+            width: ${COMPONENT_SIZE.SLIDER.THUMB_SIZE}px;
             border-radius: 50%;
             background: ${COLORS.PRIMARY};
             cursor: pointer;
             border: 2px solid ${COLORS.BACKGROUND};
-            box-shadow: 0 2px 4px ${COLORS.GRAY_900}1a;
+            box-shadow: ${SHADOW.SM};
           }
 
           .slider::-moz-range-thumb:hover {
             background: ${COLORS.PRIMARY};
-            box-shadow: 0 4px 8px ${COLORS.GRAY_900}26;
+            box-shadow: ${SHADOW.MD};
           }
 
           .dark .slider::-webkit-slider-thumb {

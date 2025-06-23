@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import LoadingScreen from '@/components/ui/feedback/LoadingScreen'
+import { ApiEndpoints } from '@/lib/constants'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -31,7 +32,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch(ApiEndpoints.auth.ME, {
         method: 'GET',
         credentials: 'include',
       })

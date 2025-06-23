@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 
 interface LocalDashboardSummaryResponse {
   success: boolean
@@ -43,7 +44,7 @@ export default function DebugAPIPage() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/dashboard/summary')
+        const response = await fetch(ApiEndpoints.dashboard.SUMMARY)
 
         if (response.ok) {
           const data = await response.json()

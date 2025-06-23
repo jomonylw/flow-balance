@@ -7,6 +7,7 @@ import AuthButton from '@/components/ui/forms/AuthButton'
 import ColorPicker from '@/components/ui/forms/ColorPicker'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { ApiEndpoints, VALIDATION } from '@/lib/constants'
 import type { TagFormModalProps } from '@/types/components'
 import type { TagFormData } from '@/types/core'
 
@@ -52,7 +53,9 @@ export default function TagFormModal({
     try {
       setIsSubmitting(true)
 
-      const url = editingTag ? `/api/tags/${editingTag.id}` : '/api/tags'
+      const url = editingTag
+        ? ApiEndpoints.tag.UPDATE(editingTag.id)
+        : ApiEndpoints.tag.CREATE
       const method = editingTag ? 'PUT' : 'POST'
 
       const response = await fetch(url, {
@@ -108,6 +111,7 @@ export default function TagFormModal({
             setFormData(prev => ({ ...prev, name: e.target.value }))
           }
           placeholder={t('tag.name.placeholder')}
+          maxLength={VALIDATION.TAG_NAME_MAX_LENGTH}
           required
         />
 

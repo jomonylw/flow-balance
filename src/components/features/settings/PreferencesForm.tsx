@@ -9,6 +9,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { Theme } from '@/types/core/constants'
+import { VALIDATION, ApiEndpoints } from '@/lib/constants'
 
 interface PreferencesFormProps {
   userSettings: (UserSettings & { baseCurrency: Currency | null }) | null
@@ -116,7 +117,7 @@ export default function PreferencesForm({
     setError('')
 
     try {
-      const response = await fetch('/api/user/settings', {
+      const response = await fetch(ApiEndpoints.user.SETTINGS, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -316,9 +317,9 @@ export default function PreferencesForm({
                 label={t('preferences.fire.swr')}
                 value={formData.fireSWR}
                 onChange={value => handleSliderChange('fireSWR', value)}
-                min={1.0}
-                max={10.0}
-                step={0.1}
+                min={VALIDATION.FIRE_SWR_MIN}
+                max={VALIDATION.FIRE_SWR_MAX}
+                step={VALIDATION.FIRE_SWR_STEP}
                 help={t('preferences.fire.swr.help')}
                 formatValue={value => `${value.toFixed(1)}%`}
               />
@@ -341,9 +342,9 @@ export default function PreferencesForm({
               label={t('preferences.future.data.days')}
               value={formData.futureDataDays}
               onChange={value => handleSliderChange('futureDataDays', value)}
-              min={0}
-              max={30}
-              step={1}
+              min={VALIDATION.FUTURE_DATA_DAYS_MIN}
+              max={VALIDATION.FUTURE_DATA_DAYS_MAX}
+              step={VALIDATION.FUTURE_DATA_DAYS_STEP}
               help={t('preferences.future.data.days.help')}
               formatValue={value =>
                 value === 0

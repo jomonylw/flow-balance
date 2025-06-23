@@ -1,6 +1,11 @@
 'use client'
 
 import { forwardRef } from 'react'
+import {
+  COMPONENT_SIZE,
+  SPACING,
+  BORDER_RADIUS,
+} from '@/lib/constants/dimensions'
 
 interface InputFieldProps {
   type?: 'text' | 'email' | 'password' | 'number' | 'date'
@@ -16,6 +21,8 @@ interface InputFieldProps {
   help?: string
   autoFocus?: boolean
   step?: string
+  minLength?: number
+  maxLength?: number
 }
 
 const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
@@ -34,6 +41,8 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
       help,
       autoFocus = false,
       step,
+      minLength,
+      maxLength,
     },
     ref
   ) => {
@@ -59,16 +68,21 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
           disabled={disabled}
           autoFocus={autoFocus}
           step={step}
+          minLength={minLength}
+          maxLength={maxLength}
           className={`
-            w-full px-4 py-3 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm
+            w-full border border-gray-300 dark:border-gray-600 shadow-sm
             bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400
             focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10
             disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400
-            text-base sm:text-sm min-h-[44px] sm:min-h-[auto] transition-all duration-200
+            text-base sm:text-sm transition-all duration-200
             hover:border-gray-400 dark:hover:border-gray-500
             ${error ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500 focus:shadow-rose-500/10' : ''}
           `}
           style={{
+            padding: `${SPACING.LG}px ${SPACING.XL}px`,
+            minHeight: `${COMPONENT_SIZE.INPUT.LG}px`,
+            borderRadius: `${BORDER_RADIUS.LG}px`,
             colorScheme: 'light dark',
           }}
         />

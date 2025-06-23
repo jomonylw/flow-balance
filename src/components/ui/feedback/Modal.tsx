@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { SPACING } from '@/lib/constants/dimensions'
 
 interface ModalProps {
   isOpen: boolean
@@ -83,7 +84,10 @@ export default function Modal({
           `}
         >
           {/* 头部 */}
-          <div className='flex-shrink-0 flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700'>
+          <div
+            className='flex-shrink-0 flex items-center justify-between border-b border-gray-200 dark:border-gray-700'
+            style={{ padding: `${SPACING.XL}px` }}
+          >
             <h3 className='text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate pr-4'>
               {title}
             </h3>
@@ -109,7 +113,10 @@ export default function Modal({
           </div>
 
           {/* 内容 */}
-          <div className='flex-grow p-4 sm:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-800/50'>
+          <div
+            className='flex-grow overflow-y-auto bg-gray-50 dark:bg-gray-800/50'
+            style={{ padding: `${SPACING.XL}px` }}
+          >
             {children}
           </div>
         </div>
