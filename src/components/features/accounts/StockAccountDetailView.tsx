@@ -21,6 +21,10 @@ import {
   useTransactionListener,
 } from '@/hooks/business/useDataUpdateListener'
 import {
+  publishTransactionDelete,
+  publishAccountClear,
+} from '@/lib/services/data-update.service'
+import {
   User,
   LegacyAccount,
   LegacyCurrency,
@@ -184,6 +188,12 @@ export default function StockAccountDetailView({
           result.message || t('account.balance.history.cleared')
         )
 
+        // 发布账户清空事件，触发侧边栏刷新
+        await publishAccountClear(account.id, {
+          clearedCount: result.data?.clearedCount || 0,
+          accountType: 'stock',
+        })
+
         // 清空成功后，重新加载交易记录
         loadTransactions(pagination.currentPage)
       } else {
@@ -253,6 +263,17 @@ export default function StockAccountDetailView({
 
       if (result.success) {
         showSuccess(t('success.deleted'), t('account.balance.record.deleted'))
+
+        // 发布删除事件，触发其他组件更新
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        }
+
         loadTransactions(pagination.currentPage)
       } else {
         showError(t('common.delete.failed'), result.error || t('error.unknown'))
@@ -274,15 +295,17 @@ export default function StockAccountDetailView({
         fetch(`/api/transactions/${id}`, { method: 'DELETE' })
       )
 
-      const results = await Promise.all(deletePromises)
-      const successCount = results.filter(r => r.ok).length
+      const responses = await Promise.all(deletePromises)
+      const results = await Promise.all(responses.map(r => r.json()))
+
+      const successfulDeletes = results.filter(result => result.success)
+      const successCount = successfulDeletes.length
 
       if (successCount === transactionIds.length) {
         showSuccess(
           t('success.batch.deleted'),
           t('batch.delete.success', { count: successCount })
         )
-        loadTransactions(pagination.currentPage)
       } else {
         showError(
           t('error.partial.delete'),
@@ -291,8 +314,21 @@ export default function StockAccountDetailView({
             total: transactionIds.length,
           })
         )
-        loadTransactions(pagination.currentPage)
       }
+
+      // 发布删除事件，触发其他组件更新
+      for (const result of successfulDeletes) {
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        }
+      }
+
+      loadTransactions(pagination.currentPage)
     } catch (error) {
       console.error('Batch delete error:', error)
       showError(t('error.batch.delete.failed'), t('error.network'))
@@ -526,7 +562,9 @@ export default function StockAccountDetailView({
               ...account,
               category: {
                 ...account.category,
-                type: account.category.type ? convertPrismaAccountType(account.category.type) : convertPrismaAccountType('ASSET'),
+                type: account.category.type
+                  ? convertPrismaAccountType(account.category.type)
+                  : convertPrismaAccountType('ASSET'),
               },
               transactions: account.transactions || [],
             }}
@@ -542,10 +580,14 @@ export default function StockAccountDetailView({
           trendData={trendData}
           account={{
             ...account,
-            type: account.category.type ? convertPrismaAccountType(account.category.type) : convertPrismaAccountType('ASSET'),
+            type: account.category.type
+              ? convertPrismaAccountType(account.category.type)
+              : convertPrismaAccountType('ASSET'),
             category: {
               ...account.category,
-              type: account.category.type ? convertPrismaAccountType(account.category.type) : convertPrismaAccountType('ASSET'),
+              type: account.category.type
+                ? convertPrismaAccountType(account.category.type)
+                : convertPrismaAccountType('ASSET'),
             },
             currency: account.currency ||
               user.settings?.baseCurrency || {
@@ -659,7 +701,9 @@ export default function StockAccountDetailView({
           ...account,
           category: {
             ...account.category,
-            type: account.category.type ? convertPrismaAccountType(account.category.type) : convertPrismaAccountType('ASSET'),
+            type: account.category.type
+              ? convertPrismaAccountType(account.category.type)
+              : convertPrismaAccountType('ASSET'),
           },
         }}
         currencies={currencies}

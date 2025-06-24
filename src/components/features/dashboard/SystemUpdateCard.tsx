@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import { publishSystemUpdate } from '@/lib/services/data-update.service'
 import { format } from 'date-fns'
 import LoadingSpinner, {
   LoadingSpinnerSVG,
@@ -13,8 +14,7 @@ import LoadingSpinner, {
 export default function SystemUpdateCard() {
   const { t } = useLanguage()
   const { resolvedTheme: _resolvedTheme } = useTheme()
-  const { syncStatus, triggerSync, userSettings, refreshBalances } =
-    useUserData()
+  const { syncStatus, triggerSync, userSettings } = useUserData()
   const { showSuccess, showError } = useToast()
   const [isManualSyncing, setIsManualSyncing] = useState(false)
   const previousSyncStatusRef = useRef(syncStatus)
@@ -39,24 +39,21 @@ export default function SystemUpdateCard() {
         (currentStatus.processedLoans || 0) +
         (currentStatus.processedExchangeRates || 0)
 
-      // 如果有更新（总数大于0），触发refreshBalances
-      // 系统更新主要影响账户余额，使用精确刷新策略提升性能
-      if (totalProcessed > 0) {
-        console.log(
-          `系统更新完成，共处理 ${totalProcessed} 项，触发余额数据刷新`
-        )
-        refreshBalances().catch(error => {
-          console.error(
-            'Failed to refresh balances after system update:',
-            error
-          )
-        })
-      }
+      // 系统更新完成后，无论是否有处理项目，都发布系统更新事件
+      // 这样可以确保侧边栏在同步完成后总是刷新，保持数据一致性
+      publishSystemUpdate({
+        totalProcessed,
+        processedRecurring: currentStatus.processedRecurring || 0,
+        processedLoans: currentStatus.processedLoans || 0,
+        processedExchangeRates: currentStatus.processedExchangeRates || 0,
+      }).catch(error => {
+        console.error('Failed to publish system update event:', error)
+      })
     }
 
     // 更新引用
     previousSyncStatusRef.current = currentStatus
-  }, [syncStatus, refreshBalances])
+  }, [syncStatus])
 
   const getStatusColor = (status: string) => {
     switch (status) {

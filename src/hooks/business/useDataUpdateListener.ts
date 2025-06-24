@@ -200,6 +200,9 @@ export function useAllDataListener(
       'tag-update',
       'tag-delete',
       'manual-refresh',
+      'system-update',
+      'loan-payment-reset',
+      'account-clear',
     ],
     callback
   )

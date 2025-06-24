@@ -15,6 +15,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
+import { publishTransactionDelete } from '@/lib/services/data-update.service'
 import { Transaction, LegacyAccount } from '@/types/business/transaction'
 import type { CategoryTransaction } from '@/types/core'
 import type { FlowMonthlyData, FlowSummaryData } from '@/types/components'
@@ -326,6 +327,7 @@ export default function FlowCategoryDetailView({
       const results = await Promise.all(responses.map(r => r.json()))
 
       const failedDeletes = results.filter(result => !result.success)
+      const successfulDeletes = results.filter(result => result.success)
 
       if (failedDeletes.length > 0) {
         showError(
@@ -342,6 +344,18 @@ export default function FlowCategoryDetailView({
             count: transactionIds.length,
           })
         )
+      }
+
+      // 发布删除事件，触发其他组件更新
+      for (const result of successfulDeletes) {
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        }
       }
 
       // 重新获取数据，但不重载页面
@@ -367,6 +381,17 @@ export default function FlowCategoryDetailView({
 
       if (result.success) {
         showSuccess(t('success.deleted'), t('transaction.record.deleted'))
+
+        // 发布删除事件，触发其他组件更新
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        }
+
         // 重新获取数据，但不重载页面
         handleTransactionSuccess()
       } else {
@@ -767,7 +792,9 @@ export default function FlowCategoryDetailView({
             ...editingAccount,
             category: {
               ...editingAccount.category,
-              type: editingAccount.category.type ? convertPrismaAccountType(editingAccount.category.type) : convertPrismaAccountType('INCOME'),
+              type: editingAccount.category.type
+                ? convertPrismaAccountType(editingAccount.category.type)
+                : convertPrismaAccountType('INCOME'),
             },
           }}
           currencies={currencies}

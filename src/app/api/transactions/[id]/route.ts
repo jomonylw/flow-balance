@@ -281,11 +281,25 @@ export async function DELETE(
       return unauthorizedResponse()
     }
 
-    // 验证交易是否存在且属于当前用户
+    // 验证交易是否存在且属于当前用户，并获取完整的关联数据
     const existingTransaction = await prisma.transaction.findFirst({
       where: {
         id: id,
         userId: user.id,
+      },
+      include: {
+        account: {
+          include: {
+            category: true,
+          },
+        },
+        category: true,
+        currency: true,
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
       },
     })
 
@@ -298,7 +312,24 @@ export async function DELETE(
       where: { id: id },
     })
 
-    return successResponse(null, '交易删除成功')
+    // 格式化交易数据，与创建API保持一致的格式
+    const formattedTransaction = {
+      ...existingTransaction,
+      tags: existingTransaction.tags.map(tt => ({
+        tag: {
+          id: tt.tag.id,
+          name: tt.tag.name,
+        },
+      })),
+    }
+
+    // 返回被删除的交易信息，用于事件发布
+    return successResponse(
+      {
+        transaction: formattedTransaction,
+      },
+      '交易删除成功'
+    )
   } catch (error) {
     console.error('Delete transaction error:', error)
     return errorResponse('删除交易失败', 500)

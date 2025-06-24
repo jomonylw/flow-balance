@@ -18,6 +18,9 @@ export type DataUpdateType =
   | 'tag-update' // 标签更新
   | 'tag-delete' // 标签删除
   | 'manual-refresh' // 手动刷新请求
+  | 'system-update' // 系统自动更新完成
+  | 'loan-payment-reset' // 贷款还款记录重置
+  | 'account-clear' // 账户记录清空
 
 export interface DataUpdateEvent {
   type: DataUpdateType
@@ -230,3 +233,16 @@ export const publishTagDelete = (
   tagId: string,
   data?: Record<string, unknown>
 ) => publishDataUpdate({ type: 'tag-delete', tagId, data })
+
+export const publishSystemUpdate = (data?: Record<string, unknown>) =>
+  publishDataUpdate({ type: 'system-update', data })
+
+export const publishLoanPaymentReset = (
+  accountId: string,
+  data?: Record<string, unknown>
+) => publishDataUpdate({ type: 'loan-payment-reset', accountId, data })
+
+export const publishAccountClear = (
+  accountId: string,
+  data?: Record<string, unknown>
+) => publishDataUpdate({ type: 'account-clear', accountId, data })

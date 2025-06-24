@@ -430,6 +430,7 @@ export default function LoanContractsList({
       {selectedContractId && (
         <LoanPaymentHistory
           loanContractId={selectedContractId}
+          accountId={accountId}
           currencyCode={currencyCode}
           isOpen={showPaymentHistory}
           onClose={() => {

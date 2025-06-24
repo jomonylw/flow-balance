@@ -10,8 +10,8 @@ import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import Modal from '@/components/ui/feedback/Modal'
 import CircularCheckbox from '@/components/ui/forms/CircularCheckbox'
+import { publishLoanPaymentReset } from '@/lib/services/data-update.service'
 import type { LoanPayment } from '@/types/core'
-
 
 interface PaginationInfo {
   page: number
@@ -24,6 +24,7 @@ interface PaginationInfo {
 
 interface LoanPaymentHistoryProps {
   loanContractId: string
+  accountId: string
   currencyCode: string
   isOpen: boolean
   onClose: () => void
@@ -31,14 +32,18 @@ interface LoanPaymentHistoryProps {
 
 export default function LoanPaymentHistory({
   loanContractId,
+  accountId,
   currencyCode,
   isOpen,
   onClose,
 }: LoanPaymentHistoryProps) {
   const { t } = useLanguage()
   const { currencies: _currencies } = useUserData()
-  const { formatCurrencyById, findCurrencyByCode, getCurrencySymbol: _getCurrencySymbol } =
-    useUserCurrencyFormatter()
+  const {
+    formatCurrencyById,
+    findCurrencyByCode,
+    getCurrencySymbol: _getCurrencySymbol,
+  } = useUserCurrencyFormatter()
   const { formatDate } = useUserDateFormatter()
   const { showSuccess, showError } = useToast()
   const [payments, setPayments] = useState<LoanPayment[]>([])
@@ -58,8 +63,6 @@ export default function LoanPaymentHistory({
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showResetAllConfirm, setShowResetAllConfirm] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
-
-
 
   // 获取还款记录
   const fetchPayments = async (page: number = 1) => {
@@ -152,6 +155,13 @@ export default function LoanPaymentHistory({
 
       showSuccess(t('loan.payment.reset.success'), result.data.message)
 
+      // 发布贷款还款重置事件，触发侧边栏刷新
+      await publishLoanPaymentReset(accountId, {
+        resetCount: result.data.resetCount,
+        deletedTransactions: result.data.deletedTransactions,
+        paymentIds: selectedPaymentIds,
+      })
+
       // 重新获取数据
       await fetchPayments(pagination.page)
       setSelectedPaymentIds([])
@@ -192,6 +202,13 @@ export default function LoanPaymentHistory({
       }
 
       showSuccess(t('loan.payment.reset.all.success'), result.data.message)
+
+      // 发布贷款还款重置事件，触发侧边栏刷新
+      await publishLoanPaymentReset(accountId, {
+        resetCount: result.data.resetCount,
+        deletedTransactions: result.data.deletedTransactions,
+        resetAll: true,
+      })
 
       // 重新获取数据
       await fetchPayments(pagination.page)

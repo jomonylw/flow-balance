@@ -18,6 +18,7 @@ import {
   useBalanceUpdateListener,
   useTransactionListener,
 } from '@/hooks/business/useDataUpdateListener'
+import { publishTransactionDelete } from '@/lib/services/data-update.service'
 import { Transaction } from '@/types/business/transaction'
 import type {
   MonthlyDataItem,
@@ -269,6 +270,7 @@ export default function StockCategoryDetailView({
       const results = await Promise.all(responses.map(r => r.json()))
 
       const failedDeletes = results.filter(result => !result.success)
+      const successfulDeletes = results.filter(result => result.success)
 
       if (failedDeletes.length > 0) {
         showError(
@@ -285,6 +287,18 @@ export default function StockCategoryDetailView({
             count: transactionIds.length,
           })
         )
+      }
+
+      // 发布删除事件，触发其他组件更新
+      for (const result of successfulDeletes) {
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        }
       }
 
       // 重新获取数据
@@ -307,16 +321,25 @@ export default function StockCategoryDetailView({
         }
       )
 
-      if (response.ok) {
+      const result = await response.json()
+
+      if (result.success) {
         showSuccess(t('success.deleted'), t('transaction.record.deleted'))
+
+        // 发布删除事件，触发其他组件更新
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        }
+
         // 重新获取数据
         loadTransactions(pagination.currentPage)
       } else {
-        const error = await response.json()
-        showError(
-          t('common.delete.failed'),
-          error.message || t('error.unknown')
-        )
+        showError(t('common.delete.failed'), result.error || t('error.unknown'))
       }
     } catch (error) {
       console.error('Error deleting transaction:', error)

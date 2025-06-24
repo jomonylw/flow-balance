@@ -185,11 +185,25 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'transaction-update':
       case 'transaction-delete':
         // 余额相关更新：强制刷新余额数据
-        if (process.env.NODE_ENV === 'development') {
-          console.log(
-            '[OptimizedCategoryAccountTree] Refreshing balances for transaction/balance event'
-          )
-        }
+        console.log(
+          '[OptimizedCategoryAccountTree] Refreshing balances for transaction/balance event:',
+          { type, accountId: event.accountId, categoryId: event.categoryId }
+        )
+        await refreshBalances()
+        break
+
+      case 'system-update':
+        // 系统自动更新完成：刷新余额数据
+        await refreshBalances()
+        break
+
+      case 'loan-payment-reset':
+        // 贷款还款记录重置：刷新余额数据
+        await refreshBalances()
+        break
+
+      case 'account-clear':
+        // 账户记录清空：刷新余额数据
         await refreshBalances()
         break
 
@@ -379,7 +393,12 @@ const OptimizedCategoryAccountTree = forwardRef<
       }
     }
     // 默认全部展开
-    return new Set([AccountType.ASSET, AccountType.LIABILITY, AccountType.INCOME, AccountType.EXPENSE])
+    return new Set([
+      AccountType.ASSET,
+      AccountType.LIABILITY,
+      AccountType.INCOME,
+      AccountType.EXPENSE,
+    ])
   })
 
   // 客户端挂载状态
@@ -622,7 +641,12 @@ const OptimizedCategoryAccountTree = forwardRef<
     if (filteredData) {
       // 展开所有分组
       setExpandedTypeGroups(
-        new Set([AccountType.ASSET, AccountType.LIABILITY, AccountType.INCOME, AccountType.EXPENSE])
+        new Set([
+          AccountType.ASSET,
+          AccountType.LIABILITY,
+          AccountType.INCOME,
+          AccountType.EXPENSE,
+        ])
       )
       // 展开所有分类
       const allIds = getAllCategoryIds(filteredData)
@@ -760,22 +784,20 @@ const OptimizedCategoryAccountTree = forwardRef<
             />
 
             {isExpanded && (
-              <div className="space-y-1 px-2 pb-2">
-                {viewMode === 'tree' ? (
-                  // 树状视图：显示分类层级结构
-                  group.categories.map(category => renderCategory(category))
-                ) : (
-                  // 账户视图：直接显示所有账户
-                  getAccountsForAccountsView(group).map(account => (
-                    <AccountTreeItem
-                      key={account.id}
-                      account={account}
-                      level={0}
-                      onNavigate={onNavigate}
-                      baseCurrency={getBaseCurrency() || undefined}
-                    />
-                  ))
-                )}
+              <div className='space-y-1 px-2 pb-2'>
+                {viewMode === 'tree'
+                  ? // 树状视图：显示分类层级结构
+                    group.categories.map(category => renderCategory(category))
+                  : // 账户视图：直接显示所有账户
+                    getAccountsForAccountsView(group).map(account => (
+                      <AccountTreeItem
+                        key={account.id}
+                        account={account}
+                        level={0}
+                        onNavigate={onNavigate}
+                        baseCurrency={getBaseCurrency() || undefined}
+                      />
+                    ))}
               </div>
             )}
           </div>

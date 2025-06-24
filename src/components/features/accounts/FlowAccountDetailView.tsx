@@ -16,6 +16,10 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { SkeletonTable } from '@/components/ui/data-display/skeleton'
 import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
+import {
+  publishTransactionDelete,
+  publishAccountClear,
+} from '@/lib/services/data-update.service'
 
 import {
   Tag,
@@ -212,6 +216,17 @@ export default function FlowAccountDetailView({
 
       if (result.success) {
         showSuccess('删除成功', '交易记录已删除')
+
+        // 发布删除事件，触发其他组件更新
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        }
+
         loadTransactions(pagination.currentPage) // 重新加载当前页
       } else {
         showError('删除失败', result.error || '未知错误')
@@ -263,6 +278,12 @@ export default function FlowAccountDetailView({
           result.message || t('account.transactions.cleared')
         )
 
+        // 发布账户清空事件，触发侧边栏刷新
+        await publishAccountClear(account.id, {
+          clearedCount: result.data?.clearedCount || 0,
+          accountType: 'flow',
+        })
+
         // 清空成功后，重新加载交易记录
         loadTransactions(pagination.currentPage)
       } else {
@@ -290,15 +311,17 @@ export default function FlowAccountDetailView({
         fetch(`/api/transactions/${id}`, { method: 'DELETE' })
       )
 
-      const results = await Promise.all(deletePromises)
-      const successCount = results.filter(r => r.ok).length
+      const responses = await Promise.all(deletePromises)
+      const results = await Promise.all(responses.map(r => r.json()))
+
+      const successfulDeletes = results.filter(result => result.success)
+      const successCount = successfulDeletes.length
 
       if (successCount === transactionIds.length) {
         showSuccess(
           t('success.batch.deleted'),
           t('batch.delete.success', { count: successCount })
         )
-        loadTransactions(pagination.currentPage)
       } else {
         showError(
           t('error.partial.delete'),
@@ -307,8 +330,21 @@ export default function FlowAccountDetailView({
             total: transactionIds.length,
           })
         )
-        loadTransactions(pagination.currentPage)
       }
+
+      // 发布删除事件，触发其他组件更新
+      for (const result of successfulDeletes) {
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        }
+      }
+
+      loadTransactions(pagination.currentPage)
     } catch (error) {
       console.error('Batch delete error:', error)
       showError(t('error.batch.delete.failed'), t('error.network'))
@@ -549,8 +585,10 @@ export default function FlowAccountDetailView({
             transactions: account.transactions || [],
             category: {
               ...account.category,
-              type: account.category.type ? convertPrismaAccountType(account.category.type) : undefined
-            }
+              type: account.category.type
+                ? convertPrismaAccountType(account.category.type)
+                : undefined,
+            },
           }}
           balance={flowTotal}
           currencyCode={account.currency?.code || 'USD'}
@@ -563,10 +601,14 @@ export default function FlowAccountDetailView({
           trendData={trendData}
           account={{
             ...account,
-            type: account.category.type ? convertPrismaAccountType(account.category.type) : convertPrismaAccountType('INCOME'),
+            type: account.category.type
+              ? convertPrismaAccountType(account.category.type)
+              : convertPrismaAccountType('INCOME'),
             category: {
               ...account.category,
-              type: account.category.type ? convertPrismaAccountType(account.category.type) : undefined
+              type: account.category.type
+                ? convertPrismaAccountType(account.category.type)
+                : undefined,
             },
             currency: account.currency || {
               id: 'default-usd',
@@ -693,8 +735,10 @@ export default function FlowAccountDetailView({
           ...account,
           category: {
             ...account.category,
-            type: account.category.type ? convertPrismaAccountType(account.category.type) : undefined
-          }
+            type: account.category.type
+              ? convertPrismaAccountType(account.category.type)
+              : undefined,
+          },
         }}
         currencies={currencies}
         tags={tags}

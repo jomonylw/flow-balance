@@ -591,12 +591,30 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
   const fetchBalances = useCallback(
     async (force = false) => {
       try {
-        let shouldFetch = false
+        // 如果是强制刷新，直接获取数据
+        if (force) {
+          // 设置加载状态
+          setUserData(prev => ({
+            ...prev,
+            isLoadingBalances: true,
+            balancesError: null,
+          }))
 
-        // 检查是否需要获取余额数据
+          const { accountBalances } = await fetchBalancesData()
+
+          setUserData(prev => ({
+            ...prev,
+            accountBalances,
+            isLoadingBalances: false,
+            lastUpdated: new Date(),
+          }))
+          return
+        }
+
+        // 非强制刷新时，检查是否已有数据
+        let shouldFetch = false
         setUserData(prev => {
-          // 如果已经有余额数据且不是强制刷新，则不重新获取
-          if (prev.accountBalances && !force) {
+          if (prev.accountBalances) {
             shouldFetch = false
             return prev
           }

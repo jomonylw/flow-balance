@@ -18,6 +18,7 @@ import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { Transaction, User } from '@/types/business/transaction'
 import { PAGINATION } from '@/lib/constants/app-config'
 import type { TransactionFilters } from '@/types/components'
+import { publishTransactionDelete } from '@/lib/services/data-update.service'
 
 interface TransactionListViewProps {
   user: User
@@ -201,6 +202,7 @@ export default function TransactionListView({
       const results = await Promise.all(responses.map(r => r.json()))
 
       const failedDeletes = results.filter(result => !result.success)
+      const successfulDeletes = results.filter(result => result.success)
 
       if (failedDeletes.length > 0) {
         showError(
@@ -217,6 +219,18 @@ export default function TransactionListView({
             count: transactionIds.length,
           })
         )
+      }
+
+      // 发布删除事件，触发其他组件更新
+      for (const result of successfulDeletes) {
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        }
       }
 
       await loadTransactions()
@@ -242,6 +256,30 @@ export default function TransactionListView({
 
       if (result.success) {
         showSuccess(t('success.deleted'), t('transaction.record.deleted'))
+
+        // 发布删除事件，触发其他组件更新
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          console.log(
+            '[TransactionListView] Publishing transaction-delete event:',
+            {
+              accountId: transaction.accountId || transaction.account?.id,
+              categoryId: transaction.categoryId || transaction.category?.id,
+              transaction,
+            }
+          )
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        } else {
+          console.warn(
+            '[TransactionListView] No transaction data in delete result:',
+            result
+          )
+        }
+
         loadTransactions()
         loadStats()
       } else {
