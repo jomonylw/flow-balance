@@ -5,6 +5,7 @@
   "transaction.category": "Category",
   "transaction.account": "Account",
   "transaction.type": "Type",
+  "transaction.type.balance": "Balance",
   "transaction.create": "Create Transaction",
   "transaction.edit": "Edit Transaction",
   "transaction.delete": "Delete Transaction",

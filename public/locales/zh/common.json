@@ -82,6 +82,7 @@
   "delete.password.placeholder": "请输入密码",
   "common.network.error": "网络错误，请稍后重试",
   "common.no.data": "暂无数据",
+  "common.more": "更多",
   "transaction.notes": "备注",
   "transaction.tags": "标签",
   "transaction.tags.empty": "暂无标签",

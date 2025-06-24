@@ -22,6 +22,13 @@ export enum TransactionType {
   BALANCE = 'BALANCE',
 }
 
+/** 还款类型枚举 */
+export enum RepaymentType {
+  EQUAL_PAYMENT = 'EQUAL_PAYMENT',
+  EQUAL_PRINCIPAL = 'EQUAL_PRINCIPAL',
+  INTEREST_ONLY = 'INTEREST_ONLY',
+}
+
 /** 主题类型枚举 */
 export enum Theme {
   LIGHT = 'light',

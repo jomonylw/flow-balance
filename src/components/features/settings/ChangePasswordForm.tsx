@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import InputField from '@/components/ui/forms/InputField'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useToast } from '@/contexts/providers/ToastContext'
 import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
 
 export default function ChangePasswordForm() {
   const { t } = useLanguage()
+  const { showSuccess, showError } = useToast()
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -15,7 +17,6 @@ export default function ChangePasswordForm() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState('')
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -31,9 +32,6 @@ export default function ChangePasswordForm() {
         [name]: '',
       }))
     }
-
-    // 清除消息
-    if (message) setMessage('')
   }
 
   const validateForm = () => {
@@ -71,7 +69,6 @@ export default function ChangePasswordForm() {
     }
 
     setIsLoading(true)
-    setMessage('')
 
     try {
       const response = await fetch(ApiEndpoints.user.CHANGE_PASSWORD, {
@@ -88,18 +85,26 @@ export default function ChangePasswordForm() {
       const data = await response.json()
 
       if (response.ok) {
-        setMessage(t('password.change.success'))
+        showSuccess(
+          t('password.change.success'),
+          t('password.change.success.message')
+        )
         setFormData({
           currentPassword: '',
           newPassword: '',
           confirmPassword: '',
         })
+        setErrors({}) // 清除所有错误
       } else {
-        setErrors({ general: data.error || t('password.change.failed') })
+        const errorMessage = data.error || t('password.change.failed')
+        showError(t('password.change.failed'), errorMessage)
+        setErrors({ general: errorMessage })
       }
     } catch (error) {
       console.error('Change password error:', error)
-      setErrors({ general: t('settings.network.error') })
+      const errorMessage = t('error.network')
+      showError(t('password.change.failed'), errorMessage)
+      setErrors({ general: errorMessage })
     } finally {
       setIsLoading(false)
     }
@@ -107,45 +112,6 @@ export default function ChangePasswordForm() {
 
   return (
     <div className='space-y-6'>
-      {/* 消息提示 */}
-      {message && (
-        <div className='bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg'>
-          <div className='flex items-center'>
-            <svg
-              className='w-5 h-5 mr-2'
-              fill='currentColor'
-              viewBox='0 0 20 20'
-            >
-              <path
-                fillRule='evenodd'
-                d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
-                clipRule='evenodd'
-              />
-            </svg>
-            {message}
-          </div>
-        </div>
-      )}
-
-      {errors.general && (
-        <div className='bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg'>
-          <div className='flex items-center'>
-            <svg
-              className='w-5 h-5 mr-2'
-              fill='currentColor'
-              viewBox='0 0 20 20'
-            >
-              <path
-                fillRule='evenodd'
-                d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z'
-                clipRule='evenodd'
-              />
-            </svg>
-            {errors.general}
-          </div>
-        </div>
-      )}
-
       {/* 密码修改表单 */}
       <div>
         <h3 className='text-lg font-medium text-gray-900 dark:text-gray-100'>

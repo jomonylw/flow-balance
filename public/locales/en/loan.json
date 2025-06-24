@@ -110,5 +110,6 @@
   "frequency.monthly": "Monthly",
   "frequency.quarterly": "Quarterly",
   "frequency.semi_annually": "Semi-annually",
-  "frequency.annually": "Annually"
+  "frequency.annually": "Annually",
+  "loan.payment.loading.description": "Loading payment records, please wait..."
 }

@@ -85,6 +85,7 @@
   "delete.password.placeholder": "Enter password",
   "common.network.error": "Network error, please try again later",
   "common.no.data": "No data available",
+  "common.more": "more",
   "transaction.notes": "Notes",
   "transaction.tags": "Tags",
   "transaction.tags.empty": "No tags available",

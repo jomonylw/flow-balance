@@ -110,5 +110,6 @@
   "frequency.monthly": "每月",
   "frequency.quarterly": "每季度",
   "frequency.semi_annually": "每半年",
-  "frequency.annually": "每年"
+  "frequency.annually": "每年",
+  "loan.payment.loading.description": "正在加载还款记录，请稍候..."
 }

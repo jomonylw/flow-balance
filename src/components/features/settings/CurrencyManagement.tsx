@@ -21,8 +21,6 @@ export default function CurrencyManagement({
   const { currencies: userCurrencies, refreshCurrencies } = useUserData()
   const [allCurrencies, setAllCurrencies] = useState<CurrencyWithStatus[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
   const [showCustomForm, setShowCustomForm] = useState(false)
   const [editingCurrency, setEditingCurrency] = useState<string | null>(null)
   const [customCurrencyForm, setCustomCurrencyForm] = useState({
@@ -35,7 +33,6 @@ export default function CurrencyManagement({
   const fetchAllCurrencies = useCallback(async () => {
     try {
       setIsLoading(true)
-      setError('')
 
       // 只获取所有货币，用户货币从 UserDataContext 获取
       const allCurrenciesRes = await fetch(ApiEndpoints.currency.LIST)
@@ -48,11 +45,11 @@ export default function CurrencyManagement({
       setAllCurrencies(allCurrenciesData.data.currencies)
     } catch (error) {
       console.error('获取货币数据失败:', error)
-      setError(t('error.fetch.failed'))
+      showError(t('error.fetch.failed'), t('error.network'))
     } finally {
       setIsLoading(false)
     }
-  }, [t])
+  }, [t, showError])
 
   useEffect(() => {
     fetchAllCurrencies()
@@ -60,9 +57,6 @@ export default function CurrencyManagement({
 
   const handleAddCurrency = async (currencyId: string) => {
     try {
-      setError('')
-      setSuccessMessage('')
-
       const response = await fetch(ApiEndpoints.user.CURRENCIES, {
         method: 'POST',
         headers: {
@@ -75,29 +69,22 @@ export default function CurrencyManagement({
 
       if (response.ok) {
         const successMsg = data.message || t('currency.add.success')
-        setSuccessMessage(successMsg)
         showSuccess(t('currency.add.success'), successMsg)
         await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
         const errorMessage = data.error || t('currency.add.failed')
-        setError(errorMessage)
         showError(t('currency.add.failed'), errorMessage)
       }
     } catch (error) {
       console.error('添加货币失败:', error)
-      const errorMessage = t('error.network')
-      setError(errorMessage)
-      showError(t('currency.add.failed'), errorMessage)
+      showError(t('currency.add.failed'), t('error.network'))
     }
   }
 
   const handleRemoveCurrency = async (currencyId: string) => {
     try {
-      setError('')
-      setSuccessMessage('')
-
       const response = await fetch(
         ApiEndpoints.user.CURRENCIES_DELETE(currencyId),
         {
@@ -109,29 +96,22 @@ export default function CurrencyManagement({
 
       if (response.ok) {
         const successMsg = data.message || t('currency.remove.success')
-        setSuccessMessage(successMsg)
         showSuccess(t('currency.remove.success'), successMsg)
         await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
         const errorMessage = data.error || t('currency.remove.failed')
-        setError(errorMessage)
         showError(t('currency.remove.failed'), errorMessage)
       }
     } catch (error) {
       console.error('删除货币失败:', error)
-      const errorMessage = t('error.network')
-      setError(errorMessage)
-      showError(t('currency.remove.failed'), errorMessage)
+      showError(t('currency.remove.failed'), t('error.network'))
     }
   }
 
   const _handleBatchUpdate = async (selectedCodes: string[]) => {
     try {
-      setError('')
-      setSuccessMessage('')
-
       const response = await fetch(ApiEndpoints.user.CURRENCIES, {
         method: 'PUT',
         headers: {
@@ -143,16 +123,19 @@ export default function CurrencyManagement({
       const data = await response.json()
 
       if (response.ok) {
-        setSuccessMessage(data.message)
+        showSuccess(t('currency.update.success'), data.message)
         await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
-        setError(data.error || t('currency.update.failed'))
+        showError(
+          t('currency.update.failed'),
+          data.error || t('error.operation.failed')
+        )
       }
     } catch (error) {
       console.error('更新货币设置失败:', error)
-      setError(t('error.network'))
+      showError(t('currency.update.failed'), t('error.network'))
     }
   }
 
@@ -169,15 +152,12 @@ export default function CurrencyManagement({
 
   const handleCreateCustomCurrency = async () => {
     try {
-      setError('')
-      setSuccessMessage('')
-
       if (
         !customCurrencyForm.code ||
         !customCurrencyForm.name ||
         !customCurrencyForm.symbol
       ) {
-        setError(t('currency.form.incomplete'))
+        showError(t('validation.failed'), t('currency.form.incomplete'))
         return
       }
 
@@ -186,7 +166,7 @@ export default function CurrencyManagement({
         customCurrencyForm.decimalPlaces < 0 ||
         customCurrencyForm.decimalPlaces > 10
       ) {
-        setError(t('currency.decimal.places.invalid'))
+        showError(t('validation.failed'), t('currency.decimal.places.invalid'))
         return
       }
 
@@ -214,7 +194,6 @@ export default function CurrencyManagement({
               ? 'currency.custom.update.success'
               : 'currency.custom.create.success'
           )
-        setSuccessMessage(successMsg)
         showSuccess(
           t(
             isEditing
@@ -242,7 +221,6 @@ export default function CurrencyManagement({
               ? 'currency.custom.update.failed'
               : 'currency.custom.create.failed'
           )
-        setError(errorMessage)
         showError(
           t(
             isEditing
@@ -254,24 +232,19 @@ export default function CurrencyManagement({
       }
     } catch (error) {
       console.error('创建自定义货币失败:', error)
-      const errorMessage = t('error.network')
-      setError(errorMessage)
       showError(
         t(
           editingCurrency
             ? 'currency.custom.update.failed'
             : 'currency.custom.create.failed'
         ),
-        errorMessage
+        t('error.network')
       )
     }
   }
 
   const handleDeleteCustomCurrency = async (currencyCode: string) => {
     try {
-      setError('')
-      setSuccessMessage('')
-
       const response = await fetch(
         ApiEndpoints.currency.CUSTOM_DELETE(currencyCode),
         {
@@ -283,21 +256,17 @@ export default function CurrencyManagement({
 
       if (response.ok) {
         const successMsg = data.message || t('currency.custom.delete.success')
-        setSuccessMessage(successMsg)
         showSuccess(t('currency.custom.delete.success'), successMsg)
         await refreshCurrencies() // 刷新 UserDataContext 中的货币数据
         await fetchAllCurrencies() // 刷新所有货币数据
         onCurrenciesUpdated?.()
       } else {
         const errorMessage = data.error || t('currency.custom.delete.failed')
-        setError(errorMessage)
         showError(t('currency.custom.delete.failed'), errorMessage)
       }
     } catch (error) {
       console.error('删除自定义货币失败:', error)
-      const errorMessage = t('error.network')
-      setError(errorMessage)
-      showError(t('currency.custom.delete.failed'), errorMessage)
+      showError(t('currency.custom.delete.failed'), t('error.network'))
     }
   }
 
@@ -315,18 +284,6 @@ export default function CurrencyManagement({
           {t('currency.management.description')}
         </p>
       </div>
-
-      {error && (
-        <div className='bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg'>
-          {error}
-        </div>
-      )}
-
-      {successMessage && (
-        <div className='bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg'>
-          {successMessage}
-        </div>
-      )}
 
       {/* 已选择的货币 */}
       <div>

@@ -72,6 +72,7 @@
   "exchange.rate.base.currency.setup.required": "请先在偏好设置中设置本位币",
   "exchange.rate.update.partial.message": "成功更新 {{updatedCount}} 个汇率，{{errorCount}} 个失败",
   "exchange.rate.update.success.message": "成功更新 {{updatedCount}} 个汇率",
+  "exchange.rate.update.skipped.message": "，跳过 {{skippedCount}} 个不支持的货币",
   "exchange.rate.update.general.failed": "更新失败",
   "exchange.rate.network.error": "网络错误，请稍后重试",
   "exchange.rate.settings.update.failed": "更新设置失败",

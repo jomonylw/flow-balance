@@ -214,6 +214,25 @@ export class RecurringTransactionService {
           throw new Error('账户不存在')
         }
 
+        // 验证交易类型与账户类型匹配
+        const accountType = account.category.type
+        if (
+          (recurringTransaction.type === 'INCOME' &&
+            accountType !== 'INCOME') ||
+          (recurringTransaction.type === 'EXPENSE' && accountType !== 'EXPENSE')
+        ) {
+          throw new Error(
+            `定期交易类型(${recurringTransaction.type})与账户类型(${accountType})不匹配`
+          )
+        }
+
+        // 警告：存量类账户不适合定期交易
+        if (accountType === 'ASSET' || accountType === 'LIABILITY') {
+          console.warn(
+            `定期交易 ${recurringTransaction.description} 使用了存量类账户，这可能不符合预期`
+          )
+        }
+
         // 创建交易记录
         const transaction = await tx.transaction.create({
           data: {

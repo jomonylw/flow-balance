@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
@@ -13,13 +13,50 @@ import LoadingSpinner, {
 export default function SystemUpdateCard() {
   const { t } = useLanguage()
   const { resolvedTheme: _resolvedTheme } = useTheme()
-  const { syncStatus, triggerSync, userSettings } = useUserData()
+  const { syncStatus, triggerSync, userSettings, refreshBalances } =
+    useUserData()
   const { showSuccess, showError } = useToast()
   const [isManualSyncing, setIsManualSyncing] = useState(false)
+  const previousSyncStatusRef = useRef(syncStatus)
 
   // 检查是否启用了汇率自动更新
   const isExchangeRateAutoUpdateEnabled =
     userSettings?.autoUpdateExchangeRates || false
+
+  // 监听同步状态变化，当同步完成且有更新时触发refreshBalances
+  useEffect(() => {
+    const previousStatus = previousSyncStatusRef.current
+    const currentStatus = syncStatus
+
+    // 检查是否从非completed状态变为completed状态
+    if (
+      previousStatus.status !== 'completed' &&
+      currentStatus.status === 'completed'
+    ) {
+      // 计算总的处理数量
+      const totalProcessed =
+        (currentStatus.processedRecurring || 0) +
+        (currentStatus.processedLoans || 0) +
+        (currentStatus.processedExchangeRates || 0)
+
+      // 如果有更新（总数大于0），触发refreshBalances
+      // 系统更新主要影响账户余额，使用精确刷新策略提升性能
+      if (totalProcessed > 0) {
+        console.log(
+          `系统更新完成，共处理 ${totalProcessed} 项，触发余额数据刷新`
+        )
+        refreshBalances().catch(error => {
+          console.error(
+            'Failed to refresh balances after system update:',
+            error
+          )
+        })
+      }
+    }
+
+    // 更新引用
+    previousSyncStatusRef.current = currentStatus
+  }, [syncStatus, refreshBalances])
 
   const getStatusColor = (status: string) => {
     switch (status) {

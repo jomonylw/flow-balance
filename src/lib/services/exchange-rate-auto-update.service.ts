@@ -22,6 +22,7 @@ interface ExchangeRateUpdateResult {
   data?: {
     updatedCount: number
     errors: string[]
+    skippedCurrencies?: string[]
     lastUpdate: string
     source: string
     baseCurrency: string
@@ -206,6 +207,7 @@ export class ExchangeRateAutoUpdateService {
 
       let updatedCount = 0
       const errors: string[] = []
+      const skippedCurrencies: string[] = []
 
       // 更新用户已选择的货币汇率
       for (const userCurrency of userCurrencies) {
@@ -218,7 +220,9 @@ export class ExchangeRateAutoUpdateService {
 
         // 检查 Frankfurter 是否返回了这个货币的汇率
         if (!frankfurterData.rates[currencyCode]) {
-          errors.push(`未找到 ${baseCurrencyCode} 到 ${currencyCode} 的汇率`)
+          // 静默跳过API不支持的货币，不视为错误
+          skippedCurrencies.push(currencyCode)
+          console.log(`跳过不支持的货币: ${currencyCode} (API中无此汇率数据)`)
           continue
         }
 
@@ -293,12 +297,22 @@ export class ExchangeRateAutoUpdateService {
         errors.push('自动生成反向汇率和传递汇率失败')
       }
 
+      // 构建返回消息
+      let message = `成功更新 ${updatedCount} 个汇率`
+      if (errors.length > 0) {
+        message += `，${errors.length} 个失败`
+      }
+      if (skippedCurrencies.length > 0) {
+        message += `，跳过 ${skippedCurrencies.length} 个不支持的货币`
+      }
+
       return {
         success: true,
-        message: `成功更新 ${updatedCount} 个汇率${errors.length > 0 ? `，${errors.length} 个失败` : ''}`,
+        message,
         data: {
           updatedCount,
           errors,
+          skippedCurrencies,
           lastUpdate: new Date().toISOString(),
           source: 'Frankfurter API',
           baseCurrency: baseCurrencyCode,

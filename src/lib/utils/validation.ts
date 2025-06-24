@@ -112,19 +112,6 @@ export function validateAccountDataWithI18n(
       }
     })
 
-    // 验证存量类账户的特殊规则
-    // if (account.category.type === 'ASSET' || account.category.type === 'LIABILITY') {
-    //   const balanceAdjustments = account.transactions.filter(t =>
-    //     t.description.includes('余额更新') || t.description.includes('余额调整')
-    //   )
-
-    //   if (balanceAdjustments.length === 0 && account.transactions.length > 0) {
-    //     suggestions.push(
-    //       t('validation.stock.account.suggestion', { accountName: account.name })
-    //     )
-    //   }
-    // }
-
     // 验证流量类账户的特殊规则
     if (
       account.category.type === AccountType.INCOME ||
@@ -145,14 +132,41 @@ export function validateAccountDataWithI18n(
   })
 
   // 计算数据质量评分
+  const totalTransactions = accounts.reduce(
+    (sum, acc) => sum + (acc.transactions?.length || 0),
+    0
+  )
+
+  // 计算无效交易数量
+  const invalidTransactions = accounts.reduce((sum, acc) => {
+    return (
+      sum +
+      acc.transactions.filter(t => {
+        // 无效交易的条件：
+        // 1. 金额无效
+        if (t.amount <= 0) return true
+        // 2. 日期无效
+        if (isNaN(new Date(t.date).getTime())) return true
+        // 3. 描述为空
+        if (!t.description || t.description.trim() === '') return true
+        // 4. 交易类型与账户类型不匹配
+        if (acc.category?.type) {
+          const isValidCombination = validateTransactionAccountType(
+            t.type,
+            acc.category.type
+          )
+          if (!isValidCombination) return true
+        }
+        return false
+      }).length
+    )
+  }, 0)
+
   const details: ValidationDetails = {
     accountsChecked: accounts.length,
-    transactionsChecked: accounts.reduce(
-      (sum, acc) => sum + (acc.transactions?.length || 0),
-      0
-    ),
+    transactionsChecked: totalTransactions,
     categoriesWithoutType: accounts.filter(acc => !acc.category?.type).length,
-    invalidTransactions: 0, // 这里简化处理
+    invalidTransactions,
     businessLogicViolations: warnings.filter(
       w => w.includes('不匹配') || w.includes('mismatched')
     ).length,
@@ -229,19 +243,6 @@ export function validateAccountData(
       }
     })
 
-    // 验证存量类账户的特殊规则
-    // if (account.category.type === 'ASSET' || account.category.type === 'LIABILITY') {
-    //   const balanceAdjustments = account.transactions.filter(t =>
-    //     t.description.includes('余额更新') || t.description.includes('余额调整')
-    //   )
-
-    //   if (balanceAdjustments.length === 0 && account.transactions.length > 0) {
-    //     suggestions.push(
-    //       `存量类账户 "${account.name}" 建议使用"余额更新"功能而不是直接添加交易`
-    //     )
-    //   }
-    // }
-
     // 验证流量类账户的特殊规则
     if (
       account.category.type === AccountType.INCOME ||
@@ -262,14 +263,41 @@ export function validateAccountData(
   })
 
   // 计算数据质量评分
+  const totalTransactions = accounts.reduce(
+    (sum, acc) => sum + (acc.transactions?.length || 0),
+    0
+  )
+
+  // 计算无效交易数量
+  const invalidTransactions = accounts.reduce((sum, acc) => {
+    return (
+      sum +
+      acc.transactions.filter(t => {
+        // 无效交易的条件：
+        // 1. 金额无效
+        if (t.amount <= 0) return true
+        // 2. 日期无效
+        if (isNaN(new Date(t.date).getTime())) return true
+        // 3. 描述为空
+        if (!t.description || t.description.trim() === '') return true
+        // 4. 交易类型与账户类型不匹配
+        if (acc.category?.type) {
+          const isValidCombination = validateTransactionAccountType(
+            t.type,
+            acc.category.type
+          )
+          if (!isValidCombination) return true
+        }
+        return false
+      }).length
+    )
+  }, 0)
+
   const details: ValidationDetails = {
     accountsChecked: accounts.length,
-    transactionsChecked: accounts.reduce(
-      (sum, acc) => sum + (acc.transactions?.length || 0),
-      0
-    ),
+    transactionsChecked: totalTransactions,
     categoriesWithoutType: accounts.filter(acc => !acc.category?.type).length,
-    invalidTransactions: 0, // 这里简化处理
+    invalidTransactions,
     businessLogicViolations: warnings.filter(w => w.includes('不匹配')).length,
   }
 

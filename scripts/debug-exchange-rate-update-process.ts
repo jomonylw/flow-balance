@@ -52,17 +52,19 @@ async function debugExchangeRateUpdateProcess() {
 
     console.log(`\n💰 用户活跃货币 (${userCurrencies.length} 个):`)
     userCurrencies.forEach(uc => {
-      console.log(`  - ${uc.currency.code}: ${uc.currency.name} (ID: ${uc.currency.id})`)
+      console.log(
+        `  - ${uc.currency.code}: ${uc.currency.name} (ID: ${uc.currency.id})`
+      )
     })
 
     // 调用 Frankfurter API
     const frankfurterUrl = `https://api.frankfurter.dev/v1/latest?base=${baseCurrencyCode}`
     console.log(`\n🌐 调用 API: ${frankfurterUrl}`)
-    
+
     const response = await fetch(frankfurterUrl)
     const frankfurterData: FrankfurterResponse = await response.json()
-    
-    console.log(`✅ API 响应成功`)
+
+    console.log('✅ API 响应成功')
     console.log(`📅 API 返回日期: ${frankfurterData.date}`)
     console.log(`💱 可用汇率数量: ${Object.keys(frankfurterData.rates).length}`)
 
@@ -72,22 +74,25 @@ async function debugExchangeRateUpdateProcess() {
     console.log(`📅 生效日期: ${effectiveDate.toISOString().split('T')[0]}`)
 
     // 生成更新备注
-    const updateTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
+    const updateTime = new Date().toLocaleString('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+    })
     const updateType = '手动更新'
     const notePrefix = `${updateType} - ${updateTime} - API日期: ${frankfurterData.date}`
     console.log(`📝 备注前缀: ${notePrefix}`)
 
     let updatedCount = 0
     const errors: string[] = []
+    const skippedCurrencies: string[] = []
 
-    console.log(`\n🔄 开始更新汇率...`)
+    console.log('\n🔄 开始更新汇率...')
 
     // 更新用户已选择的货币汇率
     for (const userCurrency of userCurrencies) {
       const currencyCode = userCurrency.currency.code
-      
+
       console.log(`\n处理货币: ${currencyCode}`)
-      
+
       // 跳过本位币（自己对自己的汇率为1）
       if (currencyCode === baseCurrencyCode) {
         console.log(`  ⏭️  跳过本位币: ${currencyCode}`)
@@ -96,9 +101,10 @@ async function debugExchangeRateUpdateProcess() {
 
       // 检查 Frankfurter 是否返回了这个货币的汇率
       if (!frankfurterData.rates[currencyCode]) {
-        const error = `未找到 ${baseCurrencyCode} 到 ${currencyCode} 的汇率`
-        console.log(`  ❌ ${error}`)
-        errors.push(error)
+        console.log(
+          `  ⏭️  跳过不支持的货币: ${currencyCode} (API中无此汇率数据)`
+        )
+        skippedCurrencies.push(currencyCode)
         continue
       }
 
@@ -128,7 +134,7 @@ async function debugExchangeRateUpdateProcess() {
             },
           })
         } else {
-          console.log(`  ➕ 创建新汇率记录`)
+          console.log('  ➕ 创建新汇率记录')
           // 创建新汇率记录
           await prisma.exchangeRate.create({
             data: {
@@ -151,15 +157,23 @@ async function debugExchangeRateUpdateProcess() {
       }
     }
 
-    console.log(`\n📊 更新结果:`)
+    console.log('\n📊 更新结果:')
     console.log(`✅ 成功更新: ${updatedCount} 个汇率`)
+    console.log(`⏭️  跳过: ${skippedCurrencies.length} 个不支持的货币`)
     console.log(`❌ 失败: ${errors.length} 个`)
+    if (skippedCurrencies.length > 0) {
+      console.log('跳过的货币:')
+      skippedCurrencies.forEach(currency =>
+        console.log(`  - ${currency} (API不支持)`)
+      )
+    }
     if (errors.length > 0) {
+      console.log('失败的货币:')
       errors.forEach(error => console.log(`  - ${error}`))
     }
 
     // 验证更新结果
-    console.log(`\n🔍 验证更新结果...`)
+    console.log('\n🔍 验证更新结果...')
     const updatedRates = await prisma.exchangeRate.findMany({
       where: {
         userId: user.id,
@@ -175,49 +189,59 @@ async function debugExchangeRateUpdateProcess() {
       ],
     })
 
-    console.log(`💱 生效日期 ${effectiveDate.toISOString().split('T')[0]} 的汇率记录 (${updatedRates.length} 条):`)
+    console.log(
+      `💱 生效日期 ${effectiveDate.toISOString().split('T')[0]} 的汇率记录 (${updatedRates.length} 条):`
+    )
     updatedRates.forEach(rate => {
-      console.log(`  - ${rate.fromCurrencyRef.code} → ${rate.toCurrencyRef.code}: ${rate.rate} (${rate.type})`)
+      console.log(
+        `  - ${rate.fromCurrencyRef.code} → ${rate.toCurrencyRef.code}: ${rate.rate} (${rate.type})`
+      )
       console.log(`    备注: ${rate.notes || '无备注'}`)
     })
 
     // 检查港币相关的汇率记录
-    const hkdRates = updatedRates.filter(rate => 
-      rate.fromCurrencyRef.code === 'HKD' || rate.toCurrencyRef.code === 'HKD'
+    const hkdRates = updatedRates.filter(
+      rate =>
+        rate.fromCurrencyRef.code === 'HKD' || rate.toCurrencyRef.code === 'HKD'
     )
     console.log(`\n🏦 港币相关汇率记录 (${hkdRates.length} 条):`)
     hkdRates.forEach(rate => {
-      console.log(`  - ${rate.fromCurrencyRef.code} → ${rate.toCurrencyRef.code}: ${rate.rate} (${rate.type})`)
+      console.log(
+        `  - ${rate.fromCurrencyRef.code} → ${rate.toCurrencyRef.code}: ${rate.rate} (${rate.type})`
+      )
       console.log(`    备注: ${rate.notes || '无备注'}`)
     })
 
     if (hkdRates.length === 0) {
-      console.log(`\n🔍 港币汇率缺失分析:`)
-      console.log(`1. 检查港币是否在用户活跃货币列表中...`)
-      const hkdUserCurrency = userCurrencies.find(uc => uc.currency.code === 'HKD')
+      console.log('\n🔍 港币汇率缺失分析:')
+      console.log('1. 检查港币是否在用户活跃货币列表中...')
+      const hkdUserCurrency = userCurrencies.find(
+        uc => uc.currency.code === 'HKD'
+      )
       if (hkdUserCurrency) {
-        console.log(`   ✅ 港币在活跃货币列表中 (ID: ${hkdUserCurrency.currency.id})`)
+        console.log(
+          `   ✅ 港币在活跃货币列表中 (ID: ${hkdUserCurrency.currency.id})`
+        )
       } else {
-        console.log(`   ❌ 港币不在活跃货币列表中`)
+        console.log('   ❌ 港币不在活跃货币列表中')
       }
 
-      console.log(`2. 检查 Frankfurter API 是否返回港币汇率...`)
+      console.log('2. 检查 Frankfurter API 是否返回港币汇率...')
       if (frankfurterData.rates['HKD']) {
         console.log(`   ✅ API 返回港币汇率: ${frankfurterData.rates['HKD']}`)
       } else {
-        console.log(`   ❌ API 未返回港币汇率`)
+        console.log('   ❌ API 未返回港币汇率')
       }
 
-      console.log(`3. 检查是否有处理错误...`)
+      console.log('3. 检查是否有处理错误...')
       const hkdErrors = errors.filter(error => error.includes('HKD'))
       if (hkdErrors.length > 0) {
-        console.log(`   ❌ 港币处理错误:`)
+        console.log('   ❌ 港币处理错误:')
         hkdErrors.forEach(error => console.log(`     - ${error}`))
       } else {
-        console.log(`   ✅ 没有港币相关的处理错误`)
+        console.log('   ✅ 没有港币相关的处理错误')
       }
     }
-
   } catch (error) {
     console.error('❌ 调试失败:', error)
   } finally {

@@ -110,6 +110,18 @@ export async function POST(request: NextRequest) {
       return validationErrorResponse('汇率必须是大于0的数字')
     }
 
+    // 验证汇率精度（不能超过8位小数）
+    const rateStr = rateValue.toString()
+    const decimalIndex = rateStr.indexOf('.')
+    if (decimalIndex !== -1 && rateStr.length - decimalIndex - 1 > 8) {
+      return validationErrorResponse('汇率精度不能超过8位小数')
+    }
+
+    // 验证汇率合理性
+    if (rateValue > 1000000) {
+      return validationErrorResponse('汇率值过大，请确认是否正确')
+    }
+
     // 验证货币代码（优先查找用户自定义货币）
     const fromCurrencyExists = await prisma.currency.findFirst({
       where: {
@@ -150,6 +162,13 @@ export async function POST(request: NextRequest) {
     const parsedDate = new Date(effectiveDate)
     if (isNaN(parsedDate.getTime())) {
       return validationErrorResponse('无效的生效日期')
+    }
+
+    // 验证生效日期不能是未来日期
+    const now = new Date()
+    now.setHours(23, 59, 59, 999) // 设置为今天的最后一刻
+    if (parsedDate > now) {
+      return validationErrorResponse('汇率生效日期不能是未来日期')
     }
 
     // 检查是否已存在相同日期的汇率
@@ -270,6 +289,20 @@ export async function PUT(request: NextRequest) {
           continue
         }
 
+        // 验证汇率精度
+        const rateStr = rateValue.toString()
+        const decimalIndex = rateStr.indexOf('.')
+        if (decimalIndex !== -1 && rateStr.length - decimalIndex - 1 > 8) {
+          errors.push(`第${i + 1}条记录：汇率精度不能超过8位小数`)
+          continue
+        }
+
+        // 验证汇率合理性
+        if (rateValue > 1000000) {
+          errors.push(`第${i + 1}条记录：汇率值过大，请确认是否正确`)
+          continue
+        }
+
         if (fromCurrency === toCurrency) {
           errors.push(`第${i + 1}条记录：不能设置相同货币之间的汇率`)
           continue
@@ -278,6 +311,14 @@ export async function PUT(request: NextRequest) {
         const parsedDate = new Date(effectiveDate)
         if (isNaN(parsedDate.getTime())) {
           errors.push(`第${i + 1}条记录：无效的生效日期`)
+          continue
+        }
+
+        // 验证生效日期不能是未来日期
+        const now = new Date()
+        now.setHours(23, 59, 59, 999)
+        if (parsedDate > now) {
+          errors.push(`第${i + 1}条记录：汇率生效日期不能是未来日期`)
           continue
         }
 

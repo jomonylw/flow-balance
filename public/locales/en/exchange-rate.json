@@ -72,6 +72,7 @@
   "exchange.rate.base.currency.setup.required": "Please set base currency in preferences first",
   "exchange.rate.update.partial.message": "Successfully updated {{updatedCount}} rates, {{errorCount}} failed",
   "exchange.rate.update.success.message": "Successfully updated {{updatedCount}} rates",
+  "exchange.rate.update.skipped.message": ", skipped {{skippedCount}} unsupported currencies",
   "exchange.rate.update.general.failed": "Update failed",
   "exchange.rate.network.error": "Network error, please try again later",
   "exchange.rate.settings.update.failed": "Failed to update settings",

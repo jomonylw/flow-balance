@@ -24,7 +24,12 @@ export default function ExchangeRateManagement({
   currencies,
 }: ExchangeRateManagementProps) {
   const { t } = useLanguage()
-  const { currencies: userCurrencies, getBaseCurrency, userSettings, updateUserSettings } = useUserData()
+  const {
+    currencies: userCurrencies,
+    getBaseCurrency,
+    userSettings,
+    updateUserSettings,
+  } = useUserData()
   const { showSuccess, showError } = useToast()
   const { formatInputDate } = useUserDateFormatter()
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateData[]>([])
@@ -164,10 +169,15 @@ export default function ExchangeRateManagement({
         }
         showSuccess(
           t('exchange.rate.auto.update'),
-          enabled ? t('exchange.rate.auto.update.enabled') : t('exchange.rate.auto.update.disabled')
+          enabled
+            ? t('exchange.rate.auto.update.enabled')
+            : t('exchange.rate.auto.update.disabled')
         )
       } else {
-        showError(t('error.update.failed'), data.error || t('exchange.rate.settings.update.failed'))
+        showError(
+          t('error.update.failed'),
+          data.error || t('exchange.rate.settings.update.failed')
+        )
       }
     } catch (error) {
       console.error('更新自动更新设置失败:', error)
@@ -178,7 +188,10 @@ export default function ExchangeRateManagement({
   // 处理手动更新
   const handleManualUpdate = async () => {
     if (!baseCurrency) {
-      showError(t('exchange.rate.base.currency.required'), t('exchange.rate.base.currency.setup.required'))
+      showError(
+        t('exchange.rate.base.currency.required'),
+        t('exchange.rate.base.currency.setup.required')
+      )
       return
     }
 
@@ -194,7 +207,7 @@ export default function ExchangeRateManagement({
       const data = await response.json()
 
       if (response.ok) {
-        const { updatedCount, errors } = data.data
+        const { updatedCount, errors, skippedCurrencies } = data.data
 
         // 刷新汇率数据
         await fetchData()
@@ -212,31 +225,55 @@ export default function ExchangeRateManagement({
           console.error('Failed to refresh user settings:', error)
         }
 
+        // 只有真正的错误才显示为失败，跳过的货币不算失败
         if (errors && errors.length > 0) {
           showError(
             t('exchange.rate.update.partial'),
-            t('exchange.rate.update.partial.message', { updatedCount, errorCount: errors.length })
+            t('exchange.rate.update.partial.message', {
+              updatedCount,
+              errorCount: errors.length,
+            })
           )
         } else {
-          showSuccess(
-            t('exchange.rate.update.success'),
-            t('exchange.rate.update.success.message', { updatedCount })
-          )
+          // 构建成功消息
+          let successMessage = t('exchange.rate.update.success.message', {
+            updatedCount,
+          })
+          if (skippedCurrencies && skippedCurrencies.length > 0) {
+            const skippedMessage = t('exchange.rate.update.skipped.message', {
+              skippedCount: skippedCurrencies.length,
+            })
+            // 如果翻译键没有加载，使用回退文本
+            if (skippedMessage === 'exchange.rate.update.skipped.message') {
+              successMessage += `，跳过 ${skippedCurrencies.length} 个不支持的货币`
+            } else {
+              successMessage += skippedMessage
+            }
+          }
+
+          showSuccess(t('exchange.rate.update.success'), successMessage)
         }
       } else {
         // 根据错误代码显示国际化错误信息
-        let errorMessage = data.error || t('exchange.rate.update.general.failed')
+        let errorMessage =
+          data.error || t('exchange.rate.update.general.failed')
 
         if (data.errorCode) {
           switch (data.errorCode) {
             case 'CURRENCY_NOT_SUPPORTED':
-              errorMessage = t('exchange.rate.api.currency.not.supported', data.errorParams || {})
+              errorMessage = t(
+                'exchange.rate.api.currency.not.supported',
+                data.errorParams || {}
+              )
               break
             case 'SERVICE_UNAVAILABLE':
               errorMessage = t('exchange.rate.api.service.unavailable')
               break
             case 'API_ERROR':
-              errorMessage = t('exchange.rate.api.error.with.code', data.errorParams || {})
+              errorMessage = t(
+                'exchange.rate.api.error.with.code',
+                data.errorParams || {}
+              )
               break
             case 'NETWORK_CONNECTION_FAILED':
               errorMessage = t('exchange.rate.network.connection.failed')
@@ -245,7 +282,8 @@ export default function ExchangeRateManagement({
               errorMessage = t('exchange.rate.api.fetch.failed')
               break
             default:
-              errorMessage = data.error || t('exchange.rate.update.general.failed')
+              errorMessage =
+                data.error || t('exchange.rate.update.general.failed')
           }
         }
 
@@ -366,8 +404,8 @@ export default function ExchangeRateManagement({
               </p>
             </div>
             <ToggleSwitch
-              name="autoUpdateExchangeRates"
-              label=""
+              name='autoUpdateExchangeRates'
+              label=''
               checked={autoUpdateEnabled}
               onChange={handleAutoUpdateToggle}
               disabled={!baseCurrency}
@@ -381,8 +419,7 @@ export default function ExchangeRateManagement({
                 {t('exchange.rate.last.update')}:{' '}
                 {lastUpdate
                   ? new Date(lastUpdate).toLocaleString()
-                  : t('exchange.rate.never.updated')
-                }
+                  : t('exchange.rate.never.updated')}
               </div>
               <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
                 {t('exchange.rate.source.frankfurter')}
@@ -396,7 +433,11 @@ export default function ExchangeRateManagement({
             >
               {isUpdating ? (
                 <>
-                  <LoadingSpinnerSVG size='sm' color='white' className='w-4 h-4 mr-1' />
+                  <LoadingSpinnerSVG
+                    size='sm'
+                    color='white'
+                    className='w-4 h-4 mr-1'
+                  />
                   {t('exchange.rate.updating')}
                 </>
               ) : (

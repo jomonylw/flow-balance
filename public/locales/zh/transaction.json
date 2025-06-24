@@ -5,6 +5,7 @@
   "transaction.category": "分类",
   "transaction.account": "账户",
   "transaction.type": "类型",
+  "transaction.type.balance": "余额",
   "transaction.create": "创建交易",
   "transaction.edit": "编辑交易",
   "transaction.delete": "删除交易",
