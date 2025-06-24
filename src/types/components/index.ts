@@ -46,6 +46,7 @@ export interface DashboardContentProps {
     accountCount: number
     transactionCount: number
     categoryCount: number
+    accountingDays: number
   }
   accounts: AccountWithTransactions[]
 }

@@ -129,15 +129,15 @@ html {
   /* 优化触摸目标大小 */
   button,
   a,
-  input:not([type="range"]),
+  input:not([type='range']),
   select,
   textarea {
-    min-height: 40px;
-    min-width: 40px;
+    min-height: 30px;
+    min-width: 30px;
   }
 
   /* 滑块组件在移动端的特殊处理 */
-  input[type="range"] {
+  input[type='range'] {
     min-height: auto;
     min-width: auto;
   }

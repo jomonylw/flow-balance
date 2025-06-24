@@ -1,6 +1,6 @@
 {
   "dashboard.title": "仪表板",
-  "dashboard.welcome": "欢迎回来，{{email}}！这里是您的财务概览。",
+  "dashboard.welcome": "欢迎回来，{{name}}！这是您记账的第 {{days}} 天。",
   "dashboard.financial.overview": "财务概览",
   "dashboard.api.data.note": "使用API数据，确保计算准确性",
   "dashboard.account.count": "账户数量",

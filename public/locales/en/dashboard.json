@@ -1,6 +1,6 @@
 {
   "dashboard.title": "Dashboard",
-  "dashboard.welcome": "Welcome back, {{email}}! Here is your financial overview.",
+  "dashboard.welcome": "Welcome back, {{name}}! This is day {{days}} of your accounting journey.",
   "dashboard.financial.overview": "Financial Overview",
   "dashboard.api.data.note": "Using API data to ensure calculation accuracy",
   "dashboard.account.count": "Account Count",

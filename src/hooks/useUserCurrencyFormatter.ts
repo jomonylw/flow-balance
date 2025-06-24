@@ -13,6 +13,10 @@ export function useUserCurrencyFormatter() {
    */
   const findCurrencyById = useCallback(
     (currencyId: string) => {
+      if (!currencyId) {
+        console.warn('findCurrencyById: currencyId is empty or null')
+        return null
+      }
       return currencies.find(c => c.id === currencyId) || null
     },
     [currencies]
@@ -77,7 +81,12 @@ export function useUserCurrencyFormatter() {
 
       // 根据货币ID精确查找货币信息
       const currency = findCurrencyById(currencyId)
-      const symbol = currency?.symbol || currencyId
+      if (!currency && currencyId) {
+        console.warn(
+          `formatCurrencyById: Currency not found for ID: ${currencyId}`
+        )
+      }
+      const symbol = currency?.symbol || '?'
 
       // 确定小数位数：优先使用用户指定的precision，否则使用货币的decimalPlaces，最后回退到2
       const decimalPlaces = options?.precision ?? currency?.decimalPlaces ?? 2
@@ -100,9 +109,10 @@ export function useUserCurrencyFormatter() {
         options?.originalAmount !== undefined &&
         options?.originalCurrencyId
       ) {
-        const originalCurrencyInfo = findCurrencyById(options.originalCurrencyId)
-        const originalSymbol =
-          originalCurrencyInfo?.symbol || options.originalCurrencyId
+        const originalCurrencyInfo = findCurrencyById(
+          options.originalCurrencyId
+        )
+        const originalSymbol = originalCurrencyInfo?.symbol || '?'
         // 原始金额也使用对应货币的小数位数
         const originalDecimalPlaces =
           options?.precision ?? originalCurrencyInfo?.decimalPlaces ?? 2
@@ -169,7 +179,9 @@ export function useUserCurrencyFormatter() {
         options?.originalAmount !== undefined &&
         options?.originalCurrency
       ) {
-        const originalCurrencyInfo = findCurrencyByCode(options.originalCurrency)
+        const originalCurrencyInfo = findCurrencyByCode(
+          options.originalCurrency
+        )
         const originalSymbol =
           originalCurrencyInfo?.symbol || options.originalCurrency
         // 原始金额也使用对应货币的小数位数
@@ -198,7 +210,12 @@ export function useUserCurrencyFormatter() {
   const getCurrencySymbolById = useCallback(
     (currencyId: string) => {
       const currency = findCurrencyById(currencyId)
-      return currency?.symbol || currencyId
+      if (!currency && currencyId) {
+        console.warn(
+          `getCurrencySymbolById: Currency not found for ID: ${currencyId}`
+        )
+      }
+      return currency?.symbol || '?'
     },
     [findCurrencyById]
   )
@@ -227,7 +244,7 @@ export function useUserCurrencyFormatter() {
         findCurrencyById(currencyId) || {
           id: currencyId,
           code: 'UNKNOWN',
-          symbol: 'UNKNOWN',
+          symbol: '?',
           name: 'Unknown Currency',
           decimalPlaces: 2, // 默认2位小数
           isCustom: false,

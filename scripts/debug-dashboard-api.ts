@@ -18,7 +18,9 @@ async function debugDashboardAPI() {
       return
     }
 
-    console.log(`👤 用户: ${user.email} (ID: ${user.id})`)
+    console.log(
+      `👤 用户: ${user.name || user.email} (${user.email}, ID: ${user.id})`
+    )
 
     // 获取用户设置和本位币
     const userSettings = await prisma.userSettings.findUnique({

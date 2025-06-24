@@ -104,6 +104,11 @@ export default function StockAccountTrendChart({
       },
       tooltip: {
         trigger: 'axis',
+        backgroundColor: resolvedTheme === 'dark' ? '#374151' : '#ffffff',
+        borderColor: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb',
+        textStyle: {
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+        },
         formatter: (params: unknown) => {
           // ECharts tooltip formatter params can be array or single object
           const paramArray = Array.isArray(params) ? params : [params]
@@ -117,9 +122,16 @@ export default function StockAccountTrendChart({
           const item = trendData[dataIndex]
           const itemCurrency = item?.originalCurrency || originalCurrency
 
+          // 使用统一的日期格式化
+          const date = new Date(param.axisValue)
+          const formattedDate =
+            timeRange === 'lastMonth'
+              ? formatChartDate(date, 'day')
+              : formatChartDate(date, 'month')
+
           return `
             <div style="padding: 8px;">
-              <div style="font-weight: bold; margin-bottom: 4px;">${param.axisValue}</div>
+              <div style="font-weight: bold; margin-bottom: 4px;">${formattedDate}</div>
               <div style="color: #3b82f6;">
                 ${t('chart.balance.amount')}: ${formatCurrency(param.value as number, itemCurrency)}
               </div>
@@ -146,6 +158,9 @@ export default function StockAccountTrendChart({
         data: dates,
         axisLabel: {
           color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+          rotate: window.innerWidth < 768 ? 45 : 0,
+          fontSize: window.innerWidth < 768 ? 10 : 12,
+          interval: window.innerWidth < 768 ? 'auto' : 0,
           formatter: function (value: string) {
             const date = new Date(value)
             if (timeRange === 'lastMonth') {

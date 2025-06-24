@@ -148,9 +148,13 @@ export async function registerUser(email: string, password: string) {
 
     // 创建用户
     const hashedPassword = await hashPassword(password)
+    // 从邮箱提取默认昵称（@之前的部分）
+    const defaultName = email.split('@')[0]
+
     const user = await prisma.user.create({
       data: {
         email,
+        name: defaultName,
         password: hashedPassword,
         settings: {
           create: {

@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/ui/useResponsive'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { getChartHeight } from '@/lib/utils/responsive'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 
@@ -36,8 +37,12 @@ export default function NetWorthChart({
 }: NetWorthChartProps) {
   const { t } = useLanguage()
   const { resolvedTheme } = useTheme()
-  const { formatCurrencyById, findCurrencyByCode, getUserLocale: _getUserLocale } =
-    useUserCurrencyFormatter()
+  const {
+    formatCurrencyById,
+    findCurrencyByCode,
+    getUserLocale: _getUserLocale,
+  } = useUserCurrencyFormatter()
+  const { formatChartDate } = useUserDateFormatter()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
   const [chartError, setChartError] = useState<string | null>(null)
@@ -126,6 +131,11 @@ export default function NetWorthChart({
             },
           },
           confine: true, // 限制在图表区域内
+          backgroundColor: resolvedTheme === 'dark' ? '#374151' : '#ffffff',
+          borderColor: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb',
+          textStyle: {
+            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+          },
           formatter: function (
             params: Array<{
               value: number
@@ -137,7 +147,10 @@ export default function NetWorthChart({
             if (!params || params.length === 0) {
               return ''
             }
-            let result = `<div style="font-weight: bold; margin-bottom: 5px;">${params[0].name}</div>`
+            // 使用统一的日期格式化
+            const date = new Date(params[0].name + '-01')
+            const formattedDate = formatChartDate(date, 'month')
+            let result = `<div style="font-weight: bold; margin-bottom: 5px;">${formattedDate}</div>`
             params.forEach(param => {
               const numericValue = param.value as number
               if (typeof numericValue !== 'number' || isNaN(numericValue))
@@ -179,8 +192,9 @@ export default function NetWorthChart({
             fontSize: isMobile ? 10 : 12,
             interval: isMobile ? 'auto' : 0,
             formatter: function (value: string) {
-              // 将 YYYY-MM 格式转换为 YYYY/MM
-              return value.replace('-', '/')
+              // 使用统一的日期格式化
+              const date = new Date(value + '-01')
+              return formatChartDate(date, 'month')
             },
           },
           axisLine: {
@@ -269,7 +283,16 @@ export default function NetWorthChart({
       setChartError(error instanceof Error ? error.message : '未知错误')
       return undefined
     }
-  }, [data, currency, loading, resolvedTheme, isMobile, chartHeight, t])
+  }, [
+    data,
+    currency,
+    loading,
+    resolvedTheme,
+    isMobile,
+    chartHeight,
+    t,
+    formatChartDate,
+  ])
 
   useEffect(() => {
     return () => {

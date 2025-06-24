@@ -462,10 +462,10 @@ export default function TransactionList({
             }`}
           >
             {/* 移动端布局 */}
-            <div className='sm:hidden p-4'>
-              <div className='flex items-start space-x-4'>
+            <div className='sm:hidden p-3'>
+              <div className='flex items-start space-x-3'>
                 {/* 选择框和图标 */}
-                <div className='flex flex-col items-center space-y-3'>
+                <div className='flex flex-col items-center space-y-2'>
                   {!readOnly && (
                     <CircularCheckbox
                       checked={selectedTransactions.has(transaction.id)}
@@ -483,17 +483,17 @@ export default function TransactionList({
                 <div className='flex-1 min-w-0'>
                   <div className='flex items-start justify-between'>
                     <div className='flex-1 min-w-0'>
-                      <div className='flex items-start flex-col space-y-2'>
-                        <h4 className='text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight'>
+                      <div className='flex items-start flex-col space-y-1.5'>
+                        <h4 className='text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight'>
                           {transaction.description}
                         </h4>
                         {/* 关联类型标签 */}
                         {getRelationshipTags(transaction).length > 0 && (
-                          <div className='flex flex-wrap gap-1.5'>
+                          <div className='flex flex-wrap gap-1'>
                             {getRelationshipTags(transaction).map(tag => (
                               <span
                                 key={tag.key}
-                                className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium ${tag.className}`}
+                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${tag.className}`}
                               >
                                 {tag.text}
                               </span>
@@ -501,24 +501,26 @@ export default function TransactionList({
                           </div>
                         )}
                       </div>
-                      <div className='mt-3 space-y-1'>
-                        <div className='text-sm text-gray-600 dark:text-gray-400'>
+                      <div className='mt-2 space-y-0.5'>
+                        <div className='text-xs text-gray-600 dark:text-gray-400'>
                           <span className='font-medium'>
                             {transaction.category.name}
                           </span>
                         </div>
-                        <div className='text-sm text-gray-600 dark:text-gray-400'>
+                        <div className='text-xs text-gray-600 dark:text-gray-400'>
                           <span>{formatDate(transaction.date)}</span>
                         </div>
                         {showAccount && transaction.account && (
-                          <div className='text-sm text-gray-600 dark:text-gray-400'>
+                          <div className='text-xs text-gray-600 dark:text-gray-400'>
                             <span>{transaction.account.name}</span>
                           </div>
                         )}
-                        <div className='text-sm'>
-                          <div className={'inline-flex items-center space-x-2'}>
+                        <div className='text-xs'>
+                          <div
+                            className={'inline-flex items-center space-x-1.5'}
+                          >
                             <div
-                              className={`h-2 w-2 rounded-full ${
+                              className={`h-1.5 w-1.5 rounded-full ${
                                 transaction.type === 'INCOME'
                                   ? 'bg-green-500'
                                   : transaction.type === 'EXPENSE'
@@ -546,18 +548,18 @@ export default function TransactionList({
                       </div>
                     </div>
 
-                    <div className='flex flex-col items-end space-y-3 ml-4'>
+                    <div className='flex flex-col items-end space-y-2 ml-3'>
                       {getAmountDisplay(transaction)}
                       {!readOnly && (
-                        <div className='flex items-center space-x-2'>
+                        <div className='flex items-center space-x-1.5'>
                           {/* 编辑按钮 */}
                           <button
                             onClick={() => onEdit(transaction)}
-                            className='p-2 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 touch-manipulation shadow-sm'
+                            className='p-1.5 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 touch-manipulation shadow-sm'
                             title={t('transaction.edit')}
                           >
                             <svg
-                              className='h-4 w-4'
+                              className='h-3.5 w-3.5'
                               fill='none'
                               stroke='currentColor'
                               viewBox='0 0 24 24'
@@ -575,11 +577,11 @@ export default function TransactionList({
                           {onDelete && (
                             <button
                               onClick={() => handleSingleDelete(transaction)}
-                              className='p-2 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation shadow-sm'
+                              className='p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation shadow-sm'
                               title={t('transaction.delete')}
                             >
                               <svg
-                                className='h-4 w-4'
+                                className='h-3.5 w-3.5'
                                 fill='none'
                                 stroke='currentColor'
                                 viewBox='0 0 24 24'
@@ -602,10 +604,10 @@ export default function TransactionList({
             </div>
 
             {/* 桌面端布局 */}
-            <div className='hidden sm:flex items-start space-x-5 p-5'>
+            <div className='hidden sm:flex items-start space-x-4 p-4'>
               {/* 选择框 */}
               {!readOnly && (
-                <div className='pt-1'>
+                <div className='pt-0.5'>
                   <CircularCheckbox
                     checked={selectedTransactions.has(transaction.id)}
                     onChange={() => handleSelectTransaction(transaction.id)}
@@ -616,7 +618,7 @@ export default function TransactionList({
               )}
 
               {/* 交易类型图标 */}
-              <div className='flex-shrink-0 pt-1'>
+              <div className='flex-shrink-0 pt-0.5'>
                 {getTypeIcon(transaction)}
               </div>
 
@@ -624,18 +626,18 @@ export default function TransactionList({
               <div className='flex-1 min-w-0'>
                 <div className='flex items-start justify-between'>
                   <div className='flex-1 min-w-0'>
-                    <div className='flex items-start flex-col space-y-2'>
+                    <div className='flex items-start flex-col space-y-1.5'>
                       <div className='flex items-center space-x-3 w-full'>
-                        <h4 className='text-lg font-semibold text-gray-900 dark:text-gray-100 truncate'>
+                        <h4 className='text-base font-semibold text-gray-900 dark:text-gray-100 truncate'>
                           {transaction.description}
                         </h4>
                         {/* 关联类型标签 */}
                         {getRelationshipTags(transaction).length > 0 && (
-                          <div className='flex flex-wrap gap-1.5'>
+                          <div className='flex flex-wrap gap-1'>
                             {getRelationshipTags(transaction).map(tag => (
                               <span
                                 key={tag.key}
-                                className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${tag.className}`}
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${tag.className}`}
                               >
                                 {tag.text}
                               </span>
@@ -644,7 +646,7 @@ export default function TransactionList({
                         )}
                       </div>
                     </div>
-                    <div className='flex items-center space-x-4 mt-2 text-sm text-gray-600 dark:text-gray-400'>
+                    <div className='flex items-center space-x-3 mt-1.5 text-xs text-gray-600 dark:text-gray-400'>
                       <div>
                         <span className='font-medium'>
                           {transaction.category.name}
@@ -663,9 +665,9 @@ export default function TransactionList({
                         <span>{formatDate(transaction.date)}</span>
                       </div>
                       <div className='h-1 w-1 bg-gray-400 rounded-full'></div>
-                      <div className='flex items-center space-x-1.5'>
+                      <div className='flex items-center space-x-1'>
                         <div
-                          className={`h-2 w-2 rounded-full ${
+                          className={`h-1.5 w-1.5 rounded-full ${
                             transaction.type === 'INCOME'
                               ? 'bg-green-500'
                               : transaction.type === 'EXPENSE'
@@ -692,19 +694,19 @@ export default function TransactionList({
                     </div>
                   </div>
 
-                  <div className='flex items-start space-x-4 ml-6'>
+                  <div className='flex items-start space-x-3 ml-4'>
                     {getAmountDisplay(transaction)}
 
                     {!readOnly && (
-                      <div className='flex items-center space-x-2 pt-1'>
+                      <div className='flex items-center space-x-1.5 pt-0.5'>
                         {/* 编辑按钮 */}
                         <button
                           onClick={() => onEdit(transaction)}
-                          className='p-2 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 shadow-sm'
+                          className='p-1.5 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 shadow-sm'
                           title={t('transaction.edit')}
                         >
                           <svg
-                            className='h-4 w-4'
+                            className='h-3.5 w-3.5'
                             fill='none'
                             stroke='currentColor'
                             viewBox='0 0 24 24'
@@ -722,11 +724,11 @@ export default function TransactionList({
                         {onDelete && (
                           <button
                             onClick={() => handleSingleDelete(transaction)}
-                            className='p-2 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 shadow-sm'
+                            className='p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 shadow-sm'
                             title={t('transaction.delete')}
                           >
                             <svg
-                              className='h-4 w-4'
+                              className='h-3.5 w-3.5'
                               fill='none'
                               stroke='currentColor'
                               viewBox='0 0 24 24'

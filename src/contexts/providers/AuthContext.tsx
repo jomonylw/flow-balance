@@ -17,6 +17,7 @@ interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
   checkAuth: () => Promise<boolean>
+  updateUser: (userData: Partial<AuthState['user']>) => void
   clearError: () => void
 }
 
@@ -171,6 +172,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [router])
 
+  const updateUser = useCallback((userData: Partial<AuthState['user']>) => {
+    setAuthState(prev => ({
+      ...prev,
+      user: prev.user ? { ...prev.user, ...userData } : null,
+    }))
+  }, [])
+
   const clearError = useCallback(() => {
     setAuthState(prev => ({ ...prev, error: null }))
   }, [])
@@ -312,6 +320,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     checkAuth,
+    updateUser,
     clearError,
   }
 

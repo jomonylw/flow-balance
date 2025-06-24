@@ -132,6 +132,7 @@ export async function GET() {
       // 用户基本信息（不包含敏感数据）
       user: {
         email: user.email,
+        name: user.name,
         createdAt: user.createdAt,
       },
       // 用户设置

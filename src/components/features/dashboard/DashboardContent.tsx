@@ -58,7 +58,10 @@ export default function DashboardContent({
   })
 
   // 辅助函数：智能格式化货币
-  const formatCurrencyAmount = (amount: number, currency: { code: string; id?: string }) => {
+  const formatCurrencyAmount = (
+    amount: number,
+    currency: { code: string; id?: string }
+  ) => {
     if (currency.id) {
       return formatCurrencyById(amount, currency.id)
     } else {
@@ -201,7 +204,10 @@ export default function DashboardContent({
     <TranslationLoader fallback={<DashboardSkeleton />}>
       <PageContainer
         title={t('dashboard.title')}
-        subtitle={t('dashboard.welcome', { email: user.email })}
+        subtitle={t('dashboard.welcome', {
+          name: user.name || user.email,
+          days: stats.accountingDays,
+        })}
       >
         {/* 汇率设置提醒 */}
         <ExchangeRateAlert className='mb-4 sm:mb-6' />

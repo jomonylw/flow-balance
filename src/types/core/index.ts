@@ -36,7 +36,7 @@ export {
 export interface User {
   id: string
   email: string
-  name?: string
+  name: string // 用户昵称/显示名称，必需字段
   createdAt: Date
   updatedAt: Date
   settings?: UserSettings

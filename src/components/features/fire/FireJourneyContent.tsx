@@ -51,7 +51,7 @@ export default function FireJourneyContent({
     retirementExpenses: 0,
     safeWithdrawalRate: userSettings.fireSWR || 4.0,
     currentInvestableAssets: 0,
-    expectedAnnualReturn: 7.6,
+    expectedAnnualReturn: 0.0,
     monthlyInvestment: 0,
   })
 

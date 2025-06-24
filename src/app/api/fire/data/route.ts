@@ -7,6 +7,8 @@ import {
   unauthorizedResponse,
 } from '@/lib/api/response'
 import { AccountType } from '@prisma/client'
+import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
+import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 
 /**
  * FIRE 数据 API
@@ -35,8 +37,10 @@ export async function GET(_request: NextRequest) {
       name: '人民币',
     }
 
-    // 计算过去12个月的总开销
+    // 获取当前日期，确保不包含未来的交易记录
     const now = new Date()
+
+    // 计算过去12个月的总开销
     const twelveMonthsAgo = new Date()
     twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1)
 
@@ -57,127 +61,319 @@ export async function GET(_request: NextRequest) {
     })
 
     // 计算总开销（转换为本位币）
-    let totalExpenses = 0
-    for (const transaction of expenseTransactions) {
-      const amount =
+    const expenseAmounts = expenseTransactions.map(transaction => ({
+      amount:
         typeof transaction.amount === 'number'
           ? transaction.amount
-          : parseFloat(transaction.amount.toString())
-      if (transaction.currency.code === baseCurrency.code) {
-        totalExpenses += amount
-      } else {
-        // 这里应该使用汇率转换，暂时使用1:1
-        totalExpenses += amount
-      }
+          : parseFloat(transaction.amount.toString()),
+      currency: transaction.currency.code,
+    }))
+
+    let totalExpenses = 0
+    try {
+      const expenseConversions = await convertMultipleCurrencies(
+        user.id,
+        expenseAmounts,
+        baseCurrency.code
+      )
+
+      totalExpenses = expenseConversions.reduce(
+        (sum, result) =>
+          sum +
+          (result.success ? result.convertedAmount : result.originalAmount),
+        0
+      )
+    } catch (error) {
+      console.error('转换支出金额失败:', error)
+      // 转换失败时使用原始金额作为近似值（仅限相同币种）
+      totalExpenses = expenseAmounts
+        .filter(expense => expense.currency === baseCurrency.code)
+        .reduce((sum, expense) => sum + expense.amount, 0)
     }
 
-    // 计算当前净资产（简化版本）
+    // 计算当前净资产（使用与 Dashboard 相同的逻辑）
     const accounts = await prisma.account.findMany({
       where: { userId: user.id },
       include: {
         category: true,
         transactions: {
-          where: {
-            type:
-              AccountType.ASSET || AccountType.LIABILITY
-                ? 'BALANCE'
-                : undefined,
+          include: {
+            currency: true,
           },
-          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
-          take: 1,
         },
       },
     })
 
-    let totalAssets = 0
-    let totalLiabilities = 0
+    // 转换账户数据格式以适配服务函数
+    const accountsForCalculation = accounts.map(account => ({
+      id: account.id,
+      name: account.name,
+      category: account.category,
+      transactions: account.transactions.map(t => ({
+        type: t.type,
+        amount:
+          typeof t.amount === 'number'
+            ? t.amount
+            : parseFloat(t.amount.toString()),
+        date: t.date,
+        currency: t.currency,
+        notes: t.notes,
+      })),
+    }))
 
-    for (const account of accounts) {
-      // 对于存量账户，使用最新的余额调整记录
-      if (
-        account.category.type === AccountType.ASSET ||
-        account.category.type === AccountType.LIABILITY
-      ) {
-        const latestTransaction = account.transactions[0]
-        if (latestTransaction) {
-          const amount =
-            typeof latestTransaction.amount === 'number'
-              ? latestTransaction.amount
-              : parseFloat(latestTransaction.amount.toString())
+    // 分离存量类账户（资产和负债）
+    const stockAccounts = accountsForCalculation.filter(
+      account =>
+        account.category?.type === AccountType.ASSET ||
+        account.category?.type === AccountType.LIABILITY
+    )
 
-          if (account.category.type === AccountType.ASSET) {
-            totalAssets += amount
-          } else if (account.category.type === AccountType.LIABILITY) {
-            totalLiabilities += amount
-          }
+    // 分别计算资产和负债
+    const assetAccounts = stockAccounts.filter(
+      account => account.category?.type === AccountType.ASSET
+    )
+    const liabilityAccounts = stockAccounts.filter(
+      account => account.category?.type === AccountType.LIABILITY
+    )
+
+    const [totalAssetsResult, totalLiabilitiesResult] = await Promise.all([
+      calculateTotalBalanceWithConversion(
+        user.id,
+        assetAccounts,
+        baseCurrency,
+        { asOfDate: now }
+      ),
+      calculateTotalBalanceWithConversion(
+        user.id,
+        liabilityAccounts,
+        baseCurrency,
+        { asOfDate: now }
+      ),
+    ])
+
+    const currentNetWorth =
+      totalAssetsResult.totalInBaseCurrency -
+      totalLiabilitiesResult.totalInBaseCurrency
+
+    // 计算历史年化回报率（基于净资产变化）
+    let historicalAnnualReturn = 0.0 // 默认值
+
+    try {
+      // 计算一年前的净资产
+      const oneYearAgo = new Date()
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+
+      console.log('FIRE API: 计算历史回报率', {
+        currentNetWorth,
+        oneYearAgo: oneYearAgo.toISOString(),
+        assetAccountsCount: assetAccounts.length,
+        liabilityAccountsCount: liabilityAccounts.length,
+      })
+
+      const [pastAssetsResult, pastLiabilitiesResult] = await Promise.all([
+        calculateTotalBalanceWithConversion(
+          user.id,
+          assetAccounts,
+          baseCurrency,
+          { asOfDate: oneYearAgo }
+        ),
+        calculateTotalBalanceWithConversion(
+          user.id,
+          liabilityAccounts,
+          baseCurrency,
+          { asOfDate: oneYearAgo }
+        ),
+      ])
+
+      const pastNetWorth =
+        pastAssetsResult.totalInBaseCurrency -
+        pastLiabilitiesResult.totalInBaseCurrency
+
+      console.log('FIRE API: 历史净资产计算结果', {
+        pastAssets: pastAssetsResult.totalInBaseCurrency,
+        pastLiabilities: pastLiabilitiesResult.totalInBaseCurrency,
+        pastNetWorth,
+        currentNetWorth,
+      })
+
+      // 如果有历史数据且净资产为正，计算年化回报率
+      if (pastNetWorth > 0 && Math.abs(currentNetWorth - pastNetWorth) > 0.01) {
+        // 计算期间的净投入（收入 - 支出）
+        const incomeTransactions = await prisma.transaction.findMany({
+          where: {
+            userId: user.id,
+            date: {
+              gte: oneYearAgo,
+              lte: now,
+            },
+            category: {
+              type: AccountType.INCOME,
+            },
+          },
+          include: {
+            currency: true,
+          },
+        })
+
+        const incomeAmounts = incomeTransactions.map(transaction => ({
+          amount:
+            typeof transaction.amount === 'number'
+              ? transaction.amount
+              : parseFloat(transaction.amount.toString()),
+          currency: transaction.currency.code,
+        }))
+
+        let totalIncome = 0
+        try {
+          const incomeConversions = await convertMultipleCurrencies(
+            user.id,
+            incomeAmounts,
+            baseCurrency.code
+          )
+          totalIncome = incomeConversions.reduce(
+            (sum, result) =>
+              sum +
+              (result.success ? result.convertedAmount : result.originalAmount),
+            0
+          )
+        } catch (error) {
+          console.error('转换收入金额失败:', error)
+        }
+
+        // 净投入 = 收入 - 支出
+        const netContribution = totalIncome - totalExpenses
+
+        // 调整后的净资产变化 = 当前净资产 - 过去净资产 - 净投入
+        const adjustedGrowth = currentNetWorth - pastNetWorth - netContribution
+
+        console.log('FIRE API: 回报率计算详情', {
+          totalIncome,
+          totalExpenses,
+          netContribution,
+          adjustedGrowth,
+          pastNetWorth,
+          currentNetWorth,
+        })
+
+        // 计算年化回报率：(调整后增长 / 初始净资产) * 100
+        if (pastNetWorth > 0) {
+          historicalAnnualReturn = (adjustedGrowth / pastNetWorth) * 100
+          // 限制在合理范围内 (-50% 到 100%)
+          historicalAnnualReturn = Math.max(
+            -50,
+            Math.min(100, historicalAnnualReturn)
+          )
+
+          console.log('FIRE API: 计算得出的历史回报率', {
+            rawReturn: (adjustedGrowth / pastNetWorth) * 100,
+            finalReturn: historicalAnnualReturn,
+          })
         }
       }
+    } catch (error) {
+      console.error('计算历史回报率失败:', error)
+      // 保持默认值
     }
 
-    const currentNetWorth = totalAssets - totalLiabilities
-
-    // 计算历史年化回报率（简化版本，基于净资产变化）
+    // 计算过去6个月的平均月投入
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
-    // 获取6个月前的净资产快照（简化计算）
-    const _historicalTransactions = await prisma.transaction.findMany({
-      where: {
-        userId: user.id,
-        date: {
-          lte: sixMonthsAgo,
-        },
-      },
-      include: {
-        account: {
+    const [recentIncomeTransactions, recentExpenseTransactions] =
+      await Promise.all([
+        prisma.transaction.findMany({
+          where: {
+            userId: user.id,
+            date: {
+              gte: sixMonthsAgo,
+              lte: now,
+            },
+            category: {
+              type: AccountType.INCOME,
+            },
+          },
           include: {
-            category: true,
+            currency: true,
           },
-        },
-      },
-      orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
-    })
-
-    // 简化的历史回报率计算
-    const historicalAnnualReturn = 7.6 // 默认值
-
-    // 计算过去6个月的平均月投入
-    const recentTransactions = await prisma.transaction.findMany({
-      where: {
-        userId: user.id,
-        date: {
-          gte: sixMonthsAgo,
-          lte: now, // 确保不包含未来交易
-        },
-        category: {
-          type: {
-            in: [AccountType.INCOME, AccountType.EXPENSE],
+        }),
+        prisma.transaction.findMany({
+          where: {
+            userId: user.id,
+            date: {
+              gte: sixMonthsAgo,
+              lte: now,
+            },
+            category: {
+              type: AccountType.EXPENSE,
+            },
           },
-        },
-      },
-      include: {
-        category: true,
-      },
-    })
+          include: {
+            currency: true,
+          },
+        }),
+      ])
 
-    let totalIncome = 0
-    let totalExpensesRecent = 0
-
-    for (const transaction of recentTransactions) {
-      const amount =
+    // 转换收入和支出到本位币
+    const recentIncomeAmounts = recentIncomeTransactions.map(transaction => ({
+      amount:
         typeof transaction.amount === 'number'
           ? transaction.amount
-          : parseFloat(transaction.amount.toString())
-      if (transaction.category.type === AccountType.INCOME) {
-        totalIncome += amount
-      } else if (transaction.category.type === AccountType.EXPENSE) {
-        totalExpensesRecent += amount
-      }
+          : parseFloat(transaction.amount.toString()),
+      currency: transaction.currency.code,
+    }))
+
+    const recentExpenseAmounts = recentExpenseTransactions.map(transaction => ({
+      amount:
+        typeof transaction.amount === 'number'
+          ? transaction.amount
+          : parseFloat(transaction.amount.toString()),
+      currency: transaction.currency.code,
+    }))
+
+    let totalIncomeRecent = 0
+    let totalExpensesRecent = 0
+
+    try {
+      const [incomeConversions, expenseConversions] = await Promise.all([
+        convertMultipleCurrencies(
+          user.id,
+          recentIncomeAmounts,
+          baseCurrency.code
+        ),
+        convertMultipleCurrencies(
+          user.id,
+          recentExpenseAmounts,
+          baseCurrency.code
+        ),
+      ])
+
+      totalIncomeRecent = incomeConversions.reduce(
+        (sum, result) =>
+          sum +
+          (result.success ? result.convertedAmount : result.originalAmount),
+        0
+      )
+
+      totalExpensesRecent = expenseConversions.reduce(
+        (sum, result) =>
+          sum +
+          (result.success ? result.convertedAmount : result.originalAmount),
+        0
+      )
+    } catch (error) {
+      console.error('转换近期收支金额失败:', error)
+      // 转换失败时使用原始金额作为近似值（仅限相同币种）
+      totalIncomeRecent = recentIncomeAmounts
+        .filter(income => income.currency === baseCurrency.code)
+        .reduce((sum, income) => sum + income.amount, 0)
+      totalExpensesRecent = recentExpenseAmounts
+        .filter(expense => expense.currency === baseCurrency.code)
+        .reduce((sum, expense) => sum + expense.amount, 0)
     }
 
     const monthlyNetInvestment = Math.max(
       0,
-      (totalIncome - totalExpensesRecent) / 6
+      (totalIncomeRecent - totalExpensesRecent) / 6
     )
 
     // 返回 FIRE 计算基础数据

@@ -6,6 +6,7 @@ import InputField from '@/components/ui/forms/InputField'
 import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { ApiEndpoints, VALIDATION } from '@/lib/constants'
 
@@ -18,10 +19,11 @@ export default function ProfileSettingsForm({
 }: ProfileSettingsFormProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { updateUser } = useAuth()
   const { formatDate } = useUserDateFormatter()
   const [formData, setFormData] = useState({
     email: user.email,
-    nickname: user.email.split('@')[0], // 临时使用邮箱前缀作为昵称
+    nickname: user.name || user.email.split('@')[0], // 使用用户的 name 字段，如果没有则使用邮箱前缀
   })
   const [isLoading, setIsLoading] = useState(false)
 
@@ -55,6 +57,8 @@ export default function ProfileSettingsForm({
           t('settings.profile.updated'),
           t('settings.profile.updated.message')
         )
+        // 更新成功后，立即更新 AuthContext 中的用户数据
+        updateUser({ name: formData.nickname })
       } else {
         showError(
           t('settings.update.failed'),

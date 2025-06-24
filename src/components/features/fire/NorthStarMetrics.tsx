@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import type { SimpleCurrency, FireParams } from '@/types/core'
 
 interface NorthStarMetricsProps {
@@ -15,6 +16,7 @@ export default function NorthStarMetrics({
 }: NorthStarMetricsProps) {
   const { t } = useLanguage()
   const { formatCurrency } = useUserCurrencyFormatter()
+  const { formatDate } = useUserDateFormatter()
 
   // FIRE 计算逻辑
   const fireTargetAmount =
@@ -83,10 +85,7 @@ export default function NorthStarMetrics({
             {t('fire.north.star.fire.date')}
           </h3>
           <div className='text-4xl font-bold text-orange-900 dark:text-orange-100 mb-2 animate-pulse'>
-            {t('fire.north.star.fire.date.format', {
-              year: fireDate.getFullYear(),
-              month: fireDate.getMonth() + 1,
-            })}
+            {formatDate(fireDate)}
           </div>
           <p className='text-sm text-orange-700 dark:text-orange-300'>
             {t('fire.north.star.fire.date.description', {

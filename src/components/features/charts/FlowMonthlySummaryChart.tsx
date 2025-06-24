@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import ColorManager from '@/lib/utils/color'
 import type { SimpleCurrency, CategoryType } from '@/types/core'
@@ -36,6 +37,7 @@ export default function FlowMonthlySummaryChart({
   const { t, isLoading } = useLanguage()
   const { formatCurrency, getUserLocale: _getUserLocale } =
     useUserCurrencyFormatter()
+  const { formatChartDate } = useUserDateFormatter()
   const { resolvedTheme } = useTheme()
 
   const chartRef = useRef<HTMLDivElement>(null)
@@ -95,10 +97,10 @@ export default function FlowMonthlySummaryChart({
 
       const months = Object.keys(monthlyData).sort()
 
-      // 格式化月份显示
+      // 格式化月份显示 - 使用统一的日期格式化
       const formattedMonths = months.map(month => {
-        const [year, monthNum] = month.split('-')
-        return `${year}/${monthNum.padStart(2, '0')}`
+        const date = new Date(month + '-01')
+        return formatChartDate(date, 'month')
       })
 
       // 获取所有子分类/账户名称
@@ -227,6 +229,11 @@ export default function FlowMonthlySummaryChart({
           axisPointer: {
             type: 'shadow',
           },
+          backgroundColor: resolvedTheme === 'dark' ? '#374151' : '#ffffff',
+          borderColor: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb',
+          textStyle: {
+            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+          },
           formatter: function (params: unknown) {
             const paramsArray = Array.isArray(params) ? params : [params]
             if (!paramsArray.length) {
@@ -234,9 +241,10 @@ export default function FlowMonthlySummaryChart({
             }
 
             const firstParam = paramsArray[0] as TooltipParam
-            let result = `<div style="font-weight: bold; margin-bottom: 8px;">${
-              firstParam?.axisValue ?? ''
-            }</div>`
+            // 使用统一的日期格式化
+            const date = new Date((firstParam?.axisValue ?? '') + '-01')
+            const formattedDate = formatChartDate(date, 'month')
+            let result = `<div style="font-weight: bold; margin-bottom: 8px;">${formattedDate}</div>`
             let total = 0
 
             paramsArray.forEach((param: unknown) => {
@@ -293,8 +301,9 @@ export default function FlowMonthlySummaryChart({
           type: 'category',
           data: formattedMonths,
           axisLabel: {
-            rotate: 45,
-            fontSize: 12,
+            rotate: window.innerWidth < 768 ? 45 : 0,
+            fontSize: window.innerWidth < 768 ? 10 : 12,
+            interval: window.innerWidth < 768 ? 'auto' : 0,
             color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
           },
         },
@@ -331,7 +340,16 @@ export default function FlowMonthlySummaryChart({
         console.error('Error setting chart option:', error)
       }
     }
-  }, [monthlyData, baseCurrency, resolvedTheme, t, isLoading, title, accounts])
+  }, [
+    monthlyData,
+    baseCurrency,
+    resolvedTheme,
+    t,
+    isLoading,
+    title,
+    accounts,
+    formatChartDate,
+  ])
 
   if (isLoading) {
     return (

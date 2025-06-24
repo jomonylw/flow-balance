@@ -59,7 +59,7 @@ export default function TransactionListView({
   const [stats, setStats] = useState(null)
   const [isLoadingStats, setIsLoadingStats] = useState(true)
 
-  const currencyId = user.settings?.baseCurrency?.id || ''
+  const currencyId = user.settings?.baseCurrency?.id || null
 
   // 加载统计数据
   const loadStats = useCallback(async () => {
@@ -325,7 +325,7 @@ export default function TransactionListView({
         <div className='mb-8'>
           <TransactionStats
             stats={stats}
-            currencyId={currencyId}
+            currencyId={currencyId || ''}
             isLoading={isLoadingStats}
           />
         </div>

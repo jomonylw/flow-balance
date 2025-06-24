@@ -24,7 +24,7 @@ interface TopUserStatusBarProps {
 }
 
 export default function TopUserStatusBar({
-  user,
+  user: propsUser,
   onMenuClick,
   showMenuButton = false,
 }: TopUserStatusBarProps) {
@@ -33,8 +33,11 @@ export default function TopUserStatusBar({
   const currencyButtonRef = useRef<HTMLButtonElement>(null)
   const router = useRouter()
   const { t } = useLanguage()
-  const { logout } = useAuth()
+  const { user: authUser, logout } = useAuth()
   const { getBaseCurrency } = useUserData()
+
+  // 优先使用 AuthContext 中的用户数据，如果没有则使用 props 传入的数据
+  const user = authUser || propsUser
 
   // 从 UserDataContext 获取最新的本位币信息，优先于 props 传递的数据
   const baseCurrency = getBaseCurrency() || user.settings?.baseCurrency
@@ -134,9 +137,7 @@ export default function TopUserStatusBar({
                 />
               </svg>
               <span className='text-xs md:text-sm font-medium text-blue-700 dark:text-blue-300'>
-                <span className='hidden sm:inline'>
-                  {baseCurrency.symbol}{' '}
-                </span>
+                <span className='hidden sm:inline'>{baseCurrency.symbol} </span>
                 {baseCurrency.code}
               </span>
               <svg
@@ -187,7 +188,7 @@ export default function TopUserStatusBar({
               {/* 用户信息 */}
               <div className='hidden sm:block text-left'>
                 <div className='font-medium text-gray-900 dark:text-gray-100 truncate max-w-32'>
-                  {user.email}
+                  {user.name || user.email}
                 </div>
                 {/* <div className="text-xs text-gray-500 dark:text-gray-400">
                   在线

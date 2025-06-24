@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
+import { useTheme } from '@/contexts/providers/ThemeContext'
+import { useIsMobile } from '@/hooks/ui/useResponsive'
 import * as echarts from 'echarts'
 import type { SimpleCurrency, FireParams } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
@@ -20,15 +22,27 @@ export default function JourneyVisualization({
   const { t } = useLanguage()
   const { formatCurrency } = useUserCurrencyFormatter()
   const { formatChartDate } = useUserDateFormatter()
+  const { resolvedTheme } = useTheme()
+  const isMobile = useIsMobile()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
 
   useEffect(() => {
     if (!chartRef.current) return
 
-    // 初始化图表
-    if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current)
+    // 初始化图表或在主题变化时重新初始化
+    if (!chartInstance.current || chartInstance.current.isDisposed()) {
+      chartInstance.current = echarts.init(
+        chartRef.current,
+        resolvedTheme === 'dark' ? 'dark' : null
+      )
+    } else {
+      // 主题变化时重新初始化图表
+      chartInstance.current.dispose()
+      chartInstance.current = echarts.init(
+        chartRef.current,
+        resolvedTheme === 'dark' ? 'dark' : null
+      )
     }
 
     // 计算数据
@@ -79,12 +93,18 @@ export default function JourneyVisualization({
         text: t('fire.journey.title'),
         left: 'center',
         textStyle: {
-          fontSize: 18,
+          fontSize: isMobile ? 16 : 18,
           fontWeight: 'bold',
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
         },
       },
       tooltip: {
         trigger: 'axis',
+        backgroundColor: resolvedTheme === 'dark' ? '#374151' : '#ffffff',
+        borderColor: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb',
+        textStyle: {
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+        },
         formatter: (params: unknown) => {
           const paramsArray = Array.isArray(params) ? params : [params]
           const firstParam = paramsArray[0] as TooltipParam
@@ -102,26 +122,41 @@ export default function JourneyVisualization({
           t('fire.journey.asset.growth'),
           t('fire.journey.fire.target.line'),
         ],
-        top: 40,
+        top: isMobile ? 35 : 40,
+        textStyle: {
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+          fontSize: isMobile ? 10 : 12,
+        },
+        itemWidth: isMobile ? 15 : 25,
+        itemHeight: isMobile ? 10 : 14,
       },
       grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
-        top: 80,
+        left: isMobile ? '8%' : '3%',
+        right: isMobile ? '8%' : '4%',
+        bottom: isMobile ? '8%' : '3%',
+        top: isMobile ? 90 : 80,
         containLabel: true,
       },
       xAxis: {
         type: 'category',
         data: dates,
         axisLabel: {
-          interval: 11, // 每12个月显示一次
-          rotate: 45,
+          interval: isMobile ? 'auto' : 11, // 移动端自动间隔，桌面端每12个月显示一次
+          rotate: isMobile ? 45 : 30,
+          fontSize: isMobile ? 10 : 12,
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+        },
+        axisLine: {
+          lineStyle: {
+            color: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb',
+          },
         },
       },
       yAxis: {
         type: 'value',
         axisLabel: {
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+          fontSize: isMobile ? 10 : 12,
           formatter: (value: number) => {
             if (value >= 1000000) {
               return `${(value / 1000000).toFixed(1)}M`
@@ -129,6 +164,16 @@ export default function JourneyVisualization({
               return `${(value / 1000).toFixed(0)}K`
             }
             return value.toString()
+          },
+        },
+        axisLine: {
+          lineStyle: {
+            color: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb',
+          },
+        },
+        splitLine: {
+          lineStyle: {
+            color: resolvedTheme === 'dark' ? '#374151' : '#f3f4f6',
           },
         },
       },
@@ -201,7 +246,15 @@ export default function JourneyVisualization({
     return () => {
       window.removeEventListener('resize', handleResize)
     }
-  }, [params, currency, t, formatCurrency, formatChartDate])
+  }, [
+    params,
+    currency,
+    t,
+    formatCurrency,
+    formatChartDate,
+    resolvedTheme,
+    isMobile,
+  ])
 
   useEffect(() => {
     return () => {
@@ -225,13 +278,13 @@ export default function JourneyVisualization({
 
       <div
         ref={chartRef}
-        className='w-full h-96'
-        style={{ minHeight: '400px' }}
+        className={`w-full ${isMobile ? 'h-80' : 'h-96'}`}
+        style={{ minHeight: isMobile ? '320px' : '400px' }}
       />
 
-      <div className='mt-4 text-sm text-gray-500 dark:text-gray-400 text-center'>
+      {/* <div className='mt-4 text-sm text-gray-500 dark:text-gray-400 text-center'>
         {t('fire.journey.description')}
-      </div>
+      </div> */}
     </div>
   )
 }

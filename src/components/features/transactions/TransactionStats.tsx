@@ -31,6 +31,26 @@ export default function TransactionStats({
   const { formatCurrencyById, formatNumber: _formatNumber } =
     useUserCurrencyFormatter()
 
+  // 如果没有有效的货币ID，显示加载状态
+  if (!currencyId) {
+    return (
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            className='bg-white dark:bg-gray-800 rounded-lg shadow p-6'
+          >
+            <div className='animate-pulse'>
+              <div className='h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2'></div>
+              <div className='h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2'></div>
+              <div className='h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3'></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   // 如果正在加载或没有数据，显示加载状态
   if (isLoading || !stats) {
     return (

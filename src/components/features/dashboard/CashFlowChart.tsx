@@ -26,8 +26,11 @@ interface CashFlowChartProps {
 
 export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
   const { t } = useLanguage()
-  const { formatCurrencyById, findCurrencyByCode, getUserLocale: _getUserLocale } =
-    useUserCurrencyFormatter()
+  const {
+    formatCurrencyById,
+    findCurrencyByCode,
+    getUserLocale: _getUserLocale,
+  } = useUserCurrencyFormatter()
   const { formatChartDate } = useUserDateFormatter()
   const { resolvedTheme } = useTheme()
   const chartRef = useRef<HTMLDivElement>(null)
@@ -71,6 +74,11 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
             backgroundColor: resolvedTheme === 'dark' ? '#4b5563' : '#6a7985',
           },
         },
+        backgroundColor: resolvedTheme === 'dark' ? '#374151' : '#ffffff',
+        borderColor: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb',
+        textStyle: {
+          color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+        },
         formatter: function (
           params: {
             axisValue: string
@@ -82,7 +90,10 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
           if (!params || params.length === 0) {
             return ''
           }
-          let result = `<div style="font-weight: bold; margin-bottom: 5px;">${params[0].axisValue}</div>`
+          // 使用统一的日期格式化
+          const date = new Date(params[0].axisValue + '-01')
+          const formattedDate = formatChartDate(date, 'month')
+          let result = `<div style="font-weight: bold; margin-bottom: 5px;">${formattedDate}</div>`
           params.forEach(param => {
             const value = param.value
             const formattedValue = `${value < 0 ? '-' : ''}${formatCurrencyAmount(Math.abs(value))}`

@@ -16,6 +16,7 @@
   "data.export.button": "Export My Data",
   "data.export.exporting": "Exporting...",
   "data.export.success": "Data exported successfully",
+  "data.export.success.message": "Your data has been downloaded to your device",
   "data.export.failed": "Export failed: {{error}}",
   "data.export.network.error": "Export failed: Network error",
   "data.delete.title": "Delete Account",
@@ -33,6 +34,8 @@
   "data.delete.password.prompt": "Please enter your password to confirm deletion:",
   "data.delete.password.placeholder": "Enter password",
   "data.delete.password.required": "Please enter password to confirm deletion",
+  "data.delete.success": "Account deleted successfully",
+  "data.delete.success.message": "Your account and all data have been permanently deleted",
   "data.delete.failed": "Deletion failed",
   "data.delete.network.error": "Deletion failed: Network error"
 }

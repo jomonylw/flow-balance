@@ -169,6 +169,23 @@ export async function GET() {
       }
     }
 
+    // 获取最早的交易记录以计算记账天数
+    const earliestTransaction = await prisma.transaction.findFirst({
+      where: { userId: user.id },
+      orderBy: { date: 'asc' },
+      select: { date: true },
+    })
+
+    // 计算记账天数
+    let accountingDays = 1 // 默认显示第1天
+    if (earliestTransaction) {
+      const earliestDate = new Date(earliestTransaction.date)
+      const today = new Date()
+      // 计算天数差，包含开始日期
+      const timeDiff = today.getTime() - earliestDate.getTime()
+      accountingDays = Math.floor(timeDiff / (1000 * 3600 * 24)) + 1
+    }
+
     // 获取最近的交易
     const recentTransactions = await prisma.transaction.findMany({
       where: {
@@ -393,6 +410,7 @@ export async function GET() {
         totalCategories: await prisma.category.count({
           where: { userId: user.id },
         }),
+        accountingDays,
       },
       validation,
       currencyConversion: {
