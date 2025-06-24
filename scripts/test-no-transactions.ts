@@ -10,6 +10,7 @@ async function testNoTransactions() {
       update: {},
       create: {
         email: 'test-no-transactions@example.com',
+        name: 'Test User (No Transactions)',
         password: 'test123',
       },
     })

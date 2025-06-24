@@ -21,6 +21,7 @@ async function main() {
       update: {},
       create: {
         email: 'test-user-1@example.com',
+        name: 'Test User 1',
         password: 'test-password-1',
       },
     })
@@ -30,6 +31,7 @@ async function main() {
       update: {},
       create: {
         email: 'test-user-2@example.com',
+        name: 'Test User 2',
         password: 'test-password-2',
       },
     })

@@ -321,11 +321,11 @@ export default function CockpitControls({
         />
       </div>
 
-      <div className='mt-6 p-4 bg-orange-50 dark:bg-orange-900/50 border border-orange-200 dark:border-orange-700/50 rounded-lg'>
+      {/* <div className='mt-6 p-4 bg-orange-50 dark:bg-orange-900/50 border border-orange-200 dark:border-orange-700/50 rounded-lg'>
         <p className='text-sm text-orange-800 dark:text-orange-200 text-center'>
           {t('fire.cockpit.magic.description')}
         </p>
-      </div>
+      </div> */}
     </div>
   )
 }

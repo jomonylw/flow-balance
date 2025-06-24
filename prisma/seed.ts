@@ -16,7 +16,12 @@ async function main() {
     { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', decimalPlaces: 2 },
     { code: 'CAD', name: 'Canadian Dollar', symbol: '$', decimalPlaces: 2 },
     { code: 'CHF', name: 'Swiss Franc', symbol: 'Fr.', decimalPlaces: 2 },
-    { code: 'CNY', name: 'Chinese Renminbi Yuan', symbol: '¥', decimalPlaces: 2 },
+    {
+      code: 'CNY',
+      name: 'Chinese Renminbi Yuan',
+      symbol: '¥',
+      decimalPlaces: 2,
+    },
     { code: 'CZK', name: 'Czech Koruna', symbol: 'Kč', decimalPlaces: 2 },
     { code: 'DKK', name: 'Danish Krone', symbol: 'kr.', decimalPlaces: 2 },
     { code: 'EUR', name: 'Euro', symbol: '€', decimalPlaces: 2 },
@@ -32,7 +37,12 @@ async function main() {
     { code: 'MXN', name: 'Mexican Peso', symbol: '$', decimalPlaces: 2 },
     { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM', decimalPlaces: 2 },
     { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr', decimalPlaces: 2 },
-    { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$', decimalPlaces: 2 },
+    {
+      code: 'NZD',
+      name: 'New Zealand Dollar',
+      symbol: 'NZ$',
+      decimalPlaces: 2,
+    },
     { code: 'PHP', name: 'Philippine Peso', symbol: '₱', decimalPlaces: 2 },
     { code: 'PLN', name: 'Polish Złoty', symbol: 'zł', decimalPlaces: 2 },
     { code: 'RON', name: 'Romanian Leu', symbol: 'lei', decimalPlaces: 2 },
@@ -42,7 +52,12 @@ async function main() {
     { code: 'THB', name: 'Thai Baht', symbol: '฿', decimalPlaces: 2 },
     { code: 'TRY', name: 'Turkish Lira', symbol: '₺', decimalPlaces: 2 },
     { code: 'TWD', name: 'Taiwan Dollar', symbol: 'NT$', decimalPlaces: 2 },
-    { code: 'USD', name: 'United States Dollar', symbol: '$', decimalPlaces: 2 },
+    {
+      code: 'USD',
+      name: 'United States Dollar',
+      symbol: '$',
+      decimalPlaces: 2,
+    },
     { code: 'VND', name: 'Vietnamese Dong', symbol: '₫', decimalPlaces: 0 },
     { code: 'ZAR', name: 'South African Rand', symbol: 'R', decimalPlaces: 2 },
   ]
@@ -100,6 +115,7 @@ async function main() {
     update: {},
     create: {
       email: 'demo@flowbalance.com',
+      name: 'Demo User',
       password: hashedPassword,
       settings: {
         create: {
@@ -115,6 +131,7 @@ async function main() {
     update: {},
     create: {
       email: 'test@example.com',
+      name: 'Test User',
       password: hashedPassword,
       settings: {
         create: {
@@ -642,7 +659,7 @@ async function main() {
 
   console.log('✅ 种子数据填充完成!')
   console.log('👤 创建了 2 个用户')
-  console.log(`💱 创建了 34 种全局货币（包含完整的货币符号和小数位配置）`)
+  console.log('💱 创建了 34 种全局货币（包含完整的货币符号和小数位配置）')
   console.log('💰 为用户设置了可用货币')
   console.log('📁 创建了分类结构')
   console.log('🏦 创建了 10 个账户（4个资产类 + 2个负债类 + 4个流量类）')
@@ -652,7 +669,9 @@ async function main() {
   console.log('🔄 多货币交易：USD, EUR, CNY, JPY')
   console.log('📊 汇率设置：EUR→USD, CNY→USD, JPY→USD')
   console.log('📊 流量类账户：工资收入、餐饮支出、交通支出、购物支出')
-  console.log('💰 货币精度：JPY/KRW/IDR/VND 使用 0 位小数，其他货币使用 2 位小数')
+  console.log(
+    '💰 货币精度：JPY/KRW/IDR/VND 使用 0 位小数，其他货币使用 2 位小数'
+  )
 }
 
 main()

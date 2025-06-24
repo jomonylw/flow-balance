@@ -483,6 +483,7 @@ export interface FlowAccount {
 export interface SimpleUser {
   id: string
   email: string
+  name: string
 }
 
 /** 简化的用户设置信息（用于显示） */

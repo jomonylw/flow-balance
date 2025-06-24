@@ -6,7 +6,7 @@ import {
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
-import { AccountType } from '@prisma/client'
+import { AccountType, TransactionType } from '@/types/core/constants'
 import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 
@@ -108,9 +108,13 @@ export async function GET(_request: NextRequest) {
     const accountsForCalculation = accounts.map(account => ({
       id: account.id,
       name: account.name,
-      category: account.category,
+      category: {
+        id: account.category?.id,
+        name: account.category?.name || '',
+        type: account.category?.type as AccountType | undefined,
+      },
       transactions: account.transactions.map(t => ({
-        type: t.type,
+        type: t.type as TransactionType,
         amount:
           typeof t.amount === 'number'
             ? t.amount

@@ -70,6 +70,7 @@ async function checkAndRestoreData() {
       const demoUser = await prisma.user.create({
         data: {
           email: 'demo@flowbalance.com',
+          name: 'Demo User',
           password: '$2a$10$demo.password.hash.for.testing.purposes.only',
         },
       })
