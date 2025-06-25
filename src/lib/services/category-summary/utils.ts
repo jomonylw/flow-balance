@@ -18,7 +18,17 @@ export function extractBalanceChangeFromNotes(notes: string): number | null {
   if (!notes) return null
 
   // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
-  const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
+  // 支持国际化的匹配模式
+  const patterns = [
+    /变化金额：([+-]?\d+\.?\d*)/, // 中文模式
+    /Balance change:\s*([+-]?\d+\.?\d*)/i, // 英文模式
+  ]
+
+  let match: RegExpMatchArray | null = null
+  for (const pattern of patterns) {
+    match = notes.match(pattern)
+    if (match) break
+  }
   if (match && match[1]) {
     return parseFloat(match[1])
   }

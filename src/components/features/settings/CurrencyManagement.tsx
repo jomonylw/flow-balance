@@ -383,7 +383,7 @@ export default function CurrencyManagement({
           </h4>
           <button
             onClick={() => setShowCustomForm(true)}
-            className='flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors'
+            className='flex items-center justify-center px-4 py-2 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors'
             title={t('currency.custom.create')}
           >
             <svg
@@ -497,7 +497,7 @@ export default function CurrencyManagement({
             <div className='flex space-x-2'>
               <button
                 onClick={handleCreateCustomCurrency}
-                className='px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors'
+                className='px-4 py-2 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors inline-flex items-center justify-center'
               >
                 {editingCurrency ? t('common.save') : t('common.add')}
               </button>
@@ -512,7 +512,7 @@ export default function CurrencyManagement({
                     decimalPlaces: 2,
                   })
                 }}
-                className='px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors'
+                className='px-4 py-2 h-10 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors inline-flex items-center justify-center'
               >
                 {t('common.cancel')}
               </button>

@@ -7,6 +7,10 @@ import {
   validationErrorResponse,
 } from '@/lib/api/response'
 import { generateAutoExchangeRates } from '@/lib/services/exchange-rate-auto-generation.service'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
+
+// 创建服务端翻译函数
+const t = createServerTranslator()
 
 /**
  * 自动生成汇率
@@ -25,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (effectiveDate) {
       parsedDate = new Date(effectiveDate)
       if (isNaN(parsedDate.getTime())) {
-        return validationErrorResponse('无效的日期格式')
+        return validationErrorResponse(t('exchange.rate.invalid.date.format'))
       }
     }
 
@@ -34,7 +38,9 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       return errorResponse(
-        `自动生成汇率部分失败: ${result.errors.join(', ')}`,
+        t('exchange.rate.auto.generate.partial.failed', {
+          errors: result.errors.join(', '),
+        }),
         400
       )
     }
@@ -42,11 +48,13 @@ export async function POST(request: NextRequest) {
     return successResponse({
       generatedCount: result.generatedCount,
       details: result.details,
-      message: `成功自动生成 ${result.generatedCount} 条汇率记录`,
+      message: t('exchange.rate.auto.generate.success', {
+        count: result.generatedCount,
+      }),
     })
   } catch (error) {
-    console.error('自动生成汇率失败:', error)
-    return errorResponse('自动生成汇率失败', 500)
+    console.error(t('exchange.rate.auto.generate.process.failed'), error)
+    return errorResponse(t('exchange.rate.auto.generate.process.failed'), 500)
   }
 }
 
@@ -67,7 +75,7 @@ export async function GET(request: NextRequest) {
     if (effectiveDate) {
       parsedDate = new Date(effectiveDate)
       if (isNaN(parsedDate.getTime())) {
-        return validationErrorResponse('无效的日期格式')
+        return validationErrorResponse(t('exchange.rate.invalid.date.format'))
       }
     }
 

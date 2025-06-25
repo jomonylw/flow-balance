@@ -354,17 +354,17 @@ export default function PreferencesForm({
             <button
               type='submit'
               disabled={isLoading}
-              className='px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+              className='px-4 py-2 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center'
             >
               {isLoading ? (
-                <span className='flex items-center'>
+                <>
                   <LoadingSpinnerSVG
                     size='sm'
                     color='white'
                     className='-ml-1 mr-2'
                   />
                   {t('common.loading')}
-                </span>
+                </>
               ) : (
                 t('common.save')
               )}

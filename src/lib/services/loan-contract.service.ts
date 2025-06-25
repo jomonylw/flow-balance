@@ -12,6 +12,10 @@ import {
 import { LoanCalculationService } from './loan-calculation.service'
 import { calculateLoanPaymentDateForPeriod } from '@/lib/utils/format'
 import { DuplicateCheckService, CheckType } from './duplicate-check.service'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
+
+// 创建服务端翻译函数
+const t = createServerTranslator()
 
 interface LoanContractUpdateData {
   contractName?: string
@@ -126,12 +130,16 @@ export class LoanContractService {
     )
 
     if (!validation.isValid) {
-      throw new Error(`贷款参数验证失败: ${validation.errors.join(', ')}`)
+      throw new Error(
+        t('loan.contract.validation.failed', {
+          errors: validation.errors.join(', '),
+        })
+      )
     }
 
     // 验证还款日期
     if (data.paymentDay < 1 || data.paymentDay > 31) {
-      throw new Error('还款日期必须在1-31号之间')
+      throw new Error(t('loan.contract.payment.day.invalid'))
     }
 
     // 获取货币ID
@@ -143,7 +151,7 @@ export class LoanContractService {
     })
 
     if (!currency) {
-      throw new Error('指定的货币不存在')
+      throw new Error(t('loan.contract.currency.not.found'))
     }
 
     // 如果指定了还款账户，验证账户类型和货币
@@ -226,12 +234,12 @@ export class LoanContractService {
       })
 
       if (!existing) {
-        throw new Error('贷款合约不存在')
+        throw new Error(t('loan.contract.not.found'))
       }
 
       // 验证还款日期
       if (data.paymentDay && (data.paymentDay < 1 || data.paymentDay > 31)) {
-        throw new Error('还款日期必须在1-31号之间')
+        throw new Error(t('loan.contract.payment.day.invalid'))
       }
 
       // 如果指定了还款账户，验证账户类型和货币
@@ -246,7 +254,7 @@ export class LoanContractService {
             },
           })
           if (!currency) {
-            throw new Error('指定的货币不存在')
+            throw new Error(t('loan.contract.currency.not.found'))
           }
           currencyId = currency.id
         }
@@ -314,7 +322,11 @@ export class LoanContractService {
         )
 
         if (!validation.isValid) {
-          throw new Error(`贷款参数验证失败: ${validation.errors.join(', ')}`)
+          throw new Error(
+            t('loan.contract.validation.failed', {
+              errors: validation.errors.join(', '),
+            })
+          )
         }
       }
 
@@ -369,7 +381,7 @@ export class LoanContractService {
       })
 
       if (!loanContract) {
-        throw new Error('贷款合约不存在')
+        throw new Error(t('loan.contract.not.found'))
       }
 
       // 获取最后一期已完成的还款记录
@@ -492,7 +504,7 @@ export class LoanContractService {
       })
 
       if (!loanContract) {
-        throw new Error('贷款合约不存在')
+        throw new Error(t('loan.contract.not.found'))
       }
 
       // 获取要重置的还款记录
@@ -627,7 +639,7 @@ export class LoanContractService {
       })
 
       if (!loanContract) {
-        throw new Error('贷款合约不存在')
+        throw new Error(t('loan.contract.not.found'))
       }
 
       // 获取所有已完成的还款记录
@@ -758,7 +770,7 @@ export class LoanContractService {
           select: { id: true, userId: true },
         })
         console.warn('Contract exists with different userId:', contractExists)
-        throw new Error('贷款合约不存在')
+        throw new Error(t('loan.contract.not.found'))
       }
 
       // 统计相关数据
@@ -980,7 +992,7 @@ export class LoanContractService {
     })
 
     if (!loanContract) {
-      throw new Error('贷款合约不存在')
+      throw new Error(t('loan.contract.not.found'))
     }
 
     const calculation = LoanCalculationService.calculateLoan(
@@ -1005,7 +1017,7 @@ export class LoanContractService {
     })
 
     if (!loanContract) {
-      throw new Error('贷款合约不存在')
+      throw new Error(t('loan.contract.not.found'))
     }
 
     // 计算还款计划
@@ -1194,13 +1206,19 @@ export class LoanContractService {
                   '{期数}',
                   loanPayment.period.toString()
                 )
-              : `${contractFields.contractName} - 第${loanPayment.period}期本金`,
+              : t('loan.contract.template.default.description', {
+                  contractName: contractFields.contractName,
+                  period: loanPayment.period,
+                  type: '本金',
+                }),
             notes: contractFields.transactionNotes
               ? contractFields.transactionNotes.replace(
                   '{期数}',
                   loanPayment.period.toString()
                 )
-              : `贷款合约: ${contractFields.contractName}`,
+              : t('loan.contract.template.default.notes', {
+                  contractName: contractFields.contractName,
+                }),
             date: loanPayment.paymentDate,
             loanContractId: loanContract.id,
             loanPaymentId: loanPayment.id,
@@ -1242,13 +1260,19 @@ export class LoanContractService {
                   '{期数}',
                   loanPayment.period.toString()
                 )
-              : `${contractFields.contractName} - 第${loanPayment.period}期利息`,
+              : t('loan.contract.template.default.description', {
+                  contractName: contractFields.contractName,
+                  period: loanPayment.period,
+                  type: '利息',
+                }),
             notes: contractFields.transactionNotes
               ? contractFields.transactionNotes.replace(
                   '{期数}',
                   loanPayment.period.toString()
                 )
-              : `贷款合约: ${contractFields.contractName}`,
+              : t('loan.contract.template.default.notes', {
+                  contractName: contractFields.contractName,
+                }),
             date: loanPayment.paymentDate,
             loanContractId: loanContract.id,
             loanPaymentId: loanPayment.id,
@@ -1287,13 +1311,22 @@ export class LoanContractService {
                   '{期数}',
                   loanPayment.period.toString()
                 )
-              : `${contractFields.contractName} - 第${loanPayment.period}期余额更新`,
+              : t('loan.contract.template.default.description', {
+                  contractName: contractFields.contractName,
+                  period: loanPayment.period,
+                  type: '余额更新',
+                }),
             notes: contractFields.transactionNotes
               ? contractFields.transactionNotes.replace(
                   '{期数}',
                   loanPayment.period.toString()
                 )
-              : `贷款合约: ${contractFields.contractName}，剩余本金: ${Number(loanPayment.remainingBalance).toLocaleString()}`,
+              : t('loan.contract.template.balance.notes', {
+                  contractName: contractFields.contractName,
+                  remainingBalance: Number(
+                    loanPayment.remainingBalance
+                  ).toLocaleString(),
+                }),
             date: loanPayment.paymentDate,
             loanContractId: loanContract.id,
             loanPaymentId: loanPayment.id,

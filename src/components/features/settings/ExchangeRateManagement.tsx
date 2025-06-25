@@ -354,7 +354,7 @@ export default function ExchangeRateManagement({
                     </span>
                     <button
                       onClick={() => handleAddMissingRate(missing)}
-                      className='flex items-center px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-md transition-colors'
+                      className='flex items-center justify-center px-4 py-2 h-10 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-md transition-colors'
                       title={t('exchange.rate.setup')}
                     >
                       <svg
@@ -470,7 +470,7 @@ export default function ExchangeRateManagement({
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className='flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors'
+          className='flex items-center justify-center px-4 py-2 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors'
           title={t('exchange.rate.add')}
         >
           <svg

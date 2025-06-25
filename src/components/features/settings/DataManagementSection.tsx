@@ -259,17 +259,17 @@ export default function DataManagementSection() {
         <button
           onClick={handleExportData}
           disabled={isExporting}
-          className='px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+          className='px-4 py-2 h-10 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center'
         >
           {isExporting ? (
-            <span className='flex items-center'>
+            <>
               <LoadingSpinnerSVG
                 size='sm'
                 color='white'
                 className='-ml-1 mr-2'
               />
               导出中...
-            </span>
+            </>
           ) : (
             '导出数据'
           )}
@@ -308,17 +308,17 @@ export default function DataManagementSection() {
         <button
           onClick={handleFileSelect}
           disabled={isValidating || isImporting}
-          className='px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+          className='px-4 py-2 h-10 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center'
         >
           {isValidating ? (
-            <span className='flex items-center'>
+            <>
               <LoadingSpinnerSVG
                 size='sm'
                 color='white'
                 className='-ml-1 mr-2'
               />
               验证中...
-            </span>
+            </>
           ) : (
             '选择导入文件'
           )}
@@ -349,7 +349,7 @@ export default function DataManagementSection() {
         </div>
         <button
           onClick={openDeleteModal}
-          className='px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors'
+          className='px-4 py-2 h-10 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md transition-colors inline-flex items-center justify-center'
         >
           {t('data.delete.button')}
         </button>

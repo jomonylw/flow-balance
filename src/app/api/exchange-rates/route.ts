@@ -9,6 +9,10 @@ import {
 } from '@/lib/api/response'
 import type { Prisma } from '@prisma/client'
 import { generateAutoExchangeRates } from '@/lib/services/exchange-rate-auto-generation.service'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
+
+// 创建服务端翻译函数
+const t = createServerTranslator()
 
 /**
  * 获取用户的汇率设置
@@ -237,13 +241,15 @@ export async function POST(request: NextRequest) {
       // 重新生成所有自动汇率
       await generateAutoExchangeRates(user.id, parsedDate)
     } catch (error) {
-      console.error('自动重新生成汇率失败:', error)
+      console.error(t('exchange.rate.auto.generate.failed'), error)
       // 不影响主要操作，只记录错误
     }
 
     return successResponse(
       serializedRate,
-      existingRate ? '汇率更新成功' : '汇率创建成功'
+      existingRate
+        ? t('exchange.rate.update.success')
+        : t('exchange.rate.create.success')
     )
   } catch (error) {
     console.error('创建/更新汇率失败:', error)
@@ -411,7 +417,7 @@ export async function PUT(request: NextRequest) {
         // 重新生成所有自动汇率
         await generateAutoExchangeRates(user.id)
       } catch (error) {
-        console.error('自动重新生成汇率失败:', error)
+        console.error(t('exchange.rate.auto.generate.failed'), error)
         // 不影响主要操作，只记录错误
       }
     }
