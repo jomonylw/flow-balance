@@ -4,10 +4,15 @@ import { forwardRef, useState, useEffect, useRef, useCallback } from 'react'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
-import { format, parseISO, isValid, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns'
+import { format, parseISO, isValid } from 'date-fns'
 import { zhCN, enUS } from 'date-fns/locale'
-import { Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react'
-import { SPACING, COMPONENT_SIZE, BORDER_RADIUS } from '@/lib/constants/dimensions'
+import { Calendar as CalendarIcon } from 'lucide-react'
+import Calendar from './Calendar'
+import {
+  SPACING,
+  COMPONENT_SIZE,
+  BORDER_RADIUS,
+} from '@/lib/constants/dimensions'
 
 interface DateInputProps {
   name: string
@@ -57,25 +62,13 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     // 状态管理
     const [isCalendarOpen, setIsCalendarOpen] = useState(false)
     const [displayValue, setDisplayValue] = useState(value)
-    const [selectedDate, setSelectedDate] = useState<Date | null>(
-      value ? new Date(value) : null
-    )
-    const [currentMonth, setCurrentMonth] = useState(
-      selectedDate || new Date()
-    )
-    const [timeValue, setTimeValue] = useState('12:00')
+
     const [calendarPosition, setCalendarPosition] = useState<{
       top?: number
       bottom?: number
       left?: number
       right?: number
     }>({})
-
-    // 日历视图状态：'date' | 'month' | 'year'
-    const [calendarView, setCalendarView] = useState<'date' | 'month' | 'year'>('date')
-    const [currentYear, setCurrentYear] = useState(
-      (selectedDate || new Date()).getFullYear()
-    )
 
     // Refs
     const containerRef = useRef<HTMLDivElement>(null)
@@ -86,31 +79,30 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const dateLocale = language === 'zh' ? zhCN : enUS
 
     // 格式化用户日期显示
-    const formatUserDate = useCallback((date: Date): string => {
-      const formatMapping = {
-        'YYYY-MM-DD': 'yyyy-MM-dd',
-        'DD/MM/YYYY': 'dd/MM/yyyy',
-        'MM/DD/YYYY': 'MM/dd/yyyy',
-        'DD-MM-YYYY': 'dd-MM-yyyy'
-      }
-      const formatString = formatMapping[userDateFormat as keyof typeof formatMapping] || 'yyyy-MM-dd'
-      return format(date, formatString, { locale: dateLocale })
-    }, [userDateFormat, dateLocale])
+    const formatUserDate = useCallback(
+      (date: Date): string => {
+        const formatMapping = {
+          'YYYY-MM-DD': 'yyyy-MM-dd',
+          'DD/MM/YYYY': 'dd/MM/yyyy',
+          'MM/DD/YYYY': 'MM/dd/yyyy',
+          'DD-MM-YYYY': 'dd-MM-yyyy',
+        }
+        const formatString =
+          formatMapping[userDateFormat as keyof typeof formatMapping] ||
+          'yyyy-MM-dd'
+        return format(date, formatString, { locale: dateLocale })
+      },
+      [userDateFormat, dateLocale]
+    )
 
     // 当外部value变化时，更新内部状态
     useEffect(() => {
       if (value) {
         const date = new Date(value)
         if (isValid(date)) {
-          setSelectedDate(date)
           setDisplayValue(formatUserDate(date))
-          setCurrentMonth(date)
-          if (showTime) {
-            setTimeValue(format(date, 'HH:mm'))
-          }
         }
       } else {
-        setSelectedDate(null)
         setDisplayValue('')
       }
     }, [value, showTime, formatUserDate])
@@ -146,10 +138,12 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         'YYYY-MM-DD': '2024-01-15',
         'DD/MM/YYYY': '15/01/2024',
         'MM/DD/YYYY': '01/15/2024',
-        'DD-MM-YYYY': '15-01-2024'
+        'DD-MM-YYYY': '15-01-2024',
       }
 
-      const example = formatExamples[userDateFormat as keyof typeof formatExamples] || '2024-01-15'
+      const example =
+        formatExamples[userDateFormat as keyof typeof formatExamples] ||
+        '2024-01-15'
       return t('form.date.format.hint', { format: userDateFormat, example })
     }
 
@@ -161,40 +155,13 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         'YYYY-MM-DD': '2024-01-15',
         'DD/MM/YYYY': '15/01/2024',
         'MM/DD/YYYY': '01/15/2024',
-        'DD-MM-YYYY': '15-01-2024'
+        'DD-MM-YYYY': '15-01-2024',
       }
 
-      return formatExamples[userDateFormat as keyof typeof formatExamples] || '2024-01-15'
-    }
-
-    // 获取月份名称
-    const getMonthNames = () => {
-      const monthKeys = [
-        'form.date.calendar.months.jan',
-        'form.date.calendar.months.feb',
-        'form.date.calendar.months.mar',
-        'form.date.calendar.months.apr',
-        'form.date.calendar.months.may',
-        'form.date.calendar.months.jun',
-        'form.date.calendar.months.jul',
-        'form.date.calendar.months.aug',
-        'form.date.calendar.months.sep',
-        'form.date.calendar.months.oct',
-        'form.date.calendar.months.nov',
-        'form.date.calendar.months.dec'
-      ]
-      return monthKeys.map(key => t(key))
-    }
-
-    // 格式化月份年份显示
-    const formatMonthYear = (date: Date) => {
-      if (language === 'zh') {
-        const yearSuffix = t('form.date.calendar.year') || '年'
-        const monthSuffix = t('form.date.calendar.month') || '月'
-        return `${date.getFullYear()}${yearSuffix}${date.getMonth() + 1}${monthSuffix}`
-      } else {
-        return format(date, 'MMMM yyyy', { locale: dateLocale })
-      }
+      return (
+        formatExamples[userDateFormat as keyof typeof formatExamples] ||
+        '2024-01-15'
+      )
     }
 
     // 计算日历最佳位置
@@ -248,7 +215,10 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     // 点击外部关闭日历和窗口大小变化时重新计算位置
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        if (
+          containerRef.current &&
+          !containerRef.current.contains(event.target as Node)
+        ) {
           setIsCalendarOpen(false)
         }
       }
@@ -282,325 +252,13 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       // 尝试解析日期
       const parsedDate = parseUserDate(newValue)
       if (parsedDate && isValid(parsedDate)) {
-        setSelectedDate(parsedDate)
-        setCurrentMonth(parsedDate)
-
         // 触发onChange事件
         const formattedValue = formatInputDate(parsedDate)
         const syntheticEvent = {
-          target: { name, value: formattedValue }
+          target: { name, value: formattedValue },
         } as React.ChangeEvent<HTMLInputElement>
         onChange(syntheticEvent)
       }
-    }
-
-    // 日历日期选择
-    const handleDateSelect = (date: Date) => {
-      let finalDate = date
-
-      // 如果支持时间，合并时间
-      if (showTime && timeValue) {
-        const [hours, minutes] = timeValue.split(':').map(Number)
-        finalDate = new Date(date)
-        finalDate.setHours(hours, minutes, 0, 0)
-      }
-
-      setSelectedDate(finalDate)
-      setDisplayValue(formatUserDate(finalDate))
-      setIsCalendarOpen(false)
-
-      // 触发onChange事件
-      const formattedValue = formatInputDate(finalDate)
-      const syntheticEvent = {
-        target: { name, value: formattedValue }
-      } as React.ChangeEvent<HTMLInputElement>
-      onChange(syntheticEvent)
-    }
-
-    // 时间变化处理
-    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newTime = e.target.value
-      setTimeValue(newTime)
-
-      if (selectedDate) {
-        const [hours, minutes] = newTime.split(':').map(Number)
-        const newDate = new Date(selectedDate)
-        newDate.setHours(hours, minutes, 0, 0)
-
-        setSelectedDate(newDate)
-        setDisplayValue(formatUserDate(newDate))
-
-        // 触发onChange事件
-        const formattedValue = formatInputDate(newDate)
-        const syntheticEvent = {
-          target: { name, value: formattedValue }
-        } as React.ChangeEvent<HTMLInputElement>
-        onChange(syntheticEvent)
-      }
-    }
-
-    // 年份选择处理
-    const handleYearSelect = (year: number) => {
-      setCurrentYear(year)
-      const newDate = new Date(currentMonth)
-      newDate.setFullYear(year)
-      setCurrentMonth(newDate)
-      setCalendarView('month')
-    }
-
-    // 月份选择处理
-    const handleMonthSelect = (monthIndex: number) => {
-      const newDate = new Date(currentYear, monthIndex, 1)
-      setCurrentMonth(newDate)
-      setCalendarView('date')
-    }
-
-    // 切换到年份选择
-    const switchToYearView = () => {
-      setCurrentYear(currentMonth.getFullYear())
-      setCalendarView('year')
-    }
-
-    // 切换到月份选择
-    const switchToMonthView = () => {
-      setCalendarView('month')
-    }
-
-    // 渲染年份选择器
-    const renderYearSelector = () => {
-      const currentYearValue = currentYear
-      const startYear = Math.floor(currentYearValue / 10) * 10
-      const years = Array.from({ length: 12 }, (_, i) => startYear + i - 1)
-
-      return (
-        <div className="p-2">
-          {/* 年份导航 */}
-          <div className="flex items-center justify-between mb-4">
-            <button
-              type="button"
-              onClick={() => setCurrentYear(currentYear - 10)}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-            >
-              <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-            </button>
-
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {t('form.date.calendar.select.year')}
-            </h3>
-
-            <button
-              type="button"
-              onClick={() => setCurrentYear(currentYear + 10)}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-            >
-              <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-            </button>
-          </div>
-
-          {/* 年份网格 */}
-          <div className="grid grid-cols-3 gap-2">
-            {years.map(year => (
-              <button
-                key={year}
-                type="button"
-                onClick={() => handleYearSelect(year)}
-                className={`
-                  py-2 px-3 text-sm rounded transition-colors
-                  ${year === currentYearValue
-                    ? 'bg-blue-500 text-white'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'
-                  }
-                `}
-              >
-                {year}
-              </button>
-            ))}
-          </div>
-        </div>
-      )
-    }
-
-    // 渲染月份选择器
-    const renderMonthSelector = () => {
-      const monthNames = getMonthNames()
-      const currentMonthIndex = currentMonth.getMonth()
-
-      return (
-        <div className="p-3">
-          {/* 月份导航 */}
-          <div className="flex items-center justify-between mb-3">
-            <button
-              type="button"
-              onClick={switchToYearView}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-            >
-              <ChevronLeft className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-            </button>
-
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {language === 'zh'
-                ? `${currentYear}${t('form.date.calendar.year') || '年'} ${t('form.date.calendar.select.month')}`
-                : `${currentYear} ${t('form.date.calendar.select.month')}`
-              }
-            </h3>
-
-            <div className="w-6 h-6" /> {/* 占位符保持对称 */}
-          </div>
-
-          {/* 月份网格 */}
-          <div className="grid grid-cols-3 gap-1.5">
-            {monthNames.map((monthName, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => handleMonthSelect(index)}
-                className={`
-                  py-1.5 px-2 text-xs rounded transition-colors
-                  ${index === currentMonthIndex
-                    ? 'bg-blue-500 text-white'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'
-                  }
-                `}
-              >
-                {monthName}
-              </button>
-            ))}
-          </div>
-        </div>
-      )
-    }
-
-    // 渲染日期选择器
-    const renderDateSelector = () => {
-      const monthStart = startOfMonth(currentMonth)
-      const monthEnd = endOfMonth(currentMonth)
-      const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd })
-
-      // 获取月份第一天是星期几，调整为周一开始
-      const firstDayOfWeek = (monthStart.getDay() + 6) % 7
-      const emptyDays = Array(firstDayOfWeek).fill(null)
-
-      const weekDays = language === 'zh'
-        ? ['一', '二', '三', '四', '五', '六', '日']
-        : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
-      return (
-        <div className="p-3">
-          {/* 月份导航 */}
-          <div className="flex items-center justify-between mb-3">
-            <button
-              type="button"
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-            >
-              <ChevronLeft className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-            </button>
-
-            <button
-              type="button"
-              onClick={switchToMonthView}
-              className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded transition-colors"
-            >
-              {formatMonthYear(currentMonth)}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-            >
-              <ChevronRight className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-            </button>
-          </div>
-
-          {/* 星期标题 */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {weekDays.map(day => (
-              <div key={day} className="text-xs text-center text-gray-500 dark:text-gray-400 py-1">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* 日期网格 */}
-          <div className="grid grid-cols-7 gap-1">
-            {/* 空白天数 */}
-            {emptyDays.map((_, index) => (
-              <div key={`empty-${index}`} className="h-7" />
-            ))}
-
-            {/* 日期按钮 */}
-            {calendarDays.map(day => {
-              const isSelected = selectedDate && isSameDay(day, selectedDate)
-              const isToday = isSameDay(day, new Date())
-              const isCurrentMonth = isSameMonth(day, currentMonth)
-
-              return (
-                <button
-                  key={day.toISOString()}
-                  type="button"
-                  onClick={() => handleDateSelect(day)}
-                  disabled={!isCurrentMonth}
-                  className={`
-                    h-7 text-xs rounded transition-colors flex items-center justify-center
-                    ${isSelected
-                      ? 'bg-blue-500 text-white'
-                      : isToday
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                        : isCurrentMonth
-                          ? 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'
-                          : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  {day.getDate()}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* 时间选择器 */}
-          {showTime && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-              <div className="flex items-center space-x-2">
-                <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <input
-                  type="time"
-                  value={timeValue}
-                  onChange={handleTimeChange}
-                  className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* 快捷操作 */}
-          <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-600 flex justify-between">
-            <button
-              type="button"
-              onClick={() => handleDateSelect(new Date())}
-              className="text-xs text-blue-500 dark:text-blue-400 hover:underline px-1 py-1"
-            >
-              {t('common.date.today')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedDate(null)
-                setDisplayValue('')
-                setIsCalendarOpen(false)
-                const syntheticEvent = {
-                  target: { name, value: '' }
-                } as React.ChangeEvent<HTMLInputElement>
-                onChange(syntheticEvent)
-              }}
-              className="text-xs text-gray-500 dark:text-gray-400 hover:underline px-1 py-1"
-            >
-              {t('common.clear')}
-            </button>
-          </div>
-        </div>
-      )
     }
 
     // 主日历渲染函数
@@ -611,20 +269,36 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       const positionStyle: React.CSSProperties = {
         position: 'absolute',
         zIndex: 50,
-        ...calendarPosition
+        ...calendarPosition,
+      }
+
+      const handleCalendarChange = (newValue: string) => {
+        // 创建一个模拟的ChangeEvent
+        const event = {
+          target: {
+            name,
+            value: newValue,
+          },
+        } as React.ChangeEvent<HTMLInputElement>
+
+        onChange(event)
+        setIsCalendarOpen(false)
       }
 
       return (
         <div
-          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg w-[280px] max-h-[320px] overflow-hidden"
+          className='bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg w-[280px] max-h-[320px] overflow-hidden'
           style={positionStyle}
         >
-          {calendarView === 'year' && renderYearSelector()}
-          {calendarView === 'month' && renderMonthSelector()}
-          {calendarView === 'date' && renderDateSelector()}
+          <Calendar
+            value={value}
+            onChange={handleCalendarChange}
+            showYearMonthSelector={true}
+          />
         </div>
       )
     }
+
     return (
       <div ref={containerRef} className={`relative space-y-2 ${className}`}>
         {/* 标签 */}
@@ -637,10 +311,10 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
         </label>
 
         {/* 输入框容器 */}
-        <div ref={inputContainerRef} className="relative">
+        <div ref={inputContainerRef} className='relative'>
           <input
             ref={inputRef}
-            type="text"
+            type='text'
             id={name}
             name={name}
             value={displayValue}
@@ -669,7 +343,7 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           {/* 日历图标按钮 */}
           {showCalendar && (
             <button
-              type="button"
+              type='button'
               onClick={() => {
                 if (!isCalendarOpen) {
                   // 打开日历时计算位置
@@ -679,9 +353,9 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
                 setIsCalendarOpen(!isCalendarOpen)
               }}
               disabled={disabled}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors'
             >
-              <Calendar className="w-4 h-4" />
+              <CalendarIcon className='w-4 h-4' />
             </button>
           )}
 

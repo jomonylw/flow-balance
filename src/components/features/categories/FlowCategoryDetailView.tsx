@@ -19,7 +19,7 @@ import { publishTransactionDelete } from '@/lib/services/data-update.service'
 import { Transaction, LegacyAccount } from '@/types/business/transaction'
 import type { CategoryTransaction } from '@/types/core'
 import type { FlowMonthlyData, FlowSummaryData } from '@/types/components'
-import { convertPrismaAccountType } from '@/types/core/constants'
+import { convertPrismaAccountType, AccountType } from '@/types/core/constants'
 
 // 使用统一的 TimeRange 类型，但限制为此组件支持的值
 type LocalTimeRange = 'lastYear' | 'all'
@@ -764,6 +764,12 @@ export default function FlowCategoryDetailView({
             pagination={{
               ...pagination,
               onPageChange: handlePageChange,
+            }}
+            // 智能粘贴相关属性 - 分类详情页面支持多账户
+            showAccountSelector={true}
+            accountType={category.type as AccountType}
+            onSmartPasteSuccess={() => {
+              handleTransactionSuccess()
             }}
           />
         )}

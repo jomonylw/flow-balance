@@ -88,8 +88,10 @@ export default function AddAccountModal({
     setIsLoading(true)
 
     try {
-      // 将货币ID转换为货币代码（保持API兼容性）
-      const selectedCurrency = currencies.find(c => c.id === formData.currencyId)
+      // 验证货币ID是否有效
+      const selectedCurrency = currencies.find(
+        c => c.id === formData.currencyId
+      )
       if (!selectedCurrency) {
         setErrors({ general: t('validation.account.currency.invalid') })
         return
@@ -105,7 +107,7 @@ export default function AddAccountModal({
           categoryId: category.id,
           description: formData.description.trim() || undefined,
           color: formData.color,
-          currencyCode: selectedCurrency.code,
+          currencyId: formData.currencyId,
         }),
       })
 
@@ -310,7 +312,9 @@ export default function AddAccountModal({
             type='submit'
             label={isLoading ? t('account.creating') : t('account.create')}
             isLoading={isLoading}
-            disabled={!formData.name.trim() || !formData.currencyId || isLoading}
+            disabled={
+              !formData.name.trim() || !formData.currencyId || isLoading
+            }
             variant='primary'
           />
         </div>

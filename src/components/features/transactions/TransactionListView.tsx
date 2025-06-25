@@ -372,6 +372,12 @@ export default function TransactionListView({
                 onPageChange: handlePageChange,
                 itemsPerPage: pagination.limit,
               }}
+              // 智能粘贴相关属性 - 全局交易页面支持多账户
+              showAccountSelector={true}
+              onSmartPasteSuccess={() => {
+                loadTransactions()
+                loadStats()
+              }}
             />
           )}
         </div>

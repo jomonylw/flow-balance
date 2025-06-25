@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, categoryId, description, color, currencyCode } = body
+    const { name, categoryId, description, color, currencyId } = body
 
     if (!name) {
       return errorResponse('账户名称不能为空', 400)
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       return errorResponse('请选择分类', 400)
     }
 
-    if (!currencyCode) {
+    if (!currencyId) {
       return errorResponse('请选择账户货币', 400)
     }
 
@@ -68,16 +68,15 @@ export async function POST(request: NextRequest) {
       return errorResponse('分类不存在', 400)
     }
 
-    // 验证货币（优先查找用户自定义货币）
+    // 验证货币是否存在且用户有权使用
     const currency = await prisma.currency.findFirst({
       where: {
-        code: currencyCode,
+        id: currencyId,
         OR: [
           { createdBy: user.id }, // 用户自定义货币
           { createdBy: null }, // 全局货币
         ],
       },
-      orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
     })
 
     if (!currency) {
@@ -113,7 +112,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         categoryId,
-        currencyId: currency.id,
+        currencyId,
         name,
         description: description || null,
         color: color || null,

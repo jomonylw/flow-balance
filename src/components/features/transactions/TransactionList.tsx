@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
+import SmartPasteModal from '@/components/ui/data-input/SmartPasteModal'
 import CircularCheckbox from '@/components/ui/forms/CircularCheckbox'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
+import { useToast } from '@/contexts/providers/ToastContext'
 import { ExtendedTransaction } from '@/types/core'
+import { AccountType } from '@/types/core/constants'
 
 interface TransactionListProps {
   transactions: ExtendedTransaction[]
@@ -30,6 +33,33 @@ interface TransactionListProps {
   headerTitle?: string // 自定义表头标题
   headerDescription?: string // 自定义表头描述
   listType?: 'stock' | 'flow' | 'default' // 列表类型，用于确定默认表头文本
+
+  // 智能粘贴相关属性
+  accountType?: AccountType // 账户类型，用于智能粘贴
+  selectedAccount?: {
+    id: string
+    name: string
+    currencyId: string
+    categoryId: string
+    category: {
+      id: string
+      name: string
+      type: AccountType
+    }
+    currency: {
+      id: string
+      code: string
+      symbol: string
+      name: string
+      decimalPlaces: number
+      isCustom: boolean
+      createdBy: string | null
+    }
+    description?: string | null
+    color?: string | null
+  }
+  onSmartPasteSuccess?: () => void // 智能粘贴成功回调
+  showAccountSelector?: boolean // 是否显示多账户支持
 }
 
 export default function TransactionList({
@@ -46,12 +76,19 @@ export default function TransactionList({
   // headerTitle,
   // headerDescription,
   // listType = 'default'
+
+  // 智能粘贴相关属性
+  accountType,
+  selectedAccount,
+  onSmartPasteSuccess,
+  showAccountSelector = false,
 }: TransactionListProps) {
   const { t } = useLanguage()
   const { tags: userTags } = useUserData()
   const { formatCurrencyById, getUserLocale: _getUserLocale } =
     useUserCurrencyFormatter()
   const { formatSmartDate } = useUserDateFormatter()
+  const { showSuccess } = useToast()
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(
     new Set()
   )
@@ -60,6 +97,7 @@ export default function TransactionList({
   const [deletingTransactionId, setDeletingTransactionId] = useState<
     string | null
   >(null)
+  const [isSmartPasteModalOpen, setIsSmartPasteModalOpen] = useState(false)
 
   // 获取最新的标签颜色信息
   const getUpdatedTagColor = (tagId: string): string | undefined => {
@@ -336,39 +374,77 @@ export default function TransactionList({
     setDeletingTransactionId(null)
   }
 
-  if (transactions.length === 0) {
-    return (
-      <div className='p-8 sm:p-12 text-center'>
-        <div className='bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm'>
-          <div className='h-16 w-16 mx-auto mb-6 bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 rounded-2xl flex items-center justify-center shadow-sm'>
-            <svg
-              className='h-8 w-8 text-white drop-shadow-sm'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'
-              />
-            </svg>
-          </div>
-          <h3 className='text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2'>
-            {t('transaction.list.empty.title')}
-          </h3>
-          <p className='text-sm sm:text-base text-gray-600 dark:text-gray-400'>
-            {t('transaction.list.empty.description')}
-          </p>
-        </div>
-      </div>
-    )
+  // 处理智能粘贴成功
+  const handleSmartPasteSuccess = async (result: any) => {
+    showSuccess('批量处理成功', `成功处理 ${result.processedCount} 条交易记录`)
+
+    // 调用父组件的成功回调
+    if (onSmartPasteSuccess) {
+      onSmartPasteSuccess()
+    }
+
+    setIsSmartPasteModalOpen(false)
+    setSelectedTransactions(new Set()) // 清空选择
+  }
+
+  // 处理批量录入按钮点击
+  const handleBatchEntryClick = () => {
+    setIsSmartPasteModalOpen(true)
+  }
+
+  // 处理批量编辑按钮点击
+  const handleBatchEditClick = () => {
+    setIsSmartPasteModalOpen(true)
+  }
+
+  // 获取选中的交易记录用于编辑
+  const getSelectedTransactionsForEdit = () => {
+    return transactions
+      .filter(t => selectedTransactions.has(t.id))
+      .map(t => {
+        // 安全的日期转换
+        let dateString: string
+        const dateValue = t.date as any // 临时类型断言以处理运行时类型不匹配
+        if (dateValue instanceof Date) {
+          dateString = dateValue.toISOString().split('T')[0]
+        } else if (typeof dateValue === 'string') {
+          // 如果已经是字符串，确保格式正确
+          dateString = dateValue.includes('T')
+            ? dateValue.split('T')[0]
+            : dateValue
+        } else {
+          // 兜底处理
+          dateString = new Date().toISOString().split('T')[0]
+        }
+
+        return {
+          id: t.id,
+          date: dateString,
+          amount: t.amount,
+          description: t.description,
+          notes: t.notes,
+          tags:
+            t.tags?.map(transactionTag => ({
+              id: transactionTag.tag.id,
+              name: transactionTag.tag.name,
+            })) || [],
+          account: showAccountSelector
+            ? {
+                id: t.account.id,
+                name: t.account.name,
+                categoryId: t.account.categoryId,
+                category: {
+                  type: t.account.category.type as AccountType,
+                },
+              }
+            : undefined,
+        }
+      })
   }
 
   return (
     <div>
-      {/* 批量操作栏 */}
+      {/* 批量操作栏 - 有选择记录时显示 */}
       {!readOnly && selectedTransactions.size > 0 && (
         <div className='bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 border-b border-blue-200/60 dark:border-blue-700/50 px-4 sm:px-6 py-4 shadow-sm'>
           <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0'>
@@ -381,20 +457,46 @@ export default function TransactionList({
               </span>
             </div>
             <div className='flex space-x-3'>
-              {/* 暂时隐藏批量编辑功能 */}
-              {/* {onBatchEdit && (
+              {/* 批量编辑按钮 */}
+              {((accountType && selectedAccount) || showAccountSelector) && (
                 <button
                   onClick={handleBatchEditClick}
-                  className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 touch-manipulation"
+                  className='px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 touch-manipulation shadow-sm'
                 >
-                  {t('transaction.list.batch.edit')}
+                  <svg
+                    className='w-4 h-4 mr-1.5 inline-block'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
+                    />
+                  </svg>
+                  批量编辑
                 </button>
-              )} */}
+              )}
               {onBatchDelete && (
                 <button
                   onClick={handleBatchDeleteClick}
                   className='px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation shadow-sm'
                 >
+                  <svg
+                    className='w-4 h-4 mr-1.5 inline-block'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
+                    />
+                  </svg>
                   {t('transaction.list.batch.delete')}
                 </button>
               )}
@@ -402,6 +504,43 @@ export default function TransactionList({
           </div>
         </div>
       )}
+
+      {/* 批量录入栏 - 没有选择记录时显示 */}
+      {!readOnly &&
+        selectedTransactions.size === 0 &&
+        ((accountType && selectedAccount) || showAccountSelector) && (
+          <div className='bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/30 border-b border-green-200/60 dark:border-green-700/50 px-4 sm:px-6 py-3 shadow-sm'>
+            <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0'>
+              <div className='flex items-center space-x-2'>
+                <div className='h-2 w-2 bg-green-500 rounded-full'></div>
+                <span className='text-sm font-medium text-green-700 dark:text-green-300'>
+                  快速批量操作
+                </span>
+              </div>
+              <div className='flex space-x-3'>
+                <button
+                  onClick={handleBatchEntryClick}
+                  className='px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200 touch-manipulation shadow-sm'
+                >
+                  <svg
+                    className='w-4 h-4 mr-1.5 inline-block'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                    />
+                  </svg>
+                  批量录入
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* 表头 - 移动端隐藏 */}
       <div className='hidden sm:block bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 px-4 sm:px-6 py-4 border-b border-gray-200/60 dark:border-gray-700/50'>
@@ -452,31 +591,201 @@ export default function TransactionList({
 
       {/* 交易列表 */}
       <div className='space-y-3 p-4'>
-        {transactions.map(transaction => (
-          <div
-            key={transaction.id}
-            className={`bg-white dark:bg-gray-800 rounded-xl border transition-all duration-300 hover:shadow-lg hover:scale-[1.01] ${
-              selectedTransactions.has(transaction.id)
-                ? 'border-blue-300 dark:border-blue-600 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 shadow-md ring-1 ring-blue-200 dark:ring-blue-700'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm'
-            }`}
-          >
-            {/* 移动端布局 */}
-            <div className='sm:hidden p-3'>
-              <div className='flex items-start space-x-3'>
-                {/* 选择框和图标 */}
-                <div className='flex flex-col items-center space-y-2'>
-                  {!readOnly && (
+        {transactions.length === 0 ? (
+          <div className='p-8 sm:p-12 text-center'>
+            <div className='bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm'>
+              <div className='h-16 w-16 mx-auto mb-6 bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 rounded-2xl flex items-center justify-center shadow-sm'>
+                <svg
+                  className='h-8 w-8 text-white drop-shadow-sm'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'
+                  />
+                </svg>
+              </div>
+              <h3 className='text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2'>
+                {t('transaction.list.empty.title')}
+              </h3>
+              <p className='text-sm sm:text-base text-gray-600 dark:text-gray-400'>
+                {t('transaction.list.empty.description')}
+              </p>
+            </div>
+          </div>
+        ) : (
+          transactions.map(transaction => (
+            <div
+              key={transaction.id}
+              className={`bg-white dark:bg-gray-800 rounded-xl border transition-all duration-300 hover:shadow-lg hover:scale-[1.01] ${
+                selectedTransactions.has(transaction.id)
+                  ? 'border-blue-300 dark:border-blue-600 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 shadow-md ring-1 ring-blue-200 dark:ring-blue-700'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm'
+              }`}
+            >
+              {/* 移动端布局 */}
+              <div className='sm:hidden p-3'>
+                <div className='flex items-start space-x-3'>
+                  {/* 选择框和图标 */}
+                  <div className='flex flex-col items-center space-y-2'>
+                    {!readOnly && (
+                      <CircularCheckbox
+                        checked={selectedTransactions.has(transaction.id)}
+                        onChange={() => handleSelectTransaction(transaction.id)}
+                        size='sm'
+                        variant='enhanced'
+                      />
+                    )}
+                    <div className='flex-shrink-0'>
+                      {getTypeIcon(transaction)}
+                    </div>
+                  </div>
+
+                  {/* 交易信息 */}
+                  <div className='flex-1 min-w-0'>
+                    <div className='flex items-start justify-between'>
+                      <div className='flex-1 min-w-0'>
+                        <div className='flex items-start flex-col space-y-1.5'>
+                          <h4 className='text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight'>
+                            {transaction.description}
+                          </h4>
+                          {/* 关联类型标签 */}
+                          {getRelationshipTags(transaction).length > 0 && (
+                            <div className='flex flex-wrap gap-1'>
+                              {getRelationshipTags(transaction).map(tag => (
+                                <span
+                                  key={tag.key}
+                                  className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${tag.className}`}
+                                >
+                                  {tag.text}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className='mt-2 space-y-0.5'>
+                          <div className='text-xs text-gray-600 dark:text-gray-400'>
+                            <span className='font-medium'>
+                              {transaction.category.name}
+                            </span>
+                          </div>
+                          <div className='text-xs text-gray-600 dark:text-gray-400'>
+                            <span>{formatDate(transaction.date)}</span>
+                          </div>
+                          {showAccount && transaction.account && (
+                            <div className='text-xs text-gray-600 dark:text-gray-400'>
+                              <span>{transaction.account.name}</span>
+                            </div>
+                          )}
+                          <div className='text-xs'>
+                            <div
+                              className={'inline-flex items-center space-x-1.5'}
+                            >
+                              <div
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  transaction.type === 'INCOME'
+                                    ? 'bg-green-500'
+                                    : transaction.type === 'EXPENSE'
+                                      ? 'bg-red-500'
+                                      : 'bg-purple-500'
+                                }`}
+                              ></div>
+                              <span
+                                className={`font-medium ${
+                                  transaction.type === 'INCOME'
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : transaction.type === 'EXPENSE'
+                                      ? 'text-red-600 dark:text-red-400'
+                                      : 'text-purple-600 dark:text-purple-400'
+                                }`}
+                              >
+                                {transaction.type === 'INCOME'
+                                  ? t('type.income')
+                                  : transaction.type === 'EXPENSE'
+                                    ? t('type.expense')
+                                    : t('type.asset')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className='flex flex-col items-end space-y-2 ml-3'>
+                        {getAmountDisplay(transaction)}
+                        {!readOnly && (
+                          <div className='flex items-center space-x-1.5'>
+                            {/* 编辑按钮 */}
+                            <button
+                              onClick={() => onEdit(transaction)}
+                              className='p-1.5 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 touch-manipulation shadow-sm'
+                              title={t('transaction.edit')}
+                            >
+                              <svg
+                                className='h-3.5 w-3.5'
+                                fill='none'
+                                stroke='currentColor'
+                                viewBox='0 0 24 24'
+                              >
+                                <path
+                                  strokeLinecap='round'
+                                  strokeLinejoin='round'
+                                  strokeWidth={2}
+                                  d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
+                                />
+                              </svg>
+                            </button>
+
+                            {/* 删除按钮 */}
+                            {onDelete && (
+                              <button
+                                onClick={() => handleSingleDelete(transaction)}
+                                className='p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation shadow-sm'
+                                title={t('transaction.delete')}
+                              >
+                                <svg
+                                  className='h-3.5 w-3.5'
+                                  fill='none'
+                                  stroke='currentColor'
+                                  viewBox='0 0 24 24'
+                                >
+                                  <path
+                                    strokeLinecap='round'
+                                    strokeLinejoin='round'
+                                    strokeWidth={2}
+                                    d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
+                                  />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 桌面端布局 */}
+              <div className='hidden sm:flex items-start space-x-4 p-4'>
+                {/* 选择框 */}
+                {!readOnly && (
+                  <div className='pt-0.5'>
                     <CircularCheckbox
                       checked={selectedTransactions.has(transaction.id)}
                       onChange={() => handleSelectTransaction(transaction.id)}
-                      size='sm'
+                      size='md'
                       variant='enhanced'
                     />
-                  )}
-                  <div className='flex-shrink-0'>
-                    {getTypeIcon(transaction)}
                   </div>
+                )}
+
+                {/* 交易类型图标 */}
+                <div className='flex-shrink-0 pt-0.5'>
+                  {getTypeIcon(transaction)}
                 </div>
 
                 {/* 交易信息 */}
@@ -484,78 +793,82 @@ export default function TransactionList({
                   <div className='flex items-start justify-between'>
                     <div className='flex-1 min-w-0'>
                       <div className='flex items-start flex-col space-y-1.5'>
-                        <h4 className='text-sm font-semibold text-gray-900 dark:text-gray-100 leading-tight'>
-                          {transaction.description}
-                        </h4>
-                        {/* 关联类型标签 */}
-                        {getRelationshipTags(transaction).length > 0 && (
-                          <div className='flex flex-wrap gap-1'>
-                            {getRelationshipTags(transaction).map(tag => (
-                              <span
-                                key={tag.key}
-                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${tag.className}`}
-                              >
-                                {tag.text}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        <div className='flex items-center space-x-3 w-full'>
+                          <h4 className='text-base font-semibold text-gray-900 dark:text-gray-100 truncate'>
+                            {transaction.description}
+                          </h4>
+                          {/* 关联类型标签 */}
+                          {getRelationshipTags(transaction).length > 0 && (
+                            <div className='flex flex-wrap gap-1'>
+                              {getRelationshipTags(transaction).map(tag => (
+                                <span
+                                  key={tag.key}
+                                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${tag.className}`}
+                                >
+                                  {tag.text}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className='mt-2 space-y-0.5'>
-                        <div className='text-xs text-gray-600 dark:text-gray-400'>
+                      <div className='flex items-center space-x-3 mt-1.5 text-xs text-gray-600 dark:text-gray-400'>
+                        <div>
                           <span className='font-medium'>
                             {transaction.category.name}
                           </span>
                         </div>
-                        <div className='text-xs text-gray-600 dark:text-gray-400'>
+                        {showAccount && transaction.account && (
+                          <>
+                            <div className='h-1 w-1 bg-gray-400 rounded-full'></div>
+                            <div>
+                              <span>{transaction.account.name}</span>
+                            </div>
+                          </>
+                        )}
+                        <div className='h-1 w-1 bg-gray-400 rounded-full'></div>
+                        <div>
                           <span>{formatDate(transaction.date)}</span>
                         </div>
-                        {showAccount && transaction.account && (
-                          <div className='text-xs text-gray-600 dark:text-gray-400'>
-                            <span>{transaction.account.name}</span>
-                          </div>
-                        )}
-                        <div className='text-xs'>
+                        <div className='h-1 w-1 bg-gray-400 rounded-full'></div>
+                        <div className='flex items-center space-x-1'>
                           <div
-                            className={'inline-flex items-center space-x-1.5'}
-                          >
-                            <div
-                              className={`h-1.5 w-1.5 rounded-full ${
-                                transaction.type === 'INCOME'
-                                  ? 'bg-green-500'
-                                  : transaction.type === 'EXPENSE'
-                                    ? 'bg-red-500'
-                                    : 'bg-purple-500'
-                              }`}
-                            ></div>
-                            <span
-                              className={`font-medium ${
-                                transaction.type === 'INCOME'
-                                  ? 'text-green-600 dark:text-green-400'
-                                  : transaction.type === 'EXPENSE'
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : 'text-purple-600 dark:text-purple-400'
-                              }`}
-                            >
-                              {transaction.type === 'INCOME'
-                                ? t('type.income')
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              transaction.type === 'INCOME'
+                                ? 'bg-green-500'
                                 : transaction.type === 'EXPENSE'
-                                  ? t('type.expense')
-                                  : t('type.asset')}
-                            </span>
-                          </div>
+                                  ? 'bg-red-500'
+                                  : 'bg-purple-500'
+                            }`}
+                          ></div>
+                          <span
+                            className={`font-medium ${
+                              transaction.type === 'INCOME'
+                                ? 'text-green-600 dark:text-green-400'
+                                : transaction.type === 'EXPENSE'
+                                  ? 'text-red-600 dark:text-red-400'
+                                  : 'text-purple-600 dark:text-purple-400'
+                            }`}
+                          >
+                            {transaction.type === 'INCOME'
+                              ? t('type.income')
+                              : transaction.type === 'EXPENSE'
+                                ? t('type.expense')
+                                : t('type.asset')}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className='flex flex-col items-end space-y-2 ml-3'>
+                    <div className='flex items-start space-x-3 ml-4'>
                       {getAmountDisplay(transaction)}
+
                       {!readOnly && (
-                        <div className='flex items-center space-x-1.5'>
+                        <div className='flex items-center space-x-1.5 pt-0.5'>
                           {/* 编辑按钮 */}
                           <button
                             onClick={() => onEdit(transaction)}
-                            className='p-1.5 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 touch-manipulation shadow-sm'
+                            className='p-1.5 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 shadow-sm'
                             title={t('transaction.edit')}
                           >
                             <svg
@@ -577,7 +890,7 @@ export default function TransactionList({
                           {onDelete && (
                             <button
                               onClick={() => handleSingleDelete(transaction)}
-                              className='p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 touch-manipulation shadow-sm'
+                              className='p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 shadow-sm'
                               title={t('transaction.delete')}
                             >
                               <svg
@@ -599,210 +912,64 @@ export default function TransactionList({
                       )}
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
 
-            {/* 桌面端布局 */}
-            <div className='hidden sm:flex items-start space-x-4 p-4'>
-              {/* 选择框 */}
-              {!readOnly && (
-                <div className='pt-0.5'>
-                  <CircularCheckbox
-                    checked={selectedTransactions.has(transaction.id)}
-                    onChange={() => handleSelectTransaction(transaction.id)}
-                    size='md'
-                    variant='enhanced'
-                  />
-                </div>
-              )}
+                  {/* 标签和备注 - 共享布局 */}
+                  {(transaction.tags && transaction.tags.length > 0) ||
+                  transaction.notes ? (
+                    <div className='mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 sm:ml-16'>
+                      {/* 标签 */}
+                      {transaction.tags && transaction.tags.length > 0 && (
+                        <div className='mb-2'>
+                          <div className='flex items-center flex-wrap gap-1.5'>
+                            {transaction.tags.slice(0, 6).map(({ tag }) => {
+                              // 安全检查：确保tag对象存在
+                              if (!tag) return null
 
-              {/* 交易类型图标 */}
-              <div className='flex-shrink-0 pt-0.5'>
-                {getTypeIcon(transaction)}
-              </div>
+                              // 从 UserDataContext 获取标签颜色信息
+                              const currentColor = getUpdatedTagColor(tag.id)
 
-              {/* 交易信息 */}
-              <div className='flex-1 min-w-0'>
-                <div className='flex items-start justify-between'>
-                  <div className='flex-1 min-w-0'>
-                    <div className='flex items-start flex-col space-y-1.5'>
-                      <div className='flex items-center space-x-3 w-full'>
-                        <h4 className='text-base font-semibold text-gray-900 dark:text-gray-100 truncate'>
-                          {transaction.description}
-                        </h4>
-                        {/* 关联类型标签 */}
-                        {getRelationshipTags(transaction).length > 0 && (
-                          <div className='flex flex-wrap gap-1'>
-                            {getRelationshipTags(transaction).map(tag => (
-                              <span
-                                key={tag.key}
-                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${tag.className}`}
-                              >
-                                {tag.text}
+                              return (
+                                <span
+                                  key={tag.id}
+                                  className='inline-block px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
+                                  style={
+                                    currentColor
+                                      ? {
+                                          backgroundColor: currentColor + '10',
+                                          borderColor: currentColor + '25',
+                                          color: currentColor,
+                                        }
+                                      : {}
+                                  }
+                                >
+                                  {tag.name}
+                                </span>
+                              )
+                            })}
+                            {transaction.tags.length > 6 && (
+                              <span className='inline-block px-2 py-0.5 rounded text-xs bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600'>
+                                +{transaction.tags.length - 6}
                               </span>
-                            ))}
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className='flex items-center space-x-3 mt-1.5 text-xs text-gray-600 dark:text-gray-400'>
-                      <div>
-                        <span className='font-medium'>
-                          {transaction.category.name}
-                        </span>
-                      </div>
-                      {showAccount && transaction.account && (
-                        <>
-                          <div className='h-1 w-1 bg-gray-400 rounded-full'></div>
-                          <div>
-                            <span>{transaction.account.name}</span>
-                          </div>
-                        </>
-                      )}
-                      <div className='h-1 w-1 bg-gray-400 rounded-full'></div>
-                      <div>
-                        <span>{formatDate(transaction.date)}</span>
-                      </div>
-                      <div className='h-1 w-1 bg-gray-400 rounded-full'></div>
-                      <div className='flex items-center space-x-1'>
-                        <div
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            transaction.type === 'INCOME'
-                              ? 'bg-green-500'
-                              : transaction.type === 'EXPENSE'
-                                ? 'bg-red-500'
-                                : 'bg-purple-500'
-                          }`}
-                        ></div>
-                        <span
-                          className={`font-medium ${
-                            transaction.type === 'INCOME'
-                              ? 'text-green-600 dark:text-green-400'
-                              : transaction.type === 'EXPENSE'
-                                ? 'text-red-600 dark:text-red-400'
-                                : 'text-purple-600 dark:text-purple-400'
-                          }`}
-                        >
-                          {transaction.type === 'INCOME'
-                            ? t('type.income')
-                            : transaction.type === 'EXPENSE'
-                              ? t('type.expense')
-                              : t('type.asset')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className='flex items-start space-x-3 ml-4'>
-                    {getAmountDisplay(transaction)}
-
-                    {!readOnly && (
-                      <div className='flex items-center space-x-1.5 pt-0.5'>
-                        {/* 编辑按钮 */}
-                        <button
-                          onClick={() => onEdit(transaction)}
-                          className='p-1.5 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 shadow-sm'
-                          title={t('transaction.edit')}
-                        >
-                          <svg
-                            className='h-3.5 w-3.5'
-                            fill='none'
-                            stroke='currentColor'
-                            viewBox='0 0 24 24'
-                          >
-                            <path
-                              strokeLinecap='round'
-                              strokeLinejoin='round'
-                              strokeWidth={2}
-                              d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
-                            />
-                          </svg>
-                        </button>
-
-                        {/* 删除按钮 */}
-                        {onDelete && (
-                          <button
-                            onClick={() => handleSingleDelete(transaction)}
-                            className='p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 shadow-sm'
-                            title={t('transaction.delete')}
-                          >
-                            <svg
-                              className='h-3.5 w-3.5'
-                              fill='none'
-                              stroke='currentColor'
-                              viewBox='0 0 24 24'
-                            >
-                              <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                strokeWidth={2}
-                                d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
-                              />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 标签和备注 - 共享布局 */}
-                {(transaction.tags && transaction.tags.length > 0) ||
-                transaction.notes ? (
-                  <div className='mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 sm:ml-16'>
-                    {/* 标签 */}
-                    {transaction.tags && transaction.tags.length > 0 && (
-                      <div className='mb-2'>
-                        <div className='flex items-center flex-wrap gap-1.5'>
-                          {transaction.tags.slice(0, 6).map(({ tag }) => {
-                            // 安全检查：确保tag对象存在
-                            if (!tag) return null
-
-                            // 从 UserDataContext 获取标签颜色信息
-                            const currentColor = getUpdatedTagColor(tag.id)
-
-                            return (
-                              <span
-                                key={tag.id}
-                                className='inline-block px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
-                                style={
-                                  currentColor
-                                    ? {
-                                        backgroundColor: currentColor + '10',
-                                        borderColor: currentColor + '25',
-                                        color: currentColor,
-                                      }
-                                    : {}
-                                }
-                              >
-                                {tag.name}
-                              </span>
-                            )
-                          })}
-                          {transaction.tags.length > 6 && (
-                            <span className='inline-block px-2 py-0.5 rounded text-xs bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600'>
-                              +{transaction.tags.length - 6}
-                            </span>
-                          )}
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* 备注 */}
-                    {transaction.notes && (
-                      <div className='bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2'>
-                        <p className='text-sm text-gray-600 dark:text-gray-400 leading-relaxed'>
-                          {transaction.notes}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : null}
+                      {/* 备注 */}
+                      {transaction.notes && (
+                        <div className='bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-3 py-2'>
+                          <p className='text-sm text-gray-600 dark:text-gray-400 leading-relaxed'>
+                            {transaction.notes}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* 分页控件 */}
@@ -883,7 +1050,7 @@ export default function TransactionList({
               </div>
               <div>
                 <nav
-                  className='relative z-0 inline-flex rounded-xl shadow-sm overflow-hidden'
+                  className='relative z-0 inline-flex rounded-lg shadow-sm overflow-hidden'
                   aria-label='Pagination'
                 >
                   <button
@@ -978,6 +1145,32 @@ export default function TransactionList({
         onCancel={() => setShowBatchDeleteConfirm(false)}
         variant='danger'
       />
+
+      {/* 智能粘贴批量处理模态框 */}
+      {((accountType && selectedAccount) || showAccountSelector) && (
+        <SmartPasteModal
+          isOpen={isSmartPasteModalOpen}
+          onClose={() => setIsSmartPasteModalOpen(false)}
+          onSuccess={handleSmartPasteSuccess}
+          accountType={accountType}
+          selectedAccount={selectedAccount}
+          showAccountSelector={showAccountSelector}
+          title={
+            selectedTransactions.size > 0
+              ? selectedAccount
+                ? `批量编辑 - ${selectedAccount.name} (${selectedTransactions.size}条记录)`
+                : `批量编辑 (${selectedTransactions.size}条记录)`
+              : selectedAccount
+                ? `批量录入 - ${selectedAccount.name}`
+                : '批量录入'
+          }
+          editingTransactions={
+            selectedTransactions.size > 0
+              ? getSelectedTransactionsForEdit()
+              : undefined
+          }
+        />
+      )}
     </div>
   )
 }

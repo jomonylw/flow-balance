@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import BalanceUpdateModal from './BalanceUpdateModal'
+
 import TransactionList from '@/components/features/transactions/TransactionList'
 import StockAccountSummaryCard from './StockAccountSummaryCard'
 import StockAccountTrendChart from '@/components/features/charts/StockAccountTrendChart'
@@ -36,7 +37,7 @@ import type {
   LoanContractFormData,
   ExtendedTransaction,
 } from '@/types/core'
-import { convertPrismaAccountType } from '@/types/core/constants'
+import { convertPrismaAccountType, AccountType } from '@/types/core/constants'
 
 interface StockAccountDetailViewProps {
   account: LegacyAccount
@@ -55,6 +56,7 @@ export default function StockAccountDetailView({
   const router = useRouter()
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] =
     useState(false)
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [editingTransaction, setEditingTransaction] =
@@ -645,6 +647,7 @@ export default function StockAccountDetailView({
               <span className='text-xs sm:text-sm text-gray-500 dark:text-gray-400'>
                 {t('account.total.records', { count: pagination.totalItems })}
               </span>
+
               {pagination.totalItems > 0 && (
                 <button
                   onClick={() => setShowClearConfirm(true)}
@@ -684,6 +687,50 @@ export default function StockAccountDetailView({
             pagination={{
               ...pagination,
               onPageChange: handlePageChange,
+            }}
+            // 智能粘贴相关属性
+            accountType={
+              account.category.type
+                ? convertPrismaAccountType(account.category.type)
+                : undefined
+            }
+            selectedAccount={{
+              id: account.id,
+              name: account.name,
+              currencyId: account.currencyId,
+              categoryId: account.categoryId,
+              category: {
+                id: account.category.id,
+                name: account.category.name,
+                type: account.category.type
+                  ? convertPrismaAccountType(account.category.type)
+                  : AccountType.ASSET,
+              },
+              currency: account.currency
+                ? {
+                    id: account.currency.id,
+                    code: account.currency.code,
+                    symbol: account.currency.symbol,
+                    name: account.currency.name,
+                    decimalPlaces: account.currency.decimalPlaces,
+                    isCustom: account.currency.isCustom,
+                    createdBy: account.currency.createdBy || null,
+                  }
+                : {
+                    id: 'default-usd',
+                    code: 'USD',
+                    symbol: '$',
+                    name: 'US Dollar',
+                    decimalPlaces: 2,
+                    isCustom: false,
+                    createdBy: null,
+                  },
+              description: account.description,
+              color: account.color,
+            }}
+            onSmartPasteSuccess={async () => {
+              await loadTransactions(pagination.currentPage)
+              await fetchTrendData(timeRange)
             }}
           />
         )}

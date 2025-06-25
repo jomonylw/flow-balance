@@ -39,7 +39,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, categoryId, description, color, currencyCode } = body
+    const { name, categoryId, description, color, currencyId } = body
 
     if (!name) {
       return errorResponse('账户名称不能为空', 400)
@@ -75,10 +75,7 @@ export async function PUT(
     }
 
     // 处理货币更换逻辑
-    if (
-      currencyCode !== undefined &&
-      currencyCode !== existingAccount.currency?.code
-    ) {
+    if (currencyId !== undefined && currencyId !== existingAccount.currencyId) {
       // 检查账户是否有交易记录
       const hasTransactions = existingAccount.transactions.length > 0
 
@@ -87,20 +84,19 @@ export async function PUT(
       }
 
       // 货币是必填的，不能设置为空
-      if (!currencyCode) {
+      if (!currencyId) {
         return errorResponse('账户货币不能为空', 400)
       }
 
-      // 验证货币是否存在且用户有权使用（优先查找用户自定义货币）
+      // 验证货币是否存在且用户有权使用
       const currency = await prisma.currency.findFirst({
         where: {
-          code: currencyCode,
+          id: currencyId,
           OR: [
             { createdBy: user.id }, // 用户自定义货币
             { createdBy: null }, // 全局货币
           ],
         },
-        orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
       })
 
       if (!currency) {
@@ -134,33 +130,12 @@ export async function PUT(
       return errorResponse('该账户名称已存在', 400)
     }
 
-    // 如果需要更新货币，先获取货币ID
-    let currencyId = existingAccount.currencyId
-    if (
-      currencyCode !== undefined &&
-      currencyCode !== existingAccount.currency.code
-    ) {
-      const currency = await prisma.currency.findFirst({
-        where: {
-          code: currencyCode,
-          OR: [
-            { createdBy: user.id }, // 用户自定义货币
-            { createdBy: null }, // 全局货币
-          ],
-        },
-        orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
-      })
-      if (currency) {
-        currencyId = currency.id
-      }
-    }
-
     const updatedAccount = await prisma.account.update({
       where: { id: accountId },
       data: {
         name,
         categoryId: categoryId || existingAccount.categoryId,
-        currencyId,
+        currencyId: currencyId || existingAccount.currencyId,
         description: description || null,
         color: color || null,
       },

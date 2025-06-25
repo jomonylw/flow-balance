@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import FlowTransactionModal from '@/components/features/accounts/FlowTransactionModal'
+
 import TransactionList from '@/components/features/transactions/TransactionList'
 import FlowAccountSummaryCard from './FlowAccountSummaryCard'
 import FlowAccountTrendChart from '@/components/features/charts/FlowAccountTrendChart'
@@ -31,7 +32,7 @@ import {
   TimeRange,
 } from '@/types/business/transaction'
 import type { RecurringTransaction, ExtendedTransaction } from '@/types/core'
-import { convertPrismaAccountType } from '@/types/core/constants'
+import { convertPrismaAccountType, AccountType } from '@/types/core/constants'
 
 interface FlowAccountDetailViewProps {
   account: LegacyAccount
@@ -53,6 +54,7 @@ export default function FlowAccountDetailView({
   const { formatInputDate } = useUserDateFormatter()
   const router = useRouter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
+
   const [editingTransaction, setEditingTransaction] = useState<{
     id: string
     accountId: string
@@ -682,6 +684,7 @@ export default function FlowAccountDetailView({
                   count: pagination.totalItems,
                 })}
               </span>
+
               {pagination.totalItems > 0 && (
                 <button
                   onClick={() => setShowClearConfirm(true)}
@@ -720,6 +723,50 @@ export default function FlowAccountDetailView({
             pagination={{
               ...pagination,
               onPageChange: handlePageChange,
+            }}
+            // 智能粘贴相关属性
+            accountType={
+              account.category.type
+                ? convertPrismaAccountType(account.category.type)
+                : undefined
+            }
+            selectedAccount={{
+              id: account.id,
+              name: account.name,
+              currencyId: account.currencyId,
+              categoryId: account.categoryId,
+              category: {
+                id: account.category.id,
+                name: account.category.name,
+                type: account.category.type
+                  ? convertPrismaAccountType(account.category.type)
+                  : AccountType.ASSET,
+              },
+              currency: account.currency
+                ? {
+                    id: account.currency.id,
+                    code: account.currency.code,
+                    symbol: account.currency.symbol,
+                    name: account.currency.name,
+                    decimalPlaces: account.currency.decimalPlaces,
+                    isCustom: account.currency.isCustom,
+                    createdBy: account.currency.createdBy || null,
+                  }
+                : {
+                    id: 'default-usd',
+                    code: 'USD',
+                    symbol: '$',
+                    name: 'US Dollar',
+                    decimalPlaces: 2,
+                    isCustom: false,
+                    createdBy: null,
+                  },
+              description: account.description,
+              color: account.color,
+            }}
+            onSmartPasteSuccess={async () => {
+              await loadTransactions(pagination.currentPage)
+              await fetchTrendData(timeRange)
             }}
           />
         )}

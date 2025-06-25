@@ -40,5 +40,12 @@
   "form.date.calendar.months.sep": "九月",
   "form.date.calendar.months.oct": "十月",
   "form.date.calendar.months.nov": "十一月",
-  "form.date.calendar.months.dec": "十二月"
+  "form.date.calendar.months.dec": "十二月",
+  "form.date.calendar.weekdays.mon": "一",
+  "form.date.calendar.weekdays.tue": "二",
+  "form.date.calendar.weekdays.wed": "三",
+  "form.date.calendar.weekdays.thu": "四",
+  "form.date.calendar.weekdays.fri": "五",
+  "form.date.calendar.weekdays.sat": "六",
+  "form.date.calendar.weekdays.sun": "日"
 }

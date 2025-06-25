@@ -25,6 +25,7 @@ import type {
   StockCategoryMonthlyData,
   CategoryTransaction,
 } from '@/types/core'
+import { AccountType } from '@/types/core/constants'
 import type { StockMonthlyData, StockSummaryData } from '@/types/components'
 
 // 新的 API 数据格式 - 使用统一的 MonthlyDataItem 类型
@@ -656,6 +657,12 @@ export default function StockCategoryDetailView({
             pagination={{
               ...pagination,
               onPageChange: handlePageChange,
+            }}
+            // 智能粘贴相关属性 - 分类详情页面支持多账户
+            showAccountSelector={true}
+            accountType={category.type as AccountType}
+            onSmartPasteSuccess={() => {
+              handleBalanceUpdateSuccess()
             }}
           />
         )}

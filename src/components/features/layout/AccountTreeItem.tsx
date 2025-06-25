@@ -83,11 +83,13 @@ export default function AccountTreeItem({
     // 将hex颜色转换为RGB并添加透明度
     const hexToRgb = (hex: string) => {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-      return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-      } : null
+      return result
+        ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16),
+          }
+        : null
     }
 
     const rgb = hexToRgb(account.color)
@@ -108,11 +110,13 @@ export default function AccountTreeItem({
 
     const hexToRgb = (hex: string) => {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-      return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-      } : null
+      return result
+        ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16),
+          }
+        : null
     }
 
     const rgb = hexToRgb(account.color)
@@ -122,7 +126,7 @@ export default function AccountTreeItem({
     const darkerRgb = {
       r: Math.max(0, rgb.r - 40),
       g: Math.max(0, rgb.g - 40),
-      b: Math.max(0, rgb.b - 40)
+      b: Math.max(0, rgb.b - 40),
     }
 
     return {
@@ -298,14 +302,20 @@ export default function AccountTreeItem({
 
       if (response.ok) {
         // 更新UserDataContext中的账户数据
-        const updatedAccount = await response.json()
-        if (updatedAccount.data) {
-          updateAccount(updatedAccount.data)
+        const result = await response.json()
+        if (result.data) {
+          // 转换API返回的数据格式以匹配UserDataContext期望的格式
+          const updatedAccountData = {
+            ...result.data,
+            currencyCode: result.data.currency?.code || account.currency?.code,
+            userId: result.data.userId,
+          }
+          updateAccount(updatedAccountData)
         }
 
         // 发布账户更新事件
-        await publishAccountUpdate(account.id, updatedAccount.data.categoryId, {
-          updatedAccount: updatedAccount.data,
+        await publishAccountUpdate(account.id, result.data.categoryId, {
+          updatedAccount: result.data,
           originalAccount: account,
         })
 
@@ -341,7 +351,7 @@ export default function AccountTreeItem({
         `}
         style={{
           paddingLeft: `${level * 16 + 20}px`,
-          ...getAccountInlineStyle()
+          ...getAccountInlineStyle(),
         }}
         onClick={e => {
           e.preventDefault()

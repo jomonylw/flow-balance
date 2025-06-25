@@ -40,5 +40,12 @@
   "form.date.calendar.months.sep": "September",
   "form.date.calendar.months.oct": "October",
   "form.date.calendar.months.nov": "November",
-  "form.date.calendar.months.dec": "December"
+  "form.date.calendar.months.dec": "December",
+  "form.date.calendar.weekdays.mon": "Mon",
+  "form.date.calendar.weekdays.tue": "Tue",
+  "form.date.calendar.weekdays.wed": "Wed",
+  "form.date.calendar.weekdays.thu": "Thu",
+  "form.date.calendar.weekdays.fri": "Fri",
+  "form.date.calendar.weekdays.sat": "Sat",
+  "form.date.calendar.weekdays.sun": "Sun"
 }
