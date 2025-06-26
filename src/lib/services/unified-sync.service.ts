@@ -5,7 +5,6 @@
 
 import { SyncStatusService } from './sync-status.service'
 import { FutureDataGenerationService } from './future-data-generation.service'
-import { RecurringTransactionService } from './recurring-transaction.service'
 import { LoanContractService } from './loan-contract.service'
 import { ExchangeRateAutoUpdateService } from './exchange-rate-auto-update.service'
 
@@ -55,7 +54,6 @@ export class UnifiedSyncService {
     let processedRecurring = 0
     let processedLoans = 0
     let processedExchangeRates = 0
-    let failedCount = 0
     const errorMessages: string[] = []
 
     try {
@@ -76,39 +74,22 @@ export class UnifiedSyncService {
         errorMessages.push(...exchangeRateResult.errors)
       }
 
-      // 4. 处理当前到期的定期交易
+      // 4. 生成定期交易记录（包含历史遗漏检查和未来生成）
       const recurringResult =
-        await this.processCurrentRecurringTransactions(userId)
-      processedRecurring += recurringResult.processed
-      failedCount += recurringResult.failed
+        await FutureDataGenerationService.generateFutureRecurringTransactions(
+          userId
+        )
+      processedRecurring += recurringResult.generated
       if (recurringResult.errors.length > 0) {
         errorMessages.push(...recurringResult.errors)
       }
 
-      // 5. 处理当前到期的贷款还款记录
-      const loanResult = await this.processCurrentLoanPayments(userId)
+      // 5. 处理贷款还款记录（包含历史遗漏检查和未来生成）
+      const loanResult =
+        await LoanContractService.processLoanPaymentsBySchedule(userId)
       processedLoans += loanResult.processed
-      failedCount += loanResult.failed
       if (loanResult.errors.length > 0) {
         errorMessages.push(...loanResult.errors)
-      }
-
-      // 6. 生成未来7天的定期交易数据
-      const futureRecurringResult =
-        await FutureDataGenerationService.generateFutureRecurringTransactions(
-          userId
-        )
-      processedRecurring += futureRecurringResult.generated
-      if (futureRecurringResult.errors.length > 0) {
-        errorMessages.push(...futureRecurringResult.errors)
-      }
-
-      // 7. 生成未来7天的贷款还款数据
-      const futureLoanResult =
-        await FutureDataGenerationService.generateFutureLoanPayments(userId)
-      processedLoans += futureLoanResult.generated
-      if (futureLoanResult.errors.length > 0) {
-        errorMessages.push(...futureLoanResult.errors)
       }
 
       // 8. 更新完成状态
@@ -120,7 +101,7 @@ export class UnifiedSyncService {
         processedRecurring,
         processedLoans,
         processedExchangeRates,
-        failedCount,
+        failedCount: 0, // 现在统一同步不会有失败的项目，错误会记录在errorMessage中
         errorMessage:
           errorMessages.length > 0 ? errorMessages.join('; ') : undefined,
       })
@@ -134,7 +115,7 @@ export class UnifiedSyncService {
         processedRecurring,
         processedLoans,
         processedExchangeRates,
-        failedCount,
+        failedCount: 0,
         errorMessage: error instanceof Error ? error.message : '未知错误',
       })
 
@@ -178,70 +159,7 @@ export class UnifiedSyncService {
     return { processed, errors }
   }
 
-  /**
-   * 处理当前到期的定期交易（不包含未来数据生成）
-   */
-  private static async processCurrentRecurringTransactions(
-    userId: string
-  ): Promise<{
-    processed: number
-    failed: number
-    errors: string[]
-  }> {
-    const errors: string[] = []
-    let processed = 0
-    let failed = 0
 
-    const recurringTransactions =
-      await RecurringTransactionService.getDueRecurringTransactions(userId)
-
-    for (const recurring of recurringTransactions) {
-      try {
-        const success =
-          await RecurringTransactionService.executeRecurringTransaction(
-            recurring.id
-          )
-        if (success) {
-          processed++
-        }
-      } catch (error) {
-        failed++
-        errors.push(
-          `定期交易 ${recurring.id} 处理失败: ${error instanceof Error ? error.message : '未知错误'}`
-        )
-      }
-    }
-
-    return { processed, failed, errors }
-  }
-
-  /**
-   * 处理当前到期的贷款还款记录（基于LoanPayment表）
-   */
-  private static async processCurrentLoanPayments(userId: string): Promise<{
-    processed: number
-    failed: number
-    errors: string[]
-  }> {
-    const errors: string[] = []
-    let processed = 0
-    let failed = 0
-
-    try {
-      const result =
-        await LoanContractService.processLoanPaymentsBySchedule(userId)
-      processed = result.processed
-      errors.push(...result.errors)
-      failed = result.errors.length
-    } catch (error) {
-      failed++
-      errors.push(
-        `处理贷款还款记录失败: ${error instanceof Error ? error.message : '未知错误'}`
-      )
-    }
-
-    return { processed, failed, errors }
-  }
 
   /**
    * 手动重试失败的同步

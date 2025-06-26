@@ -314,27 +314,7 @@ export class FutureDataGenerationService {
     return generated
   }
 
-  /**
-   * 生成未来指定天数的贷款还款数据
-   * 使用正常的还款处理流程，而不是直接创建Transaction记录
-   */
-  static async generateFutureLoanPayments(userId: string): Promise<{
-    generated: number
-    errors: string[]
-  }> {
-    // 导入LoanContractService
-    const { LoanContractService } = await import('./loan-contract.service')
 
-    // 直接使用修改后的processLoanPaymentsBySchedule方法
-    // 该方法现在会根据用户设置的futureDataDays来处理未来的还款记录
-    const result =
-      await LoanContractService.processLoanPaymentsBySchedule(userId)
-
-    return {
-      generated: result.processed,
-      errors: result.errors,
-    }
-  }
 
   /**
    * 清理过期的未来交易数据
@@ -413,11 +393,12 @@ export class FutureDataGenerationService {
       await this.generateFutureRecurringTransactions(userId)
 
     // 重新生成贷款还款数据
-    const loanResult = await this.generateFutureLoanPayments(userId)
+    const { LoanContractService } = await import('./loan-contract.service')
+    const loanResult = await LoanContractService.processLoanPaymentsBySchedule(userId)
 
     return {
       cleaned,
-      generated: recurringResult.generated + loanResult.generated,
+      generated: recurringResult.generated + loanResult.processed,
       errors: [...recurringResult.errors, ...loanResult.errors],
     }
   }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useRouter } from 'next/navigation'
 import LoanPaymentHistory from './LoanPaymentHistory'
 import LoanContractDeleteModal from './LoanContractDeleteModal'
@@ -24,6 +25,7 @@ export default function LoanContractsList({
   currencyCode = 'CNY',
 }: LoanContractsListProps) {
   const { t } = useLanguage()
+  const { formatCurrency, formatCurrencyById } = useUserCurrencyFormatter()
   const router = useRouter()
   const [contracts, setContracts] = useState<LoanContract[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -347,8 +349,10 @@ export default function LoanContractsList({
                 </div>
                 <div className='flex items-center justify-between mb-2'>
                   <span className='text-lg font-semibold text-blue-600 dark:text-blue-400'>
-                    {Number(contract.loanAmount).toLocaleString()}{' '}
-                    {contract.currencyCode}
+                    {contract.currency?.id
+                      ? formatCurrencyById(Number(contract.loanAmount), contract.currency.id)
+                      : formatCurrency(Number(contract.loanAmount), contract.currency?.code || currencyCode)
+                    }
                   </span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBgColor(contract.isActive)} ${getStatusColor(contract.isActive)}`}

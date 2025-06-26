@@ -1298,48 +1298,48 @@ export class LoanContractService {
         }
 
         // 创建负债账户余额更新交易（更新为剩余本金余额）
-        if (Number(loanPayment.principalAmount) > 0) {
-          const balanceTransactionData: TransactionData = {
-            userId: loanContract.userId,
-            accountId: loanContract.accountId,
-            categoryId: loanContract.account.categoryId,
-            currencyId: loanContract.currencyId,
-            type: 'BALANCE',
-            amount: Number(loanPayment.remainingBalance), // 使用剩余余额作为负债账户的新余额
-            description: contractFields.transactionDescription
-              ? contractFields.transactionDescription.replace(
-                  '{期数}',
-                  loanPayment.period.toString()
-                )
-              : t('loan.contract.template.default.description', {
-                  contractName: contractFields.contractName,
-                  period: loanPayment.period,
-                  type: '余额更新',
-                }),
-            notes: contractFields.transactionNotes
-              ? contractFields.transactionNotes.replace(
-                  '{期数}',
-                  loanPayment.period.toString()
-                )
-              : t('loan.contract.template.balance.notes', {
-                  contractName: contractFields.contractName,
-                  remainingBalance: Number(
-                    loanPayment.remainingBalance
-                  ).toLocaleString(),
-                }),
-            date: loanPayment.paymentDate,
-            loanContractId: loanContract.id,
-            loanPaymentId: loanPayment.id,
-          }
-
-          // 注意：本金变动记录（BALANCE类型交易）不使用设置的标签信息
-          // 只有还款支出交易（EXPENSE类型）才保留标签处理
-
-          const balanceTransaction = await tx.transaction.create({
-            data: balanceTransactionData,
-          })
-          transactions.push({ type: 'balance', id: balanceTransaction.id })
+        // 注意：无论是否有本金还款，都需要生成余额更新记录以确保账户余额准确
+        // 这对于"只还利息"模式特别重要，前面几期虽然本金不变，但仍需要余额记录
+        const balanceTransactionData: TransactionData = {
+          userId: loanContract.userId,
+          accountId: loanContract.accountId,
+          categoryId: loanContract.account.categoryId,
+          currencyId: loanContract.currencyId,
+          type: 'BALANCE',
+          amount: Number(loanPayment.remainingBalance), // 使用剩余余额作为负债账户的新余额
+          description: contractFields.transactionDescription
+            ? contractFields.transactionDescription.replace(
+                '{期数}',
+                loanPayment.period.toString()
+              )
+            : t('loan.contract.template.default.description', {
+                contractName: contractFields.contractName,
+                period: loanPayment.period,
+                type: '余额更新',
+              }),
+          notes: contractFields.transactionNotes
+            ? contractFields.transactionNotes.replace(
+                '{期数}',
+                loanPayment.period.toString()
+              )
+            : t('loan.contract.template.balance.notes', {
+                contractName: contractFields.contractName,
+                remainingBalance: Number(
+                  loanPayment.remainingBalance
+                ).toLocaleString(),
+              }),
+          date: loanPayment.paymentDate,
+          loanContractId: loanContract.id,
+          loanPaymentId: loanPayment.id,
         }
+
+        // 注意：本金变动记录（BALANCE类型交易）不使用设置的标签信息
+        // 只有还款支出交易（EXPENSE类型）才保留标签处理
+
+        const balanceTransaction = await tx.transaction.create({
+          data: balanceTransactionData,
+        })
+        transactions.push({ type: 'balance', id: balanceTransaction.id })
 
         // 更新LoanPayment记录状态和关联交易ID
         await tx.loanPayment.update({

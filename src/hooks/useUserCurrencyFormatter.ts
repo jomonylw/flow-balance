@@ -30,8 +30,9 @@ export function useUserCurrencyFormatter() {
   const findCurrencyByCode = useCallback(
     (currencyCode: string) => {
       // 如果是本位币，直接返回本位币记录
-      if (userSettings?.baseCurrency?.code === currencyCode) {
-        return userSettings.baseCurrency
+      const baseCurrency = userSettings?.baseCurrency
+      if (baseCurrency?.code === currencyCode) {
+        return baseCurrency
       }
 
       // 查找所有匹配的货币

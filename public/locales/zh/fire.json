@@ -23,6 +23,8 @@
   "fire.north.star.fire.date": "预计 FIRE 日期",
   "fire.north.star.fire.date.format": "{{year}} 年 {{month}} 月",
   "fire.north.star.fire.date.description": "(大约 {{years}} 年 {{months}} 个月后)",
+  "fire.north.star.fire.date.invalid": "无法计算",
+  "fire.north.star.fire.date.invalid.description": "请检查您的投资参数设置",
   "fire.north.star.current.progress": "当前进度",
   "fire.north.star.current.progress.description": "当前可投资资产: {{amount}}",
   "fire.north.star.retirement.income": "退休后的\"月薪\"",

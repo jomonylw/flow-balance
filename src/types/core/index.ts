@@ -731,7 +731,7 @@ export interface RecurringTransaction {
   id: string
   userId: string
   accountId: string
-  currencyCode: string
+  currencyId: string // 使用 currencyId 而不是 currencyCode
   type: TransactionTypeEnum.INCOME | TransactionTypeEnum.EXPENSE
   amount: number
   description: string
@@ -759,6 +759,9 @@ export interface RecurringTransaction {
   account?: Account
   currency?: Currency
   tags?: Tag[]
+
+  // 向后兼容字段（从 currency 对象派生）
+  currencyCode?: string // 从 currency.code 派生，用于向后兼容
 }
 
 /** 定期交易表单数据 */
@@ -802,7 +805,7 @@ export interface LoanContract {
   id: string
   userId: string
   accountId: string // 贷款账户ID (负债账户)
-  currencyCode: string
+  currencyId: string // 使用 currencyId 而不是 currencyCode
   contractName: string
   loanAmount: number // 贷款金额
   interestRate: number // 年利率
@@ -830,6 +833,9 @@ export interface LoanContract {
   paymentAccount?: Account
   currency?: Currency
   payments?: LoanPayment[]
+
+  // 向后兼容字段（从 currency 对象派生）
+  currencyCode?: string // 从 currency.code 派生，用于向后兼容
 }
 
 /** 贷款还款记录 */

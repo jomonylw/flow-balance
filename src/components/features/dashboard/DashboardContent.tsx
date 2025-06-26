@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import QuickFlowTransactionModal from './QuickFlowTransactionModal'
 import QuickBalanceUpdateModal from '@/components/features/dashboard/QuickBalanceUpdateModal'
 import NetWorthChart from './NetWorthChart'
@@ -27,7 +27,8 @@ import type {
   DashboardSummary,
 } from '@/types/components'
 
-// 本地类型定义已移除，现在使用统一的类型定义
+// 时间范围类型定义
+type TimeRange = 'last12months' | 'all'
 
 export default function DashboardContent({
   user,
@@ -45,11 +46,17 @@ export default function DashboardContent({
   >(TransactionType.EXPENSE)
   const [chartData, setChartData] = useState<ChartData | null>(null)
   const [isLoadingCharts, setIsLoadingCharts] = useState(true)
-  const [chartError, setChartError] = useState<string | null>(null)
+  const [_chartError, setChartError] = useState<string | null>(null)
   const [validationResult, setValidationResult] =
     useState<ValidationResult | null>(null)
   const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null)
   const [isLoadingSummary, setIsLoadingSummary] = useState(true)
+  // 为每个图表创建独立的时间范围状态
+  const [netWorthTimeRange, setNetWorthTimeRange] = useState<TimeRange>('last12months')
+  const [cashFlowTimeRange, setCashFlowTimeRange] = useState<TimeRange>('last12months')
+  // 为每个图表创建独立的加载状态
+  const [isLoadingNetWorth, setIsLoadingNetWorth] = useState(false)
+  const [isLoadingCashFlow, setIsLoadingCashFlow] = useState(false)
 
   // 监听所有数据更新事件
   useAllDataListener(async () => {
@@ -127,47 +134,71 @@ export default function DashboardContent({
     fetchSummaryData()
   }, [])
 
-  // 获取图表数据
-  useEffect(() => {
-    const fetchChartData = async () => {
-      try {
-        setIsLoadingCharts(true)
-        setChartError(null)
+  // 获取图表数据 - 初始加载时获取所有数据
+  const fetchInitialChartData = useCallback(async () => {
+    try {
+      setIsLoadingCharts(true)
+      setChartError(null)
 
-        const response = await fetch('/api/dashboard/charts?months=12')
-        if (response.ok) {
-          const data = await response.json()
-          setChartData(data.data)
+      // 初始加载时获取所有数据，以支持后续的前端过滤
+      const response = await fetch('/api/dashboard/charts?months=all')
+      if (response.ok) {
+        const data = await response.json()
+        setChartData(data.data)
 
-          // 验证图表数据
-          const chartValidation = validateChartData(data.data)
-          if (!chartValidation.isValid) {
-            console.warn(
-              'Chart data validation failed:',
-              chartValidation.errors
-            )
-            setChartError(
-              t('dashboard.chart.data.validation.failed', {
-                errors: chartValidation.errors.join(', '),
-              })
-            )
-          }
-        } else {
-          const errorData = await response.json()
+        // 验证图表数据
+        const chartValidation = validateChartData(data.data)
+        if (!chartValidation.isValid) {
+          console.warn(
+            'Chart data validation failed:',
+            chartValidation.errors
+          )
           setChartError(
-            errorData.error || t('dashboard.chart.data.fetch.failed')
+            t('dashboard.chart.data.validation.failed', {
+              errors: chartValidation.errors.join(', '),
+            })
           )
         }
-      } catch (error) {
-        console.error('Error fetching chart data:', error)
-        setChartError(t('dashboard.network.error.charts'))
-      } finally {
-        setIsLoadingCharts(false)
+      } else {
+        const errorData = await response.json()
+        setChartError(
+          errorData.error || t('dashboard.chart.data.fetch.failed')
+        )
       }
+    } catch (error) {
+      console.error('Error fetching chart data:', error)
+      setChartError(t('dashboard.network.error.charts'))
+    } finally {
+      setIsLoadingCharts(false)
     }
-
-    fetchChartData()
   }, [t])
+
+  // 初始加载图表数据
+  useEffect(() => {
+    fetchInitialChartData()
+  }, [fetchInitialChartData])
+
+  // 处理净资产图表时间范围变化
+  const handleNetWorthTimeRangeChange = useCallback(async (newTimeRange: TimeRange) => {
+    setNetWorthTimeRange(newTimeRange)
+    setIsLoadingNetWorth(true)
+
+    // 模拟加载延迟，让用户看到加载状态
+    setTimeout(() => {
+      setIsLoadingNetWorth(false)
+    }, 300)
+  }, [])
+
+  // 处理现金流图表时间范围变化
+  const handleCashFlowTimeRangeChange = useCallback(async (newTimeRange: TimeRange) => {
+    setCashFlowTimeRange(newTimeRange)
+    setIsLoadingCashFlow(true)
+
+    // 模拟加载延迟，让用户看到加载状态
+    setTimeout(() => {
+      setIsLoadingCashFlow(false)
+    }, 300)
+  }, [])
 
   // 验证账户数据
   useEffect(() => {
@@ -931,12 +962,16 @@ export default function DashboardContent({
               <NetWorthChart
                 data={chartData.netWorthChart}
                 currency={chartData.currency}
-                loading={isLoadingCharts}
-                error={chartError || undefined}
+                loading={isLoadingCharts || isLoadingNetWorth}
+                onTimeRangeChange={handleNetWorthTimeRangeChange}
+                timeRange={netWorthTimeRange}
               />
               <CashFlowChart
                 data={chartData.cashFlowChart}
                 currency={chartData.currency}
+                loading={isLoadingCashFlow}
+                onTimeRangeChange={handleCashFlowTimeRangeChange}
+                timeRange={cashFlowTimeRange}
               />
             </div>
           ) : (

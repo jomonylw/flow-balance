@@ -445,6 +445,56 @@ export default function TransactionList({
       })
   }
 
+  const getPaginationItems = (
+    currentPage: number,
+    totalPages: number,
+    siblingCount = 1
+  ) => {
+    // siblingCount + first + last + current + 2*DOTS
+    const totalPageNumbers = siblingCount + 5
+
+    if (totalPageNumbers >= totalPages) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1)
+    }
+
+    const leftSiblingIndex = Math.max(currentPage - siblingCount, 1)
+    const rightSiblingIndex = Math.min(
+      currentPage + siblingCount,
+      totalPages
+    )
+
+    const shouldShowLeftDots = leftSiblingIndex > 2
+    const shouldShowRightDots = rightSiblingIndex < totalPages - 1
+
+    const firstPageIndex = 1
+    const lastPageIndex = totalPages
+
+    if (!shouldShowLeftDots && shouldShowRightDots) {
+      const leftItemCount = 3 + 2 * siblingCount
+      const leftRange = Array.from({ length: leftItemCount }, (_, i) => i + 1)
+      return [...leftRange, '...', lastPageIndex]
+    }
+
+    if (shouldShowLeftDots && !shouldShowRightDots) {
+      const rightItemCount = 3 + 2 * siblingCount
+      const rightRange = Array.from(
+        { length: rightItemCount },
+        (_, i) => totalPages - rightItemCount + i + 1
+      )
+      return [firstPageIndex, '...', ...rightRange]
+    }
+
+    if (shouldShowLeftDots && shouldShowRightDots) {
+      const middleRange = Array.from(
+        { length: rightSiblingIndex - leftSiblingIndex + 1 },
+        (_, i) => leftSiblingIndex + i
+      )
+      return [firstPageIndex, '...', ...middleRange, '...', lastPageIndex]
+    }
+
+    return Array.from({ length: totalPages }, (_, i) => i + 1)
+  }
+
   return (
     <div>
       {/* 批量操作栏 - 有选择记录时显示 */}
@@ -1078,22 +1128,35 @@ export default function TransactionList({
                       />
                     </svg>
                   </button>
-                  {Array.from(
-                    { length: pagination.totalPages },
-                    (_, i) => i + 1
-                  ).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${
-                        page === pagination.currentPage
-                          ? 'z-10 bg-gradient-to-r from-blue-500 to-blue-600 border-blue-500 text-white shadow-md'
-                          : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  {getPaginationItems(
+                    pagination.currentPage,
+                    pagination.totalPages
+                  ).map((page, index) => {
+                    if (typeof page === 'string') {
+                      return (
+                        <span
+                          key={`dots-${index}`}
+                          className='relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300'
+                        >
+                          ...
+                        </span>
+                      )
+                    }
+
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-all duration-200 ${
+                          page === pagination.currentPage
+                            ? 'z-10 bg-gradient-to-r from-blue-500 to-blue-600 border-blue-500 text-white shadow-md'
+                            : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  })}
                   <button
                     onClick={() => handlePageChange(pagination.currentPage + 1)}
                     disabled={pagination.currentPage === pagination.totalPages}

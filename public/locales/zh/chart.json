@@ -1,5 +1,6 @@
 {
   "chart.net.worth.trend": "净资产趋势",
+  "chart.net.worth.description": "显示净资产、总资产和总负债的历史变化趋势",
   "chart.monthly.cash.flow": "每月现金流",
   "chart.cash.flow": "现金流",
   "chart.income.expense": "收支对比",

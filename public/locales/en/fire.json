@@ -23,6 +23,8 @@
   "fire.north.star.fire.date": "Projected FIRE Date",
   "fire.north.star.fire.date.format": "{{month}}/{{year}}",
   "fire.north.star.fire.date.description": "(approximately {{years}} years {{months}} months from now)",
+  "fire.north.star.fire.date.invalid": "Cannot Calculate",
+  "fire.north.star.fire.date.invalid.description": "Please check your investment parameter settings",
   "fire.north.star.current.progress": "Current Progress",
   "fire.north.star.current.progress.description": "Current investable assets: {{amount}}",
   "fire.north.star.retirement.income": "Retirement \"Salary\"",

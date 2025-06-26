@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import type { RecurringTransaction } from '@/types/core'
 
 interface RecurringTransactionCardsProps {
@@ -23,6 +24,7 @@ export default function RecurringTransactionCards({
   selectedRecurringTransactionId,
 }: RecurringTransactionCardsProps) {
   const { t } = useLanguage()
+  const { formatCurrency, formatCurrencyById } = useUserCurrencyFormatter()
   const [recurringTransactions, setRecurringTransactions] = useState<
     RecurringTransaction[]
   >([])
@@ -240,8 +242,10 @@ export default function RecurringTransactionCards({
                     className={`text-lg font-semibold ${getTransactionTypeColor(transaction.type)}`}
                   >
                     {transaction.type === 'EXPENSE' ? '-' : '+'}
-                    {transaction.amount.toLocaleString()}{' '}
-                    {transaction.currencyCode}
+                    {transaction.currency?.id
+                      ? formatCurrencyById(transaction.amount, transaction.currency.id)
+                      : formatCurrency(transaction.amount, transaction.currency?.code || 'CNY')
+                    }
                   </span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBgColor(transaction.isActive)} ${getStatusColor(transaction.isActive)}`}

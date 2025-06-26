@@ -24,10 +24,10 @@ export async function POST() {
       )
 
     // 生成历史遗漏的贷款还款记录（包含历史检查和未来生成）
-    const loanResult =
-      await FutureDataGenerationService.generateFutureLoanPayments(user.id)
+    const { LoanContractService } = await import('@/lib/services/loan-contract.service')
+    const loanResult = await LoanContractService.processLoanPaymentsBySchedule(user.id)
 
-    const totalGenerated = recurringResult.generated + loanResult.generated
+    const totalGenerated = recurringResult.generated + loanResult.processed
     const allErrors = [...recurringResult.errors, ...loanResult.errors]
 
     return NextResponse.json({
@@ -35,11 +35,11 @@ export async function POST() {
       data: {
         totalGenerated,
         recurringGenerated: recurringResult.generated,
-        loanGenerated: loanResult.generated,
+        loanGenerated: loanResult.processed,
         errors: allErrors,
         message:
           totalGenerated > 0
-            ? `成功生成 ${totalGenerated} 条记录（定期交易: ${recurringResult.generated}，贷款还款: ${loanResult.generated}）`
+            ? `成功生成 ${totalGenerated} 条记录（定期交易: ${recurringResult.generated}，贷款还款: ${loanResult.processed}）`
             : '没有发现遗漏的记录，所有数据都是最新的',
       },
     })

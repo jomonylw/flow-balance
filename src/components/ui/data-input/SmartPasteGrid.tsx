@@ -432,7 +432,11 @@ export default function SmartPasteGrid({
           switch (dataType) {
             case 'date':
               if (value instanceof Date) {
-                return value.toISOString().split('T')[0] // YYYY-MM-DD格式
+                // 使用本地日期格式，避免时区转换问题
+                const year = value.getFullYear()
+                const month = String(value.getMonth() + 1).padStart(2, '0')
+                const day = String(value.getDate()).padStart(2, '0')
+                return `${year}-${month}-${day}` // YYYY-MM-DD格式
               }
               return String(value)
 

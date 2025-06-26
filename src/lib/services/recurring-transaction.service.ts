@@ -97,7 +97,54 @@ export class RecurringTransactionService {
       }
     }
 
-    const updateData: Record<string, unknown> = { ...data }
+    // 处理货币更新
+    let currencyId: string | undefined
+    if (data.currencyCode) {
+      const currency = await prisma.currency.findFirst({
+        where: {
+          code: data.currencyCode,
+          OR: [{ createdBy: userId }, { createdBy: null }],
+        },
+      })
+
+      if (!currency) {
+        throw new Error('指定的货币不存在')
+      }
+      currencyId = currency.id
+    }
+
+    // 构建更新数据，排除不能直接更新的字段
+    const updateData: Record<string, unknown> = {}
+
+    // 复制允许直接更新的字段
+    const allowedFields = [
+      'type',
+      'amount',
+      'description',
+      'notes',
+      'frequency',
+      'interval',
+      'dayOfMonth',
+      'dayOfWeek',
+      'monthOfYear',
+      'isActive',
+      'maxOccurrences',
+    ]
+
+    allowedFields.forEach(field => {
+      if (data[field as keyof RecurringTransactionFormData] !== undefined) {
+        updateData[field] = data[field as keyof RecurringTransactionFormData]
+      }
+    })
+
+    // 处理特殊字段
+    if (data.accountId !== undefined) {
+      updateData.accountId = data.accountId
+    }
+
+    if (currencyId !== undefined) {
+      updateData.currencyId = currencyId
+    }
 
     // 处理日期字段转换
     if (data.startDate !== undefined) {
@@ -117,7 +164,7 @@ export class RecurringTransactionService {
     }
 
     const recurringTransaction = await prisma.recurringTransaction.update({
-      where: { id },
+      where: { id, userId },
       data: updateData,
     })
 

@@ -1,5 +1,6 @@
 {
   "chart.net.worth.trend": "Net Worth Trend",
+  "chart.net.worth.description": "Shows historical trends of net worth, total assets and total liabilities",
   "chart.monthly.cash.flow": "Monthly Cash Flow",
   "chart.cash.flow": "Cash Flow",
   "chart.income.expense": "Income vs Expense",

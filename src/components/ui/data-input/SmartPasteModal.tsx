@@ -357,12 +357,20 @@ export default function SmartPasteModal({
               transactionType = (originalTransaction as any)?.type || 'EXPENSE'
             }
 
-            // 处理日期值：确保转换为正确的日期格式
+            // 处理日期值：确保转换为正确的日期格式，避免时区问题
             const dateValue = row.cells.date?.value
             let dateString: string
 
+            // 本地日期格式化函数，避免时区转换
+            const formatLocalDate = (date: Date): string => {
+              const year = date.getFullYear()
+              const month = String(date.getMonth() + 1).padStart(2, '0')
+              const day = String(date.getDate()).padStart(2, '0')
+              return `${year}-${month}-${day}`
+            }
+
             if (dateValue instanceof Date) {
-              dateString = dateValue.toISOString().split('T')[0]
+              dateString = formatLocalDate(dateValue)
             } else if (typeof dateValue === 'string') {
               // 如果是字符串，尝试解析为日期
               const parsedDate = new Date(dateValue)
@@ -370,22 +378,20 @@ export default function SmartPasteModal({
                 // 如果解析失败，使用原始交易的日期或当前日期
                 const originalDate = (originalTransaction as any)?.date
                 if (originalDate) {
-                  dateString = new Date(originalDate)
-                    .toISOString()
-                    .split('T')[0]
+                  dateString = formatLocalDate(new Date(originalDate))
                 } else {
-                  dateString = new Date().toISOString().split('T')[0]
+                  dateString = formatLocalDate(new Date())
                 }
               } else {
-                dateString = parsedDate.toISOString().split('T')[0]
+                dateString = formatLocalDate(parsedDate)
               }
             } else {
               // 如果是其他类型或为空，使用原始交易的日期或当前日期
               const originalDate = (originalTransaction as any)?.date
               if (originalDate) {
-                dateString = new Date(originalDate).toISOString().split('T')[0]
+                dateString = formatLocalDate(new Date(originalDate))
               } else {
-                dateString = new Date().toISOString().split('T')[0]
+                dateString = formatLocalDate(new Date())
               }
             }
 
@@ -514,24 +520,32 @@ export default function SmartPasteModal({
               transactionType = 'EXPENSE'
             }
 
-            // 处理日期值：确保转换为正确的日期格式
+            // 处理日期值：确保转换为正确的日期格式，避免时区问题
             const dateValue = row.cells.date?.value
             let dateString: string
 
+            // 本地日期格式化函数，避免时区转换
+            const formatLocalDate = (date: Date): string => {
+              const year = date.getFullYear()
+              const month = String(date.getMonth() + 1).padStart(2, '0')
+              const day = String(date.getDate()).padStart(2, '0')
+              return `${year}-${month}-${day}`
+            }
+
             if (dateValue instanceof Date) {
-              dateString = dateValue.toISOString().split('T')[0]
+              dateString = formatLocalDate(dateValue)
             } else if (typeof dateValue === 'string') {
               // 如果是字符串，尝试解析为日期
               const parsedDate = new Date(dateValue)
               if (isNaN(parsedDate.getTime())) {
                 // 如果解析失败，使用当前日期
-                dateString = new Date().toISOString().split('T')[0]
+                dateString = formatLocalDate(new Date())
               } else {
-                dateString = parsedDate.toISOString().split('T')[0]
+                dateString = formatLocalDate(parsedDate)
               }
             } else {
               // 如果是其他类型或为空，使用当前日期
-              dateString = new Date().toISOString().split('T')[0]
+              dateString = formatLocalDate(new Date())
             }
 
             // 判断是否为存量账户

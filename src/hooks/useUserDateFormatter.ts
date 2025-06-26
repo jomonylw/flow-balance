@@ -133,6 +133,12 @@ export function useUserDateFormatter() {
     try {
       const dateObj = typeof date === 'string' ? parseISO(date) : date
 
+      // 检查日期对象的有效性
+      if (!dateObj || isNaN(dateObj.getTime())) {
+        console.warn('Invalid date object provided to formatDate:', date)
+        return 'Invalid Date'
+      }
+
       if (options.relative) {
         return formatSmartDate(dateObj)
       }
@@ -148,7 +154,7 @@ export function useUserDateFormatter() {
 
       return format(dateObj, formatString, { locale: dateLocale })
     } catch (error) {
-      console.error('Date formatting error:', error)
+      console.error('Date formatting error:', error, 'for date:', date)
       return 'Invalid Date'
     }
   }, [formatMapping, dateLocale, formatSmartDate, formatChartDate])

@@ -1,11 +1,15 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
+
+// 时间范围类型定义
+type TimeRange = 'last12months' | 'all'
 
 interface CashFlowChartProps {
   data: {
@@ -22,9 +26,12 @@ interface CashFlowChartProps {
     symbol: string
     code: string
   }
+  loading?: boolean // 新增：加载状态
+  onTimeRangeChange?: (timeRange: TimeRange) => void // 新增：时间范围变化回调
+  timeRange?: TimeRange // 新增：外部传入的时间范围
 }
 
-export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
+export default function CashFlowChart({ data, currency, loading = false, onTimeRangeChange, timeRange: externalTimeRange }: CashFlowChartProps) {
   const { t } = useLanguage()
   const {
     formatCurrencyById,
@@ -35,6 +42,40 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
   const { resolvedTheme } = useTheme()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
+  const [internalTimeRange, setInternalTimeRange] = useState<TimeRange>('last12months')
+
+  // 使用外部传入的timeRange，如果没有则使用内部状态
+  const currentTimeRange = externalTimeRange || internalTimeRange
+
+  // 处理时间范围变化
+  const handleTimeRangeChange = useCallback((newTimeRange: TimeRange) => {
+    setInternalTimeRange(newTimeRange)
+    if (onTimeRangeChange) {
+      onTimeRangeChange(newTimeRange)
+    }
+  }, [onTimeRangeChange])
+
+  // 根据时间范围过滤数据
+  const getFilteredData = useCallback(() => {
+    if (!data || !data.xAxis || !data.series) return data
+
+    if (currentTimeRange === 'last12months') {
+      // 获取最近12个月的数据
+      const filteredXAxis = data.xAxis.slice(-12)
+      const filteredSeries = data.series.map(series => ({
+        ...series,
+        data: series.data.slice(-12)
+      }))
+
+      return {
+        xAxis: filteredXAxis,
+        series: filteredSeries
+      }
+    }
+
+    // 返回全部数据
+    return data
+  }, [data, currentTimeRange])
 
   // 辅助函数：智能格式化货币
   const formatCurrencyAmount = (amount: number) => {
@@ -45,7 +86,11 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
   }
 
   useEffect(() => {
-    if (!chartRef.current || !data) return
+    if (!chartRef.current || !data || loading) return
+
+    // 使用过滤后的数据
+    const filteredData = getFilteredData()
+    if (!filteredData) return
 
     // 初始化图表
     if (!chartInstance.current) {
@@ -54,6 +99,11 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
         resolvedTheme === 'dark' ? 'dark' : null
       )
     }
+
+    // 根据数据点数量动态设置X轴显示
+    const dataPointCount = filteredData.xAxis.length
+    const shouldRotateLabels = dataPointCount > 12 || window.innerWidth < 768
+    const labelInterval = dataPointCount > 24 ? 'auto' : 0
 
     const option = {
       backgroundColor: 'transparent',
@@ -106,7 +156,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
         },
       },
       legend: {
-        data: data.series.map(s => t(`chart.series.${s.name}`)),
+        data: filteredData.series.map(s => t(`chart.series.${s.name}`)),
         top: window.innerWidth < 768 ? 25 : 30,
         textStyle: {
           color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
@@ -124,12 +174,12 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
       },
       xAxis: {
         type: 'category',
-        data: data.xAxis,
+        data: filteredData.xAxis,
         axisLabel: {
           color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
-          rotate: window.innerWidth < 768 ? 45 : 0,
+          rotate: shouldRotateLabels ? 45 : 0,
           fontSize: window.innerWidth < 768 ? 10 : 12,
-          interval: window.innerWidth < 768 ? 'auto' : 0,
+          interval: labelInterval,
           formatter: function (value: string) {
             // 使用用户设置的日期格式显示月份
             const date = new Date(value + '-01') // 添加日期部分以创建有效的日期
@@ -172,7 +222,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
           },
         },
       ],
-      series: data.series.map(series => {
+      series: filteredData.series.map(series => {
         const baseSeries = {
           ...series,
           name: t(`chart.series.${series.name}`), // 翻译系列名称
@@ -214,7 +264,7 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
     return () => {
       window.removeEventListener('resize', handleResize)
     }
-  }, [data, currency, resolvedTheme, t, formatChartDate])
+  }, [data, currency, resolvedTheme, t, formatChartDate, getFilteredData, currentTimeRange, loading])
 
   useEffect(() => {
     return () => {
@@ -230,16 +280,52 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
       className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
     >
       <div className='mb-4'>
-        <h3
-          className={`text-base sm:text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
-        >
-          {t('chart.monthly.cash.flow')}
-        </h3>
-        <p
-          className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
-        >
-          {t('chart.transaction.flow.trend')}
-        </p>
+        <div className='flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2'>
+          <div>
+            <h3
+              className={`text-base sm:text-lg font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
+            >
+              {t('chart.monthly.cash.flow')}
+            </h3>
+            <p
+              className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+            >
+              {t('chart.transaction.flow.trend')}
+            </p>
+          </div>
+
+          {/* 时间范围选择器 */}
+          <div className='flex space-x-2 mt-2 sm:mt-0'>
+            <button
+              onClick={() => handleTimeRangeChange('last12months')}
+              className={`px-3 py-1 text-sm rounded ${
+                currentTimeRange === 'last12months'
+                  ? resolvedTheme === 'dark'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-500 text-white'
+                  : resolvedTheme === 'dark'
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {t('time.last.12.months')}
+            </button>
+            <button
+              onClick={() => handleTimeRangeChange('all')}
+              className={`px-3 py-1 text-sm rounded ${
+                currentTimeRange === 'all'
+                  ? resolvedTheme === 'dark'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-500 text-white'
+                  : resolvedTheme === 'dark'
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {t('time.all')}
+            </button>
+          </div>
+        </div>
       </div>
       <div
         ref={chartRef}
@@ -247,8 +333,14 @@ export default function CashFlowChart({ data, currency }: CashFlowChartProps) {
           width: '100%',
           height: window.innerWidth < 768 ? '300px' : '400px',
         }}
-        className='min-h-[300px] sm:min-h-[400px]'
-      />
+        className='min-h-[300px] sm:min-h-[400px] relative'
+      >
+        {loading && (
+          <div className='absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 z-10'>
+            <LoadingSpinner />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

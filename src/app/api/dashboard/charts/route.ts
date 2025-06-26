@@ -23,7 +23,19 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const months = parseInt(searchParams.get('months') || '12') // 默认12个月
+    const monthsParam = searchParams.get('months') || '12'
+
+    // 支持 'all' 参数来获取所有历史数据
+    let months: number
+    let useAllData = false
+
+    if (monthsParam === 'all') {
+      useAllData = true
+      // 设置一个足够大的数字来获取所有数据，或者我们可以动态计算
+      months = 1000 // 临时设置，后面会根据实际数据调整
+    } else {
+      months = parseInt(monthsParam)
+    }
 
     // 获取用户设置以确定本位币
     const userSettings = await prisma.userSettings.findUnique({
@@ -84,7 +96,28 @@ export async function GET(request: NextRequest) {
     const monthlyData = []
     const currentDate = new Date()
 
-    for (let i = months - 1; i >= 0; i--) {
+    // 如果是获取所有数据，需要先确定实际的数据范围
+    let actualMonths = months
+    if (useAllData) {
+      // 找到最早的交易日期来确定实际需要的月份数
+      const earliestTransaction = await prisma.transaction.findFirst({
+        where: { account: { userId: user.id } },
+        orderBy: { date: 'asc' },
+        select: { date: true },
+      })
+
+      if (earliestTransaction) {
+        const earliestDate = earliestTransaction.date
+        const monthsDiff = Math.ceil(
+          (currentDate.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+        ) + 1 // 加1确保包含当前月
+        actualMonths = Math.max(monthsDiff, 1)
+      } else {
+        actualMonths = 12 // 如果没有交易记录，默认12个月
+      }
+    }
+
+    for (let i = actualMonths - 1; i >= 0; i--) {
       const targetDate = subMonths(currentDate, i)
       const monthStart = startOfMonth(targetDate)
       const monthEnd = endOfMonth(targetDate)
@@ -298,16 +331,14 @@ export async function GET(request: NextRequest) {
         },
         {
           name: 'total_assets', // 使用键名，前端翻译
-          type: 'line',
+          type: 'bar',
           data: monthlyData.map(d => d.totalAssets),
-          smooth: true,
           itemStyle: { color: '#10b981' },
         },
         {
           name: 'total_liabilities', // 使用键名，前端翻译
-          type: 'line',
-          data: monthlyData.map(d => d.totalLiabilities),
-          smooth: true,
+          type: 'bar',
+          data: monthlyData.map(d => -d.totalLiabilities), // 负债显示为负数
           itemStyle: { color: '#ef4444' },
         },
       ],
@@ -349,7 +380,7 @@ export async function GET(request: NextRequest) {
       cashFlowChart: cashFlowChartData,
       monthlyData,
       currency: baseCurrency,
-      period: `最近${months}个月`,
+      period: useAllData ? '全部历史数据' : `最近${monthsParam}个月`,
       currencyConversion: {
         baseCurrency,
         hasErrors: hasAnyConversionErrors,

@@ -29,18 +29,57 @@ export default function NorthStarMetrics({
   const futureValue = fireTargetAmount
 
   let monthsToFire = 0
-  if (monthlyRate > 0 && monthlyPayment > 0) {
-    // NPER 计算公式
-    const numerator = Math.log(
-      (futureValue * monthlyRate + monthlyPayment) /
-        (presentValue * monthlyRate + monthlyPayment)
-    )
-    const denominator = Math.log(1 + monthlyRate)
-    monthsToFire = numerator / denominator
+  let isFireDateValid = true
+
+  if (monthlyRate > 0 && monthlyPayment > 0 && futureValue > 0) {
+    try {
+      // NPER 计算公式
+      const numeratorDividend = futureValue * monthlyRate + monthlyPayment
+      const numeratorDivisor = presentValue * monthlyRate + monthlyPayment
+
+      // 检查对数计算的有效性
+      if (numeratorDividend > 0 && numeratorDivisor > 0) {
+        const numerator = Math.log(numeratorDividend / numeratorDivisor)
+        const denominator = Math.log(1 + monthlyRate)
+
+        if (denominator !== 0) {
+          monthsToFire = numerator / denominator
+
+          // 验证计算结果的有效性
+          if (!isFinite(monthsToFire) || monthsToFire < 0 || monthsToFire > 1200) {
+            // 超过100年或无效值，标记为无效
+            isFireDateValid = false
+            monthsToFire = 0
+          }
+        } else {
+          isFireDateValid = false
+        }
+      } else {
+        isFireDateValid = false
+      }
+    } catch (error) {
+      console.error('FIRE date calculation error:', error)
+      isFireDateValid = false
+    }
+  } else {
+    isFireDateValid = false
   }
 
-  const fireDate = new Date()
-  fireDate.setMonth(fireDate.getMonth() + monthsToFire)
+  // 安全地创建 FIRE 日期
+  let fireDate: Date
+  if (isFireDateValid && monthsToFire > 0) {
+    fireDate = new Date()
+    // 使用更安全的方式添加月份
+    const currentYear = fireDate.getFullYear()
+    const currentMonth = fireDate.getMonth()
+    const totalMonths = currentMonth + Math.floor(monthsToFire)
+
+    fireDate.setFullYear(currentYear + Math.floor(totalMonths / 12))
+    fireDate.setMonth(totalMonths % 12)
+  } else {
+    // 无效情况下使用当前日期作为占位符
+    fireDate = new Date()
+  }
 
   const yearsToFire = Math.floor(monthsToFire / 12)
   const remainingMonths = Math.floor(monthsToFire % 12)
@@ -85,13 +124,16 @@ export default function NorthStarMetrics({
             {t('fire.north.star.fire.date')}
           </h3>
           <div className='text-4xl font-bold text-orange-900 dark:text-orange-100 mb-2 animate-pulse'>
-            {formatDate(fireDate)}
+            {isFireDateValid ? formatDate(fireDate) : t('fire.north.star.fire.date.invalid')}
           </div>
           <p className='text-sm text-orange-700 dark:text-orange-300'>
-            {t('fire.north.star.fire.date.description', {
-              years: yearsToFire,
-              months: remainingMonths,
-            })}
+            {isFireDateValid
+              ? t('fire.north.star.fire.date.description', {
+                  years: yearsToFire,
+                  months: remainingMonths,
+                })
+              : t('fire.north.star.fire.date.invalid.description')
+            }
           </p>
           {/* 呼吸灯效果 */}
           <div className='absolute inset-0 bg-orange-200 dark:bg-orange-700 opacity-20 animate-ping rounded-lg'></div>
