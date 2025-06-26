@@ -47,10 +47,21 @@ export default function SidebarFireLink({ onNavigate }: SidebarFireLinkProps) {
           >
             <svg
               className={`h-5 w-5 ${isActive ? 'text-white' : 'text-orange-600 dark:text-orange-400'}`}
-              fill='currentColor'
+              fill='none'
+              stroke='currentColor'
               viewBox='0 0 24 24'
+              strokeWidth={2}
             >
-              <path d='M12 2c1.1 0 2 .9 2 2 0 1.1-.9 2-2 2s-2-.9-2-2c0-1.1.9-2 2-2zm7 7c0 4.4-3.6 8-8 8-.6 0-1.2-.1-1.8-.3-.1 0-.2-.1-.2-.3 0-.2.1-.3.2-.3.6.2 1.2.3 1.8.3 4.1 0 7.4-3.3 7.4-7.4 0-4.1-3.3-7.4-7.4-7.4-.6 0-1.2.1-1.8.3-.1 0-.2-.1-.2-.3 0-.1.1-.2.2-.2.6-.2 1.2-.3 1.8-.3 4.4 0 8 3.6 8 8z' />
+              {/* 地平线 - 基准线 */}
+              <path strokeLinecap='round' strokeLinejoin='round' d='M2 20h20' />
+              {/* 上升的山峰线条 - 类似股市上升图案 */}
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                d='M3 18l3-6 4 2 3-8 4 4 4-7'
+              />
+              {/* 山峰顶点标记 */}
+              <circle cx='21' cy='3' r='1.5' fill='currentColor' />
             </svg>
           </div>
           <span className='tracking-wide'>{t('nav.fire')}</span>

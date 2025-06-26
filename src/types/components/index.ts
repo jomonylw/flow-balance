@@ -208,6 +208,7 @@ export interface TransactionListItem {
 export interface TransactionFilters {
   accountId: string
   categoryId: string
+  currencyId: string
   type: string
   dateFrom: string
   dateTo: string

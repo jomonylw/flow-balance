@@ -1,5 +1,6 @@
 'use client'
 
+import VersionInfo from './VersionInfo'
 // import { useLanguage } from '@/contexts/providers/LanguageContext'
 
 type TabType =
@@ -123,30 +124,8 @@ export default function SettingsNavigation({
         ))}
       </div>
 
-      {/* 快捷操作卡片 */}
-      {/* <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">{t('settings.quick.actions')}</h4>
-        <div className="space-y-2">
-          <button
-            onClick={() => onTabChange('preferences')}
-            className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-          >
-            ⚙️ {t('settings.system.preferences')}
-          </button>
-          <button
-            onClick={() => onTabChange('currencies')}
-            className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-          >
-            💰 {t('settings.currency.management')}
-          </button>
-          <button
-            onClick={() => onTabChange('security')}
-            className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-          >
-            🔒 {t('password.change')}
-          </button>
-        </div>
-      </div> */}
+      {/* 版本信息 */}
+      <VersionInfo className='mt-6' />
     </div>
   )
 }

@@ -34,6 +34,8 @@
   "common.all": "全部",
   "common.items": "笔",
   "common.none": "无",
+  "common.empty": "空",
+  "common.other": "其他",
   "common.yes": "是",
   "common.no": "否",
   "common.ok": "确定",

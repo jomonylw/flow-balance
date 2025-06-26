@@ -4,10 +4,12 @@ import React, { useCallback } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import SmartPasteCell from './SmartPasteCell'
 import CircularCheckbox from '@/components/ui/forms/CircularCheckbox'
+import { isCellSelected, isCellCopied } from '@/lib/utils/smart-paste-selection'
 import type {
   SmartPasteColumn,
   SmartPasteRowData,
   CellPosition,
+  CellSelection,
 } from '@/types/core'
 
 interface SmartPasteRowProps {
@@ -16,7 +18,9 @@ interface SmartPasteRowProps {
   rowIndex: number
   isSelected: boolean
   activeCell: CellPosition | null
+  cellSelection: CellSelection
   onCellChange: (columnKey: string, value: unknown) => void
+  onCellSelect: (position: CellPosition, event?: React.MouseEvent) => void
   onCellFocus: (position: CellPosition) => void
   onCellBlur: () => void
   onCellKeyDown: (event: React.KeyboardEvent, position: CellPosition) => void
@@ -35,7 +39,9 @@ export default function SmartPasteRow({
   rowIndex,
   isSelected,
   activeCell,
+  cellSelection,
   onCellChange,
+  onCellSelect,
   onCellFocus,
   onCellBlur,
   onCellKeyDown,
@@ -49,31 +55,31 @@ export default function SmartPasteRow({
 }: SmartPasteRowProps) {
   const { t } = useLanguage()
 
-  // 获取行背景色
+  // 获取行背景色 - 美化设计
   const getRowBackgroundColor = useCallback(() => {
     if (isSelected) {
-      return 'bg-blue-50 dark:bg-blue-900/20'
+      return 'bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 border-l-2 border-blue-500'
     }
 
     switch (rowData.validationStatus) {
       case 'valid':
-        return 'bg-white dark:bg-gray-800'
+        return 'bg-gradient-to-r from-white to-green-50/30 dark:from-gray-800 dark:to-green-900/10 hover:from-green-50/50 hover:to-green-100/30 dark:hover:from-green-900/20 dark:hover:to-green-800/10'
       case 'invalid':
-        return 'bg-red-50/50 dark:bg-red-900/10'
+        return 'bg-gradient-to-r from-red-50/70 to-red-100/30 dark:from-red-900/20 dark:to-red-800/10 border-l-2 border-red-400/50'
       case 'partial':
-        return 'bg-yellow-50/50 dark:bg-yellow-900/10'
+        return 'bg-gradient-to-r from-yellow-50/70 to-yellow-100/30 dark:from-yellow-900/20 dark:to-yellow-800/10 border-l-2 border-yellow-400/50'
       default:
-        return 'bg-white dark:bg-gray-800'
+        return 'bg-gradient-to-r from-white to-gray-50/30 dark:from-gray-800 dark:to-gray-700/30 hover:from-gray-50/50 hover:to-gray-100/30 dark:hover:from-gray-700/50 dark:hover:to-gray-600/30'
     }
   }, [isSelected, rowData.validationStatus])
 
-  // 获取行状态指示器
+  // 获取行状态指示器 - 美化设计
   const getRowStatusIndicator = () => {
     switch (rowData.validationStatus) {
       case 'valid':
         return (
           <div className='flex items-center justify-center w-6 h-6'>
-            <div className='w-4 h-4 bg-green-500 rounded-full flex items-center justify-center'>
+            <div className='w-5 h-5 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-800/50'>
               <svg
                 className='w-3 h-3 text-white'
                 fill='currentColor'
@@ -92,7 +98,7 @@ export default function SmartPasteRow({
       case 'invalid':
         return (
           <div className='flex items-center justify-center w-6 h-6'>
-            <div className='w-4 h-4 bg-red-500 rounded-full flex items-center justify-center'>
+            <div className='w-5 h-5 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center shadow-sm ring-2 ring-red-200 dark:ring-red-800/50'>
               <svg
                 className='w-3 h-3 text-white'
                 fill='currentColor'
@@ -111,7 +117,7 @@ export default function SmartPasteRow({
       case 'partial':
         return (
           <div className='flex items-center justify-center w-6 h-6'>
-            <div className='w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center'>
+            <div className='w-5 h-5 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-sm ring-2 ring-yellow-200 dark:ring-yellow-800/50'>
               <svg
                 className='w-3 h-3 text-white'
                 fill='currentColor'
@@ -130,7 +136,7 @@ export default function SmartPasteRow({
       default:
         return (
           <div className='flex items-center justify-center w-6 h-6'>
-            <div className='w-4 h-4 border-2 border-gray-300 dark:border-gray-600 rounded-full'></div>
+            <div className='w-5 h-5 border-2 border-gray-300 dark:border-gray-600 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 shadow-sm'></div>
           </div>
         )
     }
@@ -220,19 +226,30 @@ export default function SmartPasteRow({
           >
             <SmartPasteCell
               column={column}
-              rowData={rowData}
+              _rowData={rowData}
+              columns={columns}
               value={cellData?.value}
               isActive={isActiveCell}
-              isSelected={isSelected}
+              isSelected={isCellSelected(cellSelection, rowIndex, columnIndex)}
+              isCopied={isCellCopied(cellSelection, rowIndex, columnIndex)}
               validationStatus={cellData?.validationStatus || 'empty'}
-              errors={cellData?.errors?.map(e => e.message) || []}
+              errors={cellData?.errors || []}
               onChange={value => handleCellChange(column.key, value)}
+              onSelect={event => {
+                const position: CellPosition = {
+                  rowIndex,
+                  columnIndex,
+                  columnKey: column.key,
+                }
+                onCellSelect(position, event)
+              }}
               onFocus={() => handleCellFocus(column.key, columnIndex)}
               onBlur={onCellBlur}
               onKeyDown={event =>
                 handleCellKeyDown(event, column.key, columnIndex)
               }
               onColumnPaste={onColumnPaste}
+              hasMultipleSelection={cellSelection.selectedCells.size > 1}
               availableTags={availableTags}
               className='w-full'
             />

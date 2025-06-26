@@ -50,6 +50,7 @@ export default function TransactionListView({
   const [filters, setFilters] = useState<TransactionFilters>({
     accountId: '',
     categoryId: '',
+    currencyId: '',
     type: '',
     dateFrom: '',
     dateTo: '',
@@ -70,6 +71,7 @@ export default function TransactionListView({
       // 添加过滤条件
       if (filters.accountId) params.append('accountId', filters.accountId)
       if (filters.categoryId) params.append('categoryId', filters.categoryId)
+      if (filters.currencyId) params.append('currencyId', filters.currencyId)
       if (filters.type) params.append('type', filters.type)
       if (filters.dateFrom) params.append('dateFrom', filters.dateFrom)
       if (filters.dateTo) params.append('dateTo', filters.dateTo)
@@ -117,6 +119,7 @@ export default function TransactionListView({
       // 添加过滤条件
       if (filters.accountId) params.append('accountId', filters.accountId)
       if (filters.categoryId) params.append('categoryId', filters.categoryId)
+      if (filters.currencyId) params.append('currencyId', filters.currencyId)
       if (filters.type) params.append('type', filters.type)
       if (filters.dateFrom) params.append('dateFrom', filters.dateFrom)
       if (filters.dateTo) params.append('dateTo', filters.dateTo)

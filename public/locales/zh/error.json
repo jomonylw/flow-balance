@@ -128,5 +128,6 @@
   "error.server.response.parse": "服务器响应解析失败",
   "error.request.failed": "请求失败",
   "error.request.process": "请求处理错误",
-  "error.load.exchange.rates": "加载汇率数据失败"
+  "error.load.exchange.rates": "加载汇率数据失败",
+  "error.clipboard.access": "无法访问剪贴板"
 }

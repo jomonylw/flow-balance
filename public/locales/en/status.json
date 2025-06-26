@@ -2,5 +2,6 @@
   "status.active": "Active",
   "status.inactive": "Inactive",
   "status.pending": "Pending",
-  "status.completed": "Completed"
+  "status.completed": "Completed",
+  "status.status": "Status"
 }

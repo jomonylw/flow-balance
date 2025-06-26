@@ -37,6 +37,8 @@
   "common.all": "All",
   "common.items": "items",
   "common.none": "None",
+  "common.empty": "Empty",
+  "common.other": "Other",
   "common.yes": "Yes",
   "common.no": "No",
   "common.ok": "OK",

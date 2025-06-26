@@ -14,6 +14,23 @@ export interface CellPosition {
   columnKey: string
 }
 
+/** 单元格选择范围 */
+export interface CellRange {
+  start: CellPosition
+  end: CellPosition
+}
+
+/** 单元格选择状态 */
+export interface CellSelection {
+  selectedCells: Set<string> // 格式: "rowIndex:columnIndex"
+  activeCell: CellPosition | null
+  selectionRange: CellRange | null
+  copyState: {
+    copiedCells: Set<string>
+    copyTimestamp: number
+  } | null
+}
+
 /** 单元格验证状态 */
 export type CellValidationStatus =
   | 'empty'
@@ -31,6 +48,7 @@ export type GridValidationStatus = 'empty' | 'partial' | 'valid' | 'invalid'
 /** 单元格验证错误 */
 export interface CellValidationError {
   type: 'required' | 'format' | 'range' | 'duplicate' | 'reference' | 'custom'
+  code?: string
   message: string
   severity: 'error' | 'warning'
 }
@@ -46,7 +64,7 @@ export type CellDataType =
   | 'multiselect'
   | 'account'
   | 'category'
-  | 'tag'
+  | 'tags'
 
 /** 单元格数据 */
 export interface CellData {
@@ -58,6 +76,8 @@ export interface CellData {
   validationStatus: CellValidationStatus
   errors: string[]
   options?: Array<{ value: unknown; label: string; [key: string]: unknown }>
+  isSelected?: boolean
+  isCopied?: boolean
 }
 
 /** 智能粘贴行数据 */
@@ -94,12 +114,31 @@ export interface SmartPasteColumn {
     required?: boolean
     min?: number
     max?: number
-    pattern?: string
-    custom?: (value: unknown) => string | null
+    pattern?: RegExp
+    custom?: (
+      value: unknown,
+      rowData: SmartPasteRowData
+    ) => CellValidationError | null
+  }
+  format?: {
+    currency?: {
+      code: string
+      symbol: string
+      decimalPlaces: number
+    }
+    number?: {
+      decimalPlaces: number
+      thousandSeparator: boolean
+    }
+    date?: {
+      format: string
+    }
   }
   options?: Array<{ value: unknown; label: string; [key: string]: unknown }>
   formatter?: (value: unknown) => string
   parser?: (text: string) => unknown
+  editMode?: 'inline' | 'dropdown' | 'modal'
+  helpText?: string
 }
 
 // ============================================================================
@@ -207,8 +246,8 @@ export interface HistoryEntry {
 /** 历史记录管理器接口 */
 export interface HistoryManager {
   push: (entry: HistoryEntry) => void
-  canUndo: boolean
-  canRedo: boolean
+  canUndo: () => boolean
+  canRedo: () => boolean
   undo: () => SmartPasteRowData[] | null
   redo: () => SmartPasteRowData[] | null
   clear: () => void
@@ -227,16 +266,23 @@ export interface HistoryManager {
 export interface SmartPasteGridProps {
   config: SmartPasteGridConfig
   data: SmartPasteRowData[]
+  selectedAccount?: any
+  availableAccounts?: any[]
+  availableCategories?: any[]
+  availableCurrencies?: any[]
+  availableTags?: Array<{ id: string; name: string; color?: string }>
   onDataChange: (data: SmartPasteRowData[]) => void
   onCellEdit?: (event: CellEditEvent) => void
   onRowOperation?: (event: RowOperationEvent) => void
   onPaste?: (event: PasteEvent) => void
   onValidation?: (event: ValidationEvent) => void
   onSubmit?: (data: SmartPasteRowData[]) => void
-  availableTags?: Array<{ id: string; name: string; color?: string }>
+  isLoading?: boolean
+  isReadOnly?: boolean
+  showValidationSummary?: boolean
   className?: string
-  disabled?: boolean
-  loading?: boolean
+  height?: string
+  width?: string
 }
 
 // ============================================================================

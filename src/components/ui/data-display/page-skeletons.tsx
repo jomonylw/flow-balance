@@ -21,7 +21,11 @@ export function DashboardSkeleton() {
 
       {/* 汇率设置提醒 */}
       <div className='mb-4 sm:mb-6'>
-        <SkeletonCard hasHeader={false} contentLines={1} className='bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700' />
+        <SkeletonCard
+          hasHeader={false}
+          contentLines={1}
+          className='bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'
+        />
       </div>
 
       {/* 系统更新状态卡片 */}
@@ -73,7 +77,11 @@ export function DashboardSkeleton() {
         <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4'>
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className='text-center'>
-              <Skeleton height='1.125rem' width='60%' className='mx-auto mb-1' />
+              <Skeleton
+                height='1.125rem'
+                width='60%'
+                className='mx-auto mb-1'
+              />
               <Skeleton height='0.875rem' width='80%' className='mx-auto' />
             </div>
           ))}
@@ -463,11 +471,11 @@ export function ProfileFormSkeleton() {
       </div>
 
       {/* 头像设置 */}
-      <div>
+      {/* <div>
         <Skeleton height='1rem' width='80px' className='mb-3' />
         <Skeleton height='0.875rem' width='180px' className='mb-4' />
         <Skeleton height='1.75rem' width='80px' rounded='md' />
-      </div>
+      </div> */}
 
       {/* 账户统计 */}
       <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4'>
@@ -898,7 +906,7 @@ export function TopUserStatusBarSkeleton() {
  * 完整应用布局骨架屏
  */
 export function AppLayoutSkeleton({
-  children
+  children,
 }: {
   children?: React.ReactNode
 }) {
@@ -916,9 +924,7 @@ export function AppLayoutSkeleton({
 
         {/* 右侧主内容 */}
         <main className='flex-1 overflow-y-auto bg-white dark:bg-gray-800'>
-          <div className='min-h-full'>
-            {children || <DashboardSkeleton />}
-          </div>
+          <div className='min-h-full'>{children || <DashboardSkeleton />}</div>
         </main>
       </div>
     </div>

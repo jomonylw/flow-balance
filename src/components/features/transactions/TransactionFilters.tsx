@@ -17,7 +17,7 @@ export default function TransactionFilters({
   onFilterChange,
 }: TransactionFiltersProps) {
   const { t } = useLanguage()
-  const { accounts, categories, tags } = useUserData()
+  const { accounts, categories, tags, currencies } = useUserData()
 
   // 搜索输入的本地状态，用于防抖
   const [searchInput, setSearchInput] = useState(filters.search)
@@ -54,10 +54,21 @@ export default function TransactionFilters({
       account.category.type === 'INCOME' || account.category.type === 'EXPENSE'
   )
 
-  // 筛选出收入类和支出类分类
-  const flowCategories = categories.filter(
-    category => category.type === 'INCOME' || category.type === 'EXPENSE'
-  )
+  // 筛选出收入类和支出类分类，并去重
+  const flowCategories = categories
+    .filter(
+      category => category.type === 'INCOME' || category.type === 'EXPENSE'
+    )
+    .reduce(
+      (unique, category) => {
+        // 使用 id 去重，避免重复分类
+        if (!unique.find(c => c.id === category.id)) {
+          unique.push(category)
+        }
+        return unique
+      },
+      [] as typeof categories
+    )
 
   // 日期格式化函数，避免时区问题
   const formatDate = (date: Date) => {
@@ -93,6 +104,7 @@ export default function TransactionFilters({
     onFilterChange({
       accountId: '',
       categoryId: '',
+      currencyId: '',
       type: '',
       dateFrom: '',
       dateTo: '',
@@ -196,8 +208,32 @@ export default function TransactionFilters({
               ))}
             </select>
           </div>
-        </div>
-        <div className='pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+          {/* </div>
+        <div className='pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'> */}
+          {/* 货币筛选 */}
+          <div>
+            <label
+              htmlFor='currencyId'
+              className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
+            >
+              {t('currency.label')}
+            </label>
+            <select
+              id='currencyId'
+              name='currencyId'
+              value={filters.currencyId}
+              onChange={handleInputChange}
+              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+            >
+              <option value=''>{t('currency.all')}</option>
+              {currencies.map(currency => (
+                <option key={currency.id} value={currency.id}>
+                  {currency.name} ({currency.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* 搜索 */}
           <div>
             <label

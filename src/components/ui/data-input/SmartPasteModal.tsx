@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-// import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import SmartPasteGrid from './SmartPasteGrid'
@@ -58,6 +58,7 @@ export default function SmartPasteModal({
   editingTransactions,
   showAccountSelector = false,
 }: SmartPasteModalProps) {
+  const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
   const { accounts, categories, currencies, tags } = useUserData()
 
@@ -89,7 +90,8 @@ export default function SmartPasteModal({
           isStockAccount:
             accountType === AccountType.ASSET ||
             accountType === AccountType.LIABILITY,
-        }
+        },
+        t
       )
 
       return transactions.map((transaction, index) => {
@@ -171,7 +173,8 @@ export default function SmartPasteModal({
           isStockAccount:
             accountType === AccountType.ASSET ||
             accountType === AccountType.LIABILITY,
-        }
+        },
+        t
       )
 
       if (editingTransactions && editingTransactions.length > 0) {
@@ -236,7 +239,8 @@ export default function SmartPasteModal({
         isStockAccount:
           accountType === AccountType.ASSET ||
           accountType === AccountType.LIABILITY,
-      }
+      },
+      t
     )
 
     return {
@@ -292,7 +296,10 @@ export default function SmartPasteModal({
         )
 
         if (validData.length === 0) {
-          showError('提交失败', '没有有效的数据可以提交')
+          showError(
+            t('smart.paste.submit.error'),
+            t('smart.paste.submit.no.valid.data')
+          )
           return
         }
 
@@ -327,7 +334,9 @@ export default function SmartPasteModal({
                 : (originalTransaction as any)?.account || currentAccount
 
             if (!targetAccount) {
-              throw new Error(`无法找到账户信息: ${accountId}`)
+              throw new Error(
+                t('smart.paste.error.account.not.found', { accountId })
+              )
             }
 
             // 确定交易类型：根据账户类型判断
@@ -397,7 +406,11 @@ export default function SmartPasteModal({
               type: transactionType,
               amount: row.cells.amount?.value as number,
               description: isStockAccount
-                ? `余额更新 - ${targetAccount?.name || (originalTransaction as any)?.account?.name}` // 存量账户使用默认描述
+                ? t('smart.paste.balance.update.description', {
+                    accountName:
+                      targetAccount?.name ||
+                      (originalTransaction as any)?.account?.name,
+                  }) // 存量账户使用默认描述
                 : (row.cells.description?.value as string),
               notes: (row.cells.notes?.value as string) || null,
               date: dateString,
@@ -449,14 +462,18 @@ export default function SmartPasteModal({
 
           const batchResult: TransactionBatchResult = {
             success: errorCount === 0,
-            processedCount: successCount,
-            errorCount,
-            warnings: [],
+            created: successCount,
+            updated: 0,
+            failed: errorCount,
             errors: [],
-            createdTransactionIds: [],
           }
 
-          showSuccess('批量编辑成功', `成功更新 ${successCount} 条交易记录`)
+          showSuccess(
+            t('smart.paste.submit.success.update'),
+            t('smart.paste.submit.success.update.detail', {
+              count: successCount,
+            })
+          )
 
           onSuccess(batchResult)
         } else {
@@ -473,7 +490,9 @@ export default function SmartPasteModal({
               : currentAccount
 
             if (!targetAccount) {
-              throw new Error(`无法找到账户信息: ${accountId}`)
+              throw new Error(
+                t('smart.paste.error.account.not.found', { accountId })
+              )
             }
 
             // 确定交易类型：根据账户类型判断
@@ -527,7 +546,9 @@ export default function SmartPasteModal({
               type: transactionType,
               amount: row.cells.amount?.value as number,
               description: isStockAccount
-                ? `余额更新 - ${targetAccount.name}` // 存量账户使用与余额更新API相同的格式
+                ? t('smart.paste.balance.update.description', {
+                    accountName: targetAccount.name,
+                  }) // 存量账户使用与余额更新API相同的格式
                 : (row.cells.description?.value as string),
               notes: (row.cells.notes?.value as string) || null,
               date: dateString,
@@ -564,25 +585,24 @@ export default function SmartPasteModal({
           if (result.success) {
             const batchResult: TransactionBatchResult = {
               success: true,
-              processedCount: result.data.created.length,
-              errorCount: result.data.errors.length,
-              warnings: result.data.warnings || [],
-              errors: result.data.errors.map((error: any, index: number) => ({
-                rowIndex: index,
-                field: error.field || 'unknown',
-                message: error.message || '未知错误',
-              })),
-              createdTransactionIds: result.data.created.map((t: any) => t.id),
+              created: result.data.created.length,
+              updated: 0,
+              failed: result.data.errors.length,
+              errors: result.data.errors.map(
+                (error: any) => error.message || '未知错误'
+              ),
             }
 
             showSuccess(
-              '批量录入成功',
-              `成功创建 ${batchResult.processedCount} 条交易记录`
+              t('smart.paste.submit.success.create'),
+              t('smart.paste.submit.success.create.detail', {
+                count: batchResult.created,
+              })
             )
 
             onSuccess(batchResult)
           } else {
-            throw new Error(result.error || '批量创建失败')
+            throw new Error(result.error || t('smart.paste.submit.error'))
           }
         }
 
@@ -590,8 +610,8 @@ export default function SmartPasteModal({
       } catch (error) {
         console.error('Batch transaction creation failed:', error)
         showError(
-          '批量录入失败',
-          error instanceof Error ? error.message : '未知错误'
+          t('smart.paste.submit.error'),
+          error instanceof Error ? error.message : t('error.unknown')
         )
       } finally {
         setIsSubmitting(false)
@@ -647,7 +667,10 @@ export default function SmartPasteModal({
         <div className='flex-shrink-0 p-6 border-b border-gray-200 dark:border-gray-700'>
           <div className='flex items-center justify-between mb-4'>
             <h2 className='text-xl font-semibold text-gray-900 dark:text-gray-100'>
-              {title || `${accountType === 'INCOME' ? '收入' : '支出'}批量录入`}
+              {title ||
+                (accountType === 'INCOME'
+                  ? t('smart.paste.modal.title.income')
+                  : t('smart.paste.modal.title.expense'))}
             </h2>
 
             <button
@@ -674,7 +697,9 @@ export default function SmartPasteModal({
           {/* 账户选择器 */}
           <div className='flex items-center space-x-4'>
             <label className='text-sm font-medium text-gray-700 dark:text-gray-300'>
-              {showAccountSelector ? '默认账户:' : '目标账户:'}
+              {showAccountSelector
+                ? t('smart.paste.account.selector.default')
+                : t('smart.paste.account.selector.target')}
             </label>
             <select
               value={
@@ -712,26 +737,29 @@ export default function SmartPasteModal({
               className='flex-1 max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100'
             >
               {showAccountSelector && (
-                <option value='mixed'>混合账户（在表格中选择）</option>
+                <option value='mixed'>
+                  {t('smart.paste.account.selector.mixed')}
+                </option>
               )}
               {availableAccounts.map(account => (
                 <option key={account.id} value={account.id}>
-                  {account.name} ({account.currency?.symbol || '¥'})
+                  {account.name} [{account.currency?.symbol || '¥'}{' '}
+                  {account.currency?.code}]
                 </option>
               ))}
             </select>
             <div className='text-sm text-gray-500 dark:text-gray-400'>
               {showAccountSelector
                 ? selectedAccountFromDropdown
-                  ? '所有交易将记录到此账户'
-                  : '在表格中为每笔交易选择账户'
-                : '所有交易将记录到此账户'}
+                  ? t('smart.paste.account.selector.hint.single')
+                  : t('smart.paste.account.selector.hint.mixed')
+                : t('smart.paste.account.selector.hint.single')}
             </div>
           </div>
         </div>
 
-        {/* 模态框主体 */}
-        <div className='flex-1 overflow-hidden min-h-0'>
+        {/* 模态框主体 - 美化背景 */}
+        <div className='flex-1 overflow-hidden min-h-0 bg-gradient-to-br from-gray-50/50 to-blue-50/30 dark:from-gray-800/50 dark:to-blue-900/20'>
           <SmartPasteGrid
             config={createGridConfig()}
             data={gridData}
@@ -756,7 +784,11 @@ export default function SmartPasteModal({
         {/* 加载遮罩 */}
         {isSubmitting && (
           <div className='absolute inset-0 bg-white/75 dark:bg-gray-800/75 flex items-center justify-center'>
-            <LoadingSpinner size='lg' showText text='正在提交数据...' />
+            <LoadingSpinner
+              size='lg'
+              showText
+              text={t('smart.paste.submit.processing')}
+            />
           </div>
         )}
       </div>

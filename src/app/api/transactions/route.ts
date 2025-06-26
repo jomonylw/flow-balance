@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const accountId = searchParams.get('accountId')
     const categoryId = searchParams.get('categoryId')
+    const currencyId = searchParams.get('currencyId')
     const type = searchParams.get('type') as TransactionType | null
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
@@ -64,6 +65,10 @@ export async function GET(request: NextRequest) {
       const descendantIds = await getDescendantCategoryIds(categoryId)
       const allCategoryIds = [categoryId, ...descendantIds]
       baseConditions.push({ categoryId: { in: allCategoryIds } })
+    }
+
+    if (currencyId) {
+      baseConditions.push({ currencyId })
     }
 
     if (type) {

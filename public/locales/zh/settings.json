@@ -60,5 +60,20 @@
   "settings.page.description": "管理您的个人资料、安全设置和偏好",
   "settings.quick.actions": "快捷操作",
   "settings.system.preferences": "系统偏好",
-  "settings.currency.management": "货币管理"
+  "settings.currency.management": "货币管理",
+  "settings.version.info": "版本信息",
+  "settings.version.current": "当前版本",
+  "settings.version.repository": "源代码",
+  "settings.version.homepage": "官网",
+  "settings.version.expand": "展开详细信息",
+  "settings.version.collapse": "收起详细信息",
+  "settings.version.build.info": "构建信息",
+  "settings.version.build.date": "构建日期",
+  "settings.version.tech.stack": "技术栈",
+  "settings.version.frontend": "前端",
+  "settings.version.backend": "后端",
+  "settings.version.database": "数据库",
+  "settings.version.styling": "样式",
+  "settings.version.charts": "图表",
+  "settings.version.developed.by": "开发团队"
 }

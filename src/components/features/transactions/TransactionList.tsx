@@ -376,7 +376,10 @@ export default function TransactionList({
 
   // 处理智能粘贴成功
   const handleSmartPasteSuccess = async (result: any) => {
-    showSuccess('批量处理成功', `成功处理 ${result.processedCount} 条交易记录`)
+    showSuccess(
+      t('batch.process.success'),
+      t('batch.process.success.detail', { count: result.processedCount })
+    )
 
     // 调用父组件的成功回调
     if (onSmartPasteSuccess) {
@@ -476,7 +479,7 @@ export default function TransactionList({
                       d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
                     />
                   </svg>
-                  批量编辑
+                  {t('smart.paste.batch.edit')}
                 </button>
               )}
               {onBatchDelete && (
@@ -514,7 +517,7 @@ export default function TransactionList({
               <div className='flex items-center space-x-2'>
                 <div className='h-2 w-2 bg-green-500 rounded-full'></div>
                 <span className='text-sm font-medium text-green-700 dark:text-green-300'>
-                  快速批量操作
+                  {t('smart.paste.quick.batch.operation')}
                 </span>
               </div>
               <div className='flex space-x-3'>
@@ -535,7 +538,7 @@ export default function TransactionList({
                       d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
                     />
                   </svg>
-                  批量录入
+                  {t('smart.paste.batch.entry')}
                 </button>
               </div>
             </div>
@@ -1158,11 +1161,18 @@ export default function TransactionList({
           title={
             selectedTransactions.size > 0
               ? selectedAccount
-                ? `批量编辑 - ${selectedAccount.name} (${selectedTransactions.size}条记录)`
-                : `批量编辑 (${selectedTransactions.size}条记录)`
+                ? t('smart.paste.modal.title.batch.edit', {
+                    accountName: selectedAccount.name,
+                    count: selectedTransactions.size,
+                  })
+                : t('smart.paste.modal.title.batch.edit.multi', {
+                    count: selectedTransactions.size,
+                  })
               : selectedAccount
-                ? `批量录入 - ${selectedAccount.name}`
-                : '批量录入'
+                ? t('smart.paste.modal.title.batch.entry', {
+                    accountName: selectedAccount.name,
+                  })
+                : t('smart.paste.modal.title.batch.entry.multi')
           }
           editingTransactions={
             selectedTransactions.size > 0

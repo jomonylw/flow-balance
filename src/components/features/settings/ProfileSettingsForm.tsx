@@ -130,7 +130,7 @@ export default function ProfileSettingsForm({
       </div>
 
       {/* 头像设置 */}
-      <div>
+      {/* <div>
         <h4 className='text-md font-medium text-gray-900 dark:text-gray-100 mb-3'>
           {t('settings.avatar.settings')}
         </h4>
@@ -143,7 +143,7 @@ export default function ProfileSettingsForm({
         >
           {t('settings.avatar.upload')}
         </button>
-      </div>
+      </div> */}
 
       {/* 账户统计 */}
       <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4'>

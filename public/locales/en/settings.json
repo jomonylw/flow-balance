@@ -60,5 +60,20 @@
   "settings.page.description": "Manage your profile, security settings and preferences",
   "settings.quick.actions": "Quick Actions",
   "settings.system.preferences": "System Preferences",
-  "settings.currency.management": "Currency Management"
+  "settings.currency.management": "Currency Management",
+  "settings.version.info": "Version Info",
+  "settings.version.current": "Current Version",
+  "settings.version.repository": "Repository",
+  "settings.version.homepage": "Homepage",
+  "settings.version.expand": "Expand details",
+  "settings.version.collapse": "Collapse details",
+  "settings.version.build.info": "Build Information",
+  "settings.version.build.date": "Build Date",
+  "settings.version.tech.stack": "Technology Stack",
+  "settings.version.frontend": "Frontend",
+  "settings.version.backend": "Backend",
+  "settings.version.database": "Database",
+  "settings.version.styling": "Styling",
+  "settings.version.charts": "Charts",
+  "settings.version.developed.by": "Developed by"
 }

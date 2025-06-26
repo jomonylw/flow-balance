@@ -36,12 +36,12 @@ export function createHistoryManager(maxSize: number = 50): HistoryManager {
     }
   }
 
-  const canUndo = state.past.length > 0
+  const canUndo = (): boolean => state.past.length > 0
 
-  const canRedo = state.future.length > 0
+  const canRedo = (): boolean => state.future.length > 0
 
   const undo = (): SmartPasteRowData[] | null => {
-    if (!canUndo) return null
+    if (!canUndo()) return null
 
     const entry = state.past.pop()!
     state.future.push(entry)
@@ -50,7 +50,7 @@ export function createHistoryManager(maxSize: number = 50): HistoryManager {
   }
 
   const redo = (): SmartPasteRowData[] | null => {
-    if (!canRedo) return null
+    if (!canRedo()) return null
 
     const entry = state.future.pop()!
     state.past.push(entry)
@@ -190,13 +190,13 @@ export class HistoryUtils {
         return t('smartPaste.history.edit')
       case 'paste':
         const pasteCount = entry.metadata?.rowCount || 1
-        return t('smartPaste.history.paste', { count: pasteCount })
+        return t('smartPaste.history.paste') + ` (${pasteCount})`
       case 'add_row':
         const addCount = entry.metadata?.rowCount || 1
-        return t('smartPaste.history.addRow', { count: addCount })
+        return t('smartPaste.history.addRow') + ` (${addCount})`
       case 'delete_row':
         const deleteCount = entry.metadata?.rowCount || 1
-        return t('smartPaste.history.deleteRow', { count: deleteCount })
+        return t('smartPaste.history.deleteRow') + ` (${deleteCount})`
       case 'bulk_operation':
         return entry.description
       default:

@@ -2,5 +2,7 @@
   "feature.in.development": "Feature in development",
   "batch.edit.development": "Batch edit feature in development, selected {{count}} records",
   "batch.delete.success": "Successfully deleted {{count}} records",
-  "batch.delete.partial": "Deleted {{success}}/{{total}} records, partial deletion failed"
+  "batch.delete.partial": "Deleted {{success}}/{{total}} records, partial deletion failed",
+  "batch.process.success": "Batch processing successful",
+  "batch.process.success.detail": "Successfully processed {{count}} transaction records"
 }

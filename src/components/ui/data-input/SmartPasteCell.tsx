@@ -5,8 +5,10 @@ import { createPortal } from 'react-dom'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
+import { getCurrencyFormatInfo } from '@/lib/utils/smart-paste-currency'
 
 import Calendar from '@/components/ui/forms/Calendar'
+import CurrencyTag from '@/components/ui/data-display/CurrencyTag'
 
 import type {
   CellValidationStatus,
@@ -17,33 +19,41 @@ import type {
 interface SmartPasteCellProps {
   column: SmartPasteColumn
   _rowData?: SmartPasteRowData
+  columns?: SmartPasteColumn[] // 所有列配置，用于混合账户模式的货币格式化
   value: unknown
   isActive: boolean
   isSelected: boolean
+  isCopied?: boolean
   validationStatus: CellValidationStatus
   errors: string[]
   onChange: (value: unknown) => void
+  onSelect?: (event: React.MouseEvent) => void
   onFocus: () => void
   onBlur: () => void
   onKeyDown: (event: React.KeyboardEvent) => void
   onColumnPaste?: (columnKey: string, values: unknown[]) => void
   availableTags?: Array<{ id: string; name: string; color?: string }>
+  hasMultipleSelection?: boolean // 是否有多个单元格被选中
   className?: string
 }
 
 export default function SmartPasteCell({
   column,
   _rowData,
+  columns = [],
   value,
   isActive,
   isSelected,
+  isCopied = false,
   validationStatus,
   errors,
   onChange,
+  onSelect,
   onFocus,
   onBlur,
   onKeyDown,
   onColumnPaste,
+  hasMultipleSelection = false,
   availableTags = [],
   className = '',
 }: SmartPasteCellProps) {
@@ -93,14 +103,22 @@ export default function SmartPasteCell({
 
   // 获取单元格背景色
   const getCellBackgroundColor = useCallback(() => {
+    // 复制状态优先级最高（显示动画边框）
+    if (isCopied) {
+      return 'bg-blue-100 dark:bg-blue-900/30'
+    }
+
+    // 选中状态
     if (isSelected) {
       return 'bg-blue-50 dark:bg-blue-900/20'
     }
 
+    // 编辑状态
     if (isEditing) {
       return 'bg-white dark:bg-gray-800'
     }
 
+    // 验证状态
     switch (validationStatus) {
       case 'valid':
         return 'bg-green-50/50 dark:bg-green-900/10'
@@ -112,7 +130,15 @@ export default function SmartPasteCell({
       default:
         return 'bg-white dark:bg-gray-900'
     }
-  }, [isSelected, validationStatus, isEditing])
+  }, [isCopied, isSelected, validationStatus, isEditing])
+
+  // 获取单元格边框样式（复制状态的动画效果）
+  const getCellBorderStyle = useCallback(() => {
+    if (isCopied) {
+      return 'ring-2 ring-blue-400 ring-opacity-75 animate-pulse'
+    }
+    return ''
+  }, [isCopied])
 
   // 格式化显示值
   const getDisplayValue = useCallback(() => {
@@ -122,11 +148,21 @@ export default function SmartPasteCell({
 
     switch (column.dataType) {
       case 'currency':
-        if (typeof value === 'number' && column.format?.currency) {
-          return formatCurrency(value, column.format.currency.code, {
-            precision: column.format.currency.decimalPlaces,
-            showSymbol: true,
-          })
+        if (typeof value === 'number' && _rowData) {
+          // 使用智能货币格式化工具
+          const formatInfo = getCurrencyFormatInfo(
+            value,
+            column,
+            _rowData,
+            columns
+          )
+
+          if (formatInfo.shouldFormat) {
+            return formatCurrency(value, formatInfo.currencyCode, {
+              precision: formatInfo.decimalPlaces,
+              showSymbol: true,
+            })
+          }
         }
         return String(value)
 
@@ -179,11 +215,20 @@ export default function SmartPasteCell({
       default:
         return String(value)
     }
-  }, [value, column, formatCurrency, formatInputDate])
+  }, [value, column, formatCurrency, formatInputDate, _rowData, columns])
 
   // 开始编辑
   const startEditing = useCallback(() => {
     if (column.isReadOnly || isEditing) return
+
+    // 特殊类型不使用传统编辑模式
+    if (
+      column.dataType === 'tags' ||
+      column.dataType === 'account' ||
+      column.dataType === 'date'
+    ) {
+      return
+    }
 
     setIsEditing(true)
     setEditValue(String(value || ''))
@@ -193,7 +238,7 @@ export default function SmartPasteCell({
       inputRef.current?.focus()
       inputRef.current?.select()
     }, 0)
-  }, [column.isReadOnly, isEditing, value])
+  }, [column.isReadOnly, column.dataType, isEditing, value])
 
   // 结束编辑
   const finishEditing = useCallback(
@@ -274,10 +319,20 @@ export default function SmartPasteCell({
 
         case 'tags':
           if (trimmedValue) {
-            return trimmedValue
+            const tagNames = trimmedValue
               .split(',')
               .map(tag => tag.trim())
               .filter(tag => tag.length > 0)
+
+            // 将标签名称转换为标签ID
+            const tagIds = tagNames.map(tagName => {
+              const tag = availableTags.find(
+                t => t.name.toLowerCase() === tagName.toLowerCase()
+              )
+              return tag ? tag.id : tagName // 如果找不到匹配的标签，保留原始名称
+            })
+
+            return tagIds
           } else {
             return []
           }
@@ -286,13 +341,19 @@ export default function SmartPasteCell({
           return trimmedValue || null
       }
     },
-    [column.dataType]
+    [column.dataType, availableTags]
   )
 
   // 处理粘贴
   const handlePaste = useCallback(
     (event: React.KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
+        // 如果有多个单元格被选中，让SmartPasteGrid处理粘贴事件
+        if (hasMultipleSelection) {
+          // 不阻止事件，让它冒泡到SmartPasteGrid
+          return
+        }
+
         event.preventDefault()
 
         navigator.clipboard
@@ -304,6 +365,11 @@ export default function SmartPasteCell({
 
               if (lines.length > 1 && onColumnPaste) {
                 // 多行数据，触发列粘贴
+                // 如果当前单元格处于编辑状态，先退出编辑模式
+                if (isEditing) {
+                  finishEditing(false) // 不保存当前编辑的值，因为会被粘贴的数据覆盖
+                }
+
                 const processedValues = lines.map(line =>
                   processValueByType(line)
                 )
@@ -311,7 +377,15 @@ export default function SmartPasteCell({
               } else {
                 // 单行数据，正常处理
                 const processedValue = processValueByType(text)
-                onChange(processedValue)
+
+                if (isEditing) {
+                  // 如果处于编辑状态，直接更新编辑值并结束编辑
+                  setEditValue(String(processedValue || ''))
+                  finishEditing(true)
+                } else {
+                  // 如果不在编辑状态，直接更新值
+                  onChange(processedValue)
+                }
               }
             }
           })
@@ -320,7 +394,16 @@ export default function SmartPasteCell({
           })
       }
     },
-    [column.dataType, column.key, onChange, onColumnPaste, processValueByType]
+    [
+      column.dataType,
+      column.key,
+      onChange,
+      onColumnPaste,
+      processValueByType,
+      isEditing,
+      finishEditing,
+      hasMultipleSelection,
+    ]
   )
 
   // 处理键盘事件
@@ -357,7 +440,30 @@ export default function SmartPasteCell({
           case 'Enter':
           case 'F2':
             event.preventDefault()
-            startEditing()
+
+            // 对于特殊类型，打开相应的选择器
+            if (column.dataType === 'tags') {
+              const position = calculateDropdownPosition()
+              if (position) {
+                setDropdownPosition(position)
+                setShowTagSelector(true)
+              }
+            } else if (column.dataType === 'account') {
+              const position = calculateDropdownPosition()
+              if (position) {
+                setDropdownPosition(position)
+                setShowAccountSelector(true)
+              }
+            } else if (column.dataType === 'date') {
+              const position = calculateDropdownPosition()
+              if (position) {
+                setDropdownPosition(position)
+                setShowDatePicker(true)
+              }
+            } else {
+              // 其他类型进入编辑模式
+              startEditing()
+            }
             break
 
           default:
@@ -373,9 +479,26 @@ export default function SmartPasteCell({
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
+
+      // 触发选择事件
+      if (onSelect) {
+        onSelect(e)
+      }
+
       onFocus()
 
-      // 如果是标签类型，直接打开标签选择器
+      // 统一逻辑：单击只选择，不进入编辑模式或打开选择器
+      // 编辑模式和选择器通过双击或F2键触发
+    },
+    [onSelect, onFocus]
+  )
+
+  // 处理双击事件
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+
+      // 对于特殊类型，双击打开相应的选择器
       if (column.dataType === 'tags') {
         const position = calculateDropdownPosition()
         if (position) {
@@ -385,7 +508,6 @@ export default function SmartPasteCell({
         return
       }
 
-      // 如果是账户类型，直接打开账户选择器
       if (column.dataType === 'account') {
         const position = calculateDropdownPosition()
         if (position) {
@@ -395,7 +517,6 @@ export default function SmartPasteCell({
         return
       }
 
-      // 如果是日期类型，直接打开日期选择器
       if (column.dataType === 'date') {
         const position = calculateDropdownPosition()
         if (position) {
@@ -405,12 +526,18 @@ export default function SmartPasteCell({
         return
       }
 
-      // 其他类型直接进入编辑模式
-      if (!isEditing) {
+      // 其他类型：双击进入编辑模式
+      if (!isEditing && !column.isReadOnly) {
         startEditing()
       }
     },
-    [onFocus, column.dataType, isEditing, startEditing]
+    [
+      column.dataType,
+      column.isReadOnly,
+      isEditing,
+      startEditing,
+      calculateDropdownPosition,
+    ]
   )
 
   // 处理标签选择器外部点击关闭
@@ -613,15 +740,19 @@ export default function SmartPasteCell({
     <div
       ref={cellRef}
       className={`
-        relative h-full min-h-[32px] border-r border-b border-gray-200 dark:border-gray-700
-        transition-all duration-150 cursor-pointer flex flex-col
-        hover:bg-gray-50 dark:hover:bg-gray-800/50
+        relative h-full min-h-[36px] border-r border-b border-blue-100/50 dark:border-blue-800/30
+        transition-all duration-200 cursor-pointer flex flex-col
+        hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-blue-100/20 dark:hover:from-blue-900/20 dark:hover:to-blue-800/10
+        hover:shadow-sm hover:border-blue-200/70 dark:hover:border-blue-700/50
         ${getCellBackgroundColor()}
-        ${isActive ? 'ring-1 ring-blue-500/30 bg-blue-50/50 dark:bg-blue-900/20' : ''}
-        ${isEditing ? 'ring-2 ring-blue-500/50 bg-white dark:bg-gray-800' : ''}
+        ${getCellBorderStyle()}
+        ${isActive ? 'ring-2 ring-blue-500/50 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-800/20 shadow-sm' : ''}
+        ${isEditing ? 'ring-2 ring-blue-600/70 bg-white dark:bg-gray-800 shadow-md z-10' : ''}
+        ${isSelected && !isCopied ? 'ring-2 ring-blue-400/60 bg-blue-50/30 dark:bg-blue-900/20' : ''}
         ${className}
       `}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
@@ -645,7 +776,7 @@ export default function SmartPasteCell({
             })
           ) : (
             <span className='text-gray-400 dark:text-gray-500 text-xs py-1'>
-              选择标签...
+              {t('smart.paste.cell.placeholder.tags')}
             </span>
           )}
         </div>
@@ -656,9 +787,19 @@ export default function SmartPasteCell({
             (() => {
               const option = column.options.find(opt => opt.value === value)
               return option ? (
-                <span className='text-gray-900 dark:text-gray-100 truncate'>
-                  {option.label}
-                </span>
+                <div className='flex items-center space-x-2 flex-1 min-w-0'>
+                  <span className='text-gray-900 dark:text-gray-100 truncate'>
+                    {option.label}
+                  </span>
+                  {(option as any).currencyCode && (
+                    <CurrencyTag
+                      currencyCode={(option as any).currencyCode}
+                      color={(option as any).accountColor || undefined}
+                      size='xs'
+                      className='flex-shrink-0'
+                    />
+                  )}
+                </div>
               ) : (
                 <span className='text-gray-500 dark:text-gray-400 truncate'>
                   {String(value)}
@@ -667,7 +808,7 @@ export default function SmartPasteCell({
             })()
           ) : (
             <span className='text-gray-400 dark:text-gray-500 text-xs'>
-              选择账户...
+              {t('smart.paste.cell.placeholder.account')}
             </span>
           )}
         </div>
@@ -685,22 +826,58 @@ export default function SmartPasteCell({
       )}
 
       {/* 验证状态指示器 - 紧凑设计 */}
+      {/* 验证状态指示器 */}
       {!isEditing && validationStatus !== 'empty' && (
-        <div className='absolute top-0.5 right-0.5'>
+        <div className='absolute top-0.5 right-0.5 z-10'>
           {validationStatus === 'valid' && (
-            <div className='w-1.5 h-1.5 bg-green-500 rounded-full opacity-80'></div>
+            <div
+              className='w-2 h-2 bg-green-500 rounded-full opacity-90 cursor-help shadow-sm'
+              title='✅ 数据验证通过'
+            ></div>
           )}
           {validationStatus === 'invalid' && errors.length > 0 && (
             <div
-              className='w-1.5 h-1.5 bg-red-500 rounded-full opacity-80 cursor-help'
-              title={errors.join(', ')}
+              className='w-2 h-2 bg-red-500 rounded-full opacity-90 cursor-help animate-pulse shadow-sm'
+              title={`❌ 错误: ${errors.join('; ')}`}
             ></div>
           )}
-          {validationStatus === 'pending' && (
-            <div className='w-1.5 h-1.5 bg-yellow-500 rounded-full opacity-80'></div>
+          {validationStatus === 'pending' && errors.length > 0 && (
+            <div
+              className='w-2 h-2 bg-yellow-500 rounded-full opacity-90 cursor-help animate-pulse shadow-sm'
+              title={`💡 提示: ${errors.join('; ')}`}
+            ></div>
           )}
         </div>
       )}
+
+      {/* 错误信息悬浮提示 */}
+      {!isEditing &&
+        errors.length > 0 &&
+        (validationStatus === 'invalid' || validationStatus === 'pending') && (
+          <div className='absolute bottom-full left-0 right-0 mb-1 opacity-0 hover:opacity-100 transition-opacity duration-200 z-20 pointer-events-none'>
+            <div
+              className={`
+            text-xs px-2 py-1 rounded shadow-lg max-w-xs
+            ${
+              validationStatus === 'invalid'
+                ? 'bg-red-100 dark:bg-red-900/80 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-700'
+                : 'bg-yellow-100 dark:bg-yellow-900/80 text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-700'
+            }
+          `}
+            >
+              <div className='font-medium mb-1'>
+                {validationStatus === 'invalid' ? '❌ 错误' : '💡 提示'}
+              </div>
+              <ul className='space-y-0.5'>
+                {errors.map((error, index) => (
+                  <li key={index} className='text-xs'>
+                    • {error}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
 
       {/* 标签选择器弹出层 - 使用Portal渲染到body */}
       {showTagSelector &&
@@ -757,7 +934,7 @@ export default function SmartPasteCell({
             </div>
             {availableTags.length === 0 && (
               <div className='text-center text-gray-500 dark:text-gray-400 py-4'>
-                暂无可用标签
+                {t('smart.paste.tag.selector.no.results')}
               </div>
             )}
           </div>,
@@ -873,7 +1050,19 @@ export default function SmartPasteCell({
                               }
                             `}
                             >
-                              <span className='truncate'>{option.label}</span>
+                              <div className='flex items-center space-x-2 flex-1 min-w-0'>
+                                <span className='truncate'>{option.label}</span>
+                                {(option as any).currencyCode && (
+                                  <CurrencyTag
+                                    currencyCode={(option as any).currencyCode}
+                                    color={
+                                      (option as any).accountColor || undefined
+                                    }
+                                    size='xs'
+                                    className='flex-shrink-0'
+                                  />
+                                )}
+                              </div>
                               {isSelected && (
                                 <svg
                                   className='w-4 h-4 flex-shrink-0'
@@ -898,7 +1087,7 @@ export default function SmartPasteCell({
             </div>
             {column.options.length === 0 && (
               <div className='text-center text-gray-500 dark:text-gray-400 py-4'>
-                暂无可用账户
+                {t('smart.paste.account.selector.no.results')}
               </div>
             )}
           </div>,

@@ -37,5 +37,6 @@
   "data.delete.success": "Account deleted successfully",
   "data.delete.success.message": "Your account and all data have been permanently deleted",
   "data.delete.failed": "Deletion failed",
-  "data.delete.network.error": "Deletion failed: Network error"
+  "data.delete.network.error": "Deletion failed: Network error",
+  "data.loading": "Processing data..."
 }

@@ -54,6 +54,7 @@ const namespaces = [
   'settings',
   'setup',
   'sidebar',
+  'smart-paste',
   'status',
   'success',
   'tag',

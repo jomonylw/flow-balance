@@ -21,5 +21,6 @@
   "error.request.failed": "Request failed",
   "error.request.process": "Request processing error",
   "error.load.exchange.rates": "Failed to load exchange rates",
-  "error.operation.failed": "Operation failed"
+  "error.operation.failed": "Operation failed",
+  "error.clipboard.access": "Unable to access clipboard"
 }

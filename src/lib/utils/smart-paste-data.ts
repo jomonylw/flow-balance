@@ -173,7 +173,8 @@ export function createTransactionColumns(
   options?: {
     includeAccountColumn?: boolean
     isStockAccount?: boolean
-  }
+  },
+  t?: (key: string) => string
 ): SmartPasteColumn[] {
   const currency = defaultCurrency || {
     code: 'CNY',
@@ -187,7 +188,7 @@ export function createTransactionColumns(
   if (options?.includeAccountColumn) {
     baseColumns.push({
       key: 'account',
-      title: '账户',
+      title: t?.('smart.paste.grid.column.account') || '账户',
       dataType: 'account',
       width: 150,
       isRequired: true,
@@ -195,7 +196,7 @@ export function createTransactionColumns(
       editMode: 'dropdown',
       validation: { required: true },
       defaultValue: null,
-      placeholder: '请选择账户',
+      placeholder: t?.('smart.paste.cell.placeholder.account') || '请选择账户',
       helpText: '选择交易账户',
     })
   }
@@ -204,7 +205,7 @@ export function createTransactionColumns(
   baseColumns.push(
     {
       key: 'date',
-      title: '日期',
+      title: t?.('smart.paste.grid.column.date') || '日期',
       dataType: 'date',
       width: 120,
       isRequired: true,
@@ -212,12 +213,12 @@ export function createTransactionColumns(
       editMode: 'inline',
       validation: { required: true },
       defaultValue: null,
-      placeholder: 'YYYY-MM-DD',
+      placeholder: t?.('smart.paste.cell.placeholder.date') || 'YYYY-MM-DD',
       helpText: '交易发生的日期',
     },
     {
       key: 'amount',
-      title: '金额',
+      title: t?.('smart.paste.grid.column.amount') || '金额',
       dataType: 'currency',
       width: 120,
       isRequired: true,
@@ -231,7 +232,7 @@ export function createTransactionColumns(
           decimalPlaces: currency.decimalPlaces,
         },
       },
-      placeholder: '0.00',
+      placeholder: t?.('smart.paste.cell.placeholder.amount') || '0.00',
       helpText: '交易金额，必须大于0',
     }
   )
@@ -241,14 +242,14 @@ export function createTransactionColumns(
     // 存量账户：只需要备注列
     baseColumns.push({
       key: 'notes',
-      title: '备注',
+      title: t?.('smart.paste.grid.column.notes') || '备注',
       dataType: 'text',
       width: 200,
       isRequired: false,
       isReadOnly: false,
       editMode: 'inline',
       validation: { max: 1000 },
-      placeholder: '可选备注',
+      placeholder: t?.('smart.paste.cell.placeholder.notes') || '可选备注',
       helpText: '详细备注信息（可选）',
     })
   } else {
@@ -256,31 +257,32 @@ export function createTransactionColumns(
     baseColumns.push(
       {
         key: 'description',
-        title: '描述',
+        title: t?.('smart.paste.grid.column.description') || '描述',
         dataType: 'text',
         width: 200,
         isRequired: true,
         isReadOnly: false,
         editMode: 'inline',
         validation: { required: true, min: 1, max: 200 },
-        placeholder: '请输入交易描述',
+        placeholder:
+          t?.('smart.paste.cell.placeholder.description') || '请输入交易描述',
         helpText: '简要描述这笔交易',
       },
       {
         key: 'notes',
-        title: '备注',
+        title: t?.('smart.paste.grid.column.notes') || '备注',
         dataType: 'text',
         width: 150,
         isRequired: false,
         isReadOnly: false,
         editMode: 'inline',
         validation: { max: 1000 },
-        placeholder: '可选备注',
+        placeholder: t?.('smart.paste.cell.placeholder.notes') || '可选备注',
         helpText: '详细备注信息（可选）',
       },
       {
         key: 'tags',
-        title: '标签',
+        title: t?.('smart.paste.grid.column.tags') || '标签',
         dataType: 'tags',
         width: 150,
         isRequired: false,

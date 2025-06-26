@@ -6,11 +6,21 @@
 /** 应用基础信息 */
 export const APP_INFO = {
   NAME: 'Flow Balance',
-  VERSION: '1.0.0',
+  VERSION: process.env.NEXT_PUBLIC_APP_VERSION || '0.1.0',
   DESCRIPTION: '个人财务管理系统',
   AUTHOR: 'Flow Balance Team',
   HOMEPAGE: 'https://flowbalance.app',
-  REPOSITORY: 'https://github.com/flowbalance/app',
+  REPOSITORY: 'https://github.com/jomon-finance/flow-balance',
+  BUILD_DATE:
+    process.env.NEXT_PUBLIC_BUILD_DATE ||
+    new Date().toISOString().split('T')[0],
+  TECH_STACK: {
+    FRONTEND: 'Next.js 15.3.3 + React 19',
+    BACKEND: 'Next.js API Routes + Prisma',
+    DATABASE: 'SQLite / PostgreSQL',
+    STYLING: 'Tailwind CSS 4',
+    CHARTS: 'ECharts 5.6.0',
+  },
 } as const
 
 /** 分页配置 */

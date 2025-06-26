@@ -9,6 +9,7 @@ import UserMenuDropdown from './UserMenuDropdown'
 import LanguageToggle from './LanguageToggle'
 import ThemeToggle from './ThemeToggle'
 import CurrencyConverterPopover from '../currency/CurrencyConverterPopover'
+import { AppLogoVariants } from '@/components/ui/branding/AppLogo'
 import type { SimpleUser, SimpleCurrency } from '@/types/core'
 
 interface UserWithSettings extends SimpleUser {
@@ -78,36 +79,16 @@ export default function TopUserStatusBar({
             </button>
           )}
 
-          <div
-            className='flex items-center space-x-3 cursor-pointer'
-            onClick={() => router.push('/dashboard')}
-          >
-            <div className='h-9 w-9 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg'>
-              <svg
-                className='h-5 w-5 text-white'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-                />
-              </svg>
-            </div>
-            <div className='hidden sm:block'>
-              <h1 className='text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent'>
-                Flow Balance
-              </h1>
-              <p className='text-xs text-gray-500 dark:text-gray-400 -mt-0.5'>
-                {t('common.app.subtitle')}
-              </p>
-            </div>
-            <h1 className='text-lg font-bold text-gray-900 dark:text-gray-100 sm:hidden'>
-              Flow Balance
-            </h1>
+          {/* 桌面端 Logo */}
+          <div className='hidden sm:block'>
+            <AppLogoVariants.TopBar onClick={() => router.push('/dashboard')} />
+          </div>
+
+          {/* 移动端 Logo */}
+          <div className='block sm:hidden'>
+            <AppLogoVariants.TopBarMobile
+              onClick={() => router.push('/dashboard')}
+            />
           </div>
         </div>
 

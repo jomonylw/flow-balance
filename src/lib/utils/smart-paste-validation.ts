@@ -29,6 +29,7 @@ export function validateCell(
     (value === null || value === undefined || value === '')
   ) {
     errors.push({
+      type: 'required',
       code: 'REQUIRED',
       message: `${column.title}是必填字段`,
       severity: 'error',
@@ -72,7 +73,7 @@ export function validateCell(
   }
 
   // 执行自定义验证
-  if (column.validation.custom) {
+  if (column.validation?.custom) {
     const customError = column.validation.custom(value, rowData)
     if (customError) {
       errors.push(customError)
@@ -107,6 +108,7 @@ function validateNumber(
 
   if (isNaN(numValue)) {
     errors.push({
+      type: 'format',
       code: 'INVALID_NUMBER',
       message: '请输入有效的数字',
       severity: 'error',
@@ -115,8 +117,12 @@ function validateNumber(
   }
 
   // 检查最小值
-  if (column.validation.min !== undefined && numValue < column.validation.min) {
+  if (
+    column.validation?.min !== undefined &&
+    numValue < column.validation.min
+  ) {
     errors.push({
+      type: 'range',
       code: 'MIN_VALUE',
       message: `值不能小于 ${column.validation.min}`,
       severity: 'error',
@@ -124,8 +130,12 @@ function validateNumber(
   }
 
   // 检查最大值
-  if (column.validation.max !== undefined && numValue > column.validation.max) {
+  if (
+    column.validation?.max !== undefined &&
+    numValue > column.validation.max
+  ) {
     errors.push({
+      type: 'range',
       code: 'MAX_VALUE',
       message: `值不能大于 ${column.validation.max}`,
       severity: 'error',
@@ -143,8 +153,9 @@ function validateNumber(
 
     if (actualDecimalPlaces > decimalPlaces) {
       errors.push({
+        type: 'format',
         code: 'DECIMAL_PLACES',
-        message: `小数位数不能超过 ${decimalPlaces} 位`,
+        message: `建议保持 ${decimalPlaces} 位小数，当前为 ${actualDecimalPlaces} 位`,
         severity: 'warning',
       })
     }
@@ -169,6 +180,7 @@ function validateDate(
 
   if (isNaN(dateValue.getTime())) {
     errors.push({
+      type: 'format',
       code: 'INVALID_DATE',
       message: '请输入有效的日期',
       severity: 'error',
@@ -191,16 +203,18 @@ function validateDate(
 
   if (dateValue < oneYearAgo) {
     errors.push({
+      type: 'range',
       code: 'DATE_TOO_OLD',
-      message: '日期不能早于一年前',
+      message: '日期较为久远，请确认是否正确',
       severity: 'warning',
     })
   }
 
   if (dateValue > oneYearLater) {
     errors.push({
+      type: 'range',
       code: 'DATE_TOO_FUTURE',
-      message: '日期不能晚于一年后',
+      message: '日期为未来时间，请确认是否正确',
       severity: 'warning',
     })
   }
@@ -218,10 +232,11 @@ function validateText(
 
   // 检查长度
   if (
-    column.validation.min !== undefined &&
+    column.validation?.min !== undefined &&
     textValue.length < column.validation.min
   ) {
     errors.push({
+      type: 'range',
       code: 'MIN_LENGTH',
       message: `长度不能少于 ${column.validation.min} 个字符`,
       severity: 'error',
@@ -229,10 +244,11 @@ function validateText(
   }
 
   if (
-    column.validation.max !== undefined &&
+    column.validation?.max !== undefined &&
     textValue.length > column.validation.max
   ) {
     errors.push({
+      type: 'range',
       code: 'MAX_LENGTH',
       message: `长度不能超过 ${column.validation.max} 个字符`,
       severity: 'error',
@@ -240,8 +256,12 @@ function validateText(
   }
 
   // 检查正则表达式
-  if (column.validation.pattern && !column.validation.pattern.test(textValue)) {
+  if (
+    column.validation?.pattern &&
+    !column.validation.pattern.test(textValue)
+  ) {
     errors.push({
+      type: 'format',
       code: 'PATTERN_MISMATCH',
       message: '格式不正确',
       severity: 'error',
@@ -259,6 +279,7 @@ function validateAccount(
 ): void {
   if (!value || typeof value !== 'string') {
     errors.push({
+      type: 'reference',
       code: 'INVALID_ACCOUNT',
       message: '请选择有效的账户',
       severity: 'error',
@@ -272,6 +293,7 @@ function validateAccount(
     !column.options.some(option => option.value === value)
   ) {
     errors.push({
+      type: 'reference',
       code: 'ACCOUNT_NOT_FOUND',
       message: '账户不存在',
       severity: 'error',
@@ -289,6 +311,7 @@ function validateCategory(
 ): void {
   if (!value || typeof value !== 'string') {
     errors.push({
+      type: 'reference',
       code: 'INVALID_CATEGORY',
       message: '请选择有效的分类',
       severity: 'error',
@@ -302,6 +325,7 @@ function validateCategory(
     !column.options.some(option => option.value === value)
   ) {
     errors.push({
+      type: 'reference',
       code: 'CATEGORY_NOT_FOUND',
       message: '分类不存在',
       severity: 'error',
@@ -319,6 +343,7 @@ function validateTags(
 ): void {
   if (!Array.isArray(value)) {
     errors.push({
+      type: 'format',
       code: 'INVALID_TAGS',
       message: '标签必须是数组格式',
       severity: 'error',
@@ -333,8 +358,9 @@ function validateTags(
 
     if (invalidTags.length > 0) {
       errors.push({
+        type: 'reference',
         code: 'TAGS_NOT_FOUND',
-        message: `标签不存在: ${invalidTags.join(', ')}`,
+        message: `标签 "${invalidTags.join(', ')}" 不存在，将自动忽略`,
         severity: 'warning',
       })
     }
@@ -476,7 +502,7 @@ export function updateCellValidation(
   return {
     ...cellData,
     validationStatus: status,
-    errors,
+    errors: errors.map(e => e.message), // 转换为字符串数组
   }
 }
 

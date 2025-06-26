@@ -37,5 +37,6 @@
   "data.delete.success": "账户删除成功",
   "data.delete.success.message": "您的账户和所有数据已永久删除",
   "data.delete.failed": "删除失败",
-  "data.delete.network.error": "删除失败: 网络错误"
+  "data.delete.network.error": "删除失败: 网络错误",
+  "data.loading": "正在处理数据..."
 }

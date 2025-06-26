@@ -3,7 +3,7 @@
 interface CurrencyTagProps {
   currencyCode: string
   color?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   className?: string
 }
 
@@ -18,6 +18,7 @@ export default function CurrencyTag({
   className = '',
 }: CurrencyTagProps) {
   const sizeClasses = {
+    xs: 'px-1.5 py-0.5 text-[0.625rem] min-w-[2rem]',
     sm: 'px-2 py-1 text-xs min-w-[2.5rem]',
     md: 'px-2.5 py-1.5 text-sm min-w-[3rem]',
     lg: 'px-3 py-2 text-base min-w-[3.5rem]',
