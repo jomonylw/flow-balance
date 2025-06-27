@@ -6,7 +6,7 @@ import FlowTransactionModal from '../accounts/FlowTransactionModal'
 import TransactionList from './TransactionList'
 import TransactionFiltersComponent from './TransactionFilters'
 import TransactionStats from './TransactionStats'
-import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
+
 import PageContainer from '@/components/ui/layout/PageContainer'
 import TranslationLoader from '@/components/ui/data-display/TranslationLoader'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
@@ -37,10 +37,7 @@ export default function TransactionListView({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [deletingTransactionId, setDeletingTransactionId] = useState<
-    string | null
-  >(null)
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: PAGINATION.PAGE_SIZE_OPTIONS[0], // 使用配置的第一个选项 (10)
@@ -190,9 +187,50 @@ export default function TransactionListView({
     setPagination(prev => ({ ...prev, page }))
   }
 
-  const handleDeleteTransaction = (transactionId: string) => {
-    setDeletingTransactionId(transactionId)
-    setShowDeleteConfirm(true)
+  const handleDeleteTransaction = async (transactionId: string) => {
+    // 直接执行删除，因为 TransactionList 组件内部已经有确认框
+    try {
+      const response = await fetch(`/api/transactions/${transactionId}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        showSuccess(t('success.deleted'), t('transaction.record.deleted'))
+
+        // 发布删除事件，触发其他组件更新
+        if (result.data?.transaction) {
+          const transaction = result.data.transaction
+          console.log(
+            '[TransactionListView] Publishing transaction-delete event:',
+            {
+              accountId: transaction.accountId || transaction.account?.id,
+              categoryId: transaction.categoryId || transaction.category?.id,
+              transaction,
+            }
+          )
+          await publishTransactionDelete(
+            transaction.accountId || transaction.account?.id,
+            transaction.categoryId || transaction.category?.id,
+            { transaction }
+          )
+        } else {
+          console.warn(
+            '[TransactionListView] No transaction data in delete response'
+          )
+        }
+
+        // 刷新数据
+        await loadTransactions()
+        await loadStats()
+      } else {
+        showError(t('common.delete.failed'), result.error || t('error.unknown'))
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error)
+      showError(t('common.delete.failed'), t('error.network'))
+    }
   }
 
   const handleBatchDelete = async (transactionIds: string[]) => {
@@ -241,59 +279,6 @@ export default function TransactionListView({
     } catch (error) {
       console.error('Error batch deleting transactions:', error)
       showError(t('common.delete.failed'), t('error.network'))
-    }
-  }
-
-  const handleConfirmDelete = async () => {
-    if (!deletingTransactionId) return
-
-    try {
-      const response = await fetch(
-        `/api/transactions/${deletingTransactionId}`,
-        {
-          method: 'DELETE',
-        }
-      )
-
-      const result = await response.json()
-
-      if (result.success) {
-        showSuccess(t('success.deleted'), t('transaction.record.deleted'))
-
-        // 发布删除事件，触发其他组件更新
-        if (result.data?.transaction) {
-          const transaction = result.data.transaction
-          console.log(
-            '[TransactionListView] Publishing transaction-delete event:',
-            {
-              accountId: transaction.accountId || transaction.account?.id,
-              categoryId: transaction.categoryId || transaction.category?.id,
-              transaction,
-            }
-          )
-          await publishTransactionDelete(
-            transaction.accountId || transaction.account?.id,
-            transaction.categoryId || transaction.category?.id,
-            { transaction }
-          )
-        } else {
-          console.warn(
-            '[TransactionListView] No transaction data in delete result:',
-            result
-          )
-        }
-
-        loadTransactions()
-        loadStats()
-      } else {
-        showError(t('common.delete.failed'), result.error || t('error.unknown'))
-      }
-    } catch (error) {
-      console.error('Error deleting transaction:', error)
-      showError(t('common.delete.failed'), t('error.network'))
-    } finally {
-      setShowDeleteConfirm(false)
-      setDeletingTransactionId(null)
     }
   }
 
@@ -415,21 +400,6 @@ export default function TransactionListView({
             tags={tags}
           />
         )}
-
-        {/* 删除确认模态框 */}
-        <ConfirmationModal
-          isOpen={showDeleteConfirm}
-          title={t('transaction.delete')}
-          message={t('confirm.delete.transaction')}
-          confirmLabel={t('common.confirm.delete')}
-          cancelLabel={t('common.cancel')}
-          onConfirm={handleConfirmDelete}
-          onCancel={() => {
-            setShowDeleteConfirm(false)
-            setDeletingTransactionId(null)
-          }}
-          variant='danger'
-        />
       </PageContainer>
     </TranslationLoader>
   )

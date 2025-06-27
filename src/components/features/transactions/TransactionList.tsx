@@ -95,6 +95,11 @@ export default function TransactionList({
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false)
   const [isSmartPasteModalOpen, setIsSmartPasteModalOpen] = useState(false)
 
+  // 单个删除确认状态
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletingTransaction, setDeletingTransaction] =
+    useState<ExtendedTransaction | null>(null)
+
   // 获取最新的标签颜色信息
   const getUpdatedTagColor = (tagId: string): string | undefined => {
     const userTag = userTags.find(tag => tag.id === tagId)
@@ -351,11 +356,25 @@ export default function TransactionList({
     }
   }
 
-  // 处理单个删除 - 直接调用回调，不需要确认
+  // 处理单个删除 - 显示确认框
   const handleSingleDelete = (transaction: ExtendedTransaction) => {
-    if (onDelete) {
-      onDelete(transaction.id)
+    setDeletingTransaction(transaction)
+    setShowDeleteConfirm(true)
+  }
+
+  // 确认删除
+  const handleConfirmDelete = () => {
+    if (deletingTransaction && onDelete) {
+      onDelete(deletingTransaction.id)
+      setShowDeleteConfirm(false)
+      setDeletingTransaction(null)
     }
+  }
+
+  // 取消删除
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false)
+    setDeletingTransaction(null)
   }
 
   // 处理智能粘贴成功
@@ -1189,6 +1208,18 @@ export default function TransactionList({
         cancelLabel={t('common.cancel')}
         onConfirm={handleConfirmBatchDelete}
         onCancel={() => setShowBatchDeleteConfirm(false)}
+        variant='danger'
+      />
+
+      {/* 单个删除确认模态框 */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        title={t('transaction.delete')}
+        message={t('confirm.delete.transaction')}
+        confirmLabel={t('common.confirm.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
         variant='danger'
       />
 
