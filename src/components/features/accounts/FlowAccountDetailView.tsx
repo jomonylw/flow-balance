@@ -290,10 +290,16 @@ export default function FlowAccountDetailView({
         loadTransactions(pagination.currentPage)
       } else {
         const error = await response.json()
-        showError(
-          t('error.clear.failed'),
-          error.message || t('account.transactions.clear.failed')
-        )
+        console.error('Clear transactions failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+        })
+
+        // 正确获取错误信息：API返回的是 error.error 而不是 error.message
+        const errorMessage =
+          error.error || error.message || t('account.transactions.clear.failed')
+        showError(t('error.clear.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Error clearing transactions:', error)

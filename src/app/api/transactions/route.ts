@@ -64,7 +64,11 @@ export async function GET(request: NextRequest) {
     if (categoryId) {
       const descendantIds = await getDescendantCategoryIds(categoryId)
       const allCategoryIds = [categoryId, ...descendantIds]
-      baseConditions.push({ categoryId: { in: allCategoryIds } })
+      baseConditions.push({
+        account: {
+          categoryId: { in: allCategoryIds },
+        },
+      })
     }
 
     if (currencyId) {
@@ -149,7 +153,6 @@ export async function GET(request: NextRequest) {
               category: true,
             },
           },
-          category: true,
           currency: true,
           tags: {
             include: {
@@ -167,6 +170,12 @@ export async function GET(request: NextRequest) {
     // 格式化交易数据，移除标签颜色信息
     const formattedTransactions = transactions.map(transaction => ({
       ...transaction,
+      // 分类信息现在通过账户获取
+      category: {
+        id: transaction.account.category.id,
+        name: transaction.account.category.name,
+        type: transaction.account.category.type,
+      },
       tags: transaction.tags.map(tt => ({
         tag: {
           id: tt.tag.id,
@@ -201,7 +210,6 @@ export async function POST(request: NextRequest) {
 
     const {
       accountId,
-      categoryId,
       currencyCode,
       type,
       amount,
@@ -214,7 +222,6 @@ export async function POST(request: NextRequest) {
     // 验证必填字段
     if (
       !accountId ||
-      !categoryId ||
       !currencyCode ||
       !type ||
       !amount ||
@@ -229,26 +236,17 @@ export async function POST(request: NextRequest) {
       return errorResponse('金额必须是大于0的数字', 400)
     }
 
-    // 验证账户和分类是否属于当前用户
-    const [account, category] = await Promise.all([
-      prisma.account.findFirst({
-        where: { id: accountId, userId: user.id },
-        include: {
-          category: true,
-          currency: true,
-        },
-      }),
-      prisma.category.findFirst({
-        where: { id: categoryId, userId: user.id },
-      }),
-    ])
+    // 验证账户是否属于当前用户
+    const account = await prisma.account.findFirst({
+      where: { id: accountId, userId: user.id },
+      include: {
+        category: true,
+        currency: true,
+      },
+    })
 
     if (!account) {
       return errorResponse('账户不存在', 400)
-    }
-
-    if (!category) {
-      return errorResponse('分类不存在', 400)
     }
 
     // 验证账户类型与交易类型的匹配性
@@ -335,7 +333,6 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         accountId,
-        categoryId,
         currencyId: currency.id,
         type: type as TransactionType,
         amount: parseFloat(amount),
@@ -354,7 +351,6 @@ export async function POST(request: NextRequest) {
             category: true,
           },
         },
-        category: true,
         currency: true,
         tags: {
           include: {
@@ -367,6 +363,12 @@ export async function POST(request: NextRequest) {
     // 格式化交易数据，移除标签颜色信息
     const formattedTransaction = {
       ...transaction,
+      // 分类信息现在通过账户获取
+      category: {
+        id: transaction.account.category.id,
+        name: transaction.account.category.name,
+        type: transaction.account.category.type,
+      },
       tags: transaction.tags.map(tt => ({
         tag: {
           id: tt.tag.id,

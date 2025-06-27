@@ -588,10 +588,6 @@ export function validateTransactionForm(
     errors.push('请选择账户')
   }
 
-  if (!formData.categoryId) {
-    errors.push('请选择分类')
-  }
-
   if (!formData.amount || parseFloat(String(formData.amount)) <= 0) {
     errors.push('请输入有效的金额')
   }

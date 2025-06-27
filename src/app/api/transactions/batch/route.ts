@@ -152,7 +152,6 @@ export async function POST(request: NextRequest) {
             data: {
               userId: user.id,
               accountId: transactionData.accountId,
-              categoryId: transactionData.categoryId,
               currencyId: currency.id,
               type: transactionData.type as TransactionType,
               amount: transactionData.amount,
@@ -171,7 +170,6 @@ export async function POST(request: NextRequest) {
                   category: true,
                 },
               },
-              category: true,
               currency: true,
               tags: {
                 include: {
@@ -181,7 +179,23 @@ export async function POST(request: NextRequest) {
             },
           })
 
-          created.push(transaction)
+          // 格式化交易数据，确保包含分类信息
+          const formattedTransaction = {
+            ...transaction,
+            // 分类信息现在通过账户获取
+            category: {
+              id: transaction.account.category.id,
+              name: transaction.account.category.name,
+              type: transaction.account.category.type,
+            },
+            tags: transaction.tags.map(tt => ({
+              tag: {
+                id: tt.tag.id,
+                name: tt.tag.name,
+              },
+            })),
+          }
+          created.push(formattedTransaction)
         } catch (error) {
           console.error(`Error creating transaction ${i}:`, error)
           errors.push({
@@ -311,22 +325,6 @@ export async function PUT(request: NextRequest) {
           index: i,
           field: 'accountId',
           message: '账户不存在或无权访问',
-        })
-      }
-
-      // 验证分类
-      const category = await prisma.category.findFirst({
-        where: {
-          id: transactionData.categoryId,
-          userId: user.id,
-        },
-      })
-
-      if (!category) {
-        validationErrors.push({
-          index: i,
-          field: 'categoryId',
-          message: '分类不存在或无权访问',
         })
       }
 

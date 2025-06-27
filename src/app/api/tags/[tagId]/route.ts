@@ -131,10 +131,15 @@ export async function DELETE(
 ) {
   try {
     const { tagId } = await params
+    console.log(`[DELETE TAG] 开始删除标签，ID: ${tagId}`)
+
     const user = await getCurrentUser()
     if (!user) {
+      console.log('[DELETE TAG] 用户未授权')
       return unauthorizedResponse()
     }
+
+    console.log(`[DELETE TAG] 用户ID: ${user.id}`)
 
     // 验证标签是否存在且属于当前用户
     const existingTag = await prisma.tag.findFirst({
@@ -145,8 +150,13 @@ export async function DELETE(
     })
 
     if (!existingTag) {
+      console.log(
+        `[DELETE TAG] 标签不存在或不属于用户，tagId: ${tagId}, userId: ${user.id}`
+      )
       return notFoundResponse('标签不存在')
     }
+
+    console.log(`[DELETE TAG] 找到标签: ${existingTag.name}`)
 
     // 检查标签是否被交易使用
     const transactionCount = await prisma.transactionTag.count({
@@ -155,21 +165,48 @@ export async function DELETE(
       },
     })
 
+    console.log(`[DELETE TAG] 标签使用统计: ${transactionCount} 笔交易`)
+
     if (transactionCount > 0) {
-      return errorResponse(
-        `该标签正在被 ${transactionCount} 笔交易使用，无法删除`,
-        400
-      )
+      const errorMessage = `该标签正在被 ${transactionCount} 笔交易使用，无法删除`
+      console.log(`[DELETE TAG] 删除被阻止: ${errorMessage}`)
+      return errorResponse(errorMessage, 400)
     }
 
     // 删除标签
+    console.log('[DELETE TAG] 开始删除标签...')
     await prisma.tag.delete({
       where: { id: tagId },
     })
 
+    console.log(`[DELETE TAG] 标签删除成功: ${existingTag.name}`)
     return successResponse(null, '标签删除成功')
   } catch (error) {
-    console.error('Delete tag error:', error)
-    return errorResponse('删除标签失败', 500)
+    console.error('[DELETE TAG] 删除标签时发生错误:', error)
+
+    // 提供更详细的错误信息
+    let errorMessage = '删除标签失败'
+    let statusCode = 500
+
+    if (error instanceof Error) {
+      console.error('[DELETE TAG] 错误详情:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      })
+
+      // 检查是否是特定的业务错误
+      if (error.message.includes('Foreign key constraint')) {
+        errorMessage = '删除失败：该标签正在被交易使用，请先删除相关交易记录'
+        statusCode = 400
+      } else if (error.message.includes('Record to delete does not exist')) {
+        errorMessage = '删除失败：标签不存在'
+        statusCode = 404
+      } else {
+        errorMessage = `删除失败：${error.message}`
+      }
+    }
+
+    return errorResponse(errorMessage, statusCode)
   }
 }

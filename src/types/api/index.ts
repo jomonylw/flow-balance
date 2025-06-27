@@ -217,7 +217,6 @@ export type TransactionDetailResponse = ApiSuccessResponse<Transaction>
 
 export interface TransactionCreateRequest {
   accountId: string
-  categoryId: string
   currencyCode: string
   type: TransactionType
   amount: number

@@ -947,8 +947,9 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
       }
 
       if (filters?.categoryId) {
+        // 现在通过账户的分类ID进行过滤
         filteredTemplates = filteredTemplates.filter(
-          t => t.categoryId === filters.categoryId
+          t => t.account?.category?.id === filters.categoryId
         )
       }
 

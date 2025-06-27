@@ -116,17 +116,11 @@ export async function GET(
             name: true,
             category: {
               select: {
+                id: true,
                 name: true,
                 type: true,
               },
             },
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
           },
         },
         currency: true,

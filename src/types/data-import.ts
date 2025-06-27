@@ -73,8 +73,6 @@ export interface ExportedTransaction {
   date: string
   accountId: string
   accountName: string
-  categoryId: string
-  categoryName: string
   currencyId: string
   currencyCode: string
   recurringTransactionId?: string

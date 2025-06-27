@@ -40,13 +40,7 @@ export default async function AccountPage({ params }: AccountPageProps) {
               },
             },
           },
-          category: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-            },
-          },
+
           currency: true,
           tags: {
             include: {
@@ -101,6 +95,15 @@ export default async function AccountPage({ params }: AccountPageProps) {
       parentId: account.category.parentId || undefined,
       type: convertPrismaAccountType(account.category.type),
     },
+    currency: {
+      id: account.currency.id,
+      code: account.currency.code,
+      name: account.currency.name,
+      symbol: account.currency.symbol,
+      decimalPlaces: account.currency.decimalPlaces,
+      isCustom: account.currency.isCustom,
+      createdBy: account.currency.createdBy,
+    },
     transactions: account.transactions.map(transaction => ({
       ...transaction,
       amount: parseFloat(transaction.amount.toString()),
@@ -123,10 +126,11 @@ export default async function AccountPage({ params }: AccountPageProps) {
           type: convertPrismaAccountType(transaction.account.category.type),
         },
       },
+      // 分类信息现在通过账户获取
       category: {
-        id: transaction.category.id,
-        name: transaction.category.name,
-        type: convertPrismaAccountType(transaction.category.type),
+        id: transaction.account.category.id,
+        name: transaction.account.category.name,
+        type: convertPrismaAccountType(transaction.account.category.type),
       },
       currency: {
         id: transaction.currency.id,
@@ -164,7 +168,9 @@ export default async function AccountPage({ params }: AccountPageProps) {
                 id: userSettings.id,
                 userId: userSettings.userId,
                 baseCurrencyId: userSettings.baseCurrencyId || '',
-                language: ConstantsManager.convertPrismaLanguage(userSettings.language),
+                language: ConstantsManager.convertPrismaLanguage(
+                  userSettings.language
+                ),
                 theme: ConstantsManager.convertPrismaTheme(userSettings.theme),
                 baseCurrency: userSettings.baseCurrency || undefined,
                 createdAt: userSettings.createdAt,

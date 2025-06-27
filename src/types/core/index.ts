@@ -150,13 +150,11 @@ export interface Transaction {
   notes?: string | null
   date: Date
   accountId: string
-  categoryId: string
   currencyId: string
   userId: string
   createdAt: Date
   updatedAt: Date
   account: Account
-  category: Category
   currency: Currency
   tags: TransactionTag[]
 }
@@ -186,7 +184,6 @@ export interface TransactionTemplate {
   userId: string
   name: string
   accountId: string
-  categoryId: string
   currencyId: string
   type: TransactionType
   description: string
@@ -195,7 +192,6 @@ export interface TransactionTemplate {
   createdAt: Date
   updatedAt: Date
   account?: Account
-  category?: Category
   currency?: Currency
 }
 
@@ -204,7 +200,6 @@ export interface SimpleTransactionTemplate {
   id: string
   name: string
   accountId: string
-  categoryId: string
   currencyCode: string
   type: TransactionType
   description: string
@@ -213,10 +208,11 @@ export interface SimpleTransactionTemplate {
   account?: {
     id: string
     name: string
-  }
-  category?: {
-    id: string
-    name: string
+    category?: {
+      id: string
+      name: string
+      type: AccountType
+    }
   }
   currency?: {
     code: string
@@ -239,7 +235,6 @@ export interface TemplateOption {
 export interface TransactionFormData {
   id?: string
   accountId: string
-  categoryId: string
   currencyCode: string // 保留 currencyCode 用于表单，内部转换为 currencyId
   type: TransactionType
   amount: number

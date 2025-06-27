@@ -468,16 +468,31 @@ export default function SmartPasteModal({
 
           const batchResult: TransactionBatchResult = {
             success: errorCount === 0,
-            created: successCount,
-            updated: 0,
+            created: 0,
+            updated: successCount,
             failed: errorCount,
-            errors: [],
+            errors: results
+              .filter(r => r.status === 'rejected')
+              .map(
+                r => (r as PromiseRejectedResult).reason?.message || '更新失败'
+              ),
           }
+
+          console.log('SmartPasteModal - 批量编辑结果:', {
+            totalPromises: updatePromises.length,
+            successCount,
+            errorCount,
+            batchResult,
+          })
+
+          // 确保count不为undefined，提供默认值
+          const displayCount =
+            typeof batchResult.updated === 'number' ? batchResult.updated : 0
 
           showSuccess(
             t('smart.paste.submit.success.update'),
             t('smart.paste.submit.success.update.detail', {
-              count: successCount,
+              count: displayCount,
             })
           )
 
@@ -597,20 +612,37 @@ export default function SmartPasteModal({
           const result = await response.json()
 
           if (result.success) {
+            // 从API响应中正确提取创建的交易数量
+            // API返回格式: { data: { created: [...], summary: { created: number } } }
+            const createdCount =
+              result.data?.summary?.created ?? result.data?.created?.length ?? 0
+            const failedCount =
+              result.data?.summary?.failed ?? result.data?.errors?.length ?? 0
+
             const batchResult: TransactionBatchResult = {
               success: true,
-              created: result.data.created.length,
+              created: createdCount,
               updated: 0,
-              failed: result.data.errors.length,
-              errors: result.data.errors.map(
+              failed: failedCount,
+              errors: (result.data?.errors || []).map(
                 (error: any) => error.message || '未知错误'
               ),
             }
 
+            console.log('SmartPasteModal - 批量创建结果:', {
+              apiResponse: result,
+              extractedCount: createdCount,
+              batchResult,
+            })
+
+            // 确保count不为undefined，提供默认值
+            const displayCount =
+              typeof batchResult.created === 'number' ? batchResult.created : 0
+
             showSuccess(
               t('smart.paste.submit.success.create'),
               t('smart.paste.submit.success.create.detail', {
-                count: batchResult.created,
+                count: displayCount,
               })
             )
 

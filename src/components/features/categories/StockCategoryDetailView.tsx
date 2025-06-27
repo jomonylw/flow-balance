@@ -296,7 +296,8 @@ export default function StockCategoryDetailView({
           const transaction = result.data.transaction
           await publishTransactionDelete(
             transaction.accountId || transaction.account?.id,
-            transaction.categoryId || transaction.category?.id,
+            transaction.account?.categoryId ||
+              transaction.account?.category?.id,
             { transaction }
           )
         }
@@ -332,7 +333,8 @@ export default function StockCategoryDetailView({
           const transaction = result.data.transaction
           await publishTransactionDelete(
             transaction.accountId || transaction.account?.id,
-            transaction.categoryId || transaction.category?.id,
+            transaction.account?.categoryId ||
+              transaction.account?.category?.id,
             { transaction }
           )
         }

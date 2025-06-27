@@ -285,7 +285,6 @@ export class RecurringTransactionService {
           data: {
             userId: recurringTransaction.userId,
             accountId: recurringTransaction.accountId,
-            categoryId: account.categoryId,
             currencyId: recurringTransaction.currencyId,
             type: recurringTransaction.type,
             amount: recurringTransaction.amount,

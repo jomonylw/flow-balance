@@ -282,29 +282,20 @@ async function checkTypeChangeSafety(categoryId: string): Promise<boolean> {
   // 检查是否有交易记录
   const transactionCount = await prisma.transaction.count({
     where: {
-      OR: [
-        {
-          accountId: {
-            in: await prisma.account
-              .findMany({
-                where: {
-                  categoryId: {
-                    in: allCategoryIds,
-                  },
-                },
-                select: {
-                  id: true,
-                },
-              })
-              .then(accounts => accounts.map(a => a.id)),
-          },
-        },
-        {
-          categoryId: {
-            in: allCategoryIds,
-          },
-        },
-      ],
+      accountId: {
+        in: await prisma.account
+          .findMany({
+            where: {
+              categoryId: {
+                in: allCategoryIds,
+              },
+            },
+            select: {
+              id: true,
+            },
+          })
+          .then(accounts => accounts.map(a => a.id)),
+      },
     },
   })
 

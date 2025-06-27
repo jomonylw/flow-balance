@@ -8,6 +8,7 @@
   "fire.reality.snapshot.past12months.expenses": "过去12个月总开销",
   "fire.reality.snapshot.current.net.worth": "当前净资产",
   "fire.reality.snapshot.historical.return": "历史年化回报率",
+  "fire.reality.snapshot.monthly.net.investment": "每月净投入",
   "fire.reality.snapshot.calibrate": "校准",
   "fire.reality.snapshot.p1.source": "P1来源",
   "fire.reality.snapshot.p3.source": "P3来源",
@@ -15,6 +16,7 @@
   "fire.reality.snapshot.expenses.source": "此数据用于预设\"退休后年开销\"",
   "fire.reality.snapshot.networth.source": "此数据用于预设\"当前可投资资产\"",
   "fire.reality.snapshot.return.source": "此数据用于预设\"预期年化回报率\"",
+  "fire.reality.snapshot.investment.source": "此数据用于预设\"每月净投入\"",
 
   "fire.north.star.title": "核心指标",
   "fire.north.star.subtitle": "用最直观、最震撼的方式，告诉您关于财务自由最重要的四个数字",

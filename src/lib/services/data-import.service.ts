@@ -1250,15 +1250,7 @@ export class DataImportService {
           continue
         }
 
-        // 查找分类ID
-        const categoryId = categoryIdMapping[transaction.categoryId]
-        if (!categoryId) {
-          result.warnings.push(
-            `交易 ${transaction.description} 的分类不存在，跳过`
-          )
-          result.statistics.skipped++
-          continue
-        }
+        // 分类信息现在通过账户获取，不需要单独验证分类ID
 
         // 查找货币ID
         let currencyId = currencyIdMapping[transaction.currencyId]
@@ -1296,7 +1288,6 @@ export class DataImportService {
           data: {
             userId,
             accountId,
-            categoryId,
             currencyId,
             type: transaction.type,
             amount: new Decimal(transaction.amount),

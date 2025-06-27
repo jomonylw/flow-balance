@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import DateInput from '@/components/ui/forms/DateInput'
+import CategoryFilterSelector from './CategoryFilterSelector'
 import type { TransactionFilters } from '@/types/components'
 
 interface TransactionFiltersProps {
@@ -17,7 +18,7 @@ export default function TransactionFilters({
   onFilterChange,
 }: TransactionFiltersProps) {
   const { t } = useLanguage()
-  const { accounts, categories, tags, currencies } = useUserData()
+  const { accounts, tags, currencies } = useUserData()
 
   // 搜索输入的本地状态，用于防抖
   const [searchInput, setSearchInput] = useState(filters.search)
@@ -53,22 +54,6 @@ export default function TransactionFilters({
     account =>
       account.category.type === 'INCOME' || account.category.type === 'EXPENSE'
   )
-
-  // 筛选出收入类和支出类分类，并去重
-  const flowCategories = categories
-    .filter(
-      category => category.type === 'INCOME' || category.type === 'EXPENSE'
-    )
-    .reduce(
-      (unique, category) => {
-        // 使用 id 去重，避免重复分类
-        if (!unique.find(c => c.id === category.id)) {
-          unique.push(category)
-        }
-        return unique
-      },
-      [] as typeof categories
-    )
 
   // 日期格式化函数，避免时区问题
   const formatDate = (date: Date) => {
@@ -161,7 +146,7 @@ export default function TransactionFilters({
             </select>
           </div>
 
-          {/* 分类 - 仅显示收入类和支出类分类 */}
+          {/* 分类 - 层级分类选择器 */}
           <div>
             <label
               htmlFor='categoryId'
@@ -169,20 +154,11 @@ export default function TransactionFilters({
             >
               {t('transaction.category')}
             </label>
-            <select
-              id='categoryId'
-              name='categoryId'
+            <CategoryFilterSelector
               value={filters.categoryId}
-              onChange={handleInputChange}
-              className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-            >
-              <option value=''>{t('category.all')}</option>
-              {flowCategories.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+              onChange={categoryId => onFilterChange({ categoryId })}
+              className='w-full'
+            />
           </div>
 
           {/* 账户 - 仅显示收入类和支出类账户 */}

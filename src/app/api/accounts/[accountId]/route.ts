@@ -153,15 +153,20 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ accountId: string }> }
 ) {
   try {
     const { accountId } = await params
+    console.log(`[DELETE ACCOUNT] 开始删除账户，ID: ${accountId}`)
+
     const user = await getCurrentUser()
     if (!user) {
+      console.log('[DELETE ACCOUNT] 用户未授权')
       return unauthorizedResponse()
     }
+
+    console.log(`[DELETE ACCOUNT] 用户ID: ${user.id}`)
 
     // 验证账户是否存在且属于当前用户
     const existingAccount = await prisma.account.findFirst({
@@ -169,18 +174,64 @@ export async function DELETE(
         id: accountId,
         userId: user.id,
       },
+      include: {
+        category: true,
+        currency: true,
+      },
     })
 
     if (!existingAccount) {
+      console.log(
+        `[DELETE ACCOUNT] 账户不存在或不属于用户，accountId: ${accountId}, userId: ${user.id}`
+      )
       return notFoundResponse('账户不存在')
     }
 
-    // 检查账户是否有交易记录
-    const transactionCount = await prisma.transaction.count({
-      where: {
-        accountId: accountId,
-      },
-    })
+    console.log(
+      `[DELETE ACCOUNT] 找到账户: ${existingAccount.name}, 类型: ${existingAccount.category.type}`
+    )
+
+    // 检查所有可能阻止删除的关联记录
+    console.log('[DELETE ACCOUNT] 开始检查关联记录...')
+
+    const [
+      transactionCount,
+      transactionTemplateCount,
+      recurringTransactionCount,
+      loanContractCount,
+      paymentLoanContractCount,
+    ] = await Promise.all([
+      // 检查交易记录
+      prisma.transaction.count({
+        where: { accountId: accountId },
+      }),
+      // 检查交易模板
+      prisma.transactionTemplate.count({
+        where: { accountId: accountId },
+      }),
+      // 检查定期交易
+      prisma.recurringTransaction.count({
+        where: { accountId: accountId },
+      }),
+      // 检查贷款合约（作为贷款账户）
+      prisma.loanContract.count({
+        where: { accountId: accountId },
+      }),
+      // 检查贷款合约（作为还款账户）
+      prisma.loanContract.count({
+        where: { paymentAccountId: accountId },
+      }),
+    ])
+
+    console.log('[DELETE ACCOUNT] 关联记录统计:')
+    console.log(`  - 交易记录: ${transactionCount}`)
+    console.log(`  - 交易模板: ${transactionTemplateCount}`)
+    console.log(`  - 定期交易: ${recurringTransactionCount}`)
+    console.log(`  - 贷款合约(作为贷款账户): ${loanContractCount}`)
+    console.log(`  - 贷款合约(作为还款账户): ${paymentLoanContractCount}`)
+
+    // 收集所有阻止删除的原因
+    const blockingReasons: string[] = []
 
     if (transactionCount > 0) {
       // 获取账户类型以提供更详细的错误信息
@@ -205,32 +256,80 @@ export async function DELETE(
         const otherTransactionCount = transactionCount - balanceAdjustmentCount
 
         if (otherTransactionCount > 0) {
-          return errorResponse(
-            `该账户存在 ${otherTransactionCount} 条普通交易记录和 ${balanceAdjustmentCount} 条余额调整记录，无法删除。请先删除相关交易记录。`,
-            400
+          blockingReasons.push(
+            `存在 ${otherTransactionCount} 条普通交易记录和 ${balanceAdjustmentCount} 条余额调整记录`
           )
         } else {
-          return errorResponse(
-            `该账户存在 ${balanceAdjustmentCount} 条余额调整记录，无法删除。如需删除账户，请先清空余额历史记录。`,
-            400
-          )
+          blockingReasons.push(`存在 ${balanceAdjustmentCount} 条余额调整记录`)
         }
       } else {
-        return errorResponse(
-          `该账户存在 ${transactionCount} 条交易记录，无法删除。请先删除相关交易记录。`,
-          400
-        )
+        blockingReasons.push(`存在 ${transactionCount} 条交易记录`)
       }
     }
 
-    // 删除账户
-    await prisma.account.delete({
-      where: { id: accountId },
+    if (transactionTemplateCount > 0) {
+      blockingReasons.push(`存在 ${transactionTemplateCount} 个交易模板`)
+    }
+
+    if (recurringTransactionCount > 0) {
+      blockingReasons.push(`存在 ${recurringTransactionCount} 个定期交易设置`)
+    }
+
+    if (loanContractCount > 0) {
+      blockingReasons.push(`存在 ${loanContractCount} 个贷款合约`)
+    }
+
+    if (paymentLoanContractCount > 0) {
+      blockingReasons.push(
+        `被 ${paymentLoanContractCount} 个贷款合约用作还款账户`
+      )
+    }
+
+    // 如果有任何阻止删除的原因，返回错误
+    if (blockingReasons.length > 0) {
+      const reasonText = blockingReasons.join('，')
+      const errorMessage = `该账户${reasonText}，无法删除。请先删除或转移相关记录。`
+      console.log(`[DELETE ACCOUNT] 删除被阻止: ${errorMessage}`)
+      return errorResponse(errorMessage, 400)
+    }
+
+    // 使用事务删除账户，确保数据一致性
+    console.log('[DELETE ACCOUNT] 开始删除账户...')
+    await prisma.$transaction(async tx => {
+      // 删除账户（由于设置了级联删除，相关的定期交易和贷款合约会自动删除）
+      await tx.account.delete({
+        where: { id: accountId },
+      })
     })
 
+    console.log(`[DELETE ACCOUNT] 账户删除成功: ${existingAccount.name}`)
     return successResponse(null, '账户删除成功')
   } catch (error) {
-    console.error('Delete account error:', error)
-    return errorResponse('删除账户失败', 500)
+    console.error('[DELETE ACCOUNT] 删除账户时发生错误:', error)
+
+    // 提供更详细的错误信息
+    let errorMessage = '删除账户失败'
+    let statusCode = 500
+
+    if (error instanceof Error) {
+      console.error('[DELETE ACCOUNT] 错误详情:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      })
+
+      // 检查是否是Prisma错误
+      if (error.message.includes('Foreign key constraint')) {
+        errorMessage = '删除失败：账户存在关联数据，请先删除相关记录'
+        statusCode = 400
+      } else if (error.message.includes('Record to delete does not exist')) {
+        errorMessage = '删除失败：账户不存在'
+        statusCode = 404
+      } else {
+        errorMessage = `删除失败：${error.message}`
+      }
+    }
+
+    return errorResponse(errorMessage, statusCode)
   }
 }

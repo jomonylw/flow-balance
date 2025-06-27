@@ -93,10 +93,6 @@ export default function TransactionList({
     new Set()
   )
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false)
-  const [showSingleDeleteConfirm, setShowSingleDeleteConfirm] = useState(false)
-  const [deletingTransactionId, setDeletingTransactionId] = useState<
-    string | null
-  >(null)
   const [isSmartPasteModalOpen, setIsSmartPasteModalOpen] = useState(false)
 
   // 获取最新的标签颜色信息
@@ -355,30 +351,28 @@ export default function TransactionList({
     }
   }
 
-  // 处理单个删除
+  // 处理单个删除 - 直接调用回调，不需要确认
   const handleSingleDelete = (transaction: ExtendedTransaction) => {
-    setDeletingTransactionId(transaction.id)
-    setShowSingleDeleteConfirm(true)
-  }
-
-  const handleConfirmSingleDelete = () => {
-    if (onDelete && deletingTransactionId) {
-      onDelete(deletingTransactionId)
-      setShowSingleDeleteConfirm(false)
-      setDeletingTransactionId(null)
+    if (onDelete) {
+      onDelete(transaction.id)
     }
-  }
-
-  const handleCancelSingleDelete = () => {
-    setShowSingleDeleteConfirm(false)
-    setDeletingTransactionId(null)
   }
 
   // 处理智能粘贴成功
   const handleSmartPasteSuccess = async (result: any) => {
+    // 计算总的处理数量：创建数量 + 更新数量
+    const processedCount = (result.created || 0) + (result.updated || 0)
+
+    console.log('TransactionList - 智能粘贴成功:', {
+      result,
+      processedCount,
+      created: result.created,
+      updated: result.updated,
+    })
+
     showSuccess(
       t('batch.process.success'),
-      t('batch.process.success.detail', { count: result.processedCount })
+      t('batch.process.success.detail', { count: processedCount })
     )
 
     // 调用父组件的成功回调
@@ -458,10 +452,7 @@ export default function TransactionList({
     }
 
     const leftSiblingIndex = Math.max(currentPage - siblingCount, 1)
-    const rightSiblingIndex = Math.min(
-      currentPage + siblingCount,
-      totalPages
-    )
+    const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages)
 
     const shouldShowLeftDots = leftSiblingIndex > 2
     const shouldShowRightDots = rightSiblingIndex < totalPages - 1
@@ -723,7 +714,8 @@ export default function TransactionList({
                         <div className='mt-2 space-y-0.5'>
                           <div className='text-xs text-gray-600 dark:text-gray-400'>
                             <span className='font-medium'>
-                              {transaction.category.name}
+                              {transaction.account?.category?.name ||
+                                '未知分类'}
                             </span>
                           </div>
                           <div className='text-xs text-gray-600 dark:text-gray-400'>
@@ -868,7 +860,7 @@ export default function TransactionList({
                       <div className='flex items-center space-x-3 mt-1.5 text-xs text-gray-600 dark:text-gray-400'>
                         <div>
                           <span className='font-medium'>
-                            {transaction.category.name}
+                            {transaction.account?.category?.name || '未知分类'}
                           </span>
                         </div>
                         {showAccount && transaction.account && (
@@ -1185,18 +1177,6 @@ export default function TransactionList({
           </div>
         </div>
       )}
-
-      {/* 单个删除确认模态框 */}
-      <ConfirmationModal
-        isOpen={showSingleDeleteConfirm}
-        title={t('transaction.delete.transaction.title')}
-        message={t('transaction.delete.transaction.message')}
-        confirmLabel={t('common.confirm.delete')}
-        cancelLabel={t('common.cancel')}
-        onConfirm={handleConfirmSingleDelete}
-        onCancel={handleCancelSingleDelete}
-        variant='danger'
-      />
 
       {/* 批量删除确认模态框 */}
       <ConfirmationModal

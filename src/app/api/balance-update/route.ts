@@ -121,7 +121,6 @@ export async function POST(request: NextRequest) {
             category: true,
           },
         },
-        category: true,
         currency: true,
         tags: {
           include: {
@@ -135,7 +134,6 @@ export async function POST(request: NextRequest) {
     const transactionData = {
       userId: user.id,
       accountId,
-      categoryId: account.categoryId,
       currencyId: currency.id,
       type: 'BALANCE' as const,
       amount: newBalanceAmount, // 存储目标余额，而不是变化金额
@@ -159,7 +157,6 @@ export async function POST(request: NextRequest) {
               category: true,
             },
           },
-          category: true,
           currency: true,
           tags: {
             include: {
@@ -178,7 +175,6 @@ export async function POST(request: NextRequest) {
               category: true,
             },
           },
-          category: true,
           currency: true,
           tags: {
             include: {
@@ -199,7 +195,7 @@ export async function POST(request: NextRequest) {
     })
 
     // 同时发布交易更新事件，因为余额调整也是一种交易
-    await publishTransactionUpdate(accountId, account.categoryId, {
+    await publishTransactionUpdate(accountId, account.category.id, {
       transactionId: transaction.id,
     })
 
@@ -273,17 +269,15 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       include: {
         currency: true,
-        category: true,
       },
       orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
       take: limit,
     })
 
     // 定义交易类型（包含关联数据）
-    type TransactionWithCurrencyAndCategory = Prisma.TransactionGetPayload<{
+    type TransactionWithCurrency = Prisma.TransactionGetPayload<{
       include: {
         currency: true
-        category: true
       }
     }>
 
@@ -313,16 +307,14 @@ export async function GET(request: NextRequest) {
 
     if (isStockAccount) {
       // 存量类账户：找到最新的BALANCE作为基准
-      let latestBalanceAdjustment: TransactionWithCurrencyAndCategory | null =
-        null
+      let latestBalanceAdjustment: TransactionWithCurrency | null = null
       let latestBalanceDate = new Date(0)
 
       sortedTransactions.forEach(transaction => {
         if (transaction.type === 'BALANCE') {
           const transactionDate = new Date(transaction.date)
           if (transactionDate > latestBalanceDate) {
-            latestBalanceAdjustment =
-              transaction as TransactionWithCurrencyAndCategory
+            latestBalanceAdjustment = transaction as TransactionWithCurrency
             latestBalanceDate = transactionDate
           }
         }
@@ -331,7 +323,7 @@ export async function GET(request: NextRequest) {
       // 如果有余额调整记录，使用该记录作为基准
       if (latestBalanceAdjustment) {
         const balanceTransaction =
-          latestBalanceAdjustment as TransactionWithCurrencyAndCategory
+          latestBalanceAdjustment as TransactionWithCurrency
         cumulativeBalance = parseFloat(balanceTransaction.amount.toString())
 
         // 添加余额调整记录到历史

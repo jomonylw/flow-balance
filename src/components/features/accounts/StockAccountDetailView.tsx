@@ -154,7 +154,15 @@ export default function StockAccountDetailView({
         router.push('/')
       } else {
         const error = await response.json()
-        const errorMessage = error.message || t('common.delete.failed')
+        console.error('Account deletion failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+        })
+
+        // 正确获取错误信息：API返回的是 error.error 而不是 error.message
+        const errorMessage =
+          error.error || error.message || t('common.delete.failed')
 
         // 检查是否是存量账户的余额记录问题
         if (errorMessage.includes('余额调整记录')) {

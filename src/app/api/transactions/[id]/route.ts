@@ -31,7 +31,6 @@ export async function GET(
             category: true,
           },
         },
-        category: true,
         currency: true,
         tags: {
           include: {
@@ -48,6 +47,12 @@ export async function GET(
     // 格式化交易数据，移除标签颜色信息
     const formattedTransaction = {
       ...transaction,
+      // 分类信息现在通过账户获取
+      category: {
+        id: transaction.account.category.id,
+        name: transaction.account.category.name,
+        type: transaction.account.category.type,
+      },
       tags: transaction.tags.map(tt => ({
         tag: {
           id: tt.tag.id,
@@ -89,7 +94,6 @@ export async function PUT(
     const body = await request.json()
     const {
       accountId,
-      categoryId,
       currencyCode,
       type,
       amount,
@@ -102,7 +106,6 @@ export async function PUT(
     // 验证必填字段
     if (
       !accountId ||
-      !categoryId ||
       !currencyCode ||
       !type ||
       !amount ||
@@ -117,26 +120,17 @@ export async function PUT(
       return errorResponse('金额必须是大于0的数字', 400)
     }
 
-    // 验证账户和分类是否属于当前用户
-    const [account, category] = await Promise.all([
-      prisma.account.findFirst({
-        where: { id: accountId, userId: user.id },
-        include: {
-          category: true,
-          currency: true,
-        },
-      }),
-      prisma.category.findFirst({
-        where: { id: categoryId, userId: user.id },
-      }),
-    ])
+    // 验证账户是否属于当前用户
+    const account = await prisma.account.findFirst({
+      where: { id: accountId, userId: user.id },
+      include: {
+        category: true,
+        currency: true,
+      },
+    })
 
     if (!account) {
       return errorResponse('账户不存在', 400)
-    }
-
-    if (!category) {
-      return errorResponse('分类不存在', 400)
     }
 
     // 验证账户货币限制
@@ -222,7 +216,6 @@ export async function PUT(
       where: { id: id },
       data: {
         accountId,
-        categoryId,
         currencyId: currency.id,
         type: type as TransactionType,
         amount: parseFloat(amount),
@@ -242,7 +235,6 @@ export async function PUT(
             category: true,
           },
         },
-        category: true,
         currency: true,
         tags: {
           include: {
@@ -255,6 +247,12 @@ export async function PUT(
     // 格式化交易数据，移除标签颜色信息
     const formattedTransaction = {
       ...transaction,
+      // 分类信息现在通过账户获取
+      category: {
+        id: transaction.account.category.id,
+        name: transaction.account.category.name,
+        type: transaction.account.category.type,
+      },
       tags: transaction.tags.map(tt => ({
         tag: {
           id: tt.tag.id,
@@ -276,10 +274,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    console.log(`[DELETE TRANSACTION] 开始删除交易，ID: ${id}`)
+
     const user = await getCurrentUser()
     if (!user) {
+      console.log('[DELETE TRANSACTION] 用户未授权')
       return unauthorizedResponse()
     }
+
+    console.log(`[DELETE TRANSACTION] 用户ID: ${user.id}`)
 
     // 验证交易是否存在且属于当前用户，并获取完整的关联数据
     const existingTransaction = await prisma.transaction.findFirst({
@@ -293,7 +296,6 @@ export async function DELETE(
             category: true,
           },
         },
-        category: true,
         currency: true,
         tags: {
           include: {
@@ -304,10 +306,18 @@ export async function DELETE(
     })
 
     if (!existingTransaction) {
+      console.log(
+        `[DELETE TRANSACTION] 交易不存在或不属于用户，transactionId: ${id}, userId: ${user.id}`
+      )
       return notFoundResponse('交易记录不存在')
     }
 
+    console.log(
+      `[DELETE TRANSACTION] 找到交易: ${existingTransaction.description}, 类型: ${existingTransaction.type}, 金额: ${existingTransaction.amount}`
+    )
+
     // 删除交易
+    console.log('[DELETE TRANSACTION] 开始删除交易...')
     await prisma.transaction.delete({
       where: { id: id },
     })
@@ -323,6 +333,9 @@ export async function DELETE(
       })),
     }
 
+    console.log(
+      `[DELETE TRANSACTION] 交易删除成功: ${existingTransaction.description}`
+    )
     // 返回被删除的交易信息，用于事件发布
     return successResponse(
       {
@@ -331,7 +344,31 @@ export async function DELETE(
       '交易删除成功'
     )
   } catch (error) {
-    console.error('Delete transaction error:', error)
-    return errorResponse('删除交易失败', 500)
+    console.error('[DELETE TRANSACTION] 删除交易时发生错误:', error)
+
+    // 提供更详细的错误信息
+    let errorMessage = '删除交易失败'
+    let statusCode = 500
+
+    if (error instanceof Error) {
+      console.error('[DELETE TRANSACTION] 错误详情:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      })
+
+      // 检查是否是特定的业务错误
+      if (error.message.includes('Foreign key constraint')) {
+        errorMessage = '删除失败：该交易存在关联数据，请先删除相关记录'
+        statusCode = 400
+      } else if (error.message.includes('Record to delete does not exist')) {
+        errorMessage = '删除失败：交易记录不存在'
+        statusCode = 404
+      } else {
+        errorMessage = `删除失败：${error.message}`
+      }
+    }
+
+    return errorResponse(errorMessage, statusCode)
   }
 }

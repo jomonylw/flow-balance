@@ -8,6 +8,7 @@
   "fire.reality.snapshot.past12months.expenses": "Past 12 Months Total Expenses",
   "fire.reality.snapshot.current.net.worth": "Current Net Worth",
   "fire.reality.snapshot.historical.return": "Historical Annual Return",
+  "fire.reality.snapshot.monthly.net.investment": "Monthly Net Investment",
   "fire.reality.snapshot.calibrate": "Calibrate",
   "fire.reality.snapshot.p1.source": "P1 Source",
   "fire.reality.snapshot.p3.source": "P3 Source",
@@ -15,6 +16,7 @@
   "fire.reality.snapshot.expenses.source": "This data is used to preset \"Retirement Annual Expenses\"",
   "fire.reality.snapshot.networth.source": "This data is used to preset \"Current Investable Assets\"",
   "fire.reality.snapshot.return.source": "This data is used to preset \"Expected Annual Return\"",
+  "fire.reality.snapshot.investment.source": "This data is used to preset \"Monthly Net Investment\"",
 
   "fire.north.star.title": "The North Star",
   "fire.north.star.subtitle": "The most intuitive and impactful way to show you the four most important numbers about your financial freedom",

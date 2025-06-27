@@ -58,7 +58,6 @@ export async function GET(request: NextRequest) {
           },
         },
         currency: true,
-        category: true,
       },
       orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
     })

@@ -204,7 +204,28 @@ export default function NavigationSidebar({
         // 分类创建事件已经发布，树会自动更新
       } else {
         const error = await response.json()
-        throw new Error(error.message || '创建分类失败')
+        const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+          requestData: {
+            name: data.name,
+            type: data.type,
+            parentId: null,
+            order: 0,
+          },
+          timestamp: new Date().toISOString(),
+          url: response.url,
+        }
+
+        console.error('创建顶级分类失败 - 详细信息:', errorDetails)
+
+        // 显示更详细的错误信息
+        const errorMessage =
+          error.error ||
+          error.message ||
+          `HTTP ${response.status}: ${response.statusText}`
+        throw new Error(`创建分类失败: ${errorMessage}`)
       }
     } catch (error) {
       console.error('Error creating top category:', error)
@@ -285,7 +306,9 @@ export default function NavigationSidebar({
                 </div>
                 <div className='flex items-center space-x-2'>
                   <button
-                    onClick={() => setViewMode(viewMode === 'tree' ? 'accounts' : 'tree')}
+                    onClick={() =>
+                      setViewMode(viewMode === 'tree' ? 'accounts' : 'tree')
+                    }
                     className='group/view flex items-center justify-center w-7 h-7 rounded-md bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-600/60 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md'
                     title={
                       viewMode === 'tree'
@@ -340,37 +363,37 @@ export default function NavigationSidebar({
                         : t('sidebar.expand.categories')
                     }
                   >
-                  {areAllCategoriesExpanded ? (
-                    // 收起所有 - 统一图标大小
-                    <svg
-                      className='w-4 h-4 transition-all duration-300 group-hover/toggle:scale-110'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                      strokeWidth={2.5}
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        d='M5 15l7-7 7 7'
-                      />
-                    </svg>
-                  ) : (
-                    // 展开所有 - 统一图标大小
-                    <svg
-                      className='w-4 h-4 transition-all duration-300 group-hover/toggle:scale-110'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                      strokeWidth={2.5}
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        d='M19 9l-7 7-7-7'
-                      />
-                    </svg>
-                  )}
+                    {areAllCategoriesExpanded ? (
+                      // 收起所有 - 统一图标大小
+                      <svg
+                        className='w-4 h-4 transition-all duration-300 group-hover/toggle:scale-110'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M5 15l7-7 7 7'
+                        />
+                      </svg>
+                    ) : (
+                      // 展开所有 - 统一图标大小
+                      <svg
+                        className='w-4 h-4 transition-all duration-300 group-hover/toggle:scale-110'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M19 9l-7 7-7-7'
+                        />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>

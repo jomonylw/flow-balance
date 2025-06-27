@@ -14,6 +14,13 @@ import type { UserSettings, Currency, Tag } from '@/types/core'
 // 基础验证 Schema
 // ============================================================================
 
+// CUID 验证函数 - 用于验证 Prisma 生成的 CUID 格式 ID
+const cuidSchema = () =>
+  z
+    .string()
+    .min(1)
+    .regex(/^c[a-z0-9]{24}$/, 'Invalid CUID format')
+
 /** 用户设置验证 Schema */
 export const UserSettingsSchema = z.object({
   baseCurrencyCode: z.string().min(3).max(3).optional(),
@@ -45,14 +52,15 @@ export const TagSchema = z.object({
 /** 分类创建验证 Schema */
 export const CategoryCreateSchema = z.object({
   name: z.string().min(1).max(100),
-  type: z.enum(ConstantsManager.getZodAccountTypeEnum()),
+  type: z.enum(ConstantsManager.getZodAccountTypeEnum()).optional(),
   icon: z.string().max(50).optional(),
   color: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional(),
   description: z.string().max(500).optional(),
-  parentId: z.string().uuid().optional(),
+  parentId: z.string().min(1).nullable().optional(),
+  order: z.number().int().min(0).optional(),
 })
 
 /** 分类更新验证 Schema */
@@ -67,7 +75,7 @@ export const AccountCreateSchema = z.object({
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional(),
   currencyCode: z.string().min(3).max(3),
-  categoryId: z.string().uuid(),
+  categoryId: cuidSchema(),
 })
 
 /** 账户更新验证 Schema */
@@ -79,15 +87,14 @@ export const AccountUpdateSchema = AccountCreateSchema.partial()
 
 /** 交易创建验证 Schema */
 export const TransactionCreateSchema = z.object({
-  accountId: z.string().uuid(),
-  categoryId: z.string().uuid(),
+  accountId: cuidSchema(),
   currencyCode: z.string().min(3).max(3),
   type: z.enum(ConstantsManager.getZodTransactionTypeEnum()),
   amount: z.number().positive(),
   description: z.string().min(1).max(200),
   notes: z.string().max(1000).optional(),
   date: z.string().datetime().or(z.date()),
-  tagIds: z.array(z.string().uuid()).optional(),
+  tagIds: z.array(cuidSchema()).optional(),
 })
 
 /** 交易更新验证 Schema */
@@ -95,17 +102,19 @@ export const TransactionUpdateSchema = TransactionCreateSchema.partial()
 
 /** 交易查询参数验证 Schema */
 export const TransactionQuerySchema = z.object({
-  accountId: z.string().uuid().optional(),
-  categoryId: z.string().uuid().optional(),
+  accountId: cuidSchema().optional(),
+  categoryId: cuidSchema().optional(),
   type: z.enum(ConstantsManager.getZodTransactionTypeEnum()).optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
   search: z.string().max(100).optional(),
-  tagIds: z.array(z.string().uuid()).optional(),
+  tagIds: z.array(cuidSchema()).optional(),
   page: z.number().int().positive().default(1),
   limit: z.number().int().positive().max(100).default(20),
   sortBy: z.string().optional(),
-  sortOrder: z.enum(ConstantsManager.getZodSortOrderEnum()).default(SortOrder.DESC),
+  sortOrder: z
+    .enum(ConstantsManager.getZodSortOrderEnum())
+    .default(SortOrder.DESC),
 })
 
 // ============================================================================
@@ -137,7 +146,9 @@ export const PaginationSchema = z.object({
 /** 排序参数验证 Schema */
 export const SortSchema = z.object({
   sortBy: z.string().optional(),
-  sortOrder: z.enum(ConstantsManager.getZodSortOrderEnum()).default(SortOrder.DESC),
+  sortOrder: z
+    .enum(ConstantsManager.getZodSortOrderEnum())
+    .default(SortOrder.DESC),
 })
 
 /** 筛选参数验证 Schema */
@@ -216,8 +227,8 @@ export const ExportOptionsSchema = z.object({
       end: z.string().datetime(),
     })
     .optional(),
-  includeCategories: z.array(z.string().uuid()).optional(),
-  includeAccounts: z.array(z.string().uuid()).optional(),
+  includeCategories: z.array(cuidSchema()).optional(),
+  includeAccounts: z.array(cuidSchema()).optional(),
 })
 
 // ============================================================================

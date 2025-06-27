@@ -208,7 +208,15 @@ export default function AccountTreeItem({
         // 账户删除事件已发布，树会自动更新
       } else {
         const error = await response.json()
-        showError('删除失败', error.message || '未知错误')
+        console.error('Account deletion failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+        })
+
+        // 正确获取错误信息：API返回的是 error.error 而不是 error.message
+        const errorMessage = error.error || error.message || '未知错误'
+        showError('删除失败', errorMessage)
       }
     } catch (error) {
       console.error('Error deleting account:', error)
@@ -233,7 +241,15 @@ export default function AccountTreeItem({
         await handleDelete()
       } else {
         const error = await response.json()
-        showError('清空失败', error.message || '清空余额历史失败')
+        console.error('Clear balance history failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+        })
+
+        // 正确获取错误信息：API返回的是 error.error 而不是 error.message
+        const errorMessage = error.error || error.message || '清空余额历史失败'
+        showError('清空失败', errorMessage)
       }
     } catch (error) {
       console.error('Error clearing balance history:', error)

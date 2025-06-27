@@ -47,8 +47,11 @@ export async function GET() {
       prisma.transaction.findMany({
         where: { userId: user.id },
         include: {
-          account: true,
-          category: true,
+          account: {
+            include: {
+              category: true,
+            },
+          },
           currency: true,
           tags: {
             include: { tag: true },
@@ -85,8 +88,11 @@ export async function GET() {
       prisma.transactionTemplate.findMany({
         where: { userId: user.id },
         include: {
-          account: true,
-          category: true,
+          account: {
+            include: {
+              category: true,
+            },
+          },
           currency: true,
         },
         orderBy: { name: 'asc' },
@@ -188,8 +194,8 @@ export async function GET() {
         date: transaction.date.toISOString(),
         accountId: transaction.accountId,
         accountName: transaction.account.name,
-        categoryId: transaction.categoryId,
-        categoryName: transaction.category.name,
+        categoryId: transaction.account.categoryId,
+        categoryName: transaction.account.category.name,
         currencyId: transaction.currencyId,
         currencyCode: transaction.currency.code,
         recurringTransactionId: transaction.recurringTransactionId,
@@ -254,8 +260,8 @@ export async function GET() {
         notes: template.notes,
         accountId: template.accountId,
         accountName: template.account.name,
-        categoryId: template.categoryId,
-        categoryName: template.category.name,
+        categoryId: template.account.categoryId,
+        categoryName: template.account.category.name,
         currencyId: template.currencyId,
         currencyCode: template.currency.code,
         tagIds: template.tagIds,

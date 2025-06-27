@@ -75,7 +75,6 @@ export class FutureDataGenerationService {
         // 转换数据结构以匹配函数期望的类型
         const recurringData = {
           ...recurring,
-          categoryId: recurring.account.category.id,
           currencyCode: recurring.currency.code,
           amount: Number(recurring.amount), // 转换 Decimal 为 number
           tagIds: Array.isArray(recurring.tagIds)
@@ -85,7 +84,6 @@ export class FutureDataGenerationService {
             : undefined, // 转换 JsonValue 为 string[]
           maxOccurrences: recurring.maxOccurrences ?? undefined, // 转换 null 为 undefined
           notes: recurring.notes ?? undefined, // 转换 null 为 undefined
-          account: { categoryId: recurring.account.category.id },
         }
 
         // 统一生成历史遗漏和未来的记录
@@ -113,7 +111,6 @@ export class FutureDataGenerationService {
       id: string
       userId: string
       accountId: string
-      categoryId: string
       currencyId: string
       currencyCode: string
       type: string
@@ -132,7 +129,6 @@ export class FutureDataGenerationService {
       maxOccurrences?: number
       currentCount?: number
       notes?: string
-      account: { categoryId: string }
     },
     startDate: Date,
     endDate: Date
@@ -159,7 +155,6 @@ export class FutureDataGenerationService {
     const missingTransactions: Array<{
       userId: string
       accountId: string
-      categoryId: string
       currencyId: string
       type: 'INCOME' | 'EXPENSE'
       amount: number
@@ -197,7 +192,6 @@ export class FutureDataGenerationService {
         missingTransactions.push({
           userId: recurring.userId,
           accountId: recurring.accountId,
-          categoryId: recurring.categoryId,
           currencyId: recurring.currencyId,
           type: recurring.type as 'INCOME' | 'EXPENSE',
           amount: recurring.amount,
@@ -314,8 +308,6 @@ export class FutureDataGenerationService {
     return generated
   }
 
-
-
   /**
    * 清理过期的未来交易数据
    */
@@ -394,7 +386,8 @@ export class FutureDataGenerationService {
 
     // 重新生成贷款还款数据
     const { LoanContractService } = await import('./loan-contract.service')
-    const loanResult = await LoanContractService.processLoanPaymentsBySchedule(userId)
+    const loanResult =
+      await LoanContractService.processLoanPaymentsBySchedule(userId)
 
     return {
       cleaned,

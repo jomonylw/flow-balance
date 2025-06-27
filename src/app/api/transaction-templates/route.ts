@@ -11,7 +11,6 @@ const createTemplateSchema = z.object({
     .min(1, '模板名称不能为空')
     .max(100, '模板名称不能超过100个字符'),
   accountId: z.string().min(1, '账户ID不能为空'),
-  categoryId: z.string().min(1, '分类ID不能为空'),
   currencyCode: z.string().min(1, '货币代码不能为空'),
   type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE], {
     errorMap: () => ({ message: '交易类型必须是收入或支出' }),
@@ -40,7 +39,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type') as TransactionType.INCOME | TransactionType.EXPENSE | null
+    const type = searchParams.get('type') as
+      | TransactionType.INCOME
+      | TransactionType.EXPENSE
+      | null
     const accountId = searchParams.get('accountId')
 
     // 构建查询条件
@@ -68,13 +70,13 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+              },
+            },
           },
         },
         currency: {
@@ -151,8 +153,10 @@ export async function POST(request: NextRequest) {
     // 验证交易类型与账户类型是否匹配
     const accountType = account.category.type
     if (
-      (validatedData.type === TransactionType.INCOME && accountType !== 'INCOME') ||
-      (validatedData.type === TransactionType.EXPENSE && accountType !== 'EXPENSE')
+      (validatedData.type === TransactionType.INCOME &&
+        accountType !== 'INCOME') ||
+      (validatedData.type === TransactionType.EXPENSE &&
+        accountType !== 'EXPENSE')
     ) {
       return NextResponse.json(
         { success: false, error: '交易类型与账户类型不匹配' },
@@ -180,7 +184,6 @@ export async function POST(request: NextRequest) {
       data: {
         name: validatedData.name,
         accountId: validatedData.accountId,
-        categoryId: validatedData.categoryId,
         currencyId: currency.id,
         type: validatedData.type,
         description: validatedData.description,
@@ -193,13 +196,6 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
           },
         },
         currency: {

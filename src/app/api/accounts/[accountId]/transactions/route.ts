@@ -108,8 +108,11 @@ export async function GET(
       prisma.transaction.findMany({
         where,
         include: {
-          account: true,
-          category: true,
+          account: {
+            include: {
+              category: true,
+            },
+          },
           currency: true,
           tags: {
             include: {
@@ -145,10 +148,17 @@ export async function GET(
       account: {
         id: transaction.account.id,
         name: transaction.account.name,
+        category: {
+          id: transaction.account.category.id,
+          name: transaction.account.category.name,
+          type: transaction.account.category.type,
+        },
       },
+      // 分类信息现在通过账户获取
       category: {
-        id: transaction.category.id,
-        name: transaction.category.name,
+        id: transaction.account.category.id,
+        name: transaction.account.category.name,
+        type: transaction.account.category.type,
       },
       tags: transaction.tags.map(tt => ({
         tag: {

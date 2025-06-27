@@ -160,7 +160,15 @@ export default function CategoryTreeItem({
         // 分类删除事件已发布，树会自动更新
       } else {
         const error = await response.json()
-        showError(t('error.delete.failed'), error.message || t('error.unknown'))
+        console.error('Category deletion failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+        })
+
+        // 正确获取错误信息：API返回的是 error.error 而不是 error.message
+        const errorMessage = error.error || error.message || t('error.unknown')
+        showError(t('error.delete.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Error deleting category:', error)

@@ -156,8 +156,6 @@ model Category {
   parent       Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children     Category[]  @relation("CategoryHierarchy")
   accounts     Account[]
-  transactions Transaction[]
-  transactionTemplates TransactionTemplate[] // 使用此分类的交易模板
 
 
   @@unique([userId, name, parentId]) // 同一用户下同一父分类中的分类名不能重复
@@ -205,7 +203,6 @@ model Transaction {
   id           String            @id @default(cuid())
   userId       String
   accountId    String
-  categoryId   String
   currencyId   String
   type         TransactionType   // 收入、支出、转账
   amount       Decimal           // 金额，使用 Decimal 类型确保精度
@@ -221,7 +218,6 @@ model Transaction {
   // 关联关系
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   account      Account           @relation(fields: [accountId], references: [id])
-  category     Category          @relation(fields: [categoryId], references: [id])
   currency     Currency          @relation(fields: [currencyId], references: [id])
   tags         TransactionTag[]  // 多对多关系
   recurringTransaction RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id], onDelete: SetNull)
@@ -242,7 +238,6 @@ model TransactionTemplate {
   userId      String
   name        String          // 模板名称
   accountId   String
-  categoryId  String
   currencyId  String
   type        TransactionType // 收入、支出
   description String
@@ -254,7 +249,6 @@ model TransactionTemplate {
   // 关联关系
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   account  Account  @relation(fields: [accountId], references: [id])
-  category Category @relation(fields: [categoryId], references: [id])
   currency Currency @relation(fields: [currencyId], references: [id])
 
   // 确保同一用户的模板名称唯一

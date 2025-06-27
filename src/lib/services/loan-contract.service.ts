@@ -93,7 +93,6 @@ interface _LoanPaymentRecord {
 interface TransactionData {
   userId: string
   accountId: string
-  categoryId: string
   currencyId: string
   type: 'EXPENSE' | 'BALANCE'
   amount: number | string // 允许 Decimal 类型
@@ -1197,7 +1196,6 @@ export class LoanContractService {
           const principalTransactionData: TransactionData = {
             userId: loanContract.userId,
             accountId: contractFields.paymentAccountId,
-            categoryId: loanContract.account.categoryId,
             currencyId: loanContract.currencyId,
             type: 'EXPENSE',
             amount: Number(loanPayment.principalAmount),
@@ -1251,7 +1249,6 @@ export class LoanContractService {
           const interestTransactionData: TransactionData = {
             userId: loanContract.userId,
             accountId: contractFields.paymentAccountId,
-            categoryId: loanContract.account.categoryId,
             currencyId: loanContract.currencyId,
             type: 'EXPENSE',
             amount: Number(loanPayment.interestAmount),
@@ -1303,7 +1300,6 @@ export class LoanContractService {
         const balanceTransactionData: TransactionData = {
           userId: loanContract.userId,
           accountId: loanContract.accountId,
-          categoryId: loanContract.account.categoryId,
           currencyId: loanContract.currencyId,
           type: 'BALANCE',
           amount: Number(loanPayment.remainingBalance), // 使用剩余余额作为负债账户的新余额

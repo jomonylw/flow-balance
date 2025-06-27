@@ -51,13 +51,21 @@ export async function GET(_request: NextRequest) {
           gte: twelveMonthsAgo,
           lte: now, // 确保不包含未来交易
         },
-        category: {
-          type: AccountType.EXPENSE,
-        },
+        type: TransactionType.EXPENSE, // 使用交易类型而不是账户类别类型，与 Dashboard API 保持一致
       },
       include: {
         currency: true,
       },
+    })
+
+    console.log('FIRE API: 过去12个月支出查询详情', {
+      twelveMonthsAgo: twelveMonthsAgo.toISOString(),
+      now: now.toISOString(),
+      expenseTransactionsCount: expenseTransactions.length,
+      totalAmount: expenseTransactions.reduce(
+        (sum, t) => sum + parseFloat(t.amount.toString()),
+        0
+      ),
     })
 
     // 计算总开销（转换为本位币）
@@ -90,6 +98,12 @@ export async function GET(_request: NextRequest) {
         .filter(expense => expense.currency === baseCurrency.code)
         .reduce((sum, expense) => sum + expense.amount, 0)
     }
+
+    console.log('FIRE API: 过去12个月支出计算结果', {
+      totalExpenses,
+      baseCurrency: baseCurrency.code,
+      expenseAmountsCount: expenseAmounts.length,
+    })
 
     // 计算当前净资产（使用与 Dashboard 相同的逻辑）
     const accounts = await prisma.account.findMany({
@@ -210,8 +224,10 @@ export async function GET(_request: NextRequest) {
               gte: oneYearAgo,
               lte: now,
             },
-            category: {
-              type: AccountType.INCOME,
+            account: {
+              category: {
+                type: AccountType.INCOME,
+              },
             },
           },
           include: {
@@ -292,8 +308,10 @@ export async function GET(_request: NextRequest) {
               gte: sixMonthsAgo,
               lte: now,
             },
-            category: {
-              type: AccountType.INCOME,
+            account: {
+              category: {
+                type: AccountType.INCOME,
+              },
             },
           },
           include: {
@@ -307,8 +325,10 @@ export async function GET(_request: NextRequest) {
               gte: sixMonthsAgo,
               lte: now,
             },
-            category: {
-              type: AccountType.EXPENSE,
+            account: {
+              category: {
+                type: AccountType.EXPENSE,
+              },
             },
           },
           include: {

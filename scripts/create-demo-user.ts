@@ -557,7 +557,6 @@ async function createDemoTransactions(
       data: {
         userId,
         accountId: txn.accountId,
-        categoryId: txn.categoryId,
         currencyId: txn.currencyId,
         type: txn.type as any,
         amount: txn.amount,

@@ -3,7 +3,10 @@ import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import AppLayout from '@/components/features/layout/AppLayout'
 import CategoryDetailView from '@/components/features/categories/CategoryDetailView'
-import { TransactionType, convertPrismaAccountType } from '@/types/core/constants'
+import {
+  TransactionType,
+  convertPrismaAccountType,
+} from '@/types/core/constants'
 import { ConstantsManager } from '@/lib/utils/constants-manager'
 import type { SerializedCategoryWithTransactions } from '@/components/features/categories/types'
 import type { SerializedTransactionWithBasic } from '@/types/database'
@@ -25,7 +28,6 @@ type PrismaTransactionWithRelations = {
   createdAt: Date
   updatedAt: Date
   userId: string
-  categoryId: string
   currencyCode: string
   accountId: string
   recurringTransactionId?: string | null
@@ -39,11 +41,6 @@ type PrismaTransactionWithRelations = {
     decimalPlaces: number
     isCustom: boolean
     createdBy: string | null
-  }
-  category: {
-    id: string
-    name: string
-    type: AccountType
   }
   tags: {
     id: string
@@ -87,20 +84,26 @@ const serializeTransactions = (
           category: transaction.account.category
             ? {
                 name: transaction.account.category.name,
-                type: convertPrismaAccountType(transaction.account.category.type),
+                type: convertPrismaAccountType(
+                  transaction.account.category.type
+                ),
               }
             : { name: 'Unknown', type: convertPrismaAccountType('ASSET') },
         }
       : {
           id: 'unknown',
           name: 'Unknown Account',
-          category: { name: 'Unknown', type: convertPrismaAccountType('ASSET') },
+          category: {
+            name: 'Unknown',
+            type: convertPrismaAccountType('ASSET'),
+          },
         },
-    category: transaction.category
+    // 分类信息现在通过账户获取
+    category: transaction.account?.category
       ? {
-          id: transaction.category.id,
-          name: transaction.category.name,
-          type: convertPrismaAccountType(transaction.category.type),
+          id: transaction.account.category.id,
+          name: transaction.account.category.name,
+          type: convertPrismaAccountType(transaction.account.category.type),
         }
       : {
           id: 'unknown',
@@ -163,7 +166,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
               transactions: {
                 include: {
                   currency: true,
-                  category: true,
                   tags: {
                     include: {
                       tag: true,
@@ -184,7 +186,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           transactions: {
             include: {
               currency: true,
-              category: true,
               tags: {
                 include: {
                   tag: true,
@@ -227,8 +228,10 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const allTransactions = await prisma.transaction.findMany({
     where: {
       userId: user.id,
-      categoryId: {
-        in: allCategoryIds,
+      account: {
+        categoryId: {
+          in: allCategoryIds,
+        },
       },
     },
     include: {
@@ -238,7 +241,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         },
       },
       currency: true,
-      category: true,
       tags: {
         include: {
           tag: true,
@@ -279,7 +281,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   ): SerializedCategoryWithTransactions =>
     ({
       ...cat,
-      type: cat.type ? convertPrismaAccountType(cat.type as string) : convertPrismaAccountType('ASSET'),
+      type: cat.type
+        ? convertPrismaAccountType(cat.type as string)
+        : convertPrismaAccountType('ASSET'),
       createdAt: (cat.createdAt as Date).toISOString(),
       updatedAt: (cat.updatedAt as Date).toISOString(),
       parentId: (cat.parentId as string | null) || undefined,
@@ -416,15 +420,19 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                 id: userSettings.id,
                 userId: userSettings.userId,
                 baseCurrencyId: userSettings.baseCurrencyId,
-                language: ConstantsManager.convertPrismaLanguage(userSettings.language),
+                language: ConstantsManager.convertPrismaLanguage(
+                  userSettings.language
+                ),
                 theme: ConstantsManager.convertPrismaTheme(userSettings.theme),
                 baseCurrency: userSettings.baseCurrency || undefined,
                 createdAt: userSettings.createdAt,
                 updatedAt: userSettings.updatedAt,
                 fireSWR: userSettings.fireSWR,
                 futureDataDays: userSettings.futureDataDays,
-                autoUpdateExchangeRates: (userSettings as any).autoUpdateExchangeRates || false,
-                lastExchangeRateUpdate: (userSettings as any).lastExchangeRateUpdate || null,
+                autoUpdateExchangeRates:
+                  (userSettings as any).autoUpdateExchangeRates || false,
+                lastExchangeRateUpdate:
+                  (userSettings as any).lastExchangeRateUpdate || null,
               }
             : undefined,
         }}

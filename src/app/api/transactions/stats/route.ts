@@ -52,7 +52,11 @@ export async function GET(request: NextRequest) {
       // 获取该分类及其所有后代分类的ID
       const descendantIds = await getDescendantCategoryIds(categoryId)
       const allCategoryIds = [categoryId, ...descendantIds]
-      baseConditions.push({ categoryId: { in: allCategoryIds } })
+      baseConditions.push({
+        account: {
+          categoryId: { in: allCategoryIds },
+        },
+      })
     }
 
     if (currencyId) {

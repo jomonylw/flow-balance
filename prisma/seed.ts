@@ -508,7 +508,6 @@ async function main() {
     data: {
       userId: user1.id,
       accountId: salaryAccount.id,
-      categoryId: incomeCategory.id,
       currencyId: currencies[0]!.id, // USD
       type: TransactionType.INCOME,
       amount: 5000,
@@ -524,7 +523,6 @@ async function main() {
     data: {
       userId: user1.id,
       accountId: foodExpenseAccount.id,
-      categoryId: foodCategory.id,
       currencyId: currencies[0]!.id, // USD
       type: TransactionType.EXPENSE,
       amount: 25.5,
@@ -540,7 +538,6 @@ async function main() {
     data: {
       userId: user1.id,
       accountId: transportExpenseAccount.id,
-      categoryId: transportCategory.id,
       currencyId: currencies[0]!.id, // USD
       type: TransactionType.EXPENSE,
       amount: 15.0,
@@ -556,7 +553,6 @@ async function main() {
     data: {
       userId: user1.id,
       accountId: savingsAccount.id,
-      categoryId: incomeCategory.id,
       currencyId: currencies[0]!.id, // USD
       type: TransactionType.INCOME,
       amount: 1000,
@@ -569,7 +565,6 @@ async function main() {
     data: {
       userId: user1.id,
       accountId: shoppingExpenseAccount.id,
-      categoryId: shoppingCategory.id,
       currencyId: currencies[0]!.id, // USD
       type: TransactionType.EXPENSE,
       amount: 89.99,
@@ -586,7 +581,6 @@ async function main() {
     data: {
       userId: user1.id,
       accountId: salaryAccount.id,
-      categoryId: incomeCategory.id,
       currencyId: currencies[1]!.id, // EUR
       type: TransactionType.INCOME,
       amount: 500,
@@ -599,7 +593,6 @@ async function main() {
     data: {
       userId: user1.id,
       accountId: foodExpenseAccount.id,
-      categoryId: foodCategory.id,
       currencyId: currencies[2]!.id, // CNY
       type: TransactionType.EXPENSE,
       amount: 150,
@@ -612,7 +605,6 @@ async function main() {
     data: {
       userId: user1.id,
       accountId: investmentAccount.id,
-      categoryId: incomeCategory.id,
       currencyId: currencies[3]!.id, // JPY
       type: TransactionType.INCOME,
       amount: 50000,

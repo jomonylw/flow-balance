@@ -12,7 +12,6 @@ const updateTemplateSchema = z.object({
     .max(100, '模板名称不能超过100个字符')
     .optional(),
   accountId: z.string().min(1, '账户ID不能为空').optional(),
-  categoryId: z.string().min(1, '分类ID不能为空').optional(),
   currencyCode: z.string().min(1, '货币代码不能为空').optional(),
   type: z
     .enum([TransactionType.INCOME, TransactionType.EXPENSE], {
@@ -51,13 +50,6 @@ export async function GET(
           select: {
             id: true,
             name: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
           },
         },
         currency: {
@@ -164,8 +156,10 @@ export async function PUT(
       const transactionType = validatedData.type || existingTemplate.type
       const accountType = account.category.type
       if (
-        (transactionType === TransactionType.INCOME && accountType !== 'INCOME') ||
-        (transactionType === TransactionType.EXPENSE && accountType !== 'EXPENSE')
+        (transactionType === TransactionType.INCOME &&
+          accountType !== 'INCOME') ||
+        (transactionType === TransactionType.EXPENSE &&
+          accountType !== 'EXPENSE')
       ) {
         return NextResponse.json(
           { success: false, error: '交易类型与账户类型不匹配' },
@@ -174,22 +168,38 @@ export async function PUT(
       }
     }
 
+    // 准备更新数据，处理货币代码转换
+    const updateData: any = { ...validatedData }
+
+    // 如果提供了货币代码，需要转换为货币ID
+    if (validatedData.currencyCode) {
+      const currency = await prisma.currency.findFirst({
+        where: {
+          code: validatedData.currencyCode,
+          OR: [{ createdBy: user.id }, { createdBy: null }],
+        },
+      })
+
+      if (!currency) {
+        return NextResponse.json(
+          { success: false, error: '货币不存在' },
+          { status: 400 }
+        )
+      }
+
+      updateData.currencyId = currency.id
+      delete updateData.currencyCode
+    }
+
     // 更新模板
     const template = await prisma.transactionTemplate.update({
       where: { id: id },
-      data: validatedData,
+      data: updateData,
       include: {
         account: {
           select: {
             id: true,
             name: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
           },
         },
         currency: {
@@ -231,15 +241,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    console.log(`[DELETE TRANSACTION TEMPLATE] 开始删除交易模板，ID: ${id}`)
+
     const user = await getCurrentUser()
     if (!user) {
+      console.log('[DELETE TRANSACTION TEMPLATE] 用户未授权')
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       )
     }
 
-    const { id } = await params
+    console.log(`[DELETE TRANSACTION TEMPLATE] 用户ID: ${user.id}`)
+
     // 检查模板是否存在且属于当前用户
     const existingTemplate = await prisma.transactionTemplate.findFirst({
       where: {
@@ -249,23 +264,60 @@ export async function DELETE(
     })
 
     if (!existingTemplate) {
+      console.log(
+        `[DELETE TRANSACTION TEMPLATE] 模板不存在或不属于用户，templateId: ${id}, userId: ${user.id}`
+      )
       return NextResponse.json(
-        { success: false, error: '模板不存在或无权限访问' },
+        { success: false, error: '交易模板不存在或无权限访问' },
         { status: 404 }
       )
     }
+
+    console.log(
+      `[DELETE TRANSACTION TEMPLATE] 找到模板: ${existingTemplate.name}`
+    )
 
     // 删除模板
     await prisma.transactionTemplate.delete({
       where: { id: id },
     })
 
-    return NextResponse.json({ success: true, message: '模板删除成功' })
+    console.log(
+      `[DELETE TRANSACTION TEMPLATE] 交易模板删除成功: ${existingTemplate.name}`
+    )
+    return NextResponse.json({ success: true, message: '交易模板删除成功' })
   } catch (error) {
-    console.error('Delete template error:', error)
+    console.error(
+      '[DELETE TRANSACTION TEMPLATE] 删除交易模板时发生错误:',
+      error
+    )
+
+    // 提供更详细的错误信息
+    let errorMessage = '删除交易模板失败'
+    let statusCode = 500
+
+    if (error instanceof Error) {
+      console.error('[DELETE TRANSACTION TEMPLATE] 错误详情:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      })
+
+      // 检查是否是特定的业务错误
+      if (error.message.includes('Foreign key constraint')) {
+        errorMessage = '删除失败：该模板正在被其他数据引用，请先删除相关记录'
+        statusCode = 400
+      } else if (error.message.includes('Record to delete does not exist')) {
+        errorMessage = '删除失败：交易模板不存在'
+        statusCode = 404
+      } else {
+        errorMessage = `删除失败：${error.message}`
+      }
+    }
+
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: errorMessage },
+      { status: statusCode }
     )
   }
 }

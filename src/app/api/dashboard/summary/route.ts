@@ -195,8 +195,11 @@ export async function GET() {
         },
       },
       include: {
-        account: true,
-        category: true,
+        account: {
+          include: {
+            category: true,
+          },
+        },
         currency: true,
       },
       orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
