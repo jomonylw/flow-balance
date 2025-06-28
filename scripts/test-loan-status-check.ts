@@ -54,7 +54,7 @@ async function testLoanStatusCheck() {
       data: { isActive: true }
     })
 
-    const { LoanContractService } = await import('../src/lib/services/loan-contract.service')
+    // const { LoanContractService } = await import('../src/lib/services/loan-contract.service')
     
     // 模拟处理逻辑（不实际执行，只检查状态）
     const activeContract = await prisma.loanContract.findUnique({

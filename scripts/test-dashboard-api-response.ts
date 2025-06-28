@@ -4,14 +4,14 @@
  */
 
 import { PrismaClient } from '@prisma/client'
-import { getCurrentUser } from '../src/lib/services/auth.service'
-import { 
+// import { getCurrentUser } from '../src/lib/services/auth.service'
+import {
   calculateTotalBalanceWithConversion,
   calculateAccountBalance,
-  validateAccountTypes,
+  // validateAccountTypes,
 } from '../src/lib/services/account.service'
 import { TransactionType, AccountType } from '../src/types/core/constants'
-import { getDaysAgoDateRange } from '../src/lib/utils/date-range'
+// import { getDaysAgoDateRange } from '../src/lib/utils/date-range'
 
 const prisma = new PrismaClient()
 
