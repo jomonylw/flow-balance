@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/response'
 import { PAGINATION } from '@/lib/constants/app-config'
 import { Prisma, TransactionType } from '@prisma/client'
+import { normalizeDateRange } from '@/lib/utils/date-range'
 
 export async function GET(
   request: NextRequest,
@@ -56,13 +57,7 @@ export async function GET(
     }
 
     if (dateFrom || dateTo) {
-      const dateCondition: Record<string, Date> = {}
-      if (dateFrom) {
-        dateCondition.gte = new Date(dateFrom)
-      }
-      if (dateTo) {
-        dateCondition.lte = new Date(dateTo)
-      }
+      const { dateCondition } = normalizeDateRange(dateFrom, dateTo)
       baseConditions.push({ date: dateCondition })
     }
 

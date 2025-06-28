@@ -9,6 +9,7 @@ import {
 import { TransactionType, AccountType } from '@/types/core/constants'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import { calculateAccountBalance } from '@/lib/services/account.service'
+import { normalizeEndOfDay } from '@/lib/utils/date-range'
 
 /**
  * 个人资产负债表 API
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const asOfDate = searchParams.get('asOfDate') || new Date().toISOString()
-    const targetDate = new Date(asOfDate)
+    const targetDate = normalizeEndOfDay(asOfDate)
 
     // 获取用户设置以确定本位币
     const userSettings = await prisma.userSettings.findUnique({

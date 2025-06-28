@@ -2,14 +2,27 @@
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import type { SimpleCurrency } from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
+interface CAGRDetails {
+  startDate: string
+  endDate: string
+  years: number
+  initialNetWorth: number
+  currentNetWorth: number
+  totalNetContribution: number
+  adjustedGrowth: number
+  message: string
+}
+
 interface RealitySnapshotData {
   past12MonthsExpenses: number
   currentNetWorth: number
   historicalAnnualReturn: number
   monthlyNetInvestment: number
+  cagrDetails?: CAGRDetails | null
 }
 
 interface RealitySnapshotProps {
@@ -25,6 +38,7 @@ export default function RealitySnapshot({
 }: RealitySnapshotProps) {
   const { t } = useLanguage()
   const { formatCurrency } = useUserCurrencyFormatter()
+  const { formatDate } = useUserDateFormatter()
 
   const handleCalibrate = (param: string) => {
     // 滚动到对应的控制面板参数
@@ -125,9 +139,20 @@ export default function RealitySnapshot({
             <div className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
               {formatCurrency(data.past12MonthsExpenses, currency.code)}
             </div>
-            <div className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-              {formatCurrency(data.past12MonthsExpenses / 12, currency.code)}
-              {t('fire.units.per.month')}
+
+            {/* 月平均开销 - 与CAGR样式统一 */}
+            <div className='mt-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50'>
+              <div className='flex items-center justify-between text-xs'>
+                <span className='text-gray-600 dark:text-gray-400 font-medium'>
+                  {t('fire.reality.snapshot.monthly.average')}
+                </span>
+                <span className='text-gray-800 dark:text-gray-200 font-mono font-semibold'>
+                  {formatCurrency(data.past12MonthsExpenses / 12, currency.code)}
+                  <span className='text-gray-500 dark:text-gray-400 font-normal ml-1'>
+                    {t('fire.units.per.month')}
+                  </span>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -202,15 +227,13 @@ export default function RealitySnapshot({
           </div>
         </div>
 
-        {/* 历史年化回报率 */}
+        {/* 历史年化回报率 (CAGR) */}
         <div className='bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700 flex flex-col'>
           <div className='mb-3'>
             <h3 className='text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
               {t('fire.reality.snapshot.historical.return')}
+              {/* <span className='text-xs text-gray-500 dark:text-gray-400 ml-1'>(CAGR)</span> */}
             </h3>
-            {/* <p className='text-xs text-gray-500 dark:text-gray-400'>
-              ({t('fire.reality.snapshot.p4.source')})
-            </p> */}
           </div>
 
           <div className='mb-3'>
@@ -224,10 +247,63 @@ export default function RealitySnapshot({
               {data.historicalAnnualReturn >= 0 ? '+' : ''}
               {data.historicalAnnualReturn.toFixed(1)}%
             </div>
+
+            {/* CAGR详细信息 */}
+            {data.cagrDetails && (
+              <div className='mt-2 p-2  bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50'>
+                <div className='grid grid-cols-1 gap-1.5 text-xs'>
+                  {/* 计算期间 */}
+                  <div className='flex items-center justify-between'>
+                    <span className='text-gray-600 dark:text-gray-400 font-medium'>
+                      {t('fire.reality.snapshot.cagr.period')}
+                    </span>
+                    <span className='text-gray-800 dark:text-gray-200 font-mono'>
+                      {formatDate(new Date(data.cagrDetails.startDate))} {t('fire.reality.snapshot.cagr.to.now')}
+                    </span>
+                  </div>
+
+                  {/* 历史年数 */}
+                  <div className='flex items-center justify-between'>
+                    <span className='text-gray-600 dark:text-gray-400 font-medium'>
+                      {t('fire.reality.snapshot.cagr.history')}
+                    </span>
+                    <span className='text-gray-800 dark:text-gray-200 font-mono'>
+                      {data.cagrDetails.years.toFixed(1)}{t('fire.units.years')}
+                    </span>
+                  </div>
+
+                  {/* 分隔线 */}
+                  <div className='border-t border-gray-200 dark:border-gray-600 my-1'></div>
+
+                  {/* 初始净资产 */}
+                  <div className='flex items-center justify-between'>
+                    <span className='text-gray-600 dark:text-gray-400 font-medium'>
+                      {t('fire.reality.snapshot.cagr.initial.net.worth')}
+                    </span>
+                    <span className='text-gray-800 dark:text-gray-200 font-mono font-semibold'>
+                      {formatCurrency(data.cagrDetails.initialNetWorth, currency.code)}
+                    </span>
+                  </div>
+
+                  {/* 投资增值 */}
+                  <div className='flex items-center justify-between'>
+                    <span className='text-gray-600 dark:text-gray-400 font-medium'>
+                      {t('fire.reality.snapshot.cagr.investment.growth')}
+                    </span>
+                    <span className='text-green-600 dark:text-green-400 font-mono font-semibold'>
+                      +{formatCurrency(data.cagrDetails.adjustedGrowth, currency.code)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className='text-xs text-gray-500 dark:text-gray-400 mb-4 flex-grow'>
-            {t('fire.reality.snapshot.return.source')}
+            {data.cagrDetails
+              ? t('fire.reality.snapshot.cagr.description')
+              : t('fire.reality.snapshot.return.source')
+            }
           </div>
 
           <div className='flex justify-end mt-auto'>

@@ -7,6 +7,7 @@ import {
   unauthorizedResponse,
 } from '@/lib/api/response'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
+import { normalizeDateRange } from '@/lib/utils/date-range'
 
 /**
  * 个人现金流量表 API
@@ -40,13 +41,12 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取时间范围内的所有收入和支出交易
+    const { dateCondition } = normalizeDateRange(startDate, endDate)
+
     const transactions = await prisma.transaction.findMany({
       where: {
         userId: user.id,
-        date: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
+        date: dateCondition,
         type: {
           in: ['INCOME', 'EXPENSE'],
         },

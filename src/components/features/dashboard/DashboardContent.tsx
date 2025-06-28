@@ -7,6 +7,7 @@ import NetWorthChart from './NetWorthChart'
 import CashFlowChart from './CashFlowChart'
 import ExchangeRateAlert from './ExchangeRateAlert'
 import SystemUpdateCard from './SystemUpdateCard'
+import CurrencyBreakdown from './CurrencyBreakdown'
 import PageContainer from '@/components/ui/layout/PageContainer'
 import TranslationLoader from '@/components/ui/data-display/TranslationLoader'
 import { DashboardSkeleton } from '@/components/ui/data-display/page-skeletons'
@@ -447,6 +448,14 @@ export default function DashboardContent({
                         : 0,
                     }).replace(/\d+\s*/, '')}
                   </p>
+                  {/* 分货币信息 */}
+                  {summaryData.totalAssets?.byCurrency && (
+                    <CurrencyBreakdown
+                      byCurrency={summaryData.totalAssets.byCurrency}
+                      type="assets"
+                      baseCurrency={summaryData.totalAssets.currency}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -501,6 +510,14 @@ export default function DashboardContent({
                         : 0,
                     }).replace(/\d+\s*/, '')}
                   </p>
+                  {/* 分货币信息 */}
+                  {summaryData.totalLiabilities?.byCurrency && (
+                    <CurrencyBreakdown
+                      byCurrency={summaryData.totalLiabilities.byCurrency}
+                      type="liabilities"
+                      baseCurrency={summaryData.totalLiabilities.currency}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -585,8 +602,29 @@ export default function DashboardContent({
                           : 'text-red-600'
                     }`}
                   >
-                    {t('dashboard.assets.minus.liabilities')}
+                    ({t('dashboard.assets.minus.liabilities')})
                   </p>
+                  {/* 资产负债率 */}
+                  {summaryData.totalAssets && summaryData.totalLiabilities && (
+                    <p
+                      className={`text-xs mt-1 flex justify-between ${
+                        summaryData.netWorth.amount >= 0
+                          ? resolvedTheme === 'dark'
+                            ? 'text-green-400'
+                            : 'text-green-600'
+                          : resolvedTheme === 'dark'
+                            ? 'text-red-400'
+                            : 'text-red-600'
+                      }`}
+                    >
+                      <span>{t('dashboard.debt.to.asset.ratio')}{':'}</span>
+                      <span>
+                        {summaryData.totalAssets.amount > 0
+                          ? ((summaryData.totalLiabilities.amount / summaryData.totalAssets.amount) * 100).toFixed(2)
+                          : '0.00'}%
+                      </span>
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1003,7 +1041,7 @@ export default function DashboardContent({
           )}
 
           {/* 数据质量评分 */}
-          {validationResult && validationResult.score !== undefined && (
+          {/* {validationResult && validationResult.score !== undefined && (
             <div className='mb-4 sm:mb-6'>
               <div
                 className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
@@ -1109,7 +1147,7 @@ export default function DashboardContent({
                 )}
               </div>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* 快速交易表单模态框 */}

@@ -265,9 +265,7 @@ export default function AccountTreeItem({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: account.name,
-          categoryId: newCategoryId,
-          description: account.description,
+          categoryId: newCategoryId, // 只更新分类ID
         }),
       })
 

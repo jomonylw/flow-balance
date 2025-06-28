@@ -13,6 +13,7 @@ import {
 } from '@/lib/services/currency.service'
 import type { Prisma } from '@prisma/client'
 import { AccountType, TransactionType } from '@/types/core/constants'
+import { normalizeEndOfDay, normalizeStartOfDay } from '@/lib/utils/date-range'
 
 // 这个函数已经不需要了，因为我们现在使用统一的 calculateAccountBalance 函数
 // 保留注释以便理解之前的逻辑
@@ -144,30 +145,19 @@ export async function GET(request: NextRequest) {
 
       // 获取当前日期，确保不包含未来的交易记录
       const now = new Date()
+      const nowEndOfDay = normalizeEndOfDay(now)
 
       if (accountType === 'ASSET' || accountType === 'LIABILITY') {
         // 存量账户：获取最新余额（截止到当前日期）
         balances = calculateAccountBalance(serializedAccount, {
-          asOfDate: now,
+          asOfDate: nowEndOfDay,
         })
       } else {
         // 流量账户：计算当前月份的流量汇总
         // 使用期间计算，默认为当前月份，但不超过当前日期
-        const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
-        const periodEnd = new Date(
-          Math.min(
-            now.getTime(),
-            new Date(
-              now.getFullYear(),
-              now.getMonth() + 1,
-              0,
-              23,
-              59,
-              59,
-              999
-            ).getTime()
-          )
-        )
+        const periodStart = normalizeStartOfDay(new Date(now.getFullYear(), now.getMonth(), 1))
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        const periodEnd = new Date(Math.min(nowEndOfDay.getTime(), normalizeEndOfDay(monthEnd).getTime()))
 
         balances = calculateAccountBalance(serializedAccount, {
           asOfDate: now, // 添加截止日期，确保不包含未来交易

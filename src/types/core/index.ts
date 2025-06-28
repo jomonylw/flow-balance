@@ -591,21 +591,41 @@ export interface ValidationResult {
   }
 }
 
+/** 分货币信息 */
+export interface ByCurrencyInfo {
+  originalAmount: number
+  convertedAmount: number
+  currency: { code: string; symbol: string; name: string }
+  exchangeRate: number
+  accountCount: number
+  success: boolean
+}
+
 /** 仪表板汇总数据 */
 export interface DashboardSummary {
   totalAssets: {
     amount: number
     currency: SimpleCurrency
     accountCount: number
+    hasConversionErrors?: boolean
+    byCurrency?: Record<string, ByCurrencyInfo>
   }
   totalLiabilities: {
     amount: number
     currency: SimpleCurrency
     accountCount: number
+    hasConversionErrors?: boolean
+    byCurrency?: Record<string, ByCurrencyInfo>
   }
   netWorth: {
     amount: number
     currency: SimpleCurrency
+    hasConversionErrors?: boolean
+    byCurrency?: Record<string, {
+      currencyCode: string
+      amount: number
+      currency: { code: string; symbol: string; name: string }
+    }>
   }
   recentActivity: {
     summaryInBaseCurrency: {

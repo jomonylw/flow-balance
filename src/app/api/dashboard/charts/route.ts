@@ -10,6 +10,7 @@ import { TransactionType, AccountType } from '@/types/core/constants'
 import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
+import { normalizeEndOfDay } from '@/lib/utils/date-range'
 
 /**
  * Dashboard 图表数据 API
@@ -120,7 +121,7 @@ export async function GET(request: NextRequest) {
     for (let i = actualMonths - 1; i >= 0; i--) {
       const targetDate = subMonths(currentDate, i)
       const monthStart = startOfMonth(targetDate)
-      const monthEnd = endOfMonth(targetDate)
+      const monthEnd = normalizeEndOfDay(endOfMonth(targetDate))
       const monthLabel = format(targetDate, 'yyyy-MM')
 
       try {

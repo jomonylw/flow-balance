@@ -9,6 +9,8 @@ import {
 import { AccountType, TransactionType } from '@/types/core/constants'
 import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
+import { normalizeEndOfDay, getDaysAgoDateRange } from '@/lib/utils/date-range'
+import { calculateHistoricalCAGR } from '@/lib/services/cagr.service'
 
 /**
  * FIRE 数据 API
@@ -39,17 +41,19 @@ export async function GET(_request: NextRequest) {
 
     // 获取当前日期，确保不包含未来的交易记录
     const now = new Date()
+    const nowEndOfDay = normalizeEndOfDay(now)
 
     // 计算过去12个月的总开销
     const twelveMonthsAgo = new Date()
     twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1)
+    twelveMonthsAgo.setHours(0, 0, 0, 0) // 设置为12个月前的开始时间
 
     const expenseTransactions = await prisma.transaction.findMany({
       where: {
         userId: user.id,
         date: {
           gte: twelveMonthsAgo,
-          lte: now, // 确保不包含未来交易
+          lte: nowEndOfDay, // 确保不包含未来交易，包含今天的所有交易
         },
         type: TransactionType.EXPENSE, // 使用交易类型而不是账户类别类型，与 Dashboard API 保持一致
       },
@@ -173,131 +177,30 @@ export async function GET(_request: NextRequest) {
       totalAssetsResult.totalInBaseCurrency -
       totalLiabilitiesResult.totalInBaseCurrency
 
-    // 计算历史年化回报率（基于净资产变化）
+    // 计算历史年化回报率（基于净资产的CAGR）
     let historicalAnnualReturn = 0.0 // 默认值
 
     try {
-      // 计算一年前的净资产
-      const oneYearAgo = new Date()
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+      // 使用新的CAGR计算方法
+      const cagrResult = await calculateHistoricalCAGR(
+        user.id,
+        assetAccounts,
+        liabilityAccounts,
+        baseCurrency
+      )
 
-      console.log('FIRE API: 计算历史回报率', {
-        currentNetWorth,
-        oneYearAgo: oneYearAgo.toISOString(),
-        assetAccountsCount: assetAccounts.length,
-        liabilityAccountsCount: liabilityAccounts.length,
-      })
+      console.log('FIRE API: CAGR计算结果', cagrResult)
 
-      const [pastAssetsResult, pastLiabilitiesResult] = await Promise.all([
-        calculateTotalBalanceWithConversion(
-          user.id,
-          assetAccounts,
-          baseCurrency,
-          { asOfDate: oneYearAgo }
-        ),
-        calculateTotalBalanceWithConversion(
-          user.id,
-          liabilityAccounts,
-          baseCurrency,
-          { asOfDate: oneYearAgo }
-        ),
-      ])
-
-      const pastNetWorth =
-        pastAssetsResult.totalInBaseCurrency -
-        pastLiabilitiesResult.totalInBaseCurrency
-
-      console.log('FIRE API: 历史净资产计算结果', {
-        pastAssets: pastAssetsResult.totalInBaseCurrency,
-        pastLiabilities: pastLiabilitiesResult.totalInBaseCurrency,
-        pastNetWorth,
-        currentNetWorth,
-      })
-
-      // 如果有历史数据且净资产为正，计算年化回报率
-      if (pastNetWorth > 0 && Math.abs(currentNetWorth - pastNetWorth) > 0.01) {
-        // 计算期间的净投入（收入 - 支出）
-        const incomeTransactions = await prisma.transaction.findMany({
-          where: {
-            userId: user.id,
-            date: {
-              gte: oneYearAgo,
-              lte: now,
-            },
-            account: {
-              category: {
-                type: AccountType.INCOME,
-              },
-            },
-          },
-          include: {
-            currency: true,
-          },
-        })
-
-        const incomeAmounts = incomeTransactions.map(transaction => ({
-          amount:
-            typeof transaction.amount === 'number'
-              ? transaction.amount
-              : parseFloat(transaction.amount.toString()),
-          currency: transaction.currency.code,
-        }))
-
-        let totalIncome = 0
-        try {
-          const incomeConversions = await convertMultipleCurrencies(
-            user.id,
-            incomeAmounts,
-            baseCurrency.code
-          )
-          totalIncome = incomeConversions.reduce(
-            (sum, result) =>
-              sum +
-              (result.success ? result.convertedAmount : result.originalAmount),
-            0
-          )
-        } catch (error) {
-          console.error('转换收入金额失败:', error)
-        }
-
-        // 净投入 = 收入 - 支出
-        const netContribution = totalIncome - totalExpenses
-
-        // 调整后的净资产变化 = 当前净资产 - 过去净资产 - 净投入
-        const adjustedGrowth = currentNetWorth - pastNetWorth - netContribution
-
-        console.log('FIRE API: 回报率计算详情', {
-          totalIncome,
-          totalExpenses,
-          netContribution,
-          adjustedGrowth,
-          pastNetWorth,
-          currentNetWorth,
-        })
-
-        // 计算年化回报率：(调整后增长 / 初始净资产) * 100
-        if (pastNetWorth > 0) {
-          historicalAnnualReturn = (adjustedGrowth / pastNetWorth) * 100
-          // 限制在合理范围内 (-50% 到 100%)
-          historicalAnnualReturn = Math.max(
-            -50,
-            Math.min(100, historicalAnnualReturn)
-          )
-
-          console.log('FIRE API: 计算得出的历史回报率', {
-            rawReturn: (adjustedGrowth / pastNetWorth) * 100,
-            finalReturn: historicalAnnualReturn,
-          })
-        }
+      if (cagrResult.isValid) {
+        historicalAnnualReturn = cagrResult.cagr
       }
     } catch (error) {
-      console.error('计算历史回报率失败:', error)
+      console.error('计算历史CAGR失败:', error)
       // 保持默认值
     }
 
     // 计算过去6个月的平均月投入
-    const sixMonthsAgo = new Date()
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    const { startDate: sixMonthsAgo, endDate: sixMonthsEndDate } = getDaysAgoDateRange(180) // 约6个月
 
     const [recentIncomeTransactions, recentExpenseTransactions] =
       await Promise.all([
@@ -306,7 +209,7 @@ export async function GET(_request: NextRequest) {
             userId: user.id,
             date: {
               gte: sixMonthsAgo,
-              lte: now,
+              lte: sixMonthsEndDate,
             },
             account: {
               category: {
@@ -323,7 +226,7 @@ export async function GET(_request: NextRequest) {
             userId: user.id,
             date: {
               gte: sixMonthsAgo,
-              lte: now,
+              lte: sixMonthsEndDate,
             },
             account: {
               category: {
@@ -400,6 +303,35 @@ export async function GET(_request: NextRequest) {
       (totalIncomeRecent - totalExpensesRecent) / 6
     )
 
+
+
+    // 获取CAGR详细信息
+    let cagrDetails = null
+    try {
+      const cagrResult = await calculateHistoricalCAGR(
+        user.id,
+        assetAccounts,
+        liabilityAccounts,
+        baseCurrency
+      )
+      if (cagrResult.isValid) {
+        cagrDetails = {
+          startDate: cagrResult.startDate?.toISOString(),
+          endDate: cagrResult.endDate.toISOString(),
+          years: cagrResult.years,
+          initialNetWorth: cagrResult.initialNetWorth,
+          currentNetWorth: cagrResult.currentNetWorth,
+          totalNetContribution: cagrResult.totalNetContribution,
+          adjustedGrowth: cagrResult.adjustedGrowth,
+          message: cagrResult.message,
+        }
+      }
+    } catch (error) {
+      console.error('获取CAGR详细信息失败:', error)
+    }
+
+
+
     // 返回 FIRE 计算基础数据
     return successResponse({
       realitySnapshot: {
@@ -407,6 +339,7 @@ export async function GET(_request: NextRequest) {
         currentNetWorth: currentNetWorth,
         historicalAnnualReturn: historicalAnnualReturn,
         monthlyNetInvestment: monthlyNetInvestment,
+        cagrDetails: cagrDetails,
       },
       userSettings: {
         fireEnabled: userSettings.fireEnabled,

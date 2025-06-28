@@ -24,38 +24,53 @@ export default function NorthStarMetrics({
 
   // 计算 FIRE 日期 (使用 NPER 函数逻辑)
   const monthlyRate = params.expectedAnnualReturn / 100 / 12
-  const monthlyPayment = params.monthlyInvestment
-  const presentValue = -params.currentInvestableAssets // 必须为负数
+  // const monthlyPayment = params.monthlyInvestment
+  // const presentValue = -params.currentInvestableAssets // 必须为负数
   const futureValue = fireTargetAmount
 
   let monthsToFire = 0
   let isFireDateValid = true
 
-  if (monthlyRate > 0 && monthlyPayment > 0 && futureValue > 0) {
+  if (futureValue > 0) {
     try {
-      // NPER 计算公式
-      const numeratorDividend = futureValue * monthlyRate + monthlyPayment
-      const numeratorDivisor = presentValue * monthlyRate + monthlyPayment
-
-      // 检查对数计算的有效性
-      if (numeratorDividend > 0 && numeratorDivisor > 0) {
-        const numerator = Math.log(numeratorDividend / numeratorDivisor)
-        const denominator = Math.log(1 + monthlyRate)
-
-        if (denominator !== 0) {
-          monthsToFire = numerator / denominator
-
-          // 验证计算结果的有效性
-          if (!isFinite(monthsToFire) || monthsToFire < 0 || monthsToFire > 1200) {
-            // 超过100年或无效值，标记为无效
-            isFireDateValid = false
-            monthsToFire = 0
-          }
-        } else {
-          isFireDateValid = false
-        }
+      // 检查是否已经达到FIRE目标
+      if (params.currentInvestableAssets >= fireTargetAmount) {
+        // 已经达到目标，FIRE日期就是今天
+        monthsToFire = 0
+        isFireDateValid = true
       } else {
-        isFireDateValid = false
+        // 使用与JourneyVisualization相同的计算方法
+        // 通过迭代计算找到达到目标的月数
+
+        const maxMonths = 1200 // 最多计算100年
+        let found = false
+
+        for (let i = 1; i <= maxMonths; i++) {
+          // 计算未来价值: FV = PV * (1 + r)^n + PMT * [((1 + r)^n - 1) / r]
+          const pv = params.currentInvestableAssets
+          const pmt = params.monthlyInvestment
+          const r = monthlyRate
+          const n = i
+
+          let fv = pv * Math.pow(1 + r, n)
+          if (r > 0 && pmt > 0) {
+            fv += pmt * ((Math.pow(1 + r, n) - 1) / r)
+          } else if (pmt > 0) {
+            fv += pmt * n
+          }
+
+          if (fv >= fireTargetAmount) {
+            monthsToFire = i
+            isFireDateValid = true
+            found = true
+            break
+          }
+        }
+
+        if (!found) {
+          isFireDateValid = false
+          monthsToFire = 0
+        }
       }
     } catch (error) {
       console.error('FIRE date calculation error:', error)

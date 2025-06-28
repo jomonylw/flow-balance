@@ -97,6 +97,9 @@ export async function POST(request: NextRequest) {
     })
 
     const updateDateObj = new Date(updateDate)
+    // 确保时间部分为UTC时间的00:00:00，与单笔创建交易保持一致
+    updateDateObj.setUTCHours(0, 0, 0, 0)
+
     const startOfDay = new Date(
       updateDateObj.getFullYear(),
       updateDateObj.getMonth(),

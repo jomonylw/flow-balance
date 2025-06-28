@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
 import SmartPasteRow from './SmartPasteRow'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
+import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import {
   createHistoryManager,
   HistoryUtils,
@@ -67,6 +68,7 @@ export default function SmartPasteGrid({
   const [cellSelection, setCellSelection] = useState<CellSelection>(
     createEmptySelection()
   )
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [isValidating, setIsValidating] = useState(false)
   const [_historyVersion, _setHistoryVersion] = useState(0) // 用于强制重新渲染撤销/重做按钮
   const [validationSummary, setValidationSummary] = useState({
@@ -409,6 +411,29 @@ export default function SmartPasteGrid({
       validateAndUpdateSummary()
     }
   }, [config.validationMode, validateAndUpdateSummary])
+
+  // 处理提交按钮点击
+  const handleSubmitClick = useCallback(() => {
+    // 检查是否有无效行
+    if (validationSummary.invalidRows > 0) {
+      // 有错误，显示确认框
+      setShowSubmitConfirm(true)
+    } else {
+      // 没有错误，直接提交
+      onSubmit?.(internalData)
+    }
+  }, [validationSummary.invalidRows, onSubmit, internalData])
+
+  // 确认提交（忽略错误）
+  const handleConfirmSubmit = useCallback(() => {
+    setShowSubmitConfirm(false)
+    onSubmit?.(internalData)
+  }, [onSubmit, internalData])
+
+  // 取消提交
+  const handleCancelSubmit = useCallback(() => {
+    setShowSubmitConfirm(false)
+  }, [])
 
   // 处理复制事件
   const handleCopy = useCallback(() => {
@@ -1249,17 +1274,15 @@ export default function SmartPasteGrid({
         <div className='flex items-center space-x-2'>
           {/* 提交按钮 */}
           <button
-            onClick={() => onSubmit?.(internalData)}
-            disabled={
-              validationSummary.invalidRows > 0 ||
-              validationSummary.activeRows === 0
-            }
+            onClick={handleSubmitClick}
+            disabled={validationSummary.activeRows === 0}
             className={`
               px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 shadow-sm
               ${
-                validationSummary.invalidRows > 0 ||
                 validationSummary.activeRows === 0
                   ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
+                  : validationSummary.invalidRows > 0
+                  ? 'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white hover:shadow-md hover:scale-105 border border-orange-500/50'
                   : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white hover:shadow-md hover:scale-105 border border-blue-500/50'
               }
             `}
@@ -1278,13 +1301,60 @@ export default function SmartPasteGrid({
               />
             </svg>
             <span>
-              {t('smart.paste.toolbar.submit')} (
+              {validationSummary.invalidRows > 0
+                ? t('smart.paste.toolbar.submit.with.errors', {
+                    valid: validationSummary.validRows + validationSummary.partialRows,
+                    total: validationSummary.activeRows || validationSummary.totalRows,
+                    errors: validationSummary.invalidRows,
+                  })
+                : t('smart.paste.toolbar.submit')} (
               {validationSummary.validRows + validationSummary.partialRows}/
               {validationSummary.activeRows || validationSummary.totalRows})
             </span>
           </button>
         </div>
       </div>
+
+      {/* 提交确认模态框 */}
+      <ConfirmationModal
+        isOpen={showSubmitConfirm}
+        title={t('smart.paste.submit.confirm.title')}
+        message=''
+        confirmLabel={t('smart.paste.submit.confirm.button')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleConfirmSubmit}
+        onCancel={handleCancelSubmit}
+        variant='warning'
+      >
+        <div className='space-y-4'>
+          <p className='text-gray-700 dark:text-gray-300 text-sm'>
+            {t('smart.paste.submit.confirm.message', {
+              valid: validationSummary.validRows + validationSummary.partialRows,
+              invalid: validationSummary.invalidRows,
+              total: validationSummary.activeRows || validationSummary.totalRows,
+            })}
+          </p>
+
+          {/* 验证统计 */}
+          <div className='bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3'>
+            <h5 className='text-sm font-medium text-yellow-900 dark:text-yellow-200 mb-2'>
+              {t('smart.paste.submit.confirm.statistics')}
+            </h5>
+            <div className='grid grid-cols-2 gap-2 text-sm'>
+              <div className='text-green-700 dark:text-green-300'>
+                ✓ {t('smart.paste.submit.confirm.valid')}: {validationSummary.validRows + validationSummary.partialRows}
+              </div>
+              <div className='text-red-700 dark:text-red-300'>
+                ✗ {t('smart.paste.submit.confirm.invalid')}: {validationSummary.invalidRows}
+              </div>
+            </div>
+          </div>
+
+          <p className='text-gray-600 dark:text-gray-400 text-xs'>
+            {t('smart.paste.submit.confirm.note')}
+          </p>
+        </div>
+      </ConfirmationModal>
     </div>
   )
 }

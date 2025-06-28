@@ -82,6 +82,15 @@
   "smart.paste.submit.error": "批量录入失败",
   "smart.paste.submit.error.update": "批量编辑失败",
 
+  "smart.paste.toolbar.submit.with.errors": "提交数据（有错误）",
+  "smart.paste.submit.confirm.title": "确认提交数据",
+  "smart.paste.submit.confirm.message": "检测到 {{invalid}} 行数据存在验证错误，仅会提交 {{valid}} 行有效数据（共 {{total}} 行）。",
+  "smart.paste.submit.confirm.button": "确认提交有效数据",
+  "smart.paste.submit.confirm.statistics": "数据统计",
+  "smart.paste.submit.confirm.valid": "有效数据",
+  "smart.paste.submit.confirm.invalid": "错误数据",
+  "smart.paste.submit.confirm.note": "错误数据将被跳过，不会提交到系统中。",
+
   "smart.paste.keyboard.shortcuts": "键盘快捷键",
   "smart.paste.keyboard.copy": "复制: Ctrl+C / Cmd+C",
   "smart.paste.keyboard.paste": "粘贴: Ctrl+V / Cmd+V",

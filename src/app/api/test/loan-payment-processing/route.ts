@@ -45,9 +45,9 @@ export async function POST(request: NextRequest) {
         // 获取到期的还款记录
         const { prisma } = await import('@/lib/database/prisma')
         const now = new Date()
-        // 标准化日期，确保只比较日期部分，不包含时间
+        // 标准化日期，确保只比较日期部分，不包含时间（UTC时间）
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        today.setHours(23, 59, 59, 999) // 设置为当天的结束时间
+        today.setUTCHours(23, 59, 59, 999) // 设置为当天的结束时间（UTC时间）
 
         const duePayments = await prisma.loanPayment.findMany({
           where: {

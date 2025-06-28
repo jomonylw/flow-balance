@@ -82,6 +82,15 @@
   "smart.paste.submit.error": "Batch entry failed",
   "smart.paste.submit.error.update": "Batch edit failed",
 
+  "smart.paste.toolbar.submit.with.errors": "Submit Data (With Errors)",
+  "smart.paste.submit.confirm.title": "Confirm Data Submission",
+  "smart.paste.submit.confirm.message": "{{invalid}} rows contain validation errors. Only {{valid}} valid rows will be submitted (out of {{total}} total rows).",
+  "smart.paste.submit.confirm.button": "Confirm Submit Valid Data",
+  "smart.paste.submit.confirm.statistics": "Data Statistics",
+  "smart.paste.submit.confirm.valid": "Valid Data",
+  "smart.paste.submit.confirm.invalid": "Error Data",
+  "smart.paste.submit.confirm.note": "Error data will be skipped and not submitted to the system.",
+
   "smart.paste.keyboard.shortcuts": "Keyboard Shortcuts",
   "smart.paste.keyboard.copy": "Copy: Ctrl+C / Cmd+C",
   "smart.paste.keyboard.paste": "Paste: Ctrl+V / Cmd+V",

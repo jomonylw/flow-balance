@@ -129,6 +129,9 @@ export function calculateLoanPaymentDate(
   // 设置为调整后的日期
   result.setDate(adjustedDay)
 
+  // 确保时间部分为UTC时间的00:00:00，与单笔创建交易保持一致
+  result.setUTCHours(0, 0, 0, 0)
+
   return result
 }
 
@@ -146,7 +149,10 @@ export function calculateLoanPaymentDateForPeriod(
 ): Date {
   // 第一期使用合约开始日期
   if (period === 1) {
-    return new Date(contractStartDate)
+    const result = new Date(contractStartDate)
+    // 确保时间部分为UTC时间的00:00:00，与单笔创建交易保持一致
+    result.setUTCHours(0, 0, 0, 0)
+    return result
   }
 
   // 第二期开始使用每月还款日

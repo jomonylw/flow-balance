@@ -1072,9 +1072,9 @@ export class LoanContractService {
     errors: string[]
   }> {
     const now = new Date()
-    // 标准化当前日期，确保时间部分为0
+    // 标准化当前日期，确保时间部分为0（UTC时间）
     let endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    endDate.setHours(0, 0, 0, 0)
+    endDate.setUTCHours(0, 0, 0, 0)
 
     // 如果指定了用户ID，获取用户的未来数据生成设置
     if (userId) {
@@ -1088,15 +1088,15 @@ export class LoanContractService {
         // 扩大处理范围到未来指定天数
         endDate = new Date(now)
         endDate.setDate(endDate.getDate() + daysAhead)
-        // 设置为当天的结束时间，以包含整天
-        endDate.setHours(23, 59, 59, 999)
+        // 设置为当天的结束时间，以包含整天（UTC时间）
+        endDate.setUTCHours(23, 59, 59, 999)
       } else {
-        // 如果不生成未来数据，设置为当天的结束时间
-        endDate.setHours(23, 59, 59, 999)
+        // 如果不生成未来数据，设置为当天的结束时间（UTC时间）
+        endDate.setUTCHours(23, 59, 59, 999)
       }
     } else {
-      // 如果没有指定用户ID，设置为当天的结束时间
-      endDate.setHours(23, 59, 59, 999)
+      // 如果没有指定用户ID，设置为当天的结束时间（UTC时间）
+      endDate.setUTCHours(23, 59, 59, 999)
     }
 
     let processed = 0
@@ -1113,7 +1113,12 @@ export class LoanContractService {
     }
 
     const duePayments = await prisma.loanPayment.findMany({
-      where: whereClause,
+      where: {
+        ...whereClause,
+        loanContract: {
+          isActive: true, // 只处理活跃的贷款合约
+        },
+      },
       include: {
         loanContract: {
           include: {
@@ -1162,6 +1167,12 @@ export class LoanContractService {
     }
 
     const { loanContract } = loanPayment
+
+    // 检查贷款合约是否处于活跃状态
+    if (!loanContract.isActive) {
+      console.log(`贷款合约 ${loanContract.id} 已失效，跳过还款处理`)
+      return false
+    }
 
     try {
       await prisma.$transaction(async tx => {
@@ -1365,13 +1376,25 @@ export class LoanContractService {
           nextPaymentDate.setDate(contractFields.paymentDay)
         }
 
+        // 只有在贷款合约当前为活跃状态时才更新状态
+        // 避免重新激活已被手动设置为失效的合约
+        const updateData: {
+          currentPeriod: number
+          isActive?: boolean
+          nextPaymentDate?: Date
+        } = {
+          currentPeriod: loanPayment.period,
+        }
+
+        // 只有当合约当前为活跃状态时，才根据完成情况更新isActive
+        if (loanContract.isActive) {
+          updateData.isActive = !isCompleted
+          updateData.nextPaymentDate = nextPaymentDate || undefined
+        }
+
         await tx.loanContract.update({
           where: { id: loanContract.id },
-          data: {
-            currentPeriod: loanPayment.period,
-            isActive: !isCompleted,
-            nextPaymentDate: nextPaymentDate || undefined,
-          },
+          data: updateData,
         })
       })
 

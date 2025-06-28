@@ -7,6 +7,7 @@ import {
   unauthorizedResponse,
 } from '@/lib/api/response'
 import { TransactionType, Prisma } from '@prisma/client'
+import { normalizeDateRange } from '@/lib/utils/date-range'
 
 // 辅助函数：递归获取所有后代分类的ID
 async function getDescendantCategoryIds(categoryId: string): Promise<string[]> {
@@ -77,13 +78,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (dateFrom || dateTo) {
-      const dateCondition: Record<string, Date> = {}
-      if (dateFrom) {
-        dateCondition.gte = new Date(dateFrom)
-      }
-      if (dateTo) {
-        dateCondition.lte = new Date(dateTo)
-      }
+      const { dateCondition } = normalizeDateRange(dateFrom, dateTo)
       baseConditions.push({ date: dateCondition })
     }
 

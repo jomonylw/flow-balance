@@ -9,6 +9,7 @@ import {
 import type { Prisma } from '@prisma/client'
 import { calculateAccountBalance } from '@/lib/services/account.service'
 import { AccountType, TransactionType } from '@/types/core/constants'
+import { getMonthsAgoDateRange } from '@/lib/utils/date-range'
 
 export async function GET(request: NextRequest) {
   try {
@@ -79,11 +80,7 @@ async function getStockCategoryMonthlyData(
   baseCurrency: { code: string; symbol: string; name: string }
 ) {
   // 计算日期范围
-  const endDate = new Date()
-  const startDate = new Date()
-  startDate.setMonth(startDate.getMonth() - months + 1)
-  startDate.setDate(1)
-  startDate.setHours(0, 0, 0, 0)
+  const { startDate, endDate } = getMonthsAgoDateRange(months)
 
   // 获取分类及其子分类的所有ID
   const getAllCategoryIds = async (categoryId: string): Promise<string[]> => {
@@ -250,11 +247,7 @@ async function getFlowMonthlyData(
   baseCurrency: { code: string; symbol: string; name: string }
 ) {
   // 计算日期范围
-  const endDate = new Date()
-  const startDate = new Date()
-  startDate.setMonth(startDate.getMonth() - months + 1)
-  startDate.setDate(1)
-  startDate.setHours(0, 0, 0, 0)
+  const { startDate, endDate } = getMonthsAgoDateRange(months)
 
   // 构建查询条件
   const whereCondition: Prisma.TransactionWhereInput = {

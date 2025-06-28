@@ -11,6 +11,7 @@ import {
   validateAccountTypes,
 } from '@/lib/services/account.service'
 import { TransactionType, AccountType } from '@/types/core/constants'
+import { getDaysAgoDateRange } from '@/lib/utils/date-range'
 
 export async function GET() {
   try {
@@ -207,15 +208,14 @@ export async function GET() {
     })
 
     // 计算近期收支统计（最近30天）
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const { startDate: thirtyDaysAgo, endDate: nowEndOfDay } = getDaysAgoDateRange(30)
 
     const recentActivity = await prisma.transaction.findMany({
       where: {
         userId: user.id,
         date: {
           gte: thirtyDaysAgo,
-          lte: now, // 添加结束日期限制，确保不包含未来交易
+          lte: nowEndOfDay, // 使用当天结束时间，确保包含今天的所有交易
         },
         type: {
           in: [TransactionType.INCOME, TransactionType.EXPENSE], // 只统计收入和支出交易，排除余额调整
@@ -374,6 +374,78 @@ export async function GET() {
       }
     )
 
+    // 构建资产的 byCurrency 信息
+    const assetsByCurrency: Record<string, {
+      originalAmount: number
+      convertedAmount: number
+      currency: { code: string; symbol: string; name: string }
+      exchangeRate: number
+      accountCount: number
+      success: boolean
+    }> = {}
+
+    // 统计每个币种的资产账户数量
+    const assetAccountCountByCurrency: Record<string, number> = {}
+    assetAccountsForTotal.forEach(account => {
+      const accountBalances = calculateAccountBalance(account, { asOfDate: now })
+      Object.keys(accountBalances).forEach(currencyCode => {
+        assetAccountCountByCurrency[currencyCode] = (assetAccountCountByCurrency[currencyCode] || 0) + 1
+      })
+    })
+
+    // 填充资产的 byCurrency 数据
+    Object.entries(totalAssetsResult.totalsByOriginalCurrency).forEach(([currencyCode, balance]) => {
+      // 查找对应的转换详情
+      const conversionDetail = totalAssetsResult.conversionDetails.find(
+        detail => detail.fromCurrency === currencyCode
+      )
+
+      assetsByCurrency[currencyCode] = {
+        originalAmount: balance.amount,
+        convertedAmount: conversionDetail?.convertedAmount || balance.amount,
+        currency: balance.currency,
+        exchangeRate: conversionDetail?.exchangeRate || 1,
+        accountCount: assetAccountCountByCurrency[currencyCode] || 0,
+        success: conversionDetail?.success ?? true
+      }
+    })
+
+    // 构建负债的 byCurrency 信息
+    const liabilitiesByCurrency: Record<string, {
+      originalAmount: number
+      convertedAmount: number
+      currency: { code: string; symbol: string; name: string }
+      exchangeRate: number
+      accountCount: number
+      success: boolean
+    }> = {}
+
+    // 统计每个币种的负债账户数量
+    const liabilityAccountCountByCurrency: Record<string, number> = {}
+    liabilityAccountsForTotal.forEach(account => {
+      const accountBalances = calculateAccountBalance(account, { asOfDate: now })
+      Object.keys(accountBalances).forEach(currencyCode => {
+        liabilityAccountCountByCurrency[currencyCode] = (liabilityAccountCountByCurrency[currencyCode] || 0) + 1
+      })
+    })
+
+    // 填充负债的 byCurrency 数据
+    Object.entries(totalLiabilitiesResult.totalsByOriginalCurrency).forEach(([currencyCode, balance]) => {
+      // 查找对应的转换详情
+      const conversionDetail = totalLiabilitiesResult.conversionDetails.find(
+        detail => detail.fromCurrency === currencyCode
+      )
+
+      liabilitiesByCurrency[currencyCode] = {
+        originalAmount: balance.amount,
+        convertedAmount: conversionDetail?.convertedAmount || balance.amount,
+        currency: balance.currency,
+        exchangeRate: conversionDetail?.exchangeRate || 1,
+        accountCount: liabilityAccountCountByCurrency[currencyCode] || 0,
+        success: conversionDetail?.success ?? true
+      }
+    })
+
     return successResponse({
       netWorth: {
         amount: netWorthAmount,
@@ -386,12 +458,14 @@ export async function GET() {
         currency: baseCurrency,
         accountCount: assetAccountsForTotal.length,
         hasConversionErrors: totalAssetsResult.hasConversionErrors,
+        byCurrency: assetsByCurrency,
       },
       totalLiabilities: {
         amount: totalLiabilitiesResult.totalInBaseCurrency,
         currency: baseCurrency,
         accountCount: liabilityAccountsForTotal.length,
         hasConversionErrors: totalLiabilitiesResult.hasConversionErrors,
+        byCurrency: liabilitiesByCurrency,
       },
       accountBalances,
       recentActivity: {
@@ -416,16 +490,6 @@ export async function GET() {
         accountingDays,
       },
       validation,
-      currencyConversion: {
-        baseCurrency,
-        conversionDetails: [
-          ...totalAssetsResult.conversionDetails,
-          ...totalLiabilitiesResult.conversionDetails,
-        ],
-        hasErrors:
-          totalAssetsResult.hasConversionErrors ||
-          totalLiabilitiesResult.hasConversionErrors,
-      },
     })
   } catch (error) {
     console.error('Get dashboard summary error:', error)

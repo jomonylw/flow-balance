@@ -71,5 +71,9 @@
   "sync.processed.summary": "已处理 {{recurring}} 个定期交易，{{loans}} 个贷款合约",
   "sync.processed.summary.with.rates": "已处理 {{recurring}} 个定期交易，{{loans}} 个贷款合约，{{exchangeRates}} 个汇率更新",
   "sync.future.data.generated": "已生成未来数据至 {{until}}",
-  "sync.processing.message": "正在处理定期交易、贷款合约和汇率更新..."
+  "sync.processing.message": "正在处理定期交易、贷款合约和汇率更新...",
+  "dashboard.accounts.unit": "个账户",
+  "dashboard.currency.breakdown.title": "分货币",
+  "dashboard.currency.breakdown.note": "显示各币种原始金额和折算金额",
+  "dashboard.debt.to.asset.ratio": "资产负债率"
 }

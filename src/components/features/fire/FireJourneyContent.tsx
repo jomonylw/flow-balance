@@ -18,12 +18,24 @@ interface FireUserSettings {
   baseCurrency?: SimpleCurrency | null
 }
 
+interface CAGRDetails {
+  startDate: string
+  endDate: string
+  years: number
+  initialNetWorth: number
+  currentNetWorth: number
+  totalNetContribution: number
+  adjustedGrowth: number
+  message: string
+}
+
 interface FireData {
   realitySnapshot: {
     past12MonthsExpenses: number
     currentNetWorth: number
     historicalAnnualReturn: number
     monthlyNetInvestment: number
+    cagrDetails?: CAGRDetails | null
   }
   userSettings: {
     fireEnabled: boolean
@@ -73,14 +85,18 @@ export default function FireJourneyContent({
         setFireData(result.data)
 
         // 初始化参数
-        setFireParams({
+        const newFireParams = {
           retirementExpenses: result.data.realitySnapshot.past12MonthsExpenses,
           safeWithdrawalRate: result.data.userSettings.fireSWR,
           currentInvestableAssets: result.data.realitySnapshot.currentNetWorth,
           expectedAnnualReturn:
             result.data.realitySnapshot.historicalAnnualReturn,
           monthlyInvestment: result.data.realitySnapshot.monthlyNetInvestment,
-        })
+        }
+
+
+
+        setFireParams(newFireParams)
       } else {
         setError(result.message || 'Failed to load FIRE data')
       }

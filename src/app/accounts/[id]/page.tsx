@@ -34,6 +34,7 @@ export default async function AccountPage({ params }: AccountPageProps) {
               name: true,
               category: {
                 select: {
+                  id: true,
                   name: true,
                   type: true,
                 },

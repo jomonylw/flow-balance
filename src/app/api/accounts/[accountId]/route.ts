@@ -31,6 +31,18 @@ export async function PUT(
           select: { id: true },
           take: 1, // 只需要知道是否有交易记录
         },
+        recurringTransactions: {
+          select: { id: true, description: true },
+          take: 5, // 获取前几个定期交易用于错误提示
+        },
+        loanContracts: {
+          select: { id: true, contractName: true },
+          take: 5, // 获取前几个贷款合约用于错误提示
+        },
+        paymentLoanContracts: {
+          select: { id: true, contractName: true },
+          take: 5, // 获取前几个还款合约用于错误提示
+        },
       },
     })
 
@@ -41,7 +53,8 @@ export async function PUT(
     const body = await request.json()
     const { name, categoryId, description, color, currencyId } = body
 
-    if (!name) {
+    // 只有当明确传递了 name 时才验证
+    if (name !== undefined && !name) {
       return errorResponse('账户名称不能为空', 400)
     }
 
@@ -83,6 +96,57 @@ export async function PUT(
         return errorResponse('账户已有交易记录，无法更换货币', 400)
       }
 
+      // 检查账户是否有定期交易设置
+      const hasRecurringTransactions = existingAccount.recurringTransactions.length > 0
+
+      if (hasRecurringTransactions) {
+        const recurringNames = existingAccount.recurringTransactions
+          .map(rt => rt.description)
+          .slice(0, 3)
+          .join('、')
+        const moreCount = existingAccount.recurringTransactions.length - 3
+        const nameText = moreCount > 0 ? `${recurringNames}等${existingAccount.recurringTransactions.length}个` : recurringNames
+
+        return errorResponse(
+          `账户存在定期交易设置（${nameText}），无法更换货币。请先删除或转移相关定期交易设置。`,
+          400
+        )
+      }
+
+      // 检查账户是否有贷款合约（作为贷款账户）
+      const hasLoanContracts = existingAccount.loanContracts.length > 0
+
+      if (hasLoanContracts) {
+        const contractNames = existingAccount.loanContracts
+          .map(lc => lc.contractName)
+          .slice(0, 3)
+          .join('、')
+        const moreCount = existingAccount.loanContracts.length - 3
+        const nameText = moreCount > 0 ? `${contractNames}等${existingAccount.loanContracts.length}个` : contractNames
+
+        return errorResponse(
+          `账户存在贷款合约（${nameText}），无法更换货币。请先删除或转移相关贷款合约。`,
+          400
+        )
+      }
+
+      // 检查账户是否有贷款合约（作为还款账户）
+      const hasPaymentLoanContracts = existingAccount.paymentLoanContracts.length > 0
+
+      if (hasPaymentLoanContracts) {
+        const contractNames = existingAccount.paymentLoanContracts
+          .map(lc => lc.contractName)
+          .slice(0, 3)
+          .join('、')
+        const moreCount = existingAccount.paymentLoanContracts.length - 3
+        const nameText = moreCount > 0 ? `${contractNames}等${existingAccount.paymentLoanContracts.length}个` : contractNames
+
+        return errorResponse(
+          `账户被贷款合约用作还款账户（${nameText}），无法更换货币。请先删除或转移相关贷款合约。`,
+          400
+        )
+      }
+
       // 货币是必填的，不能设置为空
       if (!currencyId) {
         return errorResponse('账户货币不能为空', 400)
@@ -117,28 +181,52 @@ export async function PUT(
       }
     }
 
-    // 检查同一用户下是否已存在同名账户（排除当前账户）
-    const duplicateAccount = await prisma.account.findFirst({
-      where: {
-        userId: user.id,
-        name,
-        id: { not: accountId },
-      },
-    })
+    // 只有当传递了 name 时才检查重复名称
+    if (name !== undefined) {
+      const duplicateAccount = await prisma.account.findFirst({
+        where: {
+          userId: user.id,
+          name,
+          id: { not: accountId },
+        },
+      })
 
-    if (duplicateAccount) {
-      return errorResponse('该账户名称已存在', 400)
+      if (duplicateAccount) {
+        return errorResponse('该账户名称已存在', 400)
+      }
+    }
+
+    // 构建更新数据，只有明确传递的字段才会被更新
+    const updateData: any = {}
+
+    // 只有当明确传递了 name 时才更新
+    if (name !== undefined) {
+      updateData.name = name
+    }
+
+    // 只有当明确传递了 categoryId 时才更新
+    if (categoryId !== undefined) {
+      updateData.categoryId = categoryId
+    }
+
+    // 只有当明确传递了 currencyId 时才更新
+    if (currencyId !== undefined) {
+      updateData.currencyId = currencyId
+    }
+
+    // 只有当明确传递了 description 时才更新
+    if (description !== undefined) {
+      updateData.description = description || null
+    }
+
+    // 只有当明确传递了 color 时才更新
+    if (color !== undefined) {
+      updateData.color = color || null
     }
 
     const updatedAccount = await prisma.account.update({
       where: { id: accountId },
-      data: {
-        name,
-        categoryId: categoryId || existingAccount.categoryId,
-        currencyId: currencyId || existingAccount.currencyId,
-        description: description || null,
-        color: color || null,
-      },
+      data: updateData,
       include: {
         category: true,
         currency: true,

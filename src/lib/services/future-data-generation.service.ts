@@ -39,13 +39,13 @@ export class FutureDataGenerationService {
     if (daysAhead === 0) {
       // 设置为0天：只生成截止到当天的记录（不比较时间，仅比较日期）
       futureEndDate = new Date(now)
-      futureEndDate.setHours(23, 59, 59, 999) // 设置为当天的最后一刻
+      futureEndDate.setUTCHours(23, 59, 59, 999) // 设置为当天的最后一刻（UTC时间）
     } else {
       // 计算未来结束日期：从明天开始计算指定天数
       // 例如：设置1天 = 生成明天的记录，设置7天 = 生成未来7天的记录
       const tomorrow = new Date(now)
       tomorrow.setDate(tomorrow.getDate() + 1)
-      tomorrow.setHours(23, 59, 59, 999) // 设置为明天的最后一刻
+      tomorrow.setUTCHours(23, 59, 59, 999) // 设置为明天的最后一刻（UTC时间）
 
       futureEndDate = new Date(tomorrow)
       futureEndDate.setDate(futureEndDate.getDate() + daysAhead - 1)
@@ -135,9 +135,9 @@ export class FutureDataGenerationService {
   ): Promise<number> {
     let generated = 0
 
-    // 从定期交易的开始日期开始检查，确保时间部分为0
+    // 从定期交易的开始日期开始检查，确保时间部分为0（UTC时间）
     let currentDate = new Date(recurring.startDate)
-    currentDate.setHours(0, 0, 0, 0)
+    currentDate.setUTCHours(0, 0, 0, 0)
 
     // 使用统一的重复检查服务
     const duplicateCheckResult = await DuplicateCheckService.checkDuplicates({
@@ -185,9 +185,10 @@ export class FutureDataGenerationService {
 
       // 检查该日期是否已存在交易记录
       if (!DuplicateCheckService.isDateExists(currentDate, existingDatesSet)) {
-        // 创建交易记录时，确保日期时间为当天的开始时间
+        // 创建交易记录时，确保日期时间为当天的开始时间（UTC时间）
+        // 使用与单笔创建交易相同的日期处理方式
         const transactionDate = new Date(currentDate)
-        transactionDate.setHours(0, 0, 0, 0)
+        transactionDate.setUTCHours(0, 0, 0, 0)
 
         missingTransactions.push({
           userId: recurring.userId,

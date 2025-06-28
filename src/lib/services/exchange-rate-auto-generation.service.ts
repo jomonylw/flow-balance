@@ -32,8 +32,8 @@ export async function generateAutoExchangeRates(
 ): Promise<AutoGenerationResult> {
   // 统一使用当前日期，避免日期匹配问题
   const targetDate = new Date()
-  // 设置为当天的开始时间，避免时间精度问题
-  targetDate.setHours(0, 0, 0, 0)
+  // 设置为当天的开始时间（UTC时间），与单笔创建交易保持一致
+  targetDate.setUTCHours(0, 0, 0, 0)
 
   const result: AutoGenerationResult = {
     success: true,
