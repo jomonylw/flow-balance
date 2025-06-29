@@ -60,7 +60,7 @@ export default function DeleteConfirmModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title=''>
+    <Modal isOpen={isOpen} onClose={handleClose} title='' maskClosable={false}>
       <div className='text-center'>
         {/* 危险图标 */}
         <div className='mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 mb-4'>

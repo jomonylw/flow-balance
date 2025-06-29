@@ -266,6 +266,148 @@ html {
   }
 }
 
+/* 分类图标样式 */
+.category-icon-container {
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  transform-origin: center;
+  will-change: transform, box-shadow;
+}
+
+/* 分类图标动画关键帧 */
+@keyframes category-icon-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes category-icon-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  50% {
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* 分类图标普通状态 */
+.category-icon-normal {
+  background: linear-gradient(
+    135deg,
+    var(--icon-bg-from, rgba(248, 250, 252, 0.9)),
+    var(--icon-bg-to, rgba(241, 245, 249, 0.95))
+  );
+  border-color: var(--icon-border, rgba(107, 114, 128, 0.15));
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* 分类图标悬停状态 */
+.category-icon-hover {
+  background: linear-gradient(
+    135deg,
+    var(--icon-hover-bg-from, rgba(241, 245, 249, 0.95)),
+    var(--icon-hover-bg-to, rgba(226, 232, 240, 1))
+  );
+  border-color: var(--icon-border, rgba(107, 114, 128, 0.25));
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transform: translateY(-0.5px);
+}
+
+/* 分类图标选中状态 */
+.category-icon-active {
+  background: linear-gradient(
+    135deg,
+    var(--icon-hover-bg-from, rgba(239, 246, 255, 0.95)),
+    var(--icon-hover-bg-to, rgba(219, 234, 254, 1))
+  );
+  border-color: var(--icon-border, rgba(59, 130, 246, 0.4));
+  box-shadow:
+    0 2px 8px rgba(59, 130, 246, 0.15),
+    0 0 0 1px var(--icon-border, rgba(59, 130, 246, 0.2)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  animation: category-icon-glow 2s ease-in-out infinite;
+}
+
+/* 分类图标颜色 */
+.category-icon-color {
+  color: var(--icon-color, rgb(107, 114, 128));
+}
+
+.category-icon-color-hover {
+  color: var(--icon-hover-color, rgb(87, 94, 108));
+}
+
+.category-icon-color-active {
+  color: var(--icon-hover-color, rgb(29, 78, 216));
+}
+
+/* 深色主题适配 */
+@media (prefers-color-scheme: dark) {
+  .category-icon-normal {
+    background: linear-gradient(
+      135deg,
+      var(--icon-bg-from-dark, rgba(55, 65, 81, 0.7)),
+      var(--icon-bg-to-dark, rgba(75, 85, 99, 0.9))
+    );
+    border-color: var(--icon-border-dark, rgba(107, 114, 128, 0.25));
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .category-icon-hover {
+    background: linear-gradient(
+      135deg,
+      var(--icon-hover-bg-from-dark, rgba(75, 85, 99, 0.9)),
+      var(--icon-hover-bg-to-dark, rgba(107, 114, 128, 1))
+    );
+    border-color: var(--icon-border-dark, rgba(107, 114, 128, 0.4));
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-0.5px);
+  }
+
+  .category-icon-active {
+    background: linear-gradient(
+      135deg,
+      var(--icon-hover-bg-from-dark, rgba(30, 58, 138, 0.5)),
+      var(--icon-hover-bg-to-dark, rgba(30, 64, 175, 0.4))
+    );
+    border-color: var(--icon-border-dark, rgba(59, 130, 246, 0.6));
+    box-shadow:
+      0 2px 8px rgba(59, 130, 246, 0.25),
+      0 0 0 1px var(--icon-border-dark, rgba(59, 130, 246, 0.4)),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .category-icon-color {
+    color: var(--icon-color-dark, rgb(156, 163, 175));
+  }
+
+  .category-icon-color-hover {
+    color: var(--icon-hover-color-dark, rgb(209, 213, 219));
+  }
+
+  .category-icon-color-active {
+    color: var(--icon-hover-color-dark, rgb(147, 197, 253));
+  }
+}
+
 /* 隐藏滚动条工具类 */
 .scrollbar-hide {
   -ms-overflow-style: none; /* IE and Edge */

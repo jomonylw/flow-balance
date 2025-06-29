@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import { TransactionType } from '@/types/core/constants'
+import { ConstantsManager } from '@/lib/utils/constants-manager'
+import { getCommonError } from '@/lib/constants/api-messages'
+import { BUSINESS_LIMITS } from '@/lib/constants/app-config'
 import { z } from 'zod'
 
 // 批量交易创建的验证 Schema
@@ -12,7 +15,7 @@ const BatchTransactionSchema = z.object({
         accountId: z.string().min(1), // 改为简单的字符串验证，支持CUID格式
         categoryId: z.string().min(1), // 改为简单的字符串验证，支持CUID格式
         currencyCode: z.string().min(3).max(3),
-        type: z.enum(['INCOME', 'EXPENSE', 'BALANCE']),
+        type: z.enum(ConstantsManager.getZodTransactionTypeEnum()),
         amount: z.number().positive(),
         description: z.string().min(1).max(200),
         notes: z.string().max(1000).optional().nullable(),
@@ -21,7 +24,7 @@ const BatchTransactionSchema = z.object({
       })
     )
     .min(1)
-    .max(100), // 限制批量数量
+    .max(BUSINESS_LIMITS.BATCH_MAX_SIZE), // 限制批量数量
 })
 
 /**
@@ -32,7 +35,7 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: getCommonError('UNAUTHORIZED') },
         { status: 401 }
       )
     }
@@ -44,7 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: '请求数据格式错误',
+          error: getCommonError('INVALID_REQUEST'),
           details: validationResult.error.errors,
         },
         { status: 400 }
@@ -227,7 +230,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: '服务器内部错误',
+        error: getCommonError('INTERNAL_ERROR'),
         details: error instanceof Error ? error.message : '未知错误',
       },
       { status: 500 }
@@ -243,7 +246,7 @@ export async function GET() {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: getCommonError('UNAUTHORIZED') },
         { status: 401 }
       )
     }
@@ -251,8 +254,8 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        maxBatchSize: 100,
-        supportedTypes: ['INCOME', 'EXPENSE', 'BALANCE_ADJUSTMENT'],
+        maxBatchSize: BUSINESS_LIMITS.BATCH_MAX_SIZE,
+        supportedTypes: ConstantsManager.getAllTransactionTypes(),
         supportedFormats: ['json'],
         validationRules: {
           description: { minLength: 1, maxLength: 200 },
@@ -267,7 +270,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: '服务器内部错误',
+        error: getCommonError('INTERNAL_ERROR'),
       },
       { status: 500 }
     )
@@ -282,7 +285,7 @@ export async function PUT(request: NextRequest) {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: getCommonError('UNAUTHORIZED') },
         { status: 401 }
       )
     }
@@ -294,7 +297,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: '请求数据格式错误',
+          error: getCommonError('INVALID_REQUEST'),
           details: validationResult.error.errors,
         },
         { status: 400 }
@@ -368,7 +371,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: '服务器内部错误',
+        error: getCommonError('INTERNAL_ERROR'),
       },
       { status: 500 }
     )

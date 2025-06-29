@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getCurrencyError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -33,7 +34,7 @@ export async function DELETE(
     })
 
     if (!currency) {
-      return validationErrorResponse('货币不存在或您无权删除')
+      return validationErrorResponse(getCurrencyError('NOT_FOUND'))
     }
 
     // 检查是否是本位币
@@ -92,7 +93,7 @@ export async function DELETE(
     return successResponse({ message: '自定义货币删除成功' })
   } catch (error) {
     console.error('删除自定义货币失败:', error)
-    return errorResponse('删除自定义货币失败', 500)
+    return errorResponse(getCurrencyError('DELETE_FAILED'), 500)
   }
 }
 
@@ -140,7 +141,7 @@ export async function PUT(
     })
 
     if (!currency) {
-      return validationErrorResponse('货币不存在或您无权修改')
+      return validationErrorResponse(getCurrencyError('NOT_FOUND'))
     }
 
     // 更新自定义货币
@@ -161,6 +162,6 @@ export async function PUT(
     })
   } catch (error) {
     console.error('更新自定义货币失败:', error)
-    return errorResponse('更新自定义货币失败', 500)
+    return errorResponse(getCurrencyError('UPDATE_FAILED'), 500)
   }
 }

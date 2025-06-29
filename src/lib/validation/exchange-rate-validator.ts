@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { PrismaClient } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 import type { ValidationResult } from '@/types/core'
+import { ConstantsManager } from '@/lib/utils/constants-manager'
 
 const prisma = new PrismaClient()
 
@@ -30,7 +31,7 @@ export const ExchangeRateCreateSchema = z.object({
       { message: '汇率精度不能超过8位小数' }
     ),
   effectiveDate: z.string().datetime('生效日期格式无效'),
-  type: z.enum(['USER', 'API', 'AUTO'], {
+  type: z.enum(ConstantsManager.getZodExchangeRateTypeEnum(), {
     errorMap: () => ({ message: '汇率类型必须是USER、API或AUTO' }),
   }),
   sourceRateId: z.string().uuid().optional(),

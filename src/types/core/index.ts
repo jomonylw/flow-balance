@@ -6,7 +6,22 @@
 // 导入常量和枚举
 import {
   AccountType,
-  TransactionType as TransactionTypeEnum,
+  TransactionType,
+  RepaymentType,
+  Theme,
+  Language,
+  LoadingState as _LoadingState,
+  Size as _Size,
+  ColorVariant as _ColorVariant,
+  SortOrder as _SortOrder,
+  ExportFormat as _ExportFormat,
+} from './constants'
+
+// 重新导出常量和枚举
+export {
+  AccountType,
+  TransactionType,
+  RepaymentType,
   Theme,
   Language,
   LoadingState,
@@ -15,18 +30,6 @@ import {
   SortOrder,
   ExportFormat,
 } from './constants'
-
-// 重新导出常量和枚举
-export {
-  AccountType,
-  Theme,
-  Language,
-  LoadingState,
-  Size,
-  ColorVariant,
-  SortOrder,
-  ExportFormat,
-}
 
 // ============================================================================
 // 基础类型
@@ -139,7 +142,6 @@ export interface Account {
 // ============================================================================
 
 /** 交易类型枚举 - 使用从 constants 导入的 TransactionType */
-export type TransactionType = TransactionTypeEnum
 
 /** 交易信息 */
 export interface Transaction {
@@ -621,11 +623,14 @@ export interface DashboardSummary {
     amount: number
     currency: SimpleCurrency
     hasConversionErrors?: boolean
-    byCurrency?: Record<string, {
-      currencyCode: string
-      amount: number
-      currency: { code: string; symbol: string; name: string }
-    }>
+    byCurrency?: Record<
+      string,
+      {
+        currencyCode: string
+        amount: number
+        currency: { code: string; symbol: string; name: string }
+      }
+    >
   }
   recentActivity: {
     summaryInBaseCurrency: {
@@ -647,6 +652,7 @@ export type TimeRange =
   | 'all'
   | 'lastMonth'
   | 'lastYear'
+  | 'last12months'
 
 // ============================================================================
 // FIRE 相关类型
@@ -659,6 +665,67 @@ export interface FireParams {
   currentInvestableAssets: number
   expectedAnnualReturn: number
   monthlyInvestment: number
+}
+
+/** FIRE 计算结果 */
+export interface FireCalculationResult {
+  fireNumber: number // 财务自由所需金额
+  currentProgress: number // 当前进度百分比
+  yearsToFire: number // 距离财务自由的年数
+  monthsToFire: number // 距离财务自由的月数
+  fireDate: Date // 预计财务自由日期
+  totalInvestmentNeeded: number // 总投资需求
+  monthlyShortfall: number // 月度缺口（如果有）
+  isAchievable: boolean // 是否可达成
+}
+
+/** FIRE 投影数据点 */
+export interface FireProjection {
+  year: number
+  month: number
+  date: Date
+  totalAssets: number // 总资产
+  monthlyInvestment: number // 月度投资
+  cumulativeInvestment: number // 累计投资
+  investmentGrowth: number // 投资增长
+  progressPercentage: number // 进度百分比
+  isFireAchieved: boolean // 是否达到财务自由
+}
+
+/** 资产负债数据 */
+export interface AssetLiabilityData {
+  assets: {
+    total: number
+    categories: Array<{
+      id: string
+      name: string
+      amount: number
+      percentage: number
+      accounts: Array<{
+        id: string
+        name: string
+        amount: number
+        currencyCode: string
+      }>
+    }>
+  }
+  liabilities: {
+    total: number
+    categories: Array<{
+      id: string
+      name: string
+      amount: number
+      percentage: number
+      accounts: Array<{
+        id: string
+        name: string
+        amount: number
+        currencyCode: string
+      }>
+    }>
+  }
+  netWorth: number
+  currencyCode: string
 }
 
 // ============================================================================
@@ -747,7 +814,7 @@ export interface RecurringTransaction {
   userId: string
   accountId: string
   currencyId: string // 使用 currencyId 而不是 currencyCode
-  type: TransactionTypeEnum.INCOME | TransactionTypeEnum.EXPENSE
+  type: TransactionType.INCOME | TransactionType.EXPENSE
   amount: number
   description: string
   notes?: string | null
@@ -784,7 +851,7 @@ export interface RecurringTransactionFormData {
   id?: string
   accountId: string
   currencyCode: string
-  type: TransactionTypeEnum.INCOME | TransactionTypeEnum.EXPENSE
+  type: TransactionType.INCOME | TransactionType.EXPENSE
   amount: number
   description: string
   notes?: string | null
@@ -809,11 +876,6 @@ export interface RecurringTransactionFormData {
 // ============================================================================
 
 /** 还款类型枚举 */
-export enum RepaymentType {
-  EQUAL_PAYMENT = 'EQUAL_PAYMENT', // 等额本息
-  EQUAL_PRINCIPAL = 'EQUAL_PRINCIPAL', // 等额本金
-  INTEREST_ONLY = 'INTEREST_ONLY', // 只还利息
-}
 
 /** 贷款合约信息 */
 export interface LoanContract {

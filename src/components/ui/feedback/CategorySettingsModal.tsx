@@ -47,12 +47,14 @@ export default function CategorySettingsModal({
   const { categories } = useUserData()
 
   // 使用统一的账户类型配置
-  const accountTypeConfigs = ConstantsManager.getAccountTypeConfigs().map(config => ({
-    value: config.value,
-    label: t(config.labelKey),
-    description: t(config.descriptionKey),
-    color: config.colorClass,
-  }))
+  const accountTypeConfigs = ConstantsManager.getAccountTypeConfigs().map(
+    config => ({
+      value: config.value,
+      label: t(config.labelKey),
+      description: t(config.descriptionKey),
+      color: config.colorClass,
+    })
+  )
 
   // 是否为顶级分类
   const isTopLevel = !category.parentId
@@ -170,7 +172,12 @@ export default function CategorySettingsModal({
   const inheritedTypeInfo = inheritedType ? getTypeInfo(inheritedType) : null
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('category.settings')}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t('category.settings')}
+      maskClosable={false}
+    >
       <div className='space-y-6'>
         {/* 基本信息 */}
         <div>

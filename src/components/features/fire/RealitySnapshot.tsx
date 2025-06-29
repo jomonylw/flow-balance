@@ -6,7 +6,7 @@ import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import type { SimpleCurrency } from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
-interface CAGRDetails {
+export interface CAGRDetails {
   startDate: string
   endDate: string
   years: number
@@ -147,7 +147,10 @@ export default function RealitySnapshot({
                   {t('fire.reality.snapshot.monthly.average')}
                 </span>
                 <span className='text-gray-800 dark:text-gray-200 font-mono font-semibold'>
-                  {formatCurrency(data.past12MonthsExpenses / 12, currency.code)}
+                  {formatCurrency(
+                    data.past12MonthsExpenses / 12,
+                    currency.code
+                  )}
                   <span className='text-gray-500 dark:text-gray-400 font-normal ml-1'>
                     {t('fire.units.per.month')}
                   </span>
@@ -258,7 +261,8 @@ export default function RealitySnapshot({
                       {t('fire.reality.snapshot.cagr.period')}
                     </span>
                     <span className='text-gray-800 dark:text-gray-200 font-mono'>
-                      {formatDate(new Date(data.cagrDetails.startDate))} {t('fire.reality.snapshot.cagr.to.now')}
+                      {formatDate(new Date(data.cagrDetails.startDate))}{' '}
+                      {t('fire.reality.snapshot.cagr.to.now')}
                     </span>
                   </div>
 
@@ -268,7 +272,8 @@ export default function RealitySnapshot({
                       {t('fire.reality.snapshot.cagr.history')}
                     </span>
                     <span className='text-gray-800 dark:text-gray-200 font-mono'>
-                      {data.cagrDetails.years.toFixed(1)}{t('fire.units.years')}
+                      {data.cagrDetails.years.toFixed(1)}
+                      {t('fire.units.years')}
                     </span>
                   </div>
 
@@ -281,7 +286,10 @@ export default function RealitySnapshot({
                       {t('fire.reality.snapshot.cagr.initial.net.worth')}
                     </span>
                     <span className='text-gray-800 dark:text-gray-200 font-mono font-semibold'>
-                      {formatCurrency(data.cagrDetails.initialNetWorth, currency.code)}
+                      {formatCurrency(
+                        data.cagrDetails.initialNetWorth,
+                        currency.code
+                      )}
                     </span>
                   </div>
 
@@ -291,7 +299,11 @@ export default function RealitySnapshot({
                       {t('fire.reality.snapshot.cagr.investment.growth')}
                     </span>
                     <span className='text-green-600 dark:text-green-400 font-mono font-semibold'>
-                      +{formatCurrency(data.cagrDetails.adjustedGrowth, currency.code)}
+                      +
+                      {formatCurrency(
+                        data.cagrDetails.adjustedGrowth,
+                        currency.code
+                      )}
                     </span>
                   </div>
                 </div>
@@ -302,8 +314,7 @@ export default function RealitySnapshot({
           <div className='text-xs text-gray-500 dark:text-gray-400 mb-4 flex-grow'>
             {data.cagrDetails
               ? t('fire.reality.snapshot.cagr.description')
-              : t('fire.reality.snapshot.return.source')
-            }
+              : t('fire.reality.snapshot.return.source')}
           </div>
 
           <div className='flex justify-end mt-auto'>

@@ -626,6 +626,7 @@ export default function FlowTransactionModal({
       onClose={onClose}
       title={`${transaction ? t('common.edit') : t('common.add')}${accountTypeInfo.label}${t('transaction.title')} - ${account.name}`}
       size='lg'
+      maskClosable={false}
     >
       <form onSubmit={handleSubmit} className='space-y-6'>
         {errors.general && (

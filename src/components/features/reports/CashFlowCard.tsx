@@ -266,7 +266,11 @@ export default function CashFlowCard() {
           <div className='flex items-center'>
             <Link
               href={`/categories/${category.id}`}
-              className='font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 hover:underline'
+              className={`font-medium transition-colors duration-200 hover:underline ${
+                isExpense
+                  ? 'text-red-700 dark:text-red-300 hover:text-red-600 dark:hover:text-red-400'
+                  : 'text-green-700 dark:text-green-300 hover:text-green-600 dark:hover:text-green-400'
+              }`}
             >
               {category.name}
             </Link>
@@ -283,11 +287,13 @@ export default function CashFlowCard() {
               <div className='text-right'>
                 <span
                   className={`inline-block px-2 py-1 rounded text-sm font-bold border ${
-                    level === 0
-                      ? isExpense
+                    isExpense
+                      ? level === 0
                         ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700'
-                        : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700'
-                      : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                        : 'bg-red-50/50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border-red-200/50 dark:border-red-700/50'
+                      : level === 0
+                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700'
+                        : 'bg-green-50/50 dark:bg-green-900/10 text-green-600 dark:text-green-400 border-green-200/50 dark:border-green-700/50'
                   }`}
                 >
                   {isExpense ? '-' : '+'}
@@ -461,7 +467,13 @@ export default function CashFlowCard() {
         )}
         {Object.entries(categories).map(([categoryId, category]) => (
           <div key={categoryId} className='mb-4'>
-            <div className='font-medium text-gray-800 dark:text-gray-200 mb-2'>
+            <div
+              className={`font-medium mb-2 ${
+                isExpense
+                  ? 'text-red-700 dark:text-red-300'
+                  : 'text-green-700 dark:text-green-300'
+              }`}
+            >
               {category.categoryName}
             </div>
 
@@ -597,7 +609,11 @@ export default function CashFlowCard() {
                 title={t('reports.cash.flow.refresh')}
               >
                 {loading ? (
-                  <LoadingSpinnerSVG size='sm' color='current' className='h-4 w-4' />
+                  <LoadingSpinnerSVG
+                    size='sm'
+                    color='current'
+                    className='h-4 w-4'
+                  />
                 ) : (
                   <RefreshCw className='h-4 w-4' />
                 )}
@@ -622,7 +638,7 @@ export default function CashFlowCard() {
         <CardHeader>
           <div className='flex flex-col md:flex-row md:justify-between md:items-center'>
             {/* 左侧：标题和期间 */}
-            <div className="mb-2 md:mb-0">
+            <div className='mb-2 md:mb-0'>
               <CardTitle>{t('reports.cash.flow.title')}</CardTitle>
               <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
                 {t('reports.cash.flow.period')}:{' '}
@@ -668,7 +684,11 @@ export default function CashFlowCard() {
                   className='h-12'
                 >
                   {loading ? (
-                    <LoadingSpinnerSVG size='sm' color='current' className='h-4 w-4' />
+                    <LoadingSpinnerSVG
+                      size='sm'
+                      color='current'
+                      className='h-4 w-4'
+                    />
                   ) : (
                     <RefreshCw className='h-4 w-4' />
                   )}
@@ -924,13 +944,7 @@ export default function CashFlowCard() {
                         key={currencyCode}
                         className='flex flex-col items-end'
                       >
-                        <div
-                          className={
-                            currencyTotal.netCashFlow >= 0
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }
-                        >
+                        <div className='text-purple-600 dark:text-purple-400'>
                           {currencyTotal.netCashFlow >= 0 ? '+' : ''}
                           {formatCurrencyWithSymbol(
                             currencyTotal.netCashFlow,
@@ -961,13 +975,7 @@ export default function CashFlowCard() {
                     {t('reports.cash.flow.base.currency.total')} (
                     {data.baseCurrency.code})
                   </span>
-                  <div
-                    className={
-                      data.summary.baseCurrencyTotals.netCashFlow >= 0
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-red-600 dark:text-red-400'
-                    }
-                  >
+                  <div className='text-purple-600 dark:text-purple-400'>
                     {data.summary.baseCurrencyTotals.netCashFlow >= 0
                       ? '+'
                       : ''}
@@ -1135,11 +1143,7 @@ export default function CashFlowCard() {
                       return (
                         <div
                           key={currencyCode}
-                          className={
-                            currencyTotal.netCashFlow >= 0
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }
+                          className='text-purple-600 dark:text-purple-400'
                         >
                           <div>
                             {currencyTotal.netCashFlow >= 0 ? '+' : ''}
@@ -1200,9 +1204,7 @@ export default function CashFlowCard() {
                       {t('reports.cash.flow.net.summary')} (
                       {data.baseCurrency.code})
                     </span>
-                    <div
-                      className={`font-semibold ${data.summary.baseCurrencyTotals.netCashFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
-                    >
+                    <div className='font-semibold text-purple-600 dark:text-purple-400'>
                       {data.summary.baseCurrencyTotals.netCashFlow >= 0
                         ? '+'
                         : ''}

@@ -42,6 +42,22 @@ export enum Language {
   EN = 'en',
 }
 
+/** 汇率类型枚举 */
+export enum ExchangeRateType {
+  USER = 'USER',
+  API = 'API',
+  AUTO = 'AUTO',
+}
+
+/** 频率类型枚举 */
+export enum FrequencyType {
+  DAILY = 'DAILY',
+  WEEKLY = 'WEEKLY',
+  MONTHLY = 'MONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  YEARLY = 'YEARLY',
+}
+
 /** 加载状态枚举 */
 export enum LoadingState {
   IDLE = 'idle',
@@ -110,6 +126,12 @@ export const ALL_THEMES = Object.values(Theme)
 
 /** 所有语言类型 */
 export const ALL_LANGUAGES = Object.values(Language)
+
+/** 所有汇率类型 */
+export const ALL_EXCHANGE_RATE_TYPES = Object.values(ExchangeRateType)
+
+/** 所有频率类型 */
+export const ALL_FREQUENCY_TYPES = Object.values(FrequencyType)
 
 // ============================================================================
 // 默认颜色配置
@@ -317,7 +339,7 @@ export const ACCOUNT_TYPE_CONFIGS: Record<AccountType, AccountTypeConfig> = {
     value: AccountType.LIABILITY,
     labelKey: 'category.type.liability',
     descriptionKey: 'category.settings.liability.description',
-    colorClass: 'text-red-600 dark:text-red-400',
+    colorClass: 'text-orange-600 dark:text-orange-400',
     defaultColor: ACCOUNT_TYPE_COLORS[AccountType.LIABILITY],
   },
   [AccountType.INCOME]: {

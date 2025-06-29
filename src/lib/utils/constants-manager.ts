@@ -8,6 +8,8 @@ import {
   TransactionType,
   Theme,
   Language,
+  ExchangeRateType,
+  FrequencyType,
   SortOrder,
   ExportFormat,
   ACCOUNT_TYPE_CONFIGS,
@@ -206,6 +208,20 @@ export class ConstantsManager {
   }
 
   /**
+   * 获取所有汇率类型枚举值
+   */
+  static getAllExchangeRateTypes(): ExchangeRateType[] {
+    return Object.values(ExchangeRateType)
+  }
+
+  /**
+   * 获取所有频率类型枚举值
+   */
+  static getAllFrequencyTypes(): FrequencyType[] {
+    return Object.values(FrequencyType)
+  }
+
+  /**
    * 获取所有排序顺序枚举值
    */
   static getAllSortOrders(): SortOrder[] {
@@ -281,6 +297,16 @@ export class ConstantsManager {
   }
 
   /**
+   * 生成 Zod 流量交易类型枚举配置（仅 INCOME 和 EXPENSE）
+   */
+  static getZodFlowTransactionTypeEnum(): [
+    TransactionType.INCOME | TransactionType.EXPENSE,
+    ...(TransactionType.INCOME | TransactionType.EXPENSE)[],
+  ] {
+    return [TransactionType.INCOME, TransactionType.EXPENSE]
+  }
+
+  /**
    * 生成 Zod 主题枚举配置
    */
   static getZodThemeEnum(): [Theme, ...Theme[]] {
@@ -294,6 +320,25 @@ export class ConstantsManager {
   static getZodLanguageEnum(): [Language, ...Language[]] {
     const languages = this.getAllLanguages()
     return [languages[0], ...languages.slice(1)]
+  }
+
+  /**
+   * 生成 Zod 汇率类型枚举配置
+   */
+  static getZodExchangeRateTypeEnum(): [
+    ExchangeRateType,
+    ...ExchangeRateType[],
+  ] {
+    const types = this.getAllExchangeRateTypes()
+    return [types[0], ...types.slice(1)]
+  }
+
+  /**
+   * 生成 Zod 频率类型枚举配置
+   */
+  static getZodFrequencyTypeEnum(): [FrequencyType, ...FrequencyType[]] {
+    const types = this.getAllFrequencyTypes()
+    return [types[0], ...types.slice(1)]
   }
 
   /**

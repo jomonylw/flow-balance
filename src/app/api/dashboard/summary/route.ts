@@ -5,6 +5,7 @@ import {
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
+import { getCommonError } from '@/lib/constants/api-messages'
 import {
   calculateTotalBalanceWithConversion,
   calculateAccountBalance,
@@ -208,7 +209,8 @@ export async function GET() {
     })
 
     // 计算近期收支统计（最近30天）
-    const { startDate: thirtyDaysAgo, endDate: nowEndOfDay } = getDaysAgoDateRange(30)
+    const { startDate: thirtyDaysAgo, endDate: nowEndOfDay } =
+      getDaysAgoDateRange(30)
 
     const recentActivity = await prisma.transaction.findMany({
       where: {
@@ -375,76 +377,92 @@ export async function GET() {
     )
 
     // 构建资产的 byCurrency 信息
-    const assetsByCurrency: Record<string, {
-      originalAmount: number
-      convertedAmount: number
-      currency: { code: string; symbol: string; name: string }
-      exchangeRate: number
-      accountCount: number
-      success: boolean
-    }> = {}
+    const assetsByCurrency: Record<
+      string,
+      {
+        originalAmount: number
+        convertedAmount: number
+        currency: { code: string; symbol: string; name: string }
+        exchangeRate: number
+        accountCount: number
+        success: boolean
+      }
+    > = {}
 
     // 统计每个币种的资产账户数量
     const assetAccountCountByCurrency: Record<string, number> = {}
     assetAccountsForTotal.forEach(account => {
-      const accountBalances = calculateAccountBalance(account, { asOfDate: now })
+      const accountBalances = calculateAccountBalance(account, {
+        asOfDate: now,
+      })
       Object.keys(accountBalances).forEach(currencyCode => {
-        assetAccountCountByCurrency[currencyCode] = (assetAccountCountByCurrency[currencyCode] || 0) + 1
+        assetAccountCountByCurrency[currencyCode] =
+          (assetAccountCountByCurrency[currencyCode] || 0) + 1
       })
     })
 
     // 填充资产的 byCurrency 数据
-    Object.entries(totalAssetsResult.totalsByOriginalCurrency).forEach(([currencyCode, balance]) => {
-      // 查找对应的转换详情
-      const conversionDetail = totalAssetsResult.conversionDetails.find(
-        detail => detail.fromCurrency === currencyCode
-      )
+    Object.entries(totalAssetsResult.totalsByOriginalCurrency).forEach(
+      ([currencyCode, balance]) => {
+        // 查找对应的转换详情
+        const conversionDetail = totalAssetsResult.conversionDetails.find(
+          detail => detail.fromCurrency === currencyCode
+        )
 
-      assetsByCurrency[currencyCode] = {
-        originalAmount: balance.amount,
-        convertedAmount: conversionDetail?.convertedAmount || balance.amount,
-        currency: balance.currency,
-        exchangeRate: conversionDetail?.exchangeRate || 1,
-        accountCount: assetAccountCountByCurrency[currencyCode] || 0,
-        success: conversionDetail?.success ?? true
+        assetsByCurrency[currencyCode] = {
+          originalAmount: balance.amount,
+          convertedAmount: conversionDetail?.convertedAmount || balance.amount,
+          currency: balance.currency,
+          exchangeRate: conversionDetail?.exchangeRate || 1,
+          accountCount: assetAccountCountByCurrency[currencyCode] || 0,
+          success: conversionDetail?.success ?? true,
+        }
       }
-    })
+    )
 
     // 构建负债的 byCurrency 信息
-    const liabilitiesByCurrency: Record<string, {
-      originalAmount: number
-      convertedAmount: number
-      currency: { code: string; symbol: string; name: string }
-      exchangeRate: number
-      accountCount: number
-      success: boolean
-    }> = {}
+    const liabilitiesByCurrency: Record<
+      string,
+      {
+        originalAmount: number
+        convertedAmount: number
+        currency: { code: string; symbol: string; name: string }
+        exchangeRate: number
+        accountCount: number
+        success: boolean
+      }
+    > = {}
 
     // 统计每个币种的负债账户数量
     const liabilityAccountCountByCurrency: Record<string, number> = {}
     liabilityAccountsForTotal.forEach(account => {
-      const accountBalances = calculateAccountBalance(account, { asOfDate: now })
+      const accountBalances = calculateAccountBalance(account, {
+        asOfDate: now,
+      })
       Object.keys(accountBalances).forEach(currencyCode => {
-        liabilityAccountCountByCurrency[currencyCode] = (liabilityAccountCountByCurrency[currencyCode] || 0) + 1
+        liabilityAccountCountByCurrency[currencyCode] =
+          (liabilityAccountCountByCurrency[currencyCode] || 0) + 1
       })
     })
 
     // 填充负债的 byCurrency 数据
-    Object.entries(totalLiabilitiesResult.totalsByOriginalCurrency).forEach(([currencyCode, balance]) => {
-      // 查找对应的转换详情
-      const conversionDetail = totalLiabilitiesResult.conversionDetails.find(
-        detail => detail.fromCurrency === currencyCode
-      )
+    Object.entries(totalLiabilitiesResult.totalsByOriginalCurrency).forEach(
+      ([currencyCode, balance]) => {
+        // 查找对应的转换详情
+        const conversionDetail = totalLiabilitiesResult.conversionDetails.find(
+          detail => detail.fromCurrency === currencyCode
+        )
 
-      liabilitiesByCurrency[currencyCode] = {
-        originalAmount: balance.amount,
-        convertedAmount: conversionDetail?.convertedAmount || balance.amount,
-        currency: balance.currency,
-        exchangeRate: conversionDetail?.exchangeRate || 1,
-        accountCount: liabilityAccountCountByCurrency[currencyCode] || 0,
-        success: conversionDetail?.success ?? true
+        liabilitiesByCurrency[currencyCode] = {
+          originalAmount: balance.amount,
+          convertedAmount: conversionDetail?.convertedAmount || balance.amount,
+          currency: balance.currency,
+          exchangeRate: conversionDetail?.exchangeRate || 1,
+          accountCount: liabilityAccountCountByCurrency[currencyCode] || 0,
+          success: conversionDetail?.success ?? true,
+        }
       }
-    })
+    )
 
     return successResponse({
       netWorth: {
@@ -493,6 +511,6 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Get dashboard summary error:', error)
-    return errorResponse('获取Dashboard数据失败', 500)
+    return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
   }
 }

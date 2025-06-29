@@ -106,7 +106,7 @@ export default function ReportsPageClient() {
         </Card>
 
         {/* 使用说明 */}
-        <Card className='mt-4'>
+        {/* <Card className='mt-4'>
           <CardHeader>
             <CardTitle>{t('reports.usage.instructions')}</CardTitle>
           </CardHeader>
@@ -136,7 +136,7 @@ export default function ReportsPageClient() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </PageContainer>
     </TranslationLoader>
   )

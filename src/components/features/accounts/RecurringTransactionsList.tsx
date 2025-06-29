@@ -211,7 +211,7 @@ export default function RecurringTransactionsList({
                     {transaction.type === 'EXPENSE' ? '-' : '+'}
                     {formatCurrency(
                       transaction.amount,
-                      transaction.currencyCode
+                      transaction.currencyCode || 'CNY'
                     )}
                   </span>
                 </div>

@@ -36,11 +36,11 @@ export default function TypeGroupHeader({
         }
       case 'LIABILITY':
         return {
-          bgColor: 'bg-red-50 dark:bg-red-900/20',
-          borderColor: 'border-red-200 dark:border-red-700/50',
-          textColor: 'text-red-700 dark:text-red-300',
-          iconColor: 'text-red-600 dark:text-red-400',
-          amountColor: 'text-red-800 dark:text-red-200',
+          bgColor: 'bg-orange-50 dark:bg-orange-900/20',
+          borderColor: 'border-orange-200 dark:border-orange-700/50',
+          textColor: 'text-orange-700 dark:text-orange-300',
+          iconColor: 'text-orange-600 dark:text-orange-400',
+          amountColor: 'text-orange-800 dark:text-orange-200',
         }
       case 'INCOME':
         return {
@@ -52,11 +52,11 @@ export default function TypeGroupHeader({
         }
       case 'EXPENSE':
         return {
-          bgColor: 'bg-orange-50 dark:bg-orange-900/20',
-          borderColor: 'border-orange-200 dark:border-orange-700/50',
-          textColor: 'text-orange-700 dark:text-orange-300',
-          iconColor: 'text-orange-600 dark:text-orange-400',
-          amountColor: 'text-orange-800 dark:text-orange-200',
+          bgColor: 'bg-red-50 dark:bg-red-900/20',
+          borderColor: 'border-red-200 dark:border-red-700/50',
+          textColor: 'text-red-700 dark:text-red-300',
+          iconColor: 'text-red-600 dark:text-red-400',
+          amountColor: 'text-red-800 dark:text-red-200',
         }
       default:
         return {
@@ -89,8 +89,10 @@ export default function TypeGroupHeader({
 
   // 根据账户类型和金额确定显示颜色
   const getAmountDisplayColor = () => {
-    // 负债和支出类账户显示红色，资产和收入类账户显示绿色
-    if (type === 'LIABILITY' || type === 'EXPENSE') {
+    // 负债显示橙色，支出显示红色，资产和收入类账户显示绿色
+    if (type === 'LIABILITY') {
+      return 'text-orange-600 dark:text-orange-400'
+    } else if (type === 'EXPENSE') {
       return 'text-red-600 dark:text-red-400'
     } else {
       return 'text-green-600 dark:text-green-400'
@@ -102,9 +104,10 @@ export default function TypeGroupHeader({
       className={`
         flex items-center justify-between px-3 py-2.5 cursor-pointer
         transition-all duration-200 group
-        ${isWrapped
-          ? `hover:bg-white/20 dark:hover:bg-black/10 ${isExpanded ? 'rounded-t-lg' : 'rounded-lg'}`
-          : `mx-1 rounded-lg border hover:shadow-md ${style.bgColor} ${style.borderColor}`
+        ${
+          isWrapped
+            ? `hover:bg-white/20 dark:hover:bg-black/10 ${isExpanded ? 'rounded-t-lg' : 'rounded-lg'}`
+            : `mx-1 rounded-lg border hover:shadow-md ${style.bgColor} ${style.borderColor}`
         }
       `}
       onClick={onToggle}

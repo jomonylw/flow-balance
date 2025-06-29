@@ -401,7 +401,6 @@ export class DataConsistencyValidator {
         where: { userId },
         include: {
           account: { include: { category: true } },
-          category: true,
           currency: true,
           tags: { include: { tag: true } },
         },
@@ -411,9 +410,6 @@ export class DataConsistencyValidator {
         // 验证必要关联
         if (!transaction.account) {
           errors.push(`交易"${transaction.description}"缺少关联账户`)
-        }
-        if (!transaction.category) {
-          errors.push(`交易"${transaction.description}"缺少关联分类`)
         }
         if (!transaction.currency) {
           errors.push(`交易"${transaction.description}"缺少关联货币`)

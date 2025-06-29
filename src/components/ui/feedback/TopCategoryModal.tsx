@@ -8,6 +8,7 @@ import AuthButton from '@/components/ui/forms/AuthButton'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { ConstantsManager } from '@/lib/utils/constants-manager'
 import { AccountType } from '@/types/core/constants'
+import type { CategoryFormData } from '@/types/core'
 
 interface TopCategoryModalProps {
   isOpen: boolean
@@ -21,8 +22,14 @@ export default function TopCategoryModal({
   onSave,
 }: TopCategoryModalProps) {
   const { t } = useLanguage()
-  const [name, setName] = useState('')
-  const [type, setType] = useState('')
+
+  // 使用核心 CategoryFormData 类型
+  const [formData, setFormData] = useState<
+    Pick<CategoryFormData, 'name' | 'type'>
+  >({
+    name: '',
+    type: 'ASSET' as CategoryFormData['type'], // 默认类型
+  })
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<{ name?: string; type?: string }>({})
 
@@ -37,8 +44,10 @@ export default function TopCategoryModal({
 
   useEffect(() => {
     if (isOpen) {
-      setName('')
-      setType('')
+      setFormData({
+        name: '',
+        type: 'ASSET' as CategoryFormData['type'],
+      })
       setErrors({})
     }
   }, [isOpen])
@@ -46,13 +55,13 @@ export default function TopCategoryModal({
   const validateForm = () => {
     const newErrors: { name?: string; type?: string } = {}
 
-    if (!name.trim()) {
+    if (!formData.name.trim()) {
       newErrors.name = t('category.name.required')
-    } else if (name.length > 50) {
+    } else if (formData.name.length > 50) {
       newErrors.name = t('category.name.too.long')
     }
 
-    if (!type) {
+    if (!formData.type) {
       newErrors.type = t('category.type.required')
     }
 
@@ -68,8 +77,8 @@ export default function TopCategoryModal({
     setIsLoading(true)
     try {
       await onSave({
-        name: name.trim(),
-        type,
+        name: formData.name.trim(),
+        type: formData.type,
       })
       onClose()
     } catch (error) {
@@ -142,7 +151,7 @@ export default function TopCategoryModal({
     }
   }
 
-  const typeInfo = getTypeDescription(type)
+  const typeInfo = getTypeDescription(formData.type)
 
   return (
     <Modal
@@ -150,6 +159,7 @@ export default function TopCategoryModal({
       onClose={onClose}
       title={t('category.top.add')}
       size='lg'
+      maskClosable={false}
     >
       <div className='space-y-6'>
         {/* 说明文字 */}
@@ -167,9 +177,9 @@ export default function TopCategoryModal({
           <InputField
             name='name'
             label={t('category.name')}
-            value={name}
+            value={formData.name}
             onChange={e => {
-              setName(e.target.value)
+              setFormData(prev => ({ ...prev, name: e.target.value }))
               if (errors.name) {
                 setErrors(prev => ({ ...prev, name: undefined }))
               }
@@ -182,9 +192,12 @@ export default function TopCategoryModal({
           <SelectField
             name='type'
             label={t('category.type')}
-            value={type}
+            value={formData.type}
             onChange={e => {
-              setType(e.target.value)
+              setFormData(prev => ({
+                ...prev,
+                type: e.target.value as CategoryFormData['type'],
+              }))
               if (errors.type) {
                 setErrors(prev => ({ ...prev, type: undefined }))
               }
@@ -220,34 +233,34 @@ export default function TopCategoryModal({
         )}
 
         {/* 示例 */}
-        {type && (
+        {formData.type && (
           <div className='bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4'>
             <h4 className='text-sm font-medium text-gray-900 dark:text-gray-100 mb-2'>
               📝 {t('category.examples.title')}
             </h4>
             <div className='text-sm text-gray-600 dark:text-gray-400'>
-              {type === AccountType.ASSET && (
+              {formData.type === AccountType.ASSET && (
                 <ul className='list-disc list-inside space-y-1'>
                   <li>{t('category.examples.asset.cash')}</li>
                   <li>{t('category.examples.asset.investment')}</li>
                   <li>{t('category.examples.asset.fixed')}</li>
                 </ul>
               )}
-              {type === AccountType.LIABILITY && (
+              {formData.type === AccountType.LIABILITY && (
                 <ul className='list-disc list-inside space-y-1'>
                   <li>{t('category.examples.liability.credit')}</li>
                   <li>{t('category.examples.liability.loan')}</li>
                   <li>{t('category.examples.liability.other')}</li>
                 </ul>
               )}
-              {type === AccountType.INCOME && (
+              {formData.type === AccountType.INCOME && (
                 <ul className='list-disc list-inside space-y-1'>
                   <li>{t('category.examples.income.work')}</li>
                   <li>{t('category.examples.income.investment')}</li>
                   <li>{t('category.examples.income.other')}</li>
                 </ul>
               )}
-              {type === AccountType.EXPENSE && (
+              {formData.type === AccountType.EXPENSE && (
                 <ul className='list-disc list-inside space-y-1'>
                   <li>{t('category.examples.expense.living')}</li>
                   <li>{t('category.examples.expense.fixed')}</li>
@@ -271,7 +284,7 @@ export default function TopCategoryModal({
             label={isLoading ? t('category.creating') : t('category.create')}
             onClick={handleSave}
             isLoading={isLoading}
-            disabled={!name.trim() || !type}
+            disabled={!formData.name.trim() || !formData.type}
             variant='primary'
           />
         </div>

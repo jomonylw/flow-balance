@@ -2,6 +2,7 @@
  * 分类汇总相关的类型定义
  */
 
+import type { AccountWithTransactions as _AccountWithTransactions } from '@/types/core'
 import { AccountType, TransactionType } from '@/types/core/constants'
 
 export type ServiceBalance = Record<string, number>
@@ -176,30 +177,6 @@ export type _CategorySummaryResponse =
   | FlowCategorySummary
 
 // 内部计算用的账户数据结构
-export interface AccountWithTransactions {
-  id: string
-  name: string
-  description?: string
-  categoryId: string
-  category: {
-    id: string
-    name: string
-    type?: AccountType
-  }
-  transactions: Array<{
-    id: string
-    type: TransactionType
-    amount: number
-    description: string
-    notes?: string
-    date: string
-    currency: {
-      code: string
-      symbol: string
-      name: string
-    }
-  }>
-}
 
 // 分类数据结构（服务层专用）
 export interface ServiceCategoryWithChildren {

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getCommonError, getCategoryError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -31,6 +32,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  let createData: Prisma.CategoryCreateInput | undefined
+
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -89,17 +92,18 @@ export async function POST(request: NextRequest) {
         existingCategory: existingCategory,
         requestData: { name, parentId, type, order },
       })
-      return errorResponse('该分类名称已存在', 400)
+      return errorResponse(getCategoryError('ALREADY_EXISTS'), 400)
     }
 
     console.log('No existing category found, proceeding with creation')
 
     // 准备创建数据
-    const createData: Prisma.CategoryCreateInput = {
+    createData = {
       user: {
         connect: { id: user.id },
       },
       name,
+      type: type || 'ASSET', // 提供默认值
       parent: parentId ? { connect: { id: parentId } } : undefined,
       order: order ?? 0, // 使用请求中的排序或默认为0
       // 注意：icon, color, description 字段在当前 schema 中不存在
@@ -161,21 +165,27 @@ export async function POST(request: NextRequest) {
       error: error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      createData: createData,
+      createData: typeof createData !== 'undefined' ? createData : null,
     })
 
     // 提供更详细的错误信息
     if (error instanceof Error) {
       // 检查是否是数据库约束错误
       if (error.message.includes('Unique constraint')) {
-        return errorResponse('分类名称已存在', 400)
+        return errorResponse(getCategoryError('ALREADY_EXISTS'), 400)
       }
       if (error.message.includes('Foreign key constraint')) {
         return errorResponse('父分类不存在或无效', 400)
       }
-      return errorResponse(`创建分类失败: ${error.message}`, 500)
+      return errorResponse(
+        `${getCategoryError('CREATE_FAILED')}: ${error.message}`,
+        500
+      )
     }
 
-    return errorResponse('创建分类失败: 未知错误', 500)
+    return errorResponse(
+      `${getCategoryError('CREATE_FAILED')}: ${getCommonError('INTERNAL_ERROR')}`,
+      500
+    )
   }
 }

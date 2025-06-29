@@ -1,12 +1,30 @@
+import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
-import { unauthorizedResponse, errorResponse } from '@/lib/api/response'
+import {
+  unauthorizedResponse,
+  errorResponse,
+  validationErrorResponse,
+} from '@/lib/api/response'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
+    }
+
+    // 解析查询参数
+    const { searchParams } = new URL(request.url)
+    const incremental = searchParams.get('incremental') === 'true'
+    const since = searchParams.get('since')
+
+    let sinceDate: Date | undefined
+    if (incremental && since) {
+      sinceDate = new Date(since)
+      if (isNaN(sinceDate.getTime())) {
+        return validationErrorResponse('无效的since日期格式')
+      }
     }
 
     // 获取用户的所有数据 - 分批获取以提高性能

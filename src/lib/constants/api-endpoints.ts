@@ -11,7 +11,7 @@ export const AUTH_ENDPOINTS = {
   ME: `${API_BASE}/auth/me`,
   LOGIN: `${API_BASE}/auth/login`,
   LOGOUT: `${API_BASE}/auth/logout`,
-  REGISTER: `${API_BASE}/auth/register`,
+  REGISTER: `${API_BASE}/auth/signup`,
   REQUEST_PASSWORD_RESET: `${API_BASE}/auth/request-password-reset`,
   RESET_PASSWORD: `${API_BASE}/auth/reset-password`,
 } as const

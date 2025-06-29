@@ -85,7 +85,7 @@ export default function LoanContractModal({
       setFormData({
         id: editingContract.id,
         accountId: editingContract.accountId,
-        currencyCode: editingContract.currencyCode,
+        currencyCode: editingContract.currencyCode || '',
         contractName: editingContract.contractName,
         loanAmount: editingContract.loanAmount,
         interestRate: editingContract.interestRate * 100, // 转换为百分比显示
@@ -286,12 +286,6 @@ export default function LoanContractModal({
       style={{
         zIndex: Z_INDEX.MAX,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      }}
-      onClick={e => {
-        // 点击遮罩层关闭模态框
-        if (e.target === e.currentTarget) {
-          onClose()
-        }
       }}
     >
       <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative'>

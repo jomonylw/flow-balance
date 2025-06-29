@@ -37,7 +37,9 @@ export default function AccountSettingsModal({
     setIsLoading(true)
     try {
       // 将货币代码转换为货币ID
-      const selectedCurrencyRecord = currencies.find(c => c.code === selectedCurrency)
+      const selectedCurrencyRecord = currencies.find(
+        c => c.code === selectedCurrency
+      )
 
       const updates: Partial<SimpleAccount> = {
         name: name.trim(),
@@ -120,6 +122,7 @@ export default function AccountSettingsModal({
       onClose={onClose}
       title={t('account.settings')}
       size='lg'
+      maskClosable={false}
     >
       <div className='space-y-6'>
         {/* 账户类型信息 */}

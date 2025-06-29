@@ -9,6 +9,7 @@ import { getCurrencyFormatInfo } from '@/lib/utils/smart-paste-currency'
 
 import Calendar from '@/components/ui/forms/Calendar'
 import CurrencyTag from '@/components/ui/data-display/CurrencyTag'
+import { ColorManager } from '@/lib/utils/color'
 
 import type {
   CellValidationStatus,
@@ -903,7 +904,8 @@ export default function SmartPasteCell({
               {availableTags.map(tag => {
                 const isSelected =
                   Array.isArray(value) && value.includes(tag.id)
-                const tagColor = tag.color || '#6B7280' // 默认灰色
+                const tagColor =
+                  tag.color || ColorManager.getSemanticColor('primary')
                 return (
                   <button
                     key={tag.id}

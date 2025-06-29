@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getCommonError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -182,6 +183,6 @@ export async function GET(
     })
   } catch (error) {
     console.error('Get account transactions error:', error)
-    return errorResponse('获取账户交易记录失败', 500)
+    return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
   }
 }

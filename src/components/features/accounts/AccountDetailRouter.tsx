@@ -80,9 +80,9 @@ export default function AccountDetailRouter({
           : undefined,
       },
       category: {
-        id: transaction.category.id,
-        name: transaction.category.name,
-        type: transaction.category.type,
+        id: transaction.account.category.id,
+        name: transaction.account.category.name,
+        type: transaction.account.category.type,
         order: 0, // 默认值
         userId: transaction.userId,
         createdAt: new Date(transaction.createdAt),

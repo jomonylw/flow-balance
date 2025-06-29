@@ -351,8 +351,11 @@ export class DeletionImpactAnalyzer {
         where: { id: categoryId, userId },
         include: {
           children: true,
-          accounts: true,
-          transactions: true,
+          accounts: {
+            include: {
+              transactions: true,
+            },
+          },
         },
       })
 
@@ -394,9 +397,13 @@ export class DeletionImpactAnalyzer {
         criticalDependencies.push('关联账户')
       }
 
-      // 检查关联交易
-      if (category.transactions.length > 0) {
-        errors.push(`分类被${category.transactions.length}笔交易使用，无法删除`)
+      // 检查关联交易（通过账户）
+      const transactionCount = category.accounts.reduce((total, account) => {
+        return total + account.transactions.length
+      }, 0)
+
+      if (transactionCount > 0) {
+        errors.push(`分类被${transactionCount}笔交易使用，无法删除`)
         suggestions.push('请先将交易移动到其他分类')
         criticalDependencies.push('关联交易')
       }

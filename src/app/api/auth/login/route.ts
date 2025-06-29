@@ -5,6 +5,7 @@ import {
   errorResponse,
   validationErrorResponse,
 } from '@/lib/api/response'
+import { getCommonError } from '@/lib/constants/api-messages'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
     const result = await loginUser(email, password)
 
     if (!result.success) {
-      return errorResponse(result.error || '登录失败', 401)
+      return errorResponse(result.error || getCommonError('UNAUTHORIZED'), 401)
     }
 
     // 设置认证 Cookie

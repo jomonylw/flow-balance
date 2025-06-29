@@ -9,6 +9,9 @@ import {
 import { TransactionType, AccountType } from '@/types/core/constants'
 import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
+import { ColorManager } from '@/lib/utils/color'
+import { BUSINESS_LIMITS } from '@/lib/constants/app-config'
+import { getCommonError } from '@/lib/constants/api-messages'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
 import { normalizeEndOfDay } from '@/lib/utils/date-range'
 
@@ -109,9 +112,11 @@ export async function GET(request: NextRequest) {
 
       if (earliestTransaction) {
         const earliestDate = earliestTransaction.date
-        const monthsDiff = Math.ceil(
-          (currentDate.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
-        ) + 1 // 加1确保包含当前月
+        const monthsDiff =
+          Math.ceil(
+            (currentDate.getTime() - earliestDate.getTime()) /
+              (1000 * 60 * 60 * 24 * 30)
+          ) + 1 // 加1确保包含当前月
         actualMonths = Math.max(monthsDiff, 1)
       } else {
         actualMonths = 12 // 如果没有交易记录，默认12个月
@@ -287,15 +292,20 @@ export async function GET(request: NextRequest) {
 
         const netWorth = totalAssets - totalLiabilities
 
+        const precision = BUSINESS_LIMITS.PERCENTAGE_MULTIPLIER
+
         monthlyData.push({
           month: monthLabel,
           monthName: format(targetDate, 'yyyy年MM月'),
-          netWorth: Math.round(netWorth * 100) / 100,
-          totalAssets: Math.round(totalAssets * 100) / 100,
-          totalLiabilities: Math.round(totalLiabilities * 100) / 100,
-          monthlyIncome: Math.round(monthlyIncomeInBaseCurrency * 100) / 100,
-          monthlyExpense: Math.round(monthlyExpenseInBaseCurrency * 100) / 100,
-          netCashFlow: Math.round(netCashFlow * 100) / 100,
+          netWorth: Math.round(netWorth * precision) / precision,
+          totalAssets: Math.round(totalAssets * precision) / precision,
+          totalLiabilities:
+            Math.round(totalLiabilities * precision) / precision,
+          monthlyIncome:
+            Math.round(monthlyIncomeInBaseCurrency * precision) / precision,
+          monthlyExpense:
+            Math.round(monthlyExpenseInBaseCurrency * precision) / precision,
+          netCashFlow: Math.round(netCashFlow * precision) / precision,
           hasConversionErrors:
             netWorthResult.hasConversionErrors ||
             incomeConversions.some(r => !r.success) ||
@@ -314,7 +324,7 @@ export async function GET(request: NextRequest) {
           monthlyExpense: 0,
           netCashFlow: 0,
           hasConversionErrors: true,
-          error: '数据计算失败',
+          error: getCommonError('INTERNAL_ERROR'),
         })
       }
     }
@@ -328,19 +338,23 @@ export async function GET(request: NextRequest) {
           type: 'line',
           data: monthlyData.map(d => d.netWorth),
           smooth: true,
-          itemStyle: { color: '#3b82f6' },
+          itemStyle: { color: ColorManager.getSemanticColor('info') }, // 使用青色，与蓝色资产柱状图区分
         },
         {
           name: 'total_assets', // 使用键名，前端翻译
           type: 'bar',
           data: monthlyData.map(d => d.totalAssets),
-          itemStyle: { color: '#10b981' },
+          itemStyle: {
+            color: ColorManager.getAccountTypeColor(AccountType.ASSET),
+          },
         },
         {
           name: 'total_liabilities', // 使用键名，前端翻译
           type: 'bar',
           data: monthlyData.map(d => -d.totalLiabilities), // 负债显示为负数
-          itemStyle: { color: '#ef4444' },
+          itemStyle: {
+            color: ColorManager.getAccountTypeColor(AccountType.LIABILITY),
+          },
         },
       ],
     }
@@ -352,20 +366,24 @@ export async function GET(request: NextRequest) {
           name: 'income', // 使用键名，前端翻译
           type: 'bar',
           data: monthlyData.map(d => d.monthlyIncome),
-          itemStyle: { color: '#10b981' },
+          itemStyle: {
+            color: ColorManager.getAccountTypeColor(AccountType.INCOME),
+          },
         },
         {
           name: 'expense', // 使用键名，前端翻译
           type: 'bar',
           data: monthlyData.map(d => -d.monthlyExpense), // 负值显示
-          itemStyle: { color: '#ef4444' },
+          itemStyle: {
+            color: ColorManager.getAccountTypeColor(AccountType.EXPENSE),
+          },
         },
         {
           name: 'net_cash_flow', // 使用键名，前端翻译
           type: 'line',
           data: monthlyData.map(d => d.netCashFlow),
           smooth: true,
-          itemStyle: { color: '#3b82f6' },
+          itemStyle: { color: ColorManager.getSemanticColor('primary') },
           yAxisIndex: 1,
         },
       ],
@@ -392,6 +410,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Get dashboard charts error:', error)
-    return errorResponse('获取图表数据失败', 500)
+    return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
   }
 }

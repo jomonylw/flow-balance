@@ -69,7 +69,12 @@ export default function InputDialog({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title={title}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title={title}
+      maskClosable={false}
+    >
       <form onSubmit={handleSubmit} className='space-y-4'>
         {message && (
           <p className='text-gray-700 dark:text-gray-300'>{message}</p>

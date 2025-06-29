@@ -1,17 +1,9 @@
 'use client'
 
+import type { ModalProps } from '@/types/ui'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { SPACING, Z_INDEX } from '@/lib/constants/dimensions'
-
-interface ModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title: string
-  children: React.ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl'
-  zIndex?: number
-}
 
 export default function Modal({
   isOpen,
@@ -19,6 +11,7 @@ export default function Modal({
   title,
   children,
   size = 'md',
+  maskClosable = false,
   zIndex = Z_INDEX.MODAL,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
@@ -30,8 +23,9 @@ export default function Modal({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // 确保点击的是背景遮罩层，而不是模态框内容
+      // 只有在允许点击遮罩关闭时才处理点击事件
       if (
+        maskClosable &&
         modalRef.current &&
         !modalRef.current.contains(event.target as Node) &&
         (event.target as Element)?.classList?.contains('modal-backdrop')
@@ -66,6 +60,7 @@ export default function Modal({
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
+    full: 'max-w-full',
   }
 
   const modalContent = (

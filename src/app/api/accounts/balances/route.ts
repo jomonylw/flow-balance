@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getCommonError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     const baseCurrency = userSettings?.baseCurrency || {
       code: 'CNY',
       symbol: '¥',
-      name: '人民币',
+      name: 'Chinese Yuan',
     }
 
     // 构建查询条件
@@ -155,9 +156,13 @@ export async function GET(request: NextRequest) {
       } else {
         // 流量账户：计算当前月份的流量汇总
         // 使用期间计算，默认为当前月份，但不超过当前日期
-        const periodStart = normalizeStartOfDay(new Date(now.getFullYear(), now.getMonth(), 1))
+        const periodStart = normalizeStartOfDay(
+          new Date(now.getFullYear(), now.getMonth(), 1)
+        )
         const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-        const periodEnd = new Date(Math.min(nowEndOfDay.getTime(), normalizeEndOfDay(monthEnd).getTime()))
+        const periodEnd = new Date(
+          Math.min(nowEndOfDay.getTime(), normalizeEndOfDay(monthEnd).getTime())
+        )
 
         balances = calculateAccountBalance(serializedAccount, {
           asOfDate: now, // 添加截止日期，确保不包含未来交易
@@ -258,6 +263,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Get account balances error:', error)
-    return errorResponse('获取账户余额失败', 500)
+    return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
   }
 }

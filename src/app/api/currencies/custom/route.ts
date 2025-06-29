@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getCommonError, getCurrencyError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('创建自定义货币失败:', error)
-    return errorResponse('创建自定义货币失败', 500)
+    return errorResponse(getCurrencyError('CREATE_FAILED'), 500)
   }
 }
 
@@ -135,6 +136,6 @@ export async function GET(_request: NextRequest) {
     })
   } catch (error) {
     console.error('获取自定义货币失败:', error)
-    return errorResponse('获取自定义货币失败', 500)
+    return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
   }
 }

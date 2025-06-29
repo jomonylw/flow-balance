@@ -1,20 +1,10 @@
 'use client'
 
+import type { PageContainerProps, BreadcrumbItem } from '@/types/ui'
 import { ReactNode } from 'react'
 import { useIsMobile } from '@/hooks/ui/useResponsive'
 import { getSpacing, getTextSize } from '@/lib/utils/responsive'
 import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
-
-interface PageContainerProps {
-  children: ReactNode
-  title?: string
-  subtitle?: string
-  actions?: ReactNode
-  breadcrumb?: ReactNode
-  className?: string
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | '6xl' | '7xl' | 'full'
-  padding?: boolean
-}
 
 export default function PageContainer({
   children,
@@ -47,7 +37,11 @@ export default function PageContainer({
       className={`${maxWidthClasses[maxWidth]} mx-auto ${paddingClass} ${className}`}
     >
       {/* 面包屑导航 */}
-      {breadcrumb && <div className='mb-4 sm:mb-6'>{breadcrumb}</div>}
+      {breadcrumb && (
+        <div className='mb-4 sm:mb-6'>
+          <Breadcrumb items={breadcrumb} />
+        </div>
+      )}
 
       {/* 页面头部 */}
       {(title || actions) && (
@@ -88,7 +82,6 @@ export default function PageContainer({
 }
 
 // 面包屑组件
-import type { BreadcrumbItem } from '@/types/ui'
 
 interface BreadcrumbProps {
   items: BreadcrumbItem[]

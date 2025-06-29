@@ -3,13 +3,14 @@ import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import { z } from 'zod'
 import { TransactionType } from '@/types/core/constants'
+import { VALIDATION } from '@/lib/constants/app-config'
 
 // 创建模板验证schema
 const createTemplateSchema = z.object({
   name: z
     .string()
     .min(1, '模板名称不能为空')
-    .max(100, '模板名称不能超过100个字符'),
+    .max(VALIDATION.TEMPLATE_NAME_MAX_LENGTH, '模板名称不能超过100个字符'),
   accountId: z.string().min(1, '账户ID不能为空'),
   currencyCode: z.string().min(1, '货币代码不能为空'),
   type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE], {

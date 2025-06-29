@@ -123,6 +123,7 @@ export default async function AccountPage({ params }: AccountPageProps) {
         id: transaction.account.id,
         name: transaction.account.name,
         category: {
+          id: transaction.account.category.id,
           name: transaction.account.category.name,
           type: convertPrismaAccountType(transaction.account.category.type),
         },

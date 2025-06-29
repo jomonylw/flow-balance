@@ -3,11 +3,14 @@
  * 统一管理 UI 组件的 props、状态和事件类型
  */
 
-import { ReactNode, MouseEvent, ChangeEvent, FormEvent } from 'react'
-import {
-  Theme as CoreTheme,
-  Language as CoreLanguage,
+import type {
+  Theme as _Theme,
+  Language as _Language,
+  LoadingState as _LoadingState,
+  Size as _Size,
+  ColorVariant as _ColorVariant,
 } from '@/types/core/constants'
+import { ReactNode, MouseEvent, ChangeEvent, FormEvent } from 'react'
 
 // ============================================================================
 // 基础 UI 类型
@@ -21,23 +24,19 @@ export interface BaseComponentProps {
 }
 
 /** 主题类型 - 重新导出核心类型 */
-export type Theme = CoreTheme
+export type { Theme } from '@/types/core/constants'
 
 /** 语言类型 - 重新导出核心类型 */
-export type Language = CoreLanguage
+export type { Language } from '@/types/core/constants'
 
-/** 尺寸类型 */
-export type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+/** 加载状态类型 - 重新导出核心类型 */
+export type { LoadingState } from '@/types/core/constants'
 
-/** 颜色变体类型 */
-export type ColorVariant =
-  | 'default'
-  | 'primary'
-  | 'secondary'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'info'
+/** 尺寸类型 - 重新导出核心类型 */
+export type { Size } from '@/types/core/constants'
+
+/** 颜色变体类型 - 重新导出核心类型 */
+export type { ColorVariant } from '@/types/core/constants'
 
 /** 对齐方式 */
 export type Alignment = 'left' | 'center' | 'right'
@@ -158,7 +157,7 @@ export type ModalPosition = 'center' | 'top' | 'bottom'
 
 /** 模态框 Props */
 export interface ModalProps extends BaseComponentProps {
-  open: boolean
+  isOpen: boolean
   onClose: () => void
   title?: string
   size?: ModalSize
@@ -168,6 +167,7 @@ export interface ModalProps extends BaseComponentProps {
   destroyOnClose?: boolean
   footer?: ReactNode
   loading?: boolean
+  zIndex?: number
 }
 
 // ============================================================================
@@ -267,7 +267,6 @@ export interface BreadcrumbItem {
 // ============================================================================
 
 /** 加载状态 */
-export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 
 /** 异步操作状态 */
 export interface AsyncState<T = unknown> {
@@ -351,4 +350,6 @@ export interface PageContainerProps extends BaseComponentProps {
   actions?: ReactNode
   loading?: boolean
   error?: string
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | '6xl' | '7xl' | 'full'
+  padding?: boolean
 }

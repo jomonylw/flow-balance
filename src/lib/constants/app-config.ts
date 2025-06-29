@@ -73,6 +73,28 @@ export const VALIDATION = {
   FUTURE_DATA_DAYS_MAX: 30,
   /** 未来数据天数步长 */
   FUTURE_DATA_DAYS_STEP: 1,
+  /** 模板名称最大长度 */
+  TEMPLATE_NAME_MAX_LENGTH: 100,
+  /** 汇率最大值 */
+  EXCHANGE_RATE_MAX: 1000000,
+  /** 汇率精度（小数位数） */
+  EXCHANGE_RATE_PRECISION: 8,
+} as const
+
+/** 业务限制配置 */
+export const BUSINESS_LIMITS = {
+  /** 批量操作最大数量 */
+  BATCH_MAX_SIZE: 100,
+  /** 数值精度（小数位数） */
+  DECIMAL_PRECISION: 2,
+  /** 百分比精度倍数 */
+  PERCENTAGE_MULTIPLIER: 100,
+  /** 定期交易间隔最大值 */
+  RECURRING_INTERVAL_MAX: 365,
+  /** 贷款期限最大值（月） */
+  LOAN_TERM_MAX_MONTHS: 360,
+  /** 利率最大值（百分比） */
+  INTEREST_RATE_MAX: 100,
 } as const
 
 /** 缓存配置 */

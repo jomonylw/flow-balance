@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getCommonError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -53,6 +54,6 @@ export async function GET(_request: NextRequest) {
     })
   } catch (error) {
     console.error('获取货币列表失败:', error)
-    return errorResponse('获取货币列表失败', 500)
+    return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
   }
 }

@@ -78,6 +78,8 @@ export interface CellData {
   options?: Array<{ value: unknown; label: string; [key: string]: unknown }>
   isSelected?: boolean
   isCopied?: boolean
+  currencyHint?: string
+  decimalPlacesHint?: number
 }
 
 /** 智能粘贴行数据 */

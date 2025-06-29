@@ -102,6 +102,7 @@ export default function TagFormModal({
       onClose={onClose}
       title={editingTag ? t('tag.edit') : t('tag.add')}
       zIndex={zIndex}
+      maskClosable={false}
     >
       <form onSubmit={handleSubmit} className='space-y-4'>
         <InputField

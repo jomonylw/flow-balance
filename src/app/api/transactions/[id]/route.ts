@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getTransactionError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -347,7 +348,7 @@ export async function DELETE(
     console.error('[DELETE TRANSACTION] 删除交易时发生错误:', error)
 
     // 提供更详细的错误信息
-    let errorMessage = '删除交易失败'
+    let errorMessage = getTransactionError('DELETE_FAILED')
     let statusCode = 500
 
     if (error instanceof Error) {
@@ -362,10 +363,10 @@ export async function DELETE(
         errorMessage = '删除失败：该交易存在关联数据，请先删除相关记录'
         statusCode = 400
       } else if (error.message.includes('Record to delete does not exist')) {
-        errorMessage = '删除失败：交易记录不存在'
+        errorMessage = getTransactionError('NOT_FOUND')
         statusCode = 404
       } else {
-        errorMessage = `删除失败：${error.message}`
+        errorMessage = `${getTransactionError('DELETE_FAILED')}：${error.message}`
       }
     }
 

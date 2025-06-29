@@ -391,14 +391,13 @@ export default function FlowAccountDetailView({
       const result = await response.json()
 
       if (!result.success) {
-        throw new Error(result.error || '保存定期交易失败')
+        throw new Error(result.error || t('recurring.transaction.save.failed'))
       }
 
       showSuccess(
         editingRecurringTransaction
           ? t('recurring.transaction.updated')
-          : t('recurring.transaction.created'),
-        editingRecurringTransaction ? '定期交易已更新' : '定期交易已创建'
+          : t('recurring.transaction.created')
       )
 
       // 刷新定期交易列表

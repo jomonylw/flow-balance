@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getAccountError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -84,7 +85,7 @@ export async function DELETE(
     console.error('[CLEAR TRANSACTIONS] 清空交易记录时发生错误:', error)
 
     // 提供更详细的错误信息
-    let errorMessage = '清空交易记录失败'
+    let errorMessage = getAccountError('CLEAR_FAILED')
     let statusCode = 500
 
     if (error instanceof Error) {
@@ -96,10 +97,10 @@ export async function DELETE(
 
       // 检查是否是特定的业务错误
       if (error.message.includes('Foreign key constraint')) {
-        errorMessage = '清空失败：交易记录存在关联数据，请先删除相关记录'
+        errorMessage = getAccountError('CLEAR_TRANSACTIONS_FAILED')
         statusCode = 400
       } else {
-        errorMessage = `清空失败：${error.message}`
+        errorMessage = `${getAccountError('CLEAR_FAILED')}：${error.message}`
       }
     }
 

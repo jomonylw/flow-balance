@@ -550,11 +550,11 @@ const OptimizedCategoryAccountTree = forwardRef<
       case 'ASSET':
         return 'bg-blue-50/20 dark:bg-blue-950/15 border-blue-200/50 dark:border-blue-700/30'
       case 'LIABILITY':
-        return 'bg-red-50/20 dark:bg-red-950/15 border-red-200/50 dark:border-red-700/30'
+        return 'bg-orange-50/20 dark:bg-orange-950/15 border-orange-200/50 dark:border-orange-700/30'
       case 'INCOME':
         return 'bg-green-50/20 dark:bg-green-950/15 border-green-200/50 dark:border-green-700/30'
       case 'EXPENSE':
-        return 'bg-orange-50/20 dark:bg-orange-950/15 border-orange-200/50 dark:border-orange-700/30'
+        return 'bg-red-50/20 dark:bg-red-950/15 border-red-200/50 dark:border-red-700/30'
       default:
         return 'bg-gray-50/20 dark:bg-gray-950/15 border-gray-200/50 dark:border-gray-700/30'
     }

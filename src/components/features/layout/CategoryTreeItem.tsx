@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 
 import CategoryContextMenu from './CategoryContextMenu'
@@ -15,12 +15,17 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useSidebarNavigation } from '@/hooks/ui/useOptimizedNavigation'
 import {
+  ACCOUNT_TYPE_COLORS,
+  AccountType,
+  CURRENCY_SYMBOLS,
+} from '@/types/core/constants'
+import { hexToRgb } from '@/lib/utils/color'
+import {
   publishCategoryCreate,
   publishCategoryDelete,
   publishAccountCreate,
   publishCategoryUpdate,
 } from '@/lib/services/data-update.service'
-import { CURRENCY_SYMBOLS } from '@/types/core/constants'
 import type { CategoryTreeItemProps } from '@/types/components'
 import type { SimpleAccount, SimpleCategory } from '@/types/core'
 
@@ -99,11 +104,66 @@ export default function CategoryTreeItem({
   // 根据分类类型确定金额颜色
   const getAmountColor = () => {
     const categoryType = category.type
-    if (categoryType === 'LIABILITY' || categoryType === 'EXPENSE') {
+    if (categoryType === 'LIABILITY') {
+      return 'text-orange-600'
+    } else if (categoryType === 'EXPENSE') {
       return 'text-red-600'
     } else {
       return 'text-green-600'
     }
+  }
+
+  // 获取分类类型对应的主题颜色
+  const getCategoryThemeColor = () => {
+    const categoryType = category.type
+    return categoryType
+      ? ACCOUNT_TYPE_COLORS[categoryType as AccountType] || '#6b7280'
+      : '#6b7280'
+  }
+
+  // 获取分类图标的样式
+  const getCategoryIconStyle = (): React.CSSProperties => {
+    const baseColor = getCategoryThemeColor()
+    const rgb = hexToRgb(baseColor)
+
+    if (!rgb) {
+      return {
+        '--icon-bg-from': 'rgba(248, 250, 252, 0.9)',
+        '--icon-bg-to': 'rgba(241, 245, 249, 0.95)',
+        '--icon-color': 'rgb(107, 114, 128)',
+        '--icon-border': 'rgba(107, 114, 128, 0.15)',
+        '--icon-hover-bg-from': 'rgba(241, 245, 249, 0.95)',
+        '--icon-hover-bg-to': 'rgba(226, 232, 240, 1)',
+        '--icon-hover-color': 'rgb(87, 94, 108)',
+      } as React.CSSProperties
+    }
+
+    // 为浅色主题优化的颜色
+    const lightThemeStyle = {
+      '--icon-bg-from': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`,
+      '--icon-bg-to': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.12)`,
+      '--icon-color': `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+      '--icon-border': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`,
+      '--icon-hover-bg-from': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.12)`,
+      '--icon-hover-bg-to': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.18)`,
+      '--icon-hover-color': `rgb(${Math.max(0, rgb.r - 15)}, ${Math.max(0, rgb.g - 15)}, ${Math.max(0, rgb.b - 15)})`,
+    }
+
+    // 为深色主题优化的颜色
+    const darkThemeStyle = {
+      '--icon-bg-from-dark': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`,
+      '--icon-bg-to-dark': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`,
+      '--icon-color-dark': `rgb(${Math.min(255, rgb.r + 40)}, ${Math.min(255, rgb.g + 40)}, ${Math.min(255, rgb.b + 40)})`,
+      '--icon-border-dark': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`,
+      '--icon-hover-bg-from-dark': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`,
+      '--icon-hover-bg-to-dark': `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`,
+      '--icon-hover-color-dark': `rgb(${Math.min(255, rgb.r + 60)}, ${Math.min(255, rgb.g + 60)}, ${Math.min(255, rgb.b + 60)})`,
+    }
+
+    return {
+      ...lightThemeStyle,
+      ...darkThemeStyle,
+    } as React.CSSProperties
   }
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -366,13 +426,42 @@ export default function CategoryTreeItem({
 
         {/* 分类图标 */}
         <div className='mr-3 flex-shrink-0'>
-          <div className='p-1.5 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 shadow-sm'>
+          <div
+            className={`
+              category-icon-container p-2 rounded-xl border transition-all duration-300 ease-out
+              shadow-sm hover:shadow-lg group-hover:scale-105
+              ${
+                isActive
+                  ? 'category-icon-active scale-105'
+                  : 'category-icon-normal hover:category-icon-hover'
+              }
+            `}
+            style={getCategoryIconStyle()}
+          >
+            {/* 背景光晕效果 */}
+            <div
+              className={`
+              absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300
+              ${isActive ? 'opacity-15' : 'group-hover:opacity-8'}
+            `}
+              style={{
+                background: `radial-gradient(circle at center, ${getCategoryThemeColor()}, transparent 70%)`,
+              }}
+            />
+
             <svg
-              className='h-4 w-4 text-gray-600 dark:text-gray-300'
+              className={`
+                relative h-3.5 w-3.5 transition-all duration-300 ease-out
+                ${
+                  isActive
+                    ? 'category-icon-color-active'
+                    : 'category-icon-color group-hover:category-icon-color-hover'
+                }
+              `}
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'
-              strokeWidth={2}
+              strokeWidth={2.5}
             >
               <path
                 strokeLinecap='round'

@@ -290,15 +290,15 @@ export default function FlowCategoryDetailView({
       description: undefined,
       color: undefined,
       userId: user.id,
-      categoryId: transaction.category.id,
+      categoryId: transaction.account.category.id,
       currencyId: transaction.currency.id,
       currencyCode: transaction.currency.code,
       createdAt: new Date(),
       updatedAt: new Date(),
       category: {
-        id: transaction.category.id, // 从交易的 category 获取 id
-        name: transaction.category.name, // 从交易的 category 获取 name
-        type: transaction.category.type, // 从交易的 category 获取 type
+        id: transaction.account.category.id, // 从交易的 account.category 获取 id
+        name: transaction.account.category.name, // 从交易的 account.category 获取 name
+        type: transaction.account.category.type, // 从交易的 account.category 获取 type
       },
       currency: {
         ...transaction.currency,

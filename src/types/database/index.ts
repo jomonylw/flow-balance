@@ -139,17 +139,11 @@ export type TransactionWithBasic = Prisma.TransactionGetPayload<{
         name: true
         category: {
           select: {
+            id: true
             name: true
             type: true
           }
         }
-      }
-    }
-    category: {
-      select: {
-        id: true
-        name: true
-        type: true
       }
     }
     currency: true

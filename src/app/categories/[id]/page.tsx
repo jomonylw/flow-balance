@@ -56,6 +56,7 @@ type PrismaTransactionWithRelations = {
     id: string
     name: string
     category: {
+      id: string
       name: string
       type: AccountType
     } | null
@@ -83,17 +84,23 @@ const serializeTransactions = (
           name: transaction.account.name,
           category: transaction.account.category
             ? {
+                id: transaction.account.category.id,
                 name: transaction.account.category.name,
                 type: convertPrismaAccountType(
                   transaction.account.category.type
                 ),
               }
-            : { name: 'Unknown', type: convertPrismaAccountType('ASSET') },
+            : {
+                id: 'unknown',
+                name: 'Unknown',
+                type: convertPrismaAccountType('ASSET'),
+              },
         }
       : {
           id: 'unknown',
           name: 'Unknown Account',
           category: {
+            id: 'unknown',
             name: 'Unknown',
             type: convertPrismaAccountType('ASSET'),
           },

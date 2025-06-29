@@ -47,16 +47,20 @@ export default function SidebarDashboardLink({
               viewBox='0 0 24 24'
               strokeWidth={2}
             >
+              {/* 仪表盘外圈 */}
               <path
                 strokeLinecap='round'
                 strokeLinejoin='round'
-                d='M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z'
+                d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z'
               />
+              {/* 仪表盘指针 */}
               <path
                 strokeLinecap='round'
                 strokeLinejoin='round'
-                d='M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z'
+                d='M12 6v6l4 2'
               />
+              {/* 中心点 */}
+              <circle cx='12' cy='12' r='1' fill='currentColor' />
             </svg>
           </div>
           <span className='tracking-wide'>{t('nav.dashboard')}</span>

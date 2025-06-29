@@ -29,6 +29,29 @@ const CACHE_EXPIRY = 5 * 60 * 1000
 // 注意：默认颜色和图表颜色序列现在统一从 constants.ts 导入
 
 /**
+ * 将十六进制颜色转换为RGB对象
+ * @param hex 十六进制颜色值，如 "#3b82f6" 或 "3b82f6"
+ * @returns RGB对象 {r, g, b} 或 null（如果格式无效）
+ */
+export function hexToRgb(
+  hex: string
+): { r: number; g: number; b: number } | null {
+  // 移除 # 前缀
+  const cleanHex = hex.replace('#', '')
+
+  // 检查格式是否有效
+  if (!/^[0-9A-Fa-f]{6}$/.test(cleanHex)) {
+    return null
+  }
+
+  const r = parseInt(cleanHex.substring(0, 2), 16)
+  const g = parseInt(cleanHex.substring(2, 4), 16)
+  const b = parseInt(cleanHex.substring(4, 6), 16)
+
+  return { r, g, b }
+}
+
+/**
  * 颜色管理服务类
  */
 export class ColorManager {
@@ -90,6 +113,15 @@ export class ColorManager {
     this.updateCacheTimestamp()
 
     return defaultColor
+  }
+
+  /**
+   * 获取账户类型默认颜色
+   * @param accountType 账户类型
+   * @returns 颜色值
+   */
+  static getAccountTypeColor(accountType: AccountType): string {
+    return ACCOUNT_TYPE_COLORS[accountType] || DEFAULT_COLOR
   }
 
   /**

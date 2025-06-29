@@ -113,7 +113,13 @@ export default function ConfirmationModal({
   const displayIcon = icon || getDefaultIcon()
 
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title='' zIndex={zIndex}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title=''
+      zIndex={zIndex}
+      maskClosable={false}
+    >
       <div className='text-center'>
         {displayIcon}
 

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getAccountError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -120,10 +121,10 @@ export async function DELETE(
 
       // 检查是否是特定的业务错误
       if (error.message.includes('Foreign key constraint')) {
-        errorMessage = '清空失败：余额记录存在关联数据，请先删除相关记录'
+        errorMessage = getAccountError('CLEAR_BALANCE_FAILED')
         statusCode = 400
       } else {
-        errorMessage = `清空失败：${error.message}`
+        errorMessage = `${getAccountError('CLEAR_FAILED')}：${error.message}`
       }
     }
 

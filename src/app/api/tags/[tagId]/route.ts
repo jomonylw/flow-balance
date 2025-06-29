@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getTagError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -185,7 +186,7 @@ export async function DELETE(
     console.error('[DELETE TAG] 删除标签时发生错误:', error)
 
     // 提供更详细的错误信息
-    let errorMessage = '删除标签失败'
+    let errorMessage = getTagError('DELETE_FAILED')
     let statusCode = 500
 
     if (error instanceof Error) {
@@ -197,13 +198,13 @@ export async function DELETE(
 
       // 检查是否是特定的业务错误
       if (error.message.includes('Foreign key constraint')) {
-        errorMessage = '删除失败：该标签正在被交易使用，请先删除相关交易记录'
+        errorMessage = getTagError('IN_USE')
         statusCode = 400
       } else if (error.message.includes('Record to delete does not exist')) {
-        errorMessage = '删除失败：标签不存在'
+        errorMessage = getTagError('NOT_FOUND')
         statusCode = 404
       } else {
-        errorMessage = `删除失败：${error.message}`
+        errorMessage = `${getTagError('DELETE_FAILED')}：${error.message}`
       }
     }
 

@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import PageContainer from '@/components/ui/layout/PageContainer'
 import TranslationLoader from '@/components/ui/data-display/TranslationLoader'
 import { FirePageSkeleton } from '@/components/ui/data-display/page-skeletons'
-import RealitySnapshot from './RealitySnapshot'
+import RealitySnapshot, { type CAGRDetails } from './RealitySnapshot'
 import NorthStarMetrics from './NorthStarMetrics'
 import JourneyVisualization from './JourneyVisualization'
 import CockpitControls from './CockpitControls'
@@ -16,17 +16,6 @@ interface FireUserSettings {
   fireEnabled: boolean
   fireSWR: number
   baseCurrency?: SimpleCurrency | null
-}
-
-interface CAGRDetails {
-  startDate: string
-  endDate: string
-  years: number
-  initialNetWorth: number
-  currentNetWorth: number
-  totalNetContribution: number
-  adjustedGrowth: number
-  message: string
 }
 
 interface FireData {
@@ -93,8 +82,6 @@ export default function FireJourneyContent({
             result.data.realitySnapshot.historicalAnnualReturn,
           monthlyInvestment: result.data.realitySnapshot.monthlyNetInvestment,
         }
-
-
 
         setFireParams(newFireParams)
       } else {

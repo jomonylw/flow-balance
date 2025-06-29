@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getTransactionError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -385,6 +386,6 @@ export async function POST(request: NextRequest) {
       stack: error instanceof Error ? error.stack : 'No stack trace',
       name: error instanceof Error ? error.name : 'Unknown error type',
     })
-    return errorResponse('创建交易失败', 500)
+    return errorResponse(getTransactionError('CREATE_FAILED'), 500)
   }
 }

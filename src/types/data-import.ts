@@ -269,6 +269,9 @@ export interface ImportOptions {
   skipDuplicates?: boolean
   validateData?: boolean
   createMissingCurrencies?: boolean
+  batchSize?: number
+  enableProgressTracking?: boolean
+  onProgress?: (progress: ImportProgress) => void
 }
 
 /** 导入结果 */

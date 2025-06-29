@@ -646,6 +646,7 @@ export default function QuickFlowTransactionModal({
           type: accountTypeInfo.label,
         })}
         size='lg'
+        maskClosable={false}
       >
         <form onSubmit={handleSubmit} className='space-y-6'>
           {errors.general && (

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import type { Category } from '@/types/core'
+import { AccountType } from '@/types/core/constants'
 
 interface CategoryFilterSelectorProps {
   value: string
@@ -12,6 +13,8 @@ interface CategoryFilterSelectorProps {
 interface CategoryTreeNode extends Category {
   children: CategoryTreeNode[]
   level: number
+  createdAt: Date
+  updatedAt: Date
 }
 
 export default function CategoryFilterSelector({
@@ -37,7 +40,14 @@ export default function CategoryFilterSelector({
     const rootCategories: CategoryTreeNode[] = []
 
     flowCategories.forEach(category => {
-      categoryMap.set(category.id, { ...category, children: [], level: 0 })
+      categoryMap.set(category.id, {
+        ...category,
+        type: category.type || AccountType.EXPENSE, // Provide default type
+        children: [],
+        level: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
     })
 
     // 构建树状结构并计算层级

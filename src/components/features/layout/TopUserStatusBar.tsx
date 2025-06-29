@@ -1,5 +1,6 @@
 'use client'
 
+import type { UserWithSettings } from '@/types/database'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
@@ -10,13 +11,10 @@ import LanguageToggle from './LanguageToggle'
 import ThemeToggle from './ThemeToggle'
 import CurrencyConverterPopover from '../currency/CurrencyConverterPopover'
 import { AppLogoVariants } from '@/components/ui/branding/AppLogo'
-import type { SimpleUser, SimpleCurrency } from '@/types/core'
-
-interface UserWithSettings extends SimpleUser {
-  settings?: {
-    baseCurrency?: SimpleCurrency
-  }
-}
+import type {
+  SimpleUser as _SimpleUser,
+  SimpleCurrency as _SimpleCurrency,
+} from '@/types/core'
 
 interface TopUserStatusBarProps {
   user: UserWithSettings

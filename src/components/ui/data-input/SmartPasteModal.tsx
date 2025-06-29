@@ -698,11 +698,6 @@ export default function SmartPasteModal({
     <div
       className='fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4'
       style={{ zIndex: Z_INDEX.MODAL }}
-      onClick={e => {
-        if (e.target === e.currentTarget) {
-          handleClose()
-        }
-      }}
       onKeyDown={handleKeyDown}
     >
       <div

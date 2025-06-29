@@ -27,7 +27,20 @@ export default function DataManagementSection() {
     skipDuplicates: true,
     validateData: true,
     createMissingCurrencies: true,
+    batchSize: 100,
+    enableProgressTracking: true,
   })
+
+  // 进度跟踪相关状态
+  const [importSessionId, setImportSessionId] = useState<string | null>(null)
+  const [importProgress, setImportProgress] = useState<{
+    stage: string
+    current: number
+    total: number
+    percentage: number
+    message: string
+  } | null>(null)
+  const [_showProgressModal, _setShowProgressModal] = useState(false)
 
   // 删除相关状态
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -135,6 +148,15 @@ export default function DataManagementSection() {
   const handleImportData = async () => {
     if (!importData) return
 
+    // 如果启用了进度跟踪，使用新的进度API
+    if (importOptions.enableProgressTracking) {
+      await handleImportWithProgress()
+    } else {
+      await handleImportDirect()
+    }
+  }
+
+  const handleImportDirect = async () => {
     setIsImporting(true)
 
     try {
@@ -177,6 +199,133 @@ export default function DataManagementSection() {
     } finally {
       setIsImporting(false)
     }
+  }
+
+  const handleImportWithProgress = async () => {
+    const sessionId = `import_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    setImportSessionId(sessionId)
+    setShowImportModal(false)
+    setShowProgressModal(true)
+
+    try {
+      // 启动带进度跟踪的导入
+      const response = await fetch('/api/user/data/import/progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: importData,
+          options: importOptions,
+          sessionId,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        // 开始轮询进度
+        startProgressPolling(sessionId)
+      } else {
+        showError('启动导入失败', result.error || '未知错误')
+        setShowProgressModal(false)
+      }
+    } catch (error) {
+      console.error('Start import with progress error:', error)
+      showError('启动导入失败', '启动导入过程中发生错误')
+      setShowProgressModal(false)
+    }
+  }
+
+  const startProgressPolling = (sessionId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(
+          `/api/user/data/import/progress?sessionId=${sessionId}`
+        )
+        const result = await response.json()
+
+        if (response.ok) {
+          setImportProgress(result.data)
+
+          // 检查是否完成
+          if (result.data.stage === 'completed') {
+            clearInterval(pollInterval)
+            showSuccess('数据导入成功', result.data.message)
+            setShowProgressModal(false)
+            setImportData(null)
+            setValidationResult(null)
+            setImportProgress(null)
+            setImportSessionId(null)
+          } else if (result.data.stage === 'failed') {
+            clearInterval(pollInterval)
+            showError('数据导入失败', result.data.message)
+            setShowProgressModal(false)
+            setImportProgress(null)
+            setImportSessionId(null)
+          } else if (result.data.stage === 'cancelled') {
+            clearInterval(pollInterval)
+            showWarning('导入已取消', result.data.message)
+            setShowProgressModal(false)
+            setImportProgress(null)
+            setImportSessionId(null)
+          }
+        } else {
+          clearInterval(pollInterval)
+          showError('获取导入进度失败', result.error || '未知错误')
+          setShowProgressModal(false)
+          setImportProgress(null)
+          setImportSessionId(null)
+        }
+      } catch (error) {
+        console.error('Poll progress error:', error)
+        clearInterval(pollInterval)
+        showError('获取导入进度失败', '网络错误')
+        setShowProgressModal(false)
+        setImportProgress(null)
+        setImportSessionId(null)
+      }
+    }, 1000) // 每秒轮询一次
+
+    // 设置超时，避免无限轮询
+    setTimeout(() => {
+      clearInterval(pollInterval)
+      if (
+        importProgress?.stage !== 'completed' &&
+        importProgress?.stage !== 'failed'
+      ) {
+        showWarning('导入超时', '导入过程超时，请检查导入状态')
+        setShowProgressModal(false)
+        setImportProgress(null)
+        setImportSessionId(null)
+      }
+    }, 300000) // 5分钟超时
+  }
+
+  const _handleCancelImport = async () => {
+    if (!importSessionId) return
+
+    try {
+      const response = await fetch(
+        `/api/user/data/import/progress?sessionId=${importSessionId}`,
+        { method: 'DELETE' }
+      )
+
+      const result = await response.json()
+
+      if (response.ok) {
+        showSuccess('导入已取消', result.data.message)
+      } else {
+        showWarning('取消导入', result.error || '无法取消导入')
+      }
+    } catch (error) {
+      console.error('Cancel import error:', error)
+      showError('取消导入失败', '网络错误')
+    }
+
+    setShowProgressModal(false)
+    setImportProgress(null)
+    setImportSessionId(null)
   }
 
   const closeImportModal = () => {

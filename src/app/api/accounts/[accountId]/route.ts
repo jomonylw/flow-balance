@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getAccountError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -97,7 +98,8 @@ export async function PUT(
       }
 
       // 检查账户是否有定期交易设置
-      const hasRecurringTransactions = existingAccount.recurringTransactions.length > 0
+      const hasRecurringTransactions =
+        existingAccount.recurringTransactions.length > 0
 
       if (hasRecurringTransactions) {
         const recurringNames = existingAccount.recurringTransactions
@@ -105,7 +107,10 @@ export async function PUT(
           .slice(0, 3)
           .join('、')
         const moreCount = existingAccount.recurringTransactions.length - 3
-        const nameText = moreCount > 0 ? `${recurringNames}等${existingAccount.recurringTransactions.length}个` : recurringNames
+        const nameText =
+          moreCount > 0
+            ? `${recurringNames}等${existingAccount.recurringTransactions.length}个`
+            : recurringNames
 
         return errorResponse(
           `账户存在定期交易设置（${nameText}），无法更换货币。请先删除或转移相关定期交易设置。`,
@@ -122,7 +127,10 @@ export async function PUT(
           .slice(0, 3)
           .join('、')
         const moreCount = existingAccount.loanContracts.length - 3
-        const nameText = moreCount > 0 ? `${contractNames}等${existingAccount.loanContracts.length}个` : contractNames
+        const nameText =
+          moreCount > 0
+            ? `${contractNames}等${existingAccount.loanContracts.length}个`
+            : contractNames
 
         return errorResponse(
           `账户存在贷款合约（${nameText}），无法更换货币。请先删除或转移相关贷款合约。`,
@@ -131,7 +139,8 @@ export async function PUT(
       }
 
       // 检查账户是否有贷款合约（作为还款账户）
-      const hasPaymentLoanContracts = existingAccount.paymentLoanContracts.length > 0
+      const hasPaymentLoanContracts =
+        existingAccount.paymentLoanContracts.length > 0
 
       if (hasPaymentLoanContracts) {
         const contractNames = existingAccount.paymentLoanContracts
@@ -139,7 +148,10 @@ export async function PUT(
           .slice(0, 3)
           .join('、')
         const moreCount = existingAccount.paymentLoanContracts.length - 3
-        const nameText = moreCount > 0 ? `${contractNames}等${existingAccount.paymentLoanContracts.length}个` : contractNames
+        const nameText =
+          moreCount > 0
+            ? `${contractNames}等${existingAccount.paymentLoanContracts.length}个`
+            : contractNames
 
         return errorResponse(
           `账户被贷款合约用作还款账户（${nameText}），无法更换货币。请先删除或转移相关贷款合约。`,
@@ -236,7 +248,7 @@ export async function PUT(
     return successResponse(updatedAccount, '账户更新成功')
   } catch (error) {
     console.error('Update account error:', error)
-    return errorResponse('更新账户失败', 500)
+    return errorResponse(getAccountError('UPDATE_FAILED'), 500)
   }
 }
 
@@ -396,7 +408,7 @@ export async function DELETE(
     console.error('[DELETE ACCOUNT] 删除账户时发生错误:', error)
 
     // 提供更详细的错误信息
-    let errorMessage = '删除账户失败'
+    let errorMessage = getAccountError('DELETE_FAILED')
     let statusCode = 500
 
     if (error instanceof Error) {
@@ -411,10 +423,10 @@ export async function DELETE(
         errorMessage = '删除失败：账户存在关联数据，请先删除相关记录'
         statusCode = 400
       } else if (error.message.includes('Record to delete does not exist')) {
-        errorMessage = '删除失败：账户不存在'
+        errorMessage = getAccountError('NOT_FOUND')
         statusCode = 404
       } else {
-        errorMessage = `删除失败：${error.message}`
+        errorMessage = `${getAccountError('DELETE_FAILED')}：${error.message}`
       }
     }
 

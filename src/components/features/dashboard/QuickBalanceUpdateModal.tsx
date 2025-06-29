@@ -105,6 +105,7 @@ export default function QuickBalanceUpdateModal({
         onClose={onClose}
         title={t('balance.update.quick.title')}
         size='lg'
+        maskClosable={false}
       >
         <div className='text-center py-8'>
           <p className='text-gray-500 dark:text-gray-400 mb-4'>
@@ -223,7 +224,13 @@ export default function QuickBalanceUpdateModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={getModalTitle()} size='lg'>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={getModalTitle()}
+      size='lg'
+      maskClosable={false}
+    >
       <form onSubmit={handleSubmit} className='space-y-6'>
         {errors.general && (
           <div

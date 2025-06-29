@@ -73,6 +73,32 @@ const HARDCODE_PATTERNS = {
     severity: 'warning',
     suggestion: '使用 ConstantsManager.getZodXxxEnum() 方法',
   },
+  balanceAdjustmentType: {
+    name: 'BALANCE_ADJUSTMENT 类型使用',
+    patterns: [
+      /'BALANCE_ADJUSTMENT'/g,
+      /"BALANCE_ADJUSTMENT"/g,
+      /BALANCE_ADJUSTMENT/g,
+    ],
+    severity: 'error',
+    suggestion: '使用 BALANCE 替代 BALANCE_ADJUSTMENT',
+  },
+  hardcodedChineseText: {
+    name: '硬编码中文文本',
+    patterns: [
+      /['"][^'"]*[\u4e00-\u9fff]{2,}[^'"]*['"]/g, // 至少2个中文字符
+    ],
+    severity: 'warning',
+    suggestion: '使用国际化 (i18n) 替代硬编码中文文本',
+  },
+  magicNumbers: {
+    name: '魔法数字',
+    patterns: [
+      /\b(?:100|1000|10000)\b(?!\s*[,\]])/g, // 常见的魔法数字，但排除数组中的情况
+    ],
+    severity: 'info',
+    suggestion: '使用命名常量替代魔法数字',
+  },
 }
 
 // 获取所有 TypeScript 文件
@@ -106,23 +132,80 @@ function checkFileForHardcode(filePath) {
   const content = fs.readFileSync(filePath, 'utf8')
   const issues = []
 
-  // 排除常量定义文件中的合理数组定义
+  // 排除特殊文件
   const isConstantsFile = filePath.includes('constants.ts') || filePath.includes('constants-manager.ts')
+  const isI18nFile = filePath.includes('/i18n/') || filePath.includes('/locales/')
+  const isTestFile = filePath.includes('.test.') || filePath.includes('.spec.') || filePath.includes('__tests__')
+  const isConfigFile = filePath.includes('tailwind.config') || filePath.includes('next.config') || filePath.includes('package.json')
 
   Object.entries(HARDCODE_PATTERNS).forEach(([patternKey, config]) => {
     config.patterns.forEach((pattern, index) => {
       let match
       while ((match = pattern.exec(content)) !== null) {
         const lineNumber = content.substring(0, match.index).split('\n').length
+        const matchText = match[0]
 
         // 跳过常量文件中的合理数组定义
         if (isConstantsFile && patternKey === 'hardcodedArrays') {
-          const matchText = match[0].toLowerCase()
-          if (matchText.includes('stock_account_types') ||
-              matchText.includes('flow_account_types') ||
-              matchText.includes('chart_color_sequence') ||
-              matchText.includes('currency_symbols') ||
-              matchText.includes('account_type_colors')) {
+          const lowerMatchText = matchText.toLowerCase()
+          if (lowerMatchText.includes('stock_account_types') ||
+              lowerMatchText.includes('flow_account_types') ||
+              lowerMatchText.includes('chart_color_sequence') ||
+              lowerMatchText.includes('currency_symbols') ||
+              lowerMatchText.includes('account_type_colors')) {
+            continue
+          }
+        }
+
+        // 跳过国际化文件中的中文文本
+        if (isI18nFile && patternKey === 'hardcodedChineseText') {
+          continue
+        }
+
+        // 跳过测试文件中的一些硬编码
+        if (isTestFile && (patternKey === 'hardcodedChineseText' || patternKey === 'magicNumbers')) {
+          continue
+        }
+
+        // 跳过配置文件中的硬编码
+        if (isConfigFile) {
+          continue
+        }
+
+        // 跳过常量定义文件中的枚举值
+        if (isConstantsFile && patternKey === 'stringLiteralUnions') {
+          continue
+        }
+
+        // 跳过注释中的中文文本
+        if (patternKey === 'hardcodedChineseText') {
+          const lineContent = content.split('\n')[lineNumber - 1]
+          if (lineContent && (lineContent.trim().startsWith('//') || lineContent.trim().startsWith('*'))) {
+            continue
+          }
+        }
+
+        // 跳过 console.log 中的中文文本（开发调试用）
+        if (patternKey === 'hardcodedChineseText') {
+          const surroundingText = content.substring(Math.max(0, match.index - 50), match.index + match[0].length + 50)
+          if (surroundingText.includes('console.log') || surroundingText.includes('console.error')) {
+            continue
+          }
+        }
+
+        // 跳过只包含空白字符和少量中文的字符串
+        if (patternKey === 'hardcodedChineseText') {
+          const cleanText = matchText.replace(/['"]/g, '').trim()
+          if (cleanText.length < 2 || /^[\s\n\r\t]*[\u4e00-\u9fff]?[\s\n\r\t]*$/.test(cleanText)) {
+            continue
+          }
+        }
+
+        // 跳过导入路径和文件路径中的内容
+        if (patternKey === 'hardcodedChineseText') {
+          const surroundingText = content.substring(Math.max(0, match.index - 30), match.index + match[0].length + 30)
+          if (surroundingText.includes('import') || surroundingText.includes('from') ||
+              surroundingText.includes('require') || matchText.includes('/') || matchText.includes('.')) {
             continue
           }
         }
@@ -134,7 +217,7 @@ function checkFileForHardcode(filePath) {
           severity: config.severity,
           name: config.name,
           suggestion: config.suggestion,
-          match: match[0],
+          match: matchText.substring(0, 100), // 限制匹配文本长度
         })
       }
     })
@@ -250,16 +333,26 @@ function checkHardcodeIssues() {
   })
   
   console.log(colorize('\n🔧 推荐的重构步骤:', 'cyan'))
-  console.log('1. 使用 src/types/core/constants.ts 中的枚举替代字符串字面量')
-  console.log('2. 使用 ConstantsManager 替代硬编码常量数组')
-  console.log('3. 统一使用颜色管理系统')
-  console.log('4. 更新 Zod Schema 使用枚举配置')
-  console.log('5. 运行测试确保功能正常')
-  
+  console.log('1. 修复 BALANCE_ADJUSTMENT → BALANCE 类型重命名')
+  console.log('2. 使用 src/types/core/constants.ts 中的枚举替代字符串字面量')
+  console.log('3. 使用 ConstantsManager 替代硬编码常量数组')
+  console.log('4. 统一使用颜色管理系统')
+  console.log('5. 使用国际化 (i18n) 替代硬编码中文文本')
+  console.log('6. 更新 Zod Schema 使用枚举配置')
+  console.log('7. 使用命名常量替代魔法数字')
+  console.log('8. 运行测试确保功能正常')
+
   console.log(colorize('\n📚 参考文档:', 'cyan'))
   console.log('- docs/HARDCODE_REFACTOR_GUIDE.md')
   console.log('- src/types/core/constants.ts')
   console.log('- src/lib/utils/constants-manager.ts')
+  console.log('- src/lib/constants/index.ts')
+  console.log('- src/i18n/ (国际化配置)')
+
+  console.log(colorize('\n🚨 优先修复项目:', 'red'))
+  console.log('1. BALANCE_ADJUSTMENT 类型问题 (影响 API 兼容性)')
+  console.log('2. 硬编码常量数组 (影响代码维护性)')
+  console.log('3. 字符串字面量联合类型 (影响类型安全)')
   
   return errorIssues.length === 0
 }

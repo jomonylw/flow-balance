@@ -1,4 +1,5 @@
 import type {
+  AccountWithTransactions,
   User as CoreUser,
   Category as CoreCategory,
   Currency as CoreCurrency,
@@ -26,11 +27,6 @@ export type { Tag } from '@/types/core'
 // 扩展类型以包含交易数据
 export interface CategoryWithTransactions
   extends Omit<CoreCategory, 'transactions'> {
-  transactions: TransactionWithBasic[]
-}
-
-export interface AccountWithTransactions
-  extends Omit<CoreAccount, 'transactions'> {
   transactions: TransactionWithBasic[]
 }
 

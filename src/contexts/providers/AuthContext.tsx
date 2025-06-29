@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const publicRoutes = [
     '/login',
-    '/register',
+    '/signup',
     '/forgot-password',
     '/reset-password',
   ]

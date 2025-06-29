@@ -1,5 +1,6 @@
 'use client'
 
+import type { TimeRange } from '@/types/core'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
@@ -9,7 +10,6 @@ import { useTheme } from '@/contexts/providers/ThemeContext'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 
 // 时间范围类型定义
-type TimeRange = 'last12months' | 'all'
 
 interface NetWorthChartProps {
   data: {
@@ -31,7 +31,13 @@ interface NetWorthChartProps {
   timeRange?: TimeRange // 新增：外部传入的时间范围
 }
 
-export default function NetWorthChart({ data, currency, loading = false, onTimeRangeChange, timeRange: externalTimeRange }: NetWorthChartProps) {
+export default function NetWorthChart({
+  data,
+  currency,
+  loading = false,
+  onTimeRangeChange,
+  timeRange: externalTimeRange,
+}: NetWorthChartProps) {
   const { t } = useLanguage()
   const {
     formatCurrencyById,
@@ -42,18 +48,22 @@ export default function NetWorthChart({ data, currency, loading = false, onTimeR
   const { resolvedTheme } = useTheme()
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
-  const [internalTimeRange, setInternalTimeRange] = useState<TimeRange>('last12months')
+  const [internalTimeRange, setInternalTimeRange] =
+    useState<TimeRange>('last12months')
 
   // 使用外部传入的timeRange，如果没有则使用内部状态
   const currentTimeRange = externalTimeRange || internalTimeRange
 
   // 处理时间范围变化
-  const handleTimeRangeChange = useCallback((newTimeRange: TimeRange) => {
-    setInternalTimeRange(newTimeRange)
-    if (onTimeRangeChange) {
-      onTimeRangeChange(newTimeRange)
-    }
-  }, [onTimeRangeChange])
+  const handleTimeRangeChange = useCallback(
+    (newTimeRange: TimeRange) => {
+      setInternalTimeRange(newTimeRange)
+      if (onTimeRangeChange) {
+        onTimeRangeChange(newTimeRange)
+      }
+    },
+    [onTimeRangeChange]
+  )
 
   // 根据时间范围过滤数据
   const getFilteredData = useCallback(() => {
@@ -64,12 +74,12 @@ export default function NetWorthChart({ data, currency, loading = false, onTimeR
       const filteredXAxis = data.xAxis.slice(-12)
       const filteredSeries = data.series.map(series => ({
         ...series,
-        data: series.data.slice(-12)
+        data: series.data.slice(-12),
       }))
 
       return {
         xAxis: filteredXAxis,
-        series: filteredSeries
+        series: filteredSeries,
       }
     }
 
@@ -268,7 +278,16 @@ export default function NetWorthChart({ data, currency, loading = false, onTimeR
     return () => {
       window.removeEventListener('resize', handleResize)
     }
-  }, [data, currency, resolvedTheme, t, formatChartDate, getFilteredData, currentTimeRange, loading])
+  }, [
+    data,
+    currency,
+    resolvedTheme,
+    t,
+    formatChartDate,
+    getFilteredData,
+    currentTimeRange,
+    loading,
+  ])
 
   useEffect(() => {
     return () => {

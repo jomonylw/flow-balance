@@ -254,7 +254,11 @@ export default function BalanceSheetCard() {
           <div className='flex items-center'>
             <Link
               href={`/categories/${category.id}`}
-              className='font-medium text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 hover:underline'
+              className={`font-medium transition-colors duration-200 hover:underline ${
+                category.type === 'ASSET'
+                  ? 'text-blue-700 dark:text-blue-300 hover:text-blue-600 dark:hover:text-blue-400'
+                  : 'text-orange-700 dark:text-orange-300 hover:text-orange-600 dark:hover:text-orange-400'
+              }`}
             >
               {category.name}
             </Link>
@@ -271,9 +275,13 @@ export default function BalanceSheetCard() {
               <div className='text-right'>
                 <span
                   className={`inline-block px-2 py-1 rounded text-sm font-bold border ${
-                    level === 0
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700'
-                      : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                    category.type === 'ASSET'
+                      ? level === 0
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700'
+                        : 'bg-blue-50/50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50'
+                      : level === 0
+                        ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700'
+                        : 'bg-orange-50/50 dark:bg-orange-900/10 text-orange-600 dark:text-orange-400 border-orange-200/50 dark:border-orange-700/50'
                   }`}
                 >
                   {formatCurrencyWithSymbol(
@@ -308,7 +316,13 @@ export default function BalanceSheetCard() {
                         {currencyCode}
                       </span>
                       <div className='text-right min-w-0 flex-shrink-0'>
-                        <div className='text-sm font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap'>
+                        <div
+                          className={`text-sm font-semibold whitespace-nowrap ${
+                            category.type === 'ASSET'
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : 'text-orange-600 dark:text-orange-400'
+                          }`}
+                        >
                           {formatCurrencyWithCode(total, currencyCode)}
                         </div>
                         {currencyCode !== baseCurrency.code && (
@@ -362,7 +376,13 @@ export default function BalanceSheetCard() {
                             </Link>
                           </div>
                           <div className='text-right min-w-0 flex-shrink-0'>
-                            <div className='text-gray-900 dark:text-gray-100 whitespace-nowrap'>
+                            <div
+                              className={`whitespace-nowrap ${
+                                category.type === 'ASSET'
+                                  ? 'text-blue-600 dark:text-blue-400'
+                                  : 'text-orange-600 dark:text-orange-400'
+                              }`}
+                            >
                               {formatCurrencyWithSymbol(
                                 account.balance,
                                 account.currency.code,
@@ -413,7 +433,8 @@ export default function BalanceSheetCard() {
         totalInBaseCurrency?: number
       }
     >,
-    baseCurrency: SimpleCurrency
+    baseCurrency: SimpleCurrency,
+    accountType: 'ASSET' | 'LIABILITY' = 'ASSET'
   ) => {
     if (!categories || Object.keys(categories).length === 0) {
       return (
@@ -442,7 +463,11 @@ export default function BalanceSheetCard() {
             <div className='font-medium mb-2'>
               <Link
                 href={`/categories/${categoryId}`}
-                className='text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 hover:underline'
+                className={`transition-colors duration-200 hover:underline ${
+                  accountType === 'ASSET'
+                    ? 'text-blue-700 dark:text-blue-300 hover:text-blue-600 dark:hover:text-blue-400'
+                    : 'text-orange-700 dark:text-orange-300 hover:text-orange-600 dark:hover:text-orange-400'
+                }`}
               >
                 {category.categoryName}
               </Link>
@@ -457,7 +482,13 @@ export default function BalanceSheetCard() {
                       {currencyCode}
                     </span>
                     <div className='flex flex-col items-end'>
-                      <span className='font-semibold text-gray-900 dark:text-gray-100'>
+                      <span
+                        className={`font-semibold ${
+                          accountType === 'ASSET'
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-orange-600 dark:text-orange-400'
+                        }`}
+                      >
                         {formatCurrencyWithCode(total, currencyCode)}
                       </span>
                       {category.totalInBaseCurrency !== undefined &&
@@ -492,7 +523,13 @@ export default function BalanceSheetCard() {
                             {account.name}
                           </Link>
                           <div className='flex flex-col items-end'>
-                            <span className='text-gray-900 dark:text-gray-100'>
+                            <span
+                              className={`${
+                                accountType === 'ASSET'
+                                  ? 'text-blue-600 dark:text-blue-400'
+                                  : 'text-orange-600 dark:text-orange-400'
+                              }`}
+                            >
                               {formatCurrencyWithSymbol(
                                 account.balance,
                                 account.currency.code,
@@ -538,7 +575,11 @@ export default function BalanceSheetCard() {
                 title={t('reports.balance.sheet.refresh')}
               >
                 {loading ? (
-                  <LoadingSpinnerSVG size='sm' color='current' className='h-4 w-4' />
+                  <LoadingSpinnerSVG
+                    size='sm'
+                    color='current'
+                    className='h-4 w-4'
+                  />
                 ) : (
                   <RefreshCw className='h-4 w-4' />
                 )}
@@ -584,7 +625,11 @@ export default function BalanceSheetCard() {
                 className='h-12'
               >
                 {loading ? (
-                  <LoadingSpinnerSVG size='sm' color='current' className='h-4 w-4' />
+                  <LoadingSpinnerSVG
+                    size='sm'
+                    color='current'
+                    className='h-4 w-4'
+                  />
                 ) : (
                   <RefreshCw className='h-4 w-4' />
                 )}
@@ -618,7 +663,8 @@ export default function BalanceSheetCard() {
                   : renderCategorySection(
                       '',
                       data.balanceSheet.assets.categories,
-                      data.baseCurrency
+                      data.baseCurrency,
+                      'ASSET'
                     )}
               </div>
 
@@ -652,7 +698,7 @@ export default function BalanceSheetCard() {
                           key={currencyCode}
                           className='flex flex-col items-end'
                         >
-                          <div className='text-gray-900 dark:text-gray-100'>
+                          <div className='text-blue-600 dark:text-blue-400'>
                             {formatCurrencyWithCode(total, currencyCode)}
                           </div>
                           {currencyCode !== data.baseCurrency.code &&
@@ -680,7 +726,7 @@ export default function BalanceSheetCard() {
                         {t('reports.balance.sheet.base.currency.total')} (
                         {data.baseCurrency.code})
                       </span>
-                      <div className='text-gray-900 dark:text-gray-100'>
+                      <div className='text-blue-600 dark:text-blue-400'>
                         {formatCurrencyWithSymbol(
                           data.summary.baseCurrencyTotals.totalAssets,
                           data.baseCurrency.code,
@@ -695,7 +741,7 @@ export default function BalanceSheetCard() {
 
             {/* Liabilities and Equity Section */}
             <div>
-              <h3 className='text-xl font-bold mb-4 text-red-600 dark:text-red-400'>
+              <h3 className='text-xl font-bold mb-4 text-orange-600 dark:text-orange-400'>
                 {t('reports.liabilities')}
               </h3>
 
@@ -708,7 +754,8 @@ export default function BalanceSheetCard() {
                   : renderCategorySection(
                       '',
                       data.balanceSheet.liabilities.categories,
-                      data.baseCurrency
+                      data.baseCurrency,
+                      'LIABILITY'
                     )}
               </div>
 
@@ -742,7 +789,7 @@ export default function BalanceSheetCard() {
                           key={currencyCode}
                           className='flex flex-col items-end'
                         >
-                          <div className='text-red-600 dark:text-red-400'>
+                          <div className='text-orange-600 dark:text-orange-400'>
                             {formatCurrencyWithCode(total, currencyCode)}
                           </div>
                           {currencyCode !== data.baseCurrency.code &&
@@ -769,7 +816,7 @@ export default function BalanceSheetCard() {
                         {t('reports.balance.sheet.base.currency.total')} (
                         {data.baseCurrency.code})
                       </span>
-                      <div className='text-red-600 dark:text-red-400'>
+                      <div className='text-orange-600 dark:text-orange-400'>
                         {formatCurrencyById(
                           data.summary.baseCurrencyTotals.totalLiabilities,
                           data.baseCurrency.id
@@ -895,7 +942,7 @@ export default function BalanceSheetCard() {
                 <span className='text-gray-600 dark:text-gray-400'>
                   {t('reports.balance.sheet.total.assets.summary')}
                 </span>
-                <div className='font-semibold text-gray-900 dark:text-gray-100'>
+                <div className='font-semibold text-blue-600 dark:text-blue-400'>
                   {Object.entries(data.summary.totalAssets).map(
                     ([currencyCode, total]) => {
                       // 计算该币种的本币折算金额
@@ -916,7 +963,7 @@ export default function BalanceSheetCard() {
 
                       return (
                         <div key={currencyCode}>
-                          <div>
+                          <div className='text-blue-600 dark:text-blue-400'>
                             {formatCurrencyWithCode(total, currencyCode)}
                           </div>
                           {currencyCode !== data.baseCurrency.code &&
@@ -939,7 +986,7 @@ export default function BalanceSheetCard() {
                 <span className='text-gray-600 dark:text-gray-400'>
                   {t('reports.balance.sheet.total.liabilities.summary')}
                 </span>
-                <div className='font-semibold text-red-600 dark:text-red-400'>
+                <div className='font-semibold text-orange-600 dark:text-orange-400'>
                   {Object.entries(data.summary.totalLiabilities).map(
                     ([currencyCode, total]) => {
                       // 计算该币种的本币折算金额
@@ -960,7 +1007,7 @@ export default function BalanceSheetCard() {
 
                       return (
                         <div key={currencyCode}>
-                          <div>
+                          <div className='text-orange-600 dark:text-orange-400'>
                             {formatCurrencyWithCode(total, currencyCode)}
                           </div>
                           {currencyCode !== data.baseCurrency.code &&
@@ -1059,7 +1106,7 @@ export default function BalanceSheetCard() {
                       {t('reports.balance.sheet.total.assets.summary')} (
                       {data.baseCurrency.code})
                     </span>
-                    <div className='font-semibold text-gray-900 dark:text-gray-100'>
+                    <div className='font-semibold text-blue-600 dark:text-blue-400'>
                       {formatCurrencyById(
                         data.summary.baseCurrencyTotals.totalAssets,
                         data.baseCurrency.id
@@ -1071,7 +1118,7 @@ export default function BalanceSheetCard() {
                       {t('reports.balance.sheet.total.liabilities.summary')} (
                       {data.baseCurrency.code})
                     </span>
-                    <div className='font-semibold text-red-600 dark:text-red-400'>
+                    <div className='font-semibold text-orange-600 dark:text-orange-400'>
                       {formatCurrencyById(
                         data.summary.baseCurrencyTotals.totalLiabilities,
                         data.baseCurrency.id

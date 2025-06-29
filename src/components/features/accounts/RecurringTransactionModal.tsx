@@ -127,7 +127,11 @@ export default function RecurringTransactionModal({
       const transactionData = {
         accountId,
         currencyCode: accountCurrency,
-        type: (accountType === 'INCOME' ? TransactionType.INCOME : TransactionType.EXPENSE) as TransactionType.INCOME | TransactionType.EXPENSE, // 转换为 TransactionType 枚举并断言类型
+        type: (accountType === 'INCOME'
+          ? TransactionType.INCOME
+          : TransactionType.EXPENSE) as
+          | TransactionType.INCOME
+          | TransactionType.EXPENSE, // 转换为 TransactionType 枚举并断言类型
         amount: parseFloat(formData.amount),
         description: formData.name.trim(), // 使用name作为description
         notes: formData.notes.trim() || undefined,
@@ -202,12 +206,6 @@ export default function RecurringTransactionModal({
       style={{
         zIndex: Z_INDEX.MAX,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      }}
-      onClick={e => {
-        // 点击遮罩层关闭模态框
-        if (e.target === e.currentTarget) {
-          onClose()
-        }
       }}
     >
       <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative'>

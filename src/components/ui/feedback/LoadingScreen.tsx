@@ -41,7 +41,7 @@ export default function LoadingScreen({
   showBackground = true,
 }: LoadingScreenProps) {
   const { t, isLoading: languageLoading } = useLanguage()
-  const { resolvedTheme } = useTheme()
+  const { resolvedTheme: _resolvedTheme } = useTheme()
 
   // 获取消息文本
   const getMessageText = () => {
@@ -52,7 +52,7 @@ export default function LoadingScreen({
 
     // 如果翻译还在加载中，使用默认文本避免显示翻译键
     if (languageLoading) {
-      return resolvedTheme === 'dark' ? 'Loading...' : '加载中...'
+      return 'Loading...' // 使用英文作为默认加载文本
     }
 
     // 根据消息类型获取对应的翻译
@@ -97,7 +97,9 @@ export default function LoadingScreen({
             Flow Balance
           </h1>
           <p className='text-gray-600 dark:text-gray-400'>
-            {languageLoading ? '个人财务管理' : t('common.app.subtitle')}
+            {languageLoading
+              ? 'Personal Finance Management'
+              : t('common.app.subtitle')}
           </p>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getAccountError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -37,7 +38,7 @@ export async function GET(
     })
 
     if (!account) {
-      return notFoundResponse('账户不存在')
+      return notFoundResponse(getAccountError('NOT_FOUND'))
     }
 
     // 计算账户余额（按币种分组）
@@ -149,6 +150,6 @@ export async function GET(
     })
   } catch (error) {
     console.error('Get account details error:', error)
-    return errorResponse('获取账户详情失败', 500)
+    return errorResponse(getAccountError('GET_DETAILS_FAILED'), 500)
   }
 }

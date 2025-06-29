@@ -20,19 +20,7 @@ export default async function AppLayout({ children }: AppLayoutProps) {
 
   const userWithSettings = {
     ...user,
-    settings: userSettings
-      ? {
-          baseCurrency: userSettings.baseCurrency
-            ? {
-                id: userSettings.baseCurrency.id,
-                code: userSettings.baseCurrency.code,
-                name: userSettings.baseCurrency.name,
-                symbol: userSettings.baseCurrency.symbol,
-                decimalPlaces: userSettings.baseCurrency.decimalPlaces,
-              }
-            : undefined,
-        }
-      : undefined,
+    settings: userSettings,
   }
 
   return <AppLayoutClient user={userWithSettings}>{children}</AppLayoutClient>

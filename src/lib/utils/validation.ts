@@ -6,6 +6,7 @@
  * 🌐 支持国际化 - 使用翻译键生成多语言错误信息
  */
 
+import type { ValidationResult } from '@/types/core'
 import { AccountType, TransactionType } from '@/types/core/constants'
 
 interface ValidationAccount {
@@ -29,13 +30,6 @@ interface ValidationTransaction {
     code: string
     symbol: string
   }
-}
-
-import type { ValidationResult as CoreValidationResult } from '@/types/core'
-
-interface ValidationResult extends CoreValidationResult {
-  score: number // 数据质量评分 (0-100) - 工具层特定字段
-  details: ValidationDetails
 }
 
 // 翻译函数类型

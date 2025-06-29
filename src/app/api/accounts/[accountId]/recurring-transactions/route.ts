@@ -6,6 +6,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { RecurringTransactionService } from '@/lib/services/recurring-transaction.service'
+import {
+  getCommonError,
+  getRecurringTransactionError,
+} from '@/lib/constants/api-messages'
 
 export async function GET(
   request: NextRequest,
@@ -21,7 +25,7 @@ export async function GET(
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: getCommonError('UNAUTHORIZED') },
         { status: 401 }
       )
     }
@@ -47,8 +51,11 @@ export async function GET(
     return NextResponse.json(
       {
         success: false,
-        error: '获取账户定期交易失败',
-        details: error instanceof Error ? error.message : '未知错误',
+        error: getRecurringTransactionError('NOT_FOUND'),
+        details:
+          error instanceof Error
+            ? error.message
+            : getCommonError('INTERNAL_ERROR'),
       },
       { status: 500 }
     )

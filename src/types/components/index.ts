@@ -1,3 +1,5 @@
+import type { AsyncState as _AsyncState } from '@/types/ui'
+
 /**
  * 组件专用类型定义
  * 为特定组件场景提供优化的类型定义
@@ -473,9 +475,3 @@ export type SortDirection = 'asc' | 'desc'
 export type { LoadingState } from '@/types/ui'
 
 /** 异步操作状态 */
-export interface AsyncState<T = unknown> {
-  data?: T
-  loading: boolean
-  error?: string
-  lastUpdated?: Date
-}

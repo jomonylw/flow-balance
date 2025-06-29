@@ -1,5 +1,6 @@
 'use client'
 
+import type { TimeRange } from '@/types/core'
 import { useState, useEffect, useCallback } from 'react'
 import QuickFlowTransactionModal from './QuickFlowTransactionModal'
 import QuickBalanceUpdateModal from '@/components/features/dashboard/QuickBalanceUpdateModal'
@@ -8,6 +9,7 @@ import CashFlowChart from './CashFlowChart'
 import ExchangeRateAlert from './ExchangeRateAlert'
 import SystemUpdateCard from './SystemUpdateCard'
 import CurrencyBreakdown from './CurrencyBreakdown'
+import AnimatedNumber from '@/components/ui/data-display/AnimatedNumber'
 import PageContainer from '@/components/ui/layout/PageContainer'
 import TranslationLoader from '@/components/ui/data-display/TranslationLoader'
 import { DashboardSkeleton } from '@/components/ui/data-display/page-skeletons'
@@ -29,7 +31,6 @@ import type {
 } from '@/types/components'
 
 // 时间范围类型定义
-type TimeRange = 'last12months' | 'all'
 
 export default function DashboardContent({
   user,
@@ -53,8 +54,10 @@ export default function DashboardContent({
   const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null)
   const [isLoadingSummary, setIsLoadingSummary] = useState(true)
   // 为每个图表创建独立的时间范围状态
-  const [netWorthTimeRange, setNetWorthTimeRange] = useState<TimeRange>('last12months')
-  const [cashFlowTimeRange, setCashFlowTimeRange] = useState<TimeRange>('last12months')
+  const [netWorthTimeRange, setNetWorthTimeRange] =
+    useState<TimeRange>('last12months')
+  const [cashFlowTimeRange, setCashFlowTimeRange] =
+    useState<TimeRange>('last12months')
   // 为每个图表创建独立的加载状态
   const [isLoadingNetWorth, setIsLoadingNetWorth] = useState(false)
   const [isLoadingCashFlow, setIsLoadingCashFlow] = useState(false)
@@ -150,10 +153,7 @@ export default function DashboardContent({
         // 验证图表数据
         const chartValidation = validateChartData(data.data)
         if (!chartValidation.isValid) {
-          console.warn(
-            'Chart data validation failed:',
-            chartValidation.errors
-          )
+          console.warn('Chart data validation failed:', chartValidation.errors)
           setChartError(
             t('dashboard.chart.data.validation.failed', {
               errors: chartValidation.errors.join(', '),
@@ -162,9 +162,7 @@ export default function DashboardContent({
         }
       } else {
         const errorData = await response.json()
-        setChartError(
-          errorData.error || t('dashboard.chart.data.fetch.failed')
-        )
+        setChartError(errorData.error || t('dashboard.chart.data.fetch.failed'))
       }
     } catch (error) {
       console.error('Error fetching chart data:', error)
@@ -180,26 +178,32 @@ export default function DashboardContent({
   }, [fetchInitialChartData])
 
   // 处理净资产图表时间范围变化
-  const handleNetWorthTimeRangeChange = useCallback(async (newTimeRange: TimeRange) => {
-    setNetWorthTimeRange(newTimeRange)
-    setIsLoadingNetWorth(true)
+  const handleNetWorthTimeRangeChange = useCallback(
+    async (newTimeRange: TimeRange) => {
+      setNetWorthTimeRange(newTimeRange)
+      setIsLoadingNetWorth(true)
 
-    // 模拟加载延迟，让用户看到加载状态
-    setTimeout(() => {
-      setIsLoadingNetWorth(false)
-    }, 300)
-  }, [])
+      // 模拟加载延迟，让用户看到加载状态
+      setTimeout(() => {
+        setIsLoadingNetWorth(false)
+      }, 300)
+    },
+    []
+  )
 
   // 处理现金流图表时间范围变化
-  const handleCashFlowTimeRangeChange = useCallback(async (newTimeRange: TimeRange) => {
-    setCashFlowTimeRange(newTimeRange)
-    setIsLoadingCashFlow(true)
+  const handleCashFlowTimeRangeChange = useCallback(
+    async (newTimeRange: TimeRange) => {
+      setCashFlowTimeRange(newTimeRange)
+      setIsLoadingCashFlow(true)
 
-    // 模拟加载延迟，让用户看到加载状态
-    setTimeout(() => {
-      setIsLoadingCashFlow(false)
-    }, 300)
-  }, [])
+      // 模拟加载延迟，让用户看到加载状态
+      setTimeout(() => {
+        setIsLoadingCashFlow(false)
+      }, 300)
+    },
+    []
+  )
 
   // 验证账户数据
   useEffect(() => {
@@ -426,16 +430,15 @@ export default function DashboardContent({
                   </h3>
                 </div>
                 <div>
-                  <p
+                  <AnimatedNumber
+                    value={summaryData.totalAssets?.amount || 0}
+                    currency={
+                      summaryData.totalAssets?.currency ||
+                      summaryData.netWorth.currency
+                    }
                     className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-blue-100' : 'text-blue-900'}`}
-                  >
-                    {summaryData.totalAssets
-                      ? formatCurrencyAmount(
-                          summaryData.totalAssets.amount,
-                          summaryData.totalAssets.currency
-                        )
-                      : formatCurrencyAmount(0, summaryData.netWorth.currency)}
-                  </p>
+                    duration={200}
+                  />
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
                   >
@@ -452,7 +455,7 @@ export default function DashboardContent({
                   {summaryData.totalAssets?.byCurrency && (
                     <CurrencyBreakdown
                       byCurrency={summaryData.totalAssets.byCurrency}
-                      type="assets"
+                      type='assets'
                       baseCurrency={summaryData.totalAssets.currency}
                     />
                   )}
@@ -461,14 +464,14 @@ export default function DashboardContent({
 
               {/* 总负债 */}
               <div
-                className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200'}`}
+                className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-orange-900/20 border-orange-700' : 'bg-orange-50 border-orange-200'}`}
               >
                 <div className='flex items-center mb-3'>
                   <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${resolvedTheme === 'dark' ? 'bg-red-800' : 'bg-red-100'}`}
+                    className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${resolvedTheme === 'dark' ? 'bg-orange-800' : 'bg-orange-100'}`}
                   >
                     <svg
-                      className='h-5 w-5 text-red-600'
+                      className='h-5 w-5 text-orange-600'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -482,24 +485,23 @@ export default function DashboardContent({
                     </svg>
                   </div>
                   <h3
-                    className={`text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-700'}`}
+                    className={`text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-orange-300' : 'text-orange-700'}`}
                   >
                     {t('dashboard.total.liabilities.card')}
                   </h3>
                 </div>
                 <div>
+                  <AnimatedNumber
+                    value={summaryData.totalLiabilities?.amount || 0}
+                    currency={
+                      summaryData.totalLiabilities?.currency ||
+                      summaryData.netWorth.currency
+                    }
+                    className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-orange-100' : 'text-orange-900'}`}
+                    duration={200}
+                  />
                   <p
-                    className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-red-100' : 'text-red-900'}`}
-                  >
-                    {summaryData.totalLiabilities
-                      ? formatCurrencyAmount(
-                          summaryData.totalLiabilities.amount,
-                          summaryData.totalLiabilities.currency
-                        )
-                      : formatCurrencyAmount(0, summaryData.netWorth.currency)}
-                  </p>
-                  <p
-                    className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600'}`}
+                    className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`}
                   >
                     {summaryData.totalLiabilities
                       ? summaryData.totalLiabilities.accountCount
@@ -514,7 +516,7 @@ export default function DashboardContent({
                   {summaryData.totalLiabilities?.byCurrency && (
                     <CurrencyBreakdown
                       byCurrency={summaryData.totalLiabilities.byCurrency}
-                      type="liabilities"
+                      type='liabilities'
                       baseCurrency={summaryData.totalLiabilities.currency}
                     />
                   )}
@@ -574,7 +576,10 @@ export default function DashboardContent({
                   </h3>
                 </div>
                 <div>
-                  <p
+                  <AnimatedNumber
+                    value={summaryData.netWorth.amount}
+                    currency={summaryData.netWorth.currency}
+                    showSign={true}
                     className={`text-2xl font-bold ${
                       summaryData.netWorth.amount >= 0
                         ? resolvedTheme === 'dark'
@@ -584,13 +589,8 @@ export default function DashboardContent({
                           ? 'text-red-100'
                           : 'text-red-900'
                     }`}
-                  >
-                    {summaryData.netWorth.amount >= 0 ? '+' : '-'}
-                    {formatCurrencyAmount(
-                      Math.abs(summaryData.netWorth.amount),
-                      summaryData.netWorth.currency
-                    )}
-                  </p>
+                    duration={200}
+                  />
                   <p
                     className={`text-xs mt-1 ${
                       summaryData.netWorth.amount >= 0
@@ -617,11 +617,19 @@ export default function DashboardContent({
                             : 'text-red-600'
                       }`}
                     >
-                      <span>{t('dashboard.debt.to.asset.ratio')}{':'}</span>
+                      <span>
+                        {t('dashboard.debt.to.asset.ratio')}
+                        {':'}
+                      </span>
                       <span>
                         {summaryData.totalAssets.amount > 0
-                          ? ((summaryData.totalLiabilities.amount / summaryData.totalAssets.amount) * 100).toFixed(2)
-                          : '0.00'}%
+                          ? (
+                              (summaryData.totalLiabilities.amount /
+                                summaryData.totalAssets.amount) *
+                              100
+                            ).toFixed(2)
+                          : '0.00'}
+                        %
                       </span>
                     </p>
                   )}
@@ -657,7 +665,10 @@ export default function DashboardContent({
                   </h3>
                 </div>
                 <div>
-                  <p
+                  <AnimatedNumber
+                    value={summaryData.recentActivity.summaryInBaseCurrency.net}
+                    currency={summaryData.recentActivity.baseCurrency}
+                    showSign={true}
                     className={`text-2xl font-bold ${
                       summaryData.recentActivity.summaryInBaseCurrency.net >= 0
                         ? resolvedTheme === 'dark'
@@ -667,17 +678,8 @@ export default function DashboardContent({
                           ? 'text-red-100'
                           : 'text-red-900'
                     }`}
-                  >
-                    {summaryData.recentActivity.summaryInBaseCurrency.net >= 0
-                      ? '+'
-                      : '-'}
-                    {formatCurrencyAmount(
-                      Math.abs(
-                        summaryData.recentActivity.summaryInBaseCurrency.net
-                      ),
-                      summaryData.recentActivity.baseCurrency
-                    )}
-                  </p>
+                    duration={200}
+                  />
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}
                   >
@@ -785,10 +787,13 @@ export default function DashboardContent({
                   >
                     {t('dashboard.account.count')}
                   </dt>
-                  <dd
-                    className={`text-2xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
-                  >
-                    {stats.accountCount}
+                  <dd>
+                    <AnimatedNumber
+                      value={stats.accountCount}
+                      className={`text-2xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
+                      duration={400}
+                      formatOptions={{ precision: 0 }}
+                    />
                   </dd>
                 </dl>
               </div>
@@ -826,10 +831,13 @@ export default function DashboardContent({
                   >
                     {t('dashboard.transaction.records')}
                   </dt>
-                  <dd
-                    className={`text-2xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
-                  >
-                    {stats.transactionCount}
+                  <dd>
+                    <AnimatedNumber
+                      value={stats.transactionCount}
+                      className={`text-2xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
+                      duration={400}
+                      formatOptions={{ precision: 0 }}
+                    />
                   </dd>
                 </dl>
               </div>
@@ -867,10 +875,13 @@ export default function DashboardContent({
                   >
                     {t('dashboard.category.count')}
                   </dt>
-                  <dd
-                    className={`text-2xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
-                  >
-                    {stats.categoryCount}
+                  <dd>
+                    <AnimatedNumber
+                      value={stats.categoryCount}
+                      className={`text-2xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
+                      duration={400}
+                      formatOptions={{ precision: 0 }}
+                    />
                   </dd>
                 </dl>
               </div>

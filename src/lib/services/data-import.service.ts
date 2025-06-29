@@ -1238,91 +1238,98 @@ export class DataImportService {
     result: ImportResult,
     _options: ImportOptions
   ): Promise<void> {
-    for (const transaction of transactions) {
-      try {
-        // 查找账户ID
-        const accountId = accountIdMapping[transaction.accountId]
-        if (!accountId) {
-          result.warnings.push(
-            `交易 ${transaction.description} 的账户不存在，跳过`
-          )
-          result.statistics.skipped++
-          continue
-        }
+    // 分批处理大量交易数据，避免内存问题
+    const BATCH_SIZE = 100
 
-        // 分类信息现在通过账户获取，不需要单独验证分类ID
+    for (let i = 0; i < transactions.length; i += BATCH_SIZE) {
+      const batch = transactions.slice(i, i + BATCH_SIZE)
 
-        // 查找货币ID
-        let currencyId = currencyIdMapping[transaction.currencyId]
-        if (!currencyId) {
-          const currency = await tx.currency.findFirst({
-            where: {
-              code: transaction.currencyCode,
-              OR: [{ createdBy: null }, { createdBy: userId }],
+      for (const transaction of batch) {
+        try {
+          // 查找账户ID
+          const accountId = accountIdMapping[transaction.accountId]
+          if (!accountId) {
+            result.warnings.push(
+              `交易 ${transaction.description} 的账户不存在，跳过`
+            )
+            result.statistics.skipped++
+            continue
+          }
+
+          // 分类信息现在通过账户获取，不需要单独验证分类ID
+
+          // 查找货币ID
+          let currencyId = currencyIdMapping[transaction.currencyId]
+          if (!currencyId) {
+            const currency = await tx.currency.findFirst({
+              where: {
+                code: transaction.currencyCode,
+                OR: [{ createdBy: null }, { createdBy: userId }],
+              },
+            })
+            currencyId = currency?.id
+          }
+
+          if (!currencyId) {
+            result.warnings.push(
+              `交易 ${transaction.description} 的货币不存在，跳过`
+            )
+            result.statistics.skipped++
+            continue
+          }
+
+          // 处理关联ID（可选）
+          const recurringTransactionId = transaction.recurringTransactionId
+            ? recurringIdMapping[transaction.recurringTransactionId]
+            : null
+          const loanContractId = transaction.loanContractId
+            ? loanIdMapping[transaction.loanContractId]
+            : null
+          const loanPaymentId = transaction.loanPaymentId
+            ? paymentIdMapping[transaction.loanPaymentId]
+            : null
+
+          // 创建交易
+          const newTransaction = await tx.transaction.create({
+            data: {
+              userId,
+              accountId,
+              currencyId,
+              type: transaction.type,
+              amount: new Decimal(transaction.amount),
+              description: transaction.description,
+              notes: transaction.notes,
+              date: new Date(transaction.date),
+              recurringTransactionId,
+              loanContractId,
+              loanPaymentId,
             },
           })
-          currencyId = currency?.id
-        }
 
-        if (!currencyId) {
-          result.warnings.push(
-            `交易 ${transaction.description} 的货币不存在，跳过`
-          )
-          result.statistics.skipped++
-          continue
-        }
-
-        // 处理关联ID（可选）
-        const recurringTransactionId = transaction.recurringTransactionId
-          ? recurringIdMapping[transaction.recurringTransactionId]
-          : null
-        const loanContractId = transaction.loanContractId
-          ? loanIdMapping[transaction.loanContractId]
-          : null
-        const loanPaymentId = transaction.loanPaymentId
-          ? paymentIdMapping[transaction.loanPaymentId]
-          : null
-
-        // 创建交易
-        const newTransaction = await tx.transaction.create({
-          data: {
-            userId,
-            accountId,
-            currencyId,
-            type: transaction.type,
-            amount: new Decimal(transaction.amount),
-            description: transaction.description,
-            notes: transaction.notes,
-            date: new Date(transaction.date),
-            recurringTransactionId,
-            loanContractId,
-            loanPaymentId,
-          },
-        })
-
-        // 处理标签关联
-        if (transaction.tags && transaction.tags.length > 0) {
-          for (const tag of transaction.tags) {
-            const tagId = tagIdMapping[tag.id]
-            if (tagId) {
-              await tx.transactionTag.create({
-                data: {
-                  transactionId: newTransaction.id,
-                  tagId,
-                },
-              })
+          // 处理标签关联
+          if (transaction.tags && transaction.tags.length > 0) {
+            for (const tag of transaction.tags) {
+              const tagId = tagIdMapping[tag.id]
+              if (tagId) {
+                await tx.transactionTag.create({
+                  data: {
+                    transactionId: newTransaction.id,
+                    tagId,
+                  },
+                })
+              }
             }
           }
-        }
 
-        transactionIdMapping[transaction.id] = newTransaction.id
-        result.statistics.processed++
-        result.statistics.created++
-      } catch (error) {
-        result.errors.push(
-          `导入交易 ${transaction.description} 失败: ${error instanceof Error ? error.message : '未知错误'}`
-        )
-        result.statistics.failed++
+          transactionIdMapping[transaction.id] = newTransaction.id
+          result.statistics.processed++
+          result.statistics.created++
+        } catch (error) {
+          result.errors.push(
+            `导入交易 ${transaction.description} 失败: ${error instanceof Error ? error.message : '未知错误'}`
+          )
+          result.statistics.failed++
+        }
       }
     }
   }

@@ -11,7 +11,7 @@ import { useTheme } from '@/contexts/providers/ThemeContext'
 import ColorPicker, { COLOR_OPTIONS } from '@/components/ui/forms/ColorPicker'
 import { ApiEndpoints } from '@/lib/constants'
 import type { AddAccountModalProps } from '@/types/components'
-import type { SimpleAccount } from '@/types/core'
+import type { SimpleAccount, AccountFormData } from '@/types/core'
 
 export default function AddAccountModal({
   isOpen,
@@ -22,10 +22,16 @@ export default function AddAccountModal({
 }: AddAccountModalProps) {
   const { t } = useLanguage()
   const { resolvedTheme } = useTheme()
-  const [formData, setFormData] = useState({
+
+  // 使用核心 AccountFormData 类型，但适配当前 API 需求
+  const [formData, setFormData] = useState<
+    Omit<AccountFormData, 'currencyCode' | 'categoryId'> & {
+      currencyId: string // API 使用 currencyId 而不是 currencyCode
+    }
+  >({
     name: '',
-    description: '',
-    color: COLOR_OPTIONS[0].value,
+    description: '' as string | null,
+    color: COLOR_OPTIONS[0].value as string | null,
     currencyId: '', // 现在存储货币ID
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -105,7 +111,7 @@ export default function AddAccountModal({
         body: JSON.stringify({
           name: formData.name.trim(),
           categoryId: category.id,
-          description: formData.description.trim() || undefined,
+          description: formData.description?.trim() || undefined,
           color: formData.color,
           currencyId: formData.currencyId,
         }),
@@ -167,7 +173,7 @@ export default function AddAccountModal({
         return {
           label: t('account.type.liability'),
           description: t('account.type.liability.description'),
-          color: 'text-yellow-700',
+          color: 'text-orange-700',
         }
       case 'INCOME':
         return {
@@ -198,6 +204,7 @@ export default function AddAccountModal({
       onClose={onClose}
       title={t('account.add.title', { type: typeInfo.label })}
       size='lg'
+      maskClosable={false}
     >
       <form onSubmit={handleSubmit} className='space-y-6'>
         {errors.general && (
@@ -245,7 +252,7 @@ export default function AddAccountModal({
           <TextAreaField
             name='description'
             label={t('account.settings.account.description')}
-            value={formData.description}
+            value={formData.description || ''}
             onChange={handleChange}
             error={errors.description}
             placeholder={t('account.settings.description.placeholder')}
@@ -262,7 +269,7 @@ export default function AddAccountModal({
           </h3>
 
           <ColorPicker
-            selectedColor={formData.color}
+            selectedColor={formData.color || COLOR_OPTIONS[0].value}
             onColorChange={color => setFormData(prev => ({ ...prev, color }))}
           />
         </div>

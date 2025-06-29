@@ -67,7 +67,9 @@ export default function AccountTreeItem({
   // 根据账户类型确定金额颜色
   const getAmountColor = () => {
     const accountType = account.category.type
-    if (accountType === 'LIABILITY' || accountType === 'EXPENSE') {
+    if (accountType === 'LIABILITY') {
+      return 'text-orange-600'
+    } else if (accountType === 'EXPENSE') {
       return 'text-red-600'
     } else {
       return 'text-green-600'

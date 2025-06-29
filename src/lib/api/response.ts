@@ -1,11 +1,6 @@
+import type { ApiResponse } from '@/types/api'
 import { NextResponse } from 'next/server'
-
-export interface ApiResponse<T = unknown> {
-  success: boolean
-  data?: T
-  error?: string
-  message?: string
-}
+import { getCommonError } from '@/lib/constants/api-messages'
 
 export function successResponse<T>(
   data: T,
@@ -35,14 +30,14 @@ export function unauthorizedResponse(): NextResponse<ApiResponse> {
   return NextResponse.json(
     {
       success: false,
-      error: '未授权访问',
+      error: getCommonError('UNAUTHORIZED'),
     },
     { status: 401 }
   )
 }
 
 export function notFoundResponse(
-  message: string = '资源未找到'
+  message: string = getCommonError('NOT_FOUND')
 ): NextResponse<ApiResponse> {
   return NextResponse.json(
     {

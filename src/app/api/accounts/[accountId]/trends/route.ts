@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
+import { getCommonError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -71,7 +72,7 @@ export async function GET(
     const baseCurrency = userSettings?.baseCurrency || {
       code: 'CNY',
       symbol: '¥',
-      name: '人民币',
+      name: 'Chinese Yuan',
     }
 
     // 确定时间范围
@@ -184,7 +185,7 @@ export async function GET(
     })
   } catch (error) {
     console.error('Get account trends error:', error)
-    return errorResponse('获取账户趋势数据失败', 500)
+    return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
   }
 }
 

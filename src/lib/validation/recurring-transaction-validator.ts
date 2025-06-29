@@ -6,6 +6,7 @@
 import { z } from 'zod'
 import { PrismaClient } from '@prisma/client'
 import { TransactionType, AccountType } from '@/types/core/constants'
+import { ConstantsManager } from '@/lib/utils/constants-manager'
 import type { ValidationResult } from '@/types/core'
 
 const prisma = new PrismaClient()
@@ -18,7 +19,7 @@ const prisma = new PrismaClient()
 export const RecurringTransactionCreateSchema = z.object({
   accountId: z.string().uuid('账户ID格式无效'),
   currencyCode: z.string().length(3, '货币代码必须为3位'),
-  type: z.enum([TransactionType.INCOME, TransactionType.EXPENSE]),
+  type: z.enum(ConstantsManager.getZodFlowTransactionTypeEnum()),
   amount: z
     .number()
     .positive('金额必须大于0')
@@ -28,7 +29,7 @@ export const RecurringTransactionCreateSchema = z.object({
   tagIds: z.array(z.string().uuid()).optional(),
 
   // 重复设置
-  frequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY']),
+  frequency: z.enum(ConstantsManager.getZodFrequencyTypeEnum()),
   interval: z.number().int().min(1, '间隔至少为1').max(365, '间隔不能超过365'),
   dayOfMonth: z
     .number()

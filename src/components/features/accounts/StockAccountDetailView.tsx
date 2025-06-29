@@ -390,14 +390,13 @@ export default function StockAccountDetailView({
       const result = await response.json()
 
       if (!result.success) {
-        throw new Error(result.error || '保存贷款合约失败')
+        throw new Error(result.error || t('loan.contract.save.failed'))
       }
 
       showSuccess(
         editingLoanContract
           ? t('loan.contract.updated')
-          : t('loan.contract.created'),
-        editingLoanContract ? '贷款合约已更新' : '贷款合约已创建'
+          : t('loan.contract.created')
       )
 
       // 刷新贷款合约列表

@@ -158,19 +158,9 @@ export default function TransactionStats({
       <div className='bg-white dark:bg-gray-800 rounded-lg shadow p-6'>
         <div className='flex items-center'>
           <div className='flex-shrink-0'>
-            <div
-              className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                stats.totalNet >= 0
-                  ? 'bg-blue-100 dark:bg-blue-900'
-                  : 'bg-orange-100 dark:bg-orange-900'
-              }`}
-            >
+            <div className='h-8 w-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center'>
               <svg
-                className={`h-5 w-5 ${
-                  stats.totalNet >= 0
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-orange-600 dark:text-orange-400'
-                }`}
+                className='h-5 w-5 text-purple-600 dark:text-purple-400'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -189,14 +179,8 @@ export default function TransactionStats({
               <dt className='text-sm font-medium text-gray-500 dark:text-gray-400 truncate'>
                 {t('transaction.stats.net.flow')}
               </dt>
-              <dd
-                className={`text-2xl font-semibold ${
-                  stats.totalNet >= 0
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-orange-600 dark:text-orange-400'
-                }`}
-              >
-                {stats.totalNet >= 0 ? '+' : ''}
+              <dd className='text-2xl font-semibold text-purple-600 dark:text-purple-400'>
+                {stats.totalNet >= 0 ? '+' : '-'}
                 {formatCurrencyById(Math.abs(stats.totalNet), currencyId)}
               </dd>
               <dd className='text-xs text-gray-500 dark:text-gray-400'>
