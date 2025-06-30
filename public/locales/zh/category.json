@@ -164,5 +164,10 @@
   "category.type.change.accounts.count": "该分类下有 {{count}} 个账户",
   "category.type.change.transactions.count": "相关账户有 {{count}} 条交易记录",
   "category.type.change.balance.records.count": "包含 {{count}} 条余额调整记录",
-  "category.type.change.risk.description": "变更账户类型会导致现有交易数据与新类型不匹配，可能造成数据不一致。建议先清理相关数据后再进行类型变更。"
+  "category.type.change.risk.description": "变更账户类型会导致现有交易数据与新类型不匹配，可能造成数据不一致。建议先清理相关数据后再进行类型变更。",
+  "category.existing.top.level": "现有顶级分类",
+  "category.name.duplicate.warning": "分类名称已存在，请选择其他名称",
+  "category.name.available": "分类名称可用",
+  "category.name.duplicate.error": "分类名称 \"{{name}}\" 已存在，请使用其他名称",
+  "category.create.unknown.error": "创建分类时发生未知错误"
 }

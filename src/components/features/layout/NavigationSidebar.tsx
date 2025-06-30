@@ -35,6 +35,9 @@ export default function NavigationSidebar({
   const { t } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddTopCategoryModal, setShowAddTopCategoryModal] = useState(false)
+  const [presetCategoryType, setPresetCategoryType] = useState<
+    string | undefined
+  >(undefined)
   const [areAllCategoriesExpanded, setAreAllCategoriesExpanded] =
     useState(false)
   const categoryTreeRef = useRef<OptimizedCategoryAccountTreeRef>(null)
@@ -87,7 +90,8 @@ export default function NavigationSidebar({
   // 平滑过渡效果
   const { transitionRef } = useSmoothTransition()
 
-  const handleAddTopCategory = () => {
+  const handleAddTopCategory = (accountType?: string) => {
+    setPresetCategoryType(accountType)
     setShowAddTopCategoryModal(true)
   }
 
@@ -204,7 +208,20 @@ export default function NavigationSidebar({
         // 分类创建事件已经发布，树会自动更新
       } else {
         const error = await response.json()
-        const errorDetails = {
+
+        // 提供更友好的错误信息
+        let userFriendlyMessage = '创建分类失败'
+
+        if (error.error === '分类已存在' || error.message === '分类已存在') {
+          userFriendlyMessage = `分类名称 "${data.name}" 已存在，请使用其他名称`
+        } else if (error.error || error.message) {
+          userFriendlyMessage = error.error || error.message
+        } else {
+          userFriendlyMessage = `创建失败 (${response.status}): ${response.statusText}`
+        }
+
+        // 记录详细错误信息用于调试
+        console.error('创建顶级分类失败 - 详细信息:', {
           status: response.status,
           statusText: response.statusText,
           error: error,
@@ -216,16 +233,9 @@ export default function NavigationSidebar({
           },
           timestamp: new Date().toISOString(),
           url: response.url,
-        }
+        })
 
-        console.error('创建顶级分类失败 - 详细信息:', errorDetails)
-
-        // 显示更详细的错误信息
-        const errorMessage =
-          error.error ||
-          error.message ||
-          `HTTP ${response.status}: ${response.statusText}`
-        throw new Error(`创建分类失败: ${errorMessage}`)
+        throw new Error(userFriendlyMessage)
       }
     } catch (error) {
       console.error('Error creating top category:', error)
@@ -285,7 +295,7 @@ export default function NavigationSidebar({
                     {t('sidebar.categories')}
                   </h3>
                   <button
-                    onClick={handleAddTopCategory}
+                    onClick={() => handleAddTopCategory()}
                     className='group/add flex items-center justify-center w-7 h-7 rounded-md bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-800/60 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md'
                     title={t('sidebar.add.top.category')}
                   >
@@ -404,6 +414,8 @@ export default function NavigationSidebar({
                 searchQuery={searchQuery}
                 viewMode={viewMode}
                 onNavigate={onNavigate}
+                onViewModeChange={setViewMode}
+                onAddTopCategory={handleAddTopCategory}
               />
             </div>
           </div>
@@ -424,8 +436,12 @@ export default function NavigationSidebar({
         {/* 添加顶级分类模态框 */}
         <TopCategoryModal
           isOpen={showAddTopCategoryModal}
-          onClose={() => setShowAddTopCategoryModal(false)}
+          onClose={() => {
+            setShowAddTopCategoryModal(false)
+            setPresetCategoryType(undefined)
+          }}
           onSave={handleSaveTopCategory}
+          presetType={presetCategoryType}
         />
       </div>
     </TranslationLoader>

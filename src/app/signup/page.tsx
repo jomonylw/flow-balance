@@ -19,9 +19,9 @@ export default function SignupPage() {
   }, [])
 
   useEffect(() => {
-    // 如果用户已登录，重定向到 dashboard
+    // 如果用户已登录，重定向到根页面
     if (mounted && isAuthenticated && !authLoading) {
-      router.replace('/dashboard')
+      router.replace('/')
     }
   }, [mounted, isAuthenticated, authLoading, router])
 

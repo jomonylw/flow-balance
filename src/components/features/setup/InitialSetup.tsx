@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Currency } from '@prisma/client'
 import type { User } from '@/types/core'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useUserData } from '@/contexts/providers/UserDataContext'
 import SetupLayout from './SetupLayout'
 
 interface _CurrencyWithStatus extends Currency {
@@ -18,6 +19,7 @@ interface InitialSetupProps {
 export default function InitialSetup({ user: _user }: InitialSetupProps) {
   const { t } = useLanguage()
   const router = useRouter()
+  const { refreshAll } = useUserData()
   const [step, setStep] = useState(1)
   const [allCurrencies, setAllCurrencies] = useState<Currency[]>([])
   const [selectedCurrencies, setSelectedCurrencies] = useState<string[]>([])
@@ -125,6 +127,9 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
       if (!settingsResponse.ok) {
         throw new Error(t('setup.error.set.base.currency'))
       }
+
+      // 3. 刷新 UserDataContext 以获取最新的用户设置
+      await refreshAll()
 
       // 设置完成，跳转到仪表板
       router.push('/dashboard')

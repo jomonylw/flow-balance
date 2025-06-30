@@ -21,7 +21,7 @@ export default function LoginPage() {
   useEffect(() => {
     // 简化重定向逻辑 - 只在确实需要时重定向
     if (mounted && isAuthenticated && !authLoading) {
-      router.replace('/dashboard')
+      router.replace('/')
     }
   }, [mounted, isAuthenticated, authLoading, router])
 

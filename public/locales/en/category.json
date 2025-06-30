@@ -164,5 +164,10 @@
   "category.type.change.accounts.count": "This category has {{count}} accounts",
   "category.type.change.transactions.count": "Related accounts have {{count}} transaction records",
   "category.type.change.balance.records.count": "Contains {{count}} balance adjustment records",
-  "category.type.change.risk.description": "Changing account type will cause existing transaction data to mismatch with the new type, which may cause data inconsistency. It is recommended to clean up related data before changing the type."
+  "category.type.change.risk.description": "Changing account type will cause existing transaction data to mismatch with the new type, which may cause data inconsistency. It is recommended to clean up related data before changing the type.",
+  "category.existing.top.level": "Existing Top-Level Categories",
+  "category.name.duplicate.warning": "Category name already exists, please choose another name",
+  "category.name.available": "Category name is available",
+  "category.name.duplicate.error": "Category name \"{{name}}\" already exists, please use another name",
+  "category.create.unknown.error": "An unknown error occurred while creating the category"
 }

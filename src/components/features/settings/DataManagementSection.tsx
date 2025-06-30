@@ -40,7 +40,7 @@ export default function DataManagementSection() {
     percentage: number
     message: string
   } | null>(null)
-  const [_showProgressModal, _setShowProgressModal] = useState(false)
+  const [_showProgressModal, setShowProgressModal] = useState(false)
 
   // 删除相关状态
   const [showDeleteModal, setShowDeleteModal] = useState(false)

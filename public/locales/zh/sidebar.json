@@ -7,5 +7,11 @@
   "sidebar.collapse.categories": "收起分类",
   "sidebar.search.no.results": "未找到匹配的分类或账户",
   "sidebar.view.tree": "切换到树状视图",
-  "sidebar.view.accounts": "切换到账户视图"
+  "sidebar.view.accounts": "切换到账户视图",
+  "sidebar.no.accounts": "暂无账户",
+  "sidebar.no.accounts.hint": "请切换到树状视图来添加账户",
+  "sidebar.switch.to.tree": "切换到树状视图",
+  "sidebar.no.categories": "暂无分类",
+  "sidebar.no.categories.hint": "点击下方按钮添加顶级分类",
+  "sidebar.add.category": "添加分类"
 }

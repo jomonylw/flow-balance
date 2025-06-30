@@ -253,12 +253,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // 不干预根路径的重定向逻辑，让根页面组件自己处理
     if (isRootRoute) return
 
-    if (
-      isPublicRoute &&
-      authState.isAuthenticated &&
-      pathname !== '/dashboard'
-    ) {
-      router.replace('/dashboard')
+    if (isPublicRoute && authState.isAuthenticated && pathname !== '/') {
+      router.replace('/')
     } else if (
       !isPublicRoute &&
       !authState.isAuthenticated &&

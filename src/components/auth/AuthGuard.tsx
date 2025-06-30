@@ -80,7 +80,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
     if (isPublicRoute) {
       if (authState.isAuthenticated) {
-        router.replace('/dashboard')
+        router.replace('/')
       }
     } else {
       if (!authState.isAuthenticated) {

@@ -85,8 +85,8 @@ export default function LoginForm() {
         if (redirect === 'setup') {
           router.push('/setup')
         } else {
-          // 登录成功，重定向到 dashboard
-          router.push('/dashboard')
+          // 登录成功，重定向到根页面，让根页面处理本位币检查和后续跳转
+          router.push('/')
         }
       } else {
         // 登录失败，显示toast错误提示

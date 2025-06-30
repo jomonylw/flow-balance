@@ -8,18 +8,36 @@ import AuthButton from '@/components/ui/forms/AuthButton'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { ConstantsManager } from '@/lib/utils/constants-manager'
 import { AccountType } from '@/types/core/constants'
-import type { CategoryFormData } from '@/types/core'
+import type { CategoryFormData, SimpleCategory } from '@/types/core'
 
 interface TopCategoryModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (data: { name: string; type: string }) => Promise<void>
+  presetType?: string // 预设的账户类型
+}
+
+// 获取账户类型对应的 Tailwind CSS 类
+const getAccountTypeColorClass = (type: string): string => {
+  switch (type) {
+    case 'ASSET':
+      return 'bg-blue-500'
+    case 'LIABILITY':
+      return 'bg-orange-500'
+    case 'INCOME':
+      return 'bg-green-500'
+    case 'EXPENSE':
+      return 'bg-red-500'
+    default:
+      return 'bg-gray-400'
+  }
 }
 
 export default function TopCategoryModal({
   isOpen,
   onClose,
   onSave,
+  presetType,
 }: TopCategoryModalProps) {
   const { t } = useLanguage()
 
@@ -31,7 +49,15 @@ export default function TopCategoryModal({
     type: 'ASSET' as CategoryFormData['type'], // 默认类型
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<{ name?: string; type?: string }>({})
+  const [errors, setErrors] = useState<{
+    name?: string
+    type?: string
+    general?: string
+  }>({})
+  const [existingCategories, setExistingCategories] = useState<
+    SimpleCategory[]
+  >([])
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false)
 
   // 使用统一的账户类型选项
   const accountTypeOptions = [
@@ -42,15 +68,32 @@ export default function TopCategoryModal({
     })),
   ]
 
+  // 获取现有分类
+  const fetchExistingCategories = async () => {
+    setIsLoadingCategories(true)
+    try {
+      const response = await fetch('/api/categories')
+      if (response.ok) {
+        const result = await response.json()
+        setExistingCategories(result.data || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error)
+    } finally {
+      setIsLoadingCategories(false)
+    }
+  }
+
   useEffect(() => {
     if (isOpen) {
       setFormData({
         name: '',
-        type: 'ASSET' as CategoryFormData['type'],
+        type: (presetType as CategoryFormData['type']) || 'ASSET',
       })
-      setErrors({})
+      setErrors({}) // 清除所有错误，包括 general 错误
+      fetchExistingCategories() // 获取现有分类
     }
-  }, [isOpen])
+  }, [isOpen, presetType])
 
   const validateForm = () => {
     const newErrors: { name?: string; type?: string } = {}
@@ -59,6 +102,17 @@ export default function TopCategoryModal({
       newErrors.name = t('category.name.required')
     } else if (formData.name.length > 50) {
       newErrors.name = t('category.name.too.long')
+    } else {
+      // 检查是否与现有顶级分类重名
+      const trimmedName = formData.name.trim()
+      const existingTopCategory = existingCategories.find(
+        cat => cat.name === trimmedName && !cat.parentId
+      )
+      if (existingTopCategory) {
+        newErrors.name = t('category.name.duplicate.error', {
+          name: trimmedName,
+        })
+      }
     }
 
     if (!formData.type) {
@@ -75,6 +129,8 @@ export default function TopCategoryModal({
     }
 
     setIsLoading(true)
+    setErrors(prev => ({ ...prev, general: undefined })) // 清除之前的错误
+
     try {
       await onSave({
         name: formData.name.trim(),
@@ -83,6 +139,13 @@ export default function TopCategoryModal({
       onClose()
     } catch (error) {
       console.error('Error saving top category:', error)
+
+      // 显示用户友好的错误信息
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : t('category.create.unknown.error')
+      setErrors(prev => ({ ...prev, general: errorMessage }))
     } finally {
       setIsLoading(false)
     }
@@ -162,6 +225,25 @@ export default function TopCategoryModal({
       maskClosable={false}
     >
       <div className='space-y-6'>
+        {/* 错误信息 */}
+        {errors.general && (
+          <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4'>
+            <div className='flex items-start'>
+              <div className='flex-shrink-0'>
+                <span className='text-red-400'>⚠️</span>
+              </div>
+              <div className='ml-3'>
+                <h3 className='text-sm font-medium text-red-800 dark:text-red-300'>
+                  {t('error.create.failed')}
+                </h3>
+                <p className='text-sm text-red-700 dark:text-red-400 mt-1'>
+                  {errors.general}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 说明文字 */}
         <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4'>
           <h3 className='text-sm font-medium text-blue-900 dark:text-blue-300 mb-2'>
@@ -172,6 +254,33 @@ export default function TopCategoryModal({
           </p>
         </div>
 
+        {/* 现有顶级分类 */}
+        {!isLoadingCategories && existingCategories.length > 0 && (
+          <div className='bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4'>
+            <h4 className='text-sm font-medium text-gray-900 dark:text-gray-100 mb-3'>
+              📋 {t('category.existing.top.level')}
+            </h4>
+            <div className='grid grid-cols-2 gap-2'>
+              {existingCategories
+                .filter(cat => !cat.parentId)
+                .map(category => (
+                  <div
+                    key={category.id}
+                    className='flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400'
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${getAccountTypeColorClass(category.type || '')}`}
+                    ></span>
+                    <span>{category.name}</span>
+                    <span className='text-xs text-gray-500'>
+                      ({t(`type.${category.type?.toLowerCase() || 'unknown'}`)})
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
         {/* 基本信息 */}
         <div className='space-y-4'>
           <InputField
@@ -179,8 +288,25 @@ export default function TopCategoryModal({
             label={t('category.name')}
             value={formData.name}
             onChange={e => {
-              setFormData(prev => ({ ...prev, name: e.target.value }))
-              if (errors.name) {
+              const newName = e.target.value
+              setFormData(prev => ({ ...prev, name: newName }))
+
+              // 实时检查重名
+              if (newName.trim()) {
+                const existingTopCategory = existingCategories.find(
+                  cat => cat.name === newName.trim() && !cat.parentId
+                )
+                if (existingTopCategory) {
+                  setErrors(prev => ({
+                    ...prev,
+                    name: t('category.name.duplicate.error', {
+                      name: newName.trim(),
+                    }),
+                  }))
+                } else {
+                  setErrors(prev => ({ ...prev, name: undefined }))
+                }
+              } else {
                 setErrors(prev => ({ ...prev, name: undefined }))
               }
             }}
