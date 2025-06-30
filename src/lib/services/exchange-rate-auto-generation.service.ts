@@ -46,11 +46,11 @@ export async function generateAutoExchangeRates(
   }
 
   try {
-    // 获取用户的所有用户输入汇率（不限制日期，获取最新的）
-    const userRates = await prisma.exchangeRate.findMany({
+    // 获取用户的所有用户输入汇率和API汇率（不限制日期，获取最新的）
+    const sourceRates = await prisma.exchangeRate.findMany({
       where: {
         userId,
-        type: 'USER',
+        type: { in: ['USER', 'API'] },
       },
       include: {
         fromCurrencyRef: true,
@@ -64,7 +64,7 @@ export async function generateAutoExchangeRates(
     // 1. 生成反向汇率
     const reverseResult = await generateReverseRates(
       userId,
-      userRates,
+      sourceRates,
       targetDate
     )
     result.details.reverseRates = reverseResult.count

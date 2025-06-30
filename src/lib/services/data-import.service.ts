@@ -354,6 +354,32 @@ export class DataImportService {
         }
       })
 
+      // 如果导入了汇率数据，需要重新生成自动汇率
+      if (data.exchangeRates?.length > 0) {
+        try {
+          // 删除所有自动生成的汇率
+          await prisma.exchangeRate.deleteMany({
+            where: {
+              userId,
+              type: 'AUTO',
+            },
+          })
+
+          // 重新生成所有自动汇率
+          const { generateAutoExchangeRates } = await import(
+            './exchange-rate-auto-generation.service'
+          )
+          await generateAutoExchangeRates(userId)
+
+          result.warnings.push('已重新生成自动汇率（反向汇率和传递汇率）')
+        } catch (error) {
+          console.error('导入后自动重新生成汇率失败:', error)
+          result.warnings.push(
+            '自动生成反向汇率和传递汇率失败，请手动触发重新生成'
+          )
+        }
+      }
+
       result.success = result.statistics.failed === 0
       result.message = result.success
         ? `导入成功：创建 ${result.statistics.created} 条记录，更新 ${result.statistics.updated} 条记录`

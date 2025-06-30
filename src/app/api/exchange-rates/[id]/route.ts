@@ -139,8 +139,8 @@ export async function PUT(
       toCurrency: updatedRate.toCurrencyRef?.code || '',
     }
 
-    // 只有当更新的是用户输入汇率时，才触发自动重新生成
-    if (existingRate.type === 'USER') {
+    // 当更新的是用户输入汇率或API汇率时，都需要触发自动重新生成
+    if (existingRate.type === 'USER' || existingRate.type === 'API') {
       try {
         // 清理所有自动生成的汇率，然后重新生成
         await prisma.exchangeRate.deleteMany({
@@ -150,10 +150,10 @@ export async function PUT(
           },
         })
 
-        // 重新生成所有自动汇率（使用当前日期，确保能找到所有用户汇率）
+        // 重新生成所有自动汇率（使用当前日期，确保能找到所有用户汇率和API汇率）
         await generateAutoExchangeRates(user.id)
       } catch (error) {
-        console.error('自动重新生成汇率失败:', error)
+        console.warn('自动重新生成汇率失败:', error)
         // 不影响主要操作，只记录错误
       }
     }
@@ -197,8 +197,8 @@ export async function DELETE(
       where: { id },
     })
 
-    // 只有当删除的是用户输入汇率时，才触发自动重新生成
-    if (existingRate.type === 'USER') {
+    // 当删除的是用户输入汇率或API汇率时，都需要触发自动重新生成
+    if (existingRate.type === 'USER' || existingRate.type === 'API') {
       try {
         // 清理所有自动生成的汇率，然后重新生成
         await prisma.exchangeRate.deleteMany({
@@ -211,7 +211,7 @@ export async function DELETE(
         // 重新生成所有自动汇率
         await generateAutoExchangeRates(user.id)
       } catch (error) {
-        console.error('自动重新生成汇率失败:', error)
+        console.warn('自动重新生成汇率失败:', error)
         // 不影响主要操作，只记录错误
       }
     }

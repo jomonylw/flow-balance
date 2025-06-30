@@ -4,7 +4,6 @@ module.exports = {
     'eslint --fix --max-warnings=1000',
     'prettier --write',
   ],
-  '*.{ts,tsx}': ['eslint --fix --max-warnings=1000', 'prettier --write'],
 
   // JSON 文件
   '*.json': ['prettier --write'],

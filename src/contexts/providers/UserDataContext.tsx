@@ -568,7 +568,14 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
 
   const refreshExchangeRates = useCallback(async () => {
     try {
-      const exchangeRates = await fetchExchangeRates()
+      // 获取当前用户设置中的本位币代码
+      let baseCurrencyCode: string | undefined
+      setUserData(prev => {
+        baseCurrencyCode = prev.userSettings?.baseCurrency?.code
+        return prev
+      })
+
+      const exchangeRates = await fetchExchangeRates(baseCurrencyCode)
       setUserData(prev => ({
         ...prev,
         exchangeRates,

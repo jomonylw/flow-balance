@@ -29,6 +29,7 @@ export default function ExchangeRateManagement({
     getBaseCurrency,
     userSettings,
     updateUserSettings,
+    refreshExchangeRates,
   } = useUserData()
   const { showSuccess, showError } = useToast()
   const { formatInputDate } = useUserDateFormatter()
@@ -81,6 +82,9 @@ export default function ExchangeRateManagement({
     // 重新获取所有汇率数据，包括新生成的自动汇率
     await fetchData()
 
+    // 刷新 UserDataContext 中的汇率数据，确保其他组件能获得最新数据
+    await refreshExchangeRates()
+
     // 从缺失列表中移除
     setMissingRates(prev =>
       prev.filter(
@@ -101,6 +105,9 @@ export default function ExchangeRateManagement({
 
     // 重新获取所有汇率数据，包括重新生成的自动汇率
     await fetchData()
+
+    // 刷新 UserDataContext 中的汇率数据，确保其他组件能获得最新数据
+    await refreshExchangeRates()
 
     // 如果删除的汇率对应某个货币对，将其重新添加到缺失列表
     if (deletedRate) {
@@ -211,6 +218,9 @@ export default function ExchangeRateManagement({
 
         // 刷新汇率数据
         await fetchData()
+
+        // 刷新 UserDataContext 中的汇率数据，确保其他组件能获得最新数据
+        await refreshExchangeRates()
 
         // 更新用户设置中的最后更新时间
         try {
