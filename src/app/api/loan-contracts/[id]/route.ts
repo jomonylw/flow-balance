@@ -8,17 +8,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { LoanContractService } from '@/lib/services/loan-contract.service'
 import { LoanContractFormData } from '@/types/core'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const t = createServerTranslator()
+
   try {
     const { id } = await params
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: t('loan.contract.unauthorized') },
         { status: 401 }
       )
     }
@@ -28,7 +31,7 @@ export async function PUT(
     // 验证数据
     if (data.loanAmount !== undefined && data.loanAmount <= 0) {
       return NextResponse.json(
-        { success: false, error: '贷款金额必须大于0' },
+        { success: false, error: t('loan.contract.amount.invalid') },
         { status: 400 }
       )
     }
@@ -38,7 +41,7 @@ export async function PUT(
       (data.interestRate < 0 || data.interestRate > 1)
     ) {
       return NextResponse.json(
-        { success: false, error: '利率必须在0-100%之间' },
+        { success: false, error: t('loan.contract.rate.invalid') },
         { status: 400 }
       )
     }
@@ -48,7 +51,7 @@ export async function PUT(
       (data.totalPeriods <= 0 || !Number.isInteger(data.totalPeriods))
     ) {
       return NextResponse.json(
-        { success: false, error: '总期数必须是正整数' },
+        { success: false, error: t('loan.contract.periods.invalid') },
         { status: 400 }
       )
     }
@@ -62,7 +65,7 @@ export async function PUT(
       )
       if (!existingContract) {
         return NextResponse.json(
-          { success: false, error: '贷款合约不存在' },
+          { success: false, error: t('loan.contract.not.exists') },
           { status: 404 }
         )
       }
@@ -82,7 +85,9 @@ export async function PUT(
         return NextResponse.json(
           {
             success: false,
-            error: `新的总期数必须大于已完成的最大期数 (${maxCompletedPeriod})`,
+            error: t('loan.contract.periods.too.small', {
+              maxPeriod: maxCompletedPeriod.toString(),
+            }),
           },
           { status: 400 }
         )
@@ -100,12 +105,12 @@ export async function PUT(
       data: { loanContract },
     })
   } catch (error) {
-    console.error('更新贷款合约失败:', error)
+    console.error('Failed to update loan contract:', error)
     return NextResponse.json(
       {
         success: false,
-        error: '更新贷款合约失败',
-        details: error instanceof Error ? error.message : '未知错误',
+        error: t('loan.contract.update.failed'),
+        details: error instanceof Error ? error.message : t('error.unknown'),
       },
       { status: 500 }
     )
@@ -116,12 +121,14 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const t = createServerTranslator()
+
   try {
     const { id } = await params
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: t('loan.contract.unauthorized') },
         { status: 401 }
       )
     }
@@ -145,16 +152,16 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: '贷款合约已删除',
+      message: t('loan.contract.deleted'),
       stats: result.stats,
     })
   } catch (error) {
-    console.error('删除贷款合约失败:', error)
+    console.error('Failed to delete loan contract:', error)
     return NextResponse.json(
       {
         success: false,
-        error: '删除贷款合约失败',
-        details: error instanceof Error ? error.message : '未知错误',
+        error: t('loan.contract.delete.failed'),
+        details: error instanceof Error ? error.message : t('error.unknown'),
       },
       { status: 500 }
     )

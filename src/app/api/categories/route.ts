@@ -9,6 +9,28 @@ import {
 } from '@/lib/api/response'
 import { CategoryCreateSchema, validateData } from '@/lib/validation/schemas'
 import type { Prisma } from '@prisma/client'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
+
+/**
+ * 获取用户语言偏好并创建翻译函数
+ */
+async function getUserTranslator(userId: string) {
+  try {
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { language: true },
+    })
+
+    const userLanguage = userSettings?.language || 'zh'
+    return createServerTranslator(userLanguage)
+  } catch (error) {
+    console.warn(
+      'Failed to get user language preference, using default:',
+      error
+    )
+    return createServerTranslator('zh') // 默认使用中文
+  }
+}
 
 export async function GET() {
   try {
@@ -27,7 +49,8 @@ export async function GET() {
     return successResponse(categories)
   } catch (error) {
     console.error('Get categories error:', error)
-    return errorResponse('获取分类失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('category.get.failed'), 500)
   }
 }
 
@@ -135,7 +158,8 @@ export async function POST(request: NextRequest) {
           parentId,
           userId: user.id,
         })
-        return errorResponse('父分类不存在', 400)
+        const t = await getUserTranslator(user.id)
+        return errorResponse(t('category.parent.not.found'), 400)
       }
 
       createData.type = parentCategory.type
@@ -147,7 +171,8 @@ export async function POST(request: NextRequest) {
         parentId,
         type,
       })
-      return errorResponse('顶级分类必须指定账户类型', 400)
+      const t = await getUserTranslator(user.id)
+      return errorResponse(t('category.top.level.type.required'), 400)
     }
 
     console.log('Final createData:', JSON.stringify(createData, null, 2))
@@ -159,7 +184,8 @@ export async function POST(request: NextRequest) {
     })
 
     console.log('Category created successfully:', category)
-    return successResponse(category, '分类创建成功')
+    const t = await getUserTranslator(user.id)
+    return successResponse(category, t('category.create.success'))
   } catch (error) {
     console.error('Create category error details:', {
       error: error,
@@ -168,6 +194,8 @@ export async function POST(request: NextRequest) {
       createData: typeof createData !== 'undefined' ? createData : null,
     })
 
+    const t = await getUserTranslator(user?.id || '')
+
     // 提供更详细的错误信息
     if (error instanceof Error) {
       // 检查是否是数据库约束错误
@@ -175,7 +203,7 @@ export async function POST(request: NextRequest) {
         return errorResponse(getCategoryError('ALREADY_EXISTS'), 400)
       }
       if (error.message.includes('Foreign key constraint')) {
-        return errorResponse('父分类不存在或无效', 400)
+        return errorResponse(t('category.parent.invalid'), 400)
       }
       return errorResponse(
         `${getCategoryError('CREATE_FAILED')}: ${error.message}`,

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import ExchangeRateForm from './ExchangeRateForm'
@@ -24,6 +25,7 @@ export default function ExchangeRateManagement({
   currencies,
 }: ExchangeRateManagementProps) {
   const { t } = useLanguage()
+  const { isAuthenticated } = useAuth()
   const {
     currencies: userCurrencies,
     getBaseCurrency,
@@ -47,6 +49,9 @@ export default function ExchangeRateManagement({
   const lastUpdate = userSettings?.lastExchangeRateUpdate
 
   const fetchData = useCallback(async () => {
+    // 只有在用户已认证时才获取数据
+    if (!isAuthenticated) return
+
     setLoading(true)
     setError('')
 
@@ -72,11 +77,13 @@ export default function ExchangeRateManagement({
     } finally {
       setLoading(false)
     }
-  }, [t])
+  }, [t, isAuthenticated])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    if (isAuthenticated) {
+      fetchData()
+    }
+  }, [fetchData, isAuthenticated])
 
   const handleRateCreated = async (newRate: ExchangeRateData) => {
     // 重新获取所有汇率数据，包括新生成的自动汇率

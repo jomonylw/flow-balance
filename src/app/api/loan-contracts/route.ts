@@ -8,13 +8,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { LoanContractService } from '@/lib/services/loan-contract.service'
 import { LoanContractFormData } from '@/types/core'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
 
 export async function GET() {
+  const t = createServerTranslator()
+
   try {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: t('loan.contract.unauthorized') },
         { status: 401 }
       )
     }
@@ -32,8 +35,8 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: '获取贷款合约列表失败',
-        details: error instanceof Error ? error.message : '未知错误',
+        error: t('loan.contract.fetch.failed'),
+        details: error instanceof Error ? error.message : t('error.unknown'),
       },
       { status: 500 }
     )
@@ -41,11 +44,13 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const t = createServerTranslator()
+
   try {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: t('loan.contract.unauthorized') },
         { status: 401 }
       )
     }
@@ -65,35 +70,35 @@ export async function POST(request: NextRequest) {
       !data.paymentDay
     ) {
       return NextResponse.json(
-        { success: false, error: '缺少必要字段' },
+        { success: false, error: t('loan.contract.missing.fields') },
         { status: 400 }
       )
     }
 
     if (data.loanAmount <= 0) {
       return NextResponse.json(
-        { success: false, error: '贷款金额必须大于0' },
+        { success: false, error: t('loan.contract.amount.invalid') },
         { status: 400 }
       )
     }
 
     if (data.interestRate < 0 || data.interestRate > 1) {
       return NextResponse.json(
-        { success: false, error: '利率必须在0-100%之间' },
+        { success: false, error: t('loan.contract.rate.invalid') },
         { status: 400 }
       )
     }
 
     if (data.totalPeriods <= 0 || !Number.isInteger(data.totalPeriods)) {
       return NextResponse.json(
-        { success: false, error: '总期数必须是正整数' },
+        { success: false, error: t('loan.contract.periods.invalid') },
         { status: 400 }
       )
     }
 
     if (data.paymentDay < 1 || data.paymentDay > 31) {
       return NextResponse.json(
-        { success: false, error: '还款日期必须在1-31号之间' },
+        { success: false, error: t('loan.contract.payment.day.range.invalid') },
         { status: 400 }
       )
     }
@@ -107,7 +112,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: '该账户已有贷款合约，一个账户最多只能绑定一个贷款合约',
+          error: t('loan.contract.account.has.existing'),
         },
         { status: 400 }
       )
@@ -127,8 +132,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: '创建贷款合约失败',
-        details: error instanceof Error ? error.message : '未知错误',
+        error: t('loan.contract.create.failed'),
+        details: error instanceof Error ? error.message : t('error.unknown'),
       },
       { status: 500 }
     )

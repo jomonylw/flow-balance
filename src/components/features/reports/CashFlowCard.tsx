@@ -14,6 +14,7 @@ import DateInput from '@/components/ui/forms/DateInput'
 import { RefreshCw } from 'lucide-react'
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
@@ -70,6 +71,7 @@ interface PersonalCashFlowResponse {
 
 export default function CashFlowCard() {
   const { t } = useLanguage()
+  const { isAuthenticated } = useAuth()
   const { categories, accounts, getBaseCurrency } = useUserData()
   const { formatCurrencyById, findCurrencyByCode } = useUserCurrencyFormatter()
   const { formatDate, formatInputDate } = useUserDateFormatter()
@@ -89,6 +91,9 @@ export default function CashFlowCard() {
 
   // 将所有 hooks 移到条件判断之前
   const fetchCashFlow = useCallback(async () => {
+    // 只有在用户已认证时才获取数据
+    if (!isAuthenticated) return
+
     setLoading(true)
     try {
       const response = await fetch(
@@ -103,13 +108,13 @@ export default function CashFlowCard() {
     } finally {
       setLoading(false)
     }
-  }, [startDate, endDate, t])
+  }, [startDate, endDate, t, isAuthenticated])
 
   useEffect(() => {
-    if (baseCurrency) {
+    if (baseCurrency && isAuthenticated) {
       fetchCashFlow()
     }
-  }, [fetchCashFlow, baseCurrency])
+  }, [fetchCashFlow, baseCurrency, isAuthenticated])
 
   // 构建分类树并汇总余额数据
   const enrichedCategoryTree = useMemo(() => {

@@ -46,6 +46,7 @@
   "loan.payment.reset.error": "重置失败",
   "loan.payment.reset.all.success": "全部重置成功",
   "loan.payment.reset.all.error": "全部重置失败",
+  "loan.payment.reset.success.message": "成功重置 {resetCount} 条还款记录，删除 {deletedTransactions} 条交易记录",
   "loan.payment.reset.confirm.title": "确认重置还款记录",
   "loan.payment.reset.confirm.message": "您确定要重置选中的 {count} 条还款记录吗？此操作将删除相关的交易记录，且不可撤销。",
   "loan.payment.reset.all.confirm.title": "确认重置所有还款记录",
@@ -94,11 +95,11 @@
   "loan.contract.save": "保存合约",
   "loan.contract.cancel": "取消",
   "loan.transaction.template": "交易模板",
-  "loan.transaction.description.placeholder": "还款 - {合约名称}",
-  "loan.transaction.notes.placeholder": "第{期数}期还款",
+  "loan.transaction.description.placeholder": "还款 - {contractName}",
+  "loan.transaction.notes.placeholder": "第{period}期还款",
   "mortgage.loan.transaction.template": "交易模板",
   "mortgage.loan.transaction.description.placeholder": "房贷还款",
-  "mortgage.loan.transaction.notes.placeholder": "第{期数}期房贷还款",
+  "mortgage.loan.transaction.notes.placeholder": "第{period}期房贷还款",
   "mortgage.loan.contract.name.placeholder": "请输入房贷合约名称",
   "loan.amount.required": "请输入有效的贷款金额",
   "loan.interest.rate.required": "请输入有效的利率",
@@ -111,5 +112,6 @@
   "frequency.quarterly": "每季度",
   "frequency.semi_annually": "每半年",
   "frequency.annually": "每年",
-  "loan.payment.loading.description": "正在加载还款记录，请稍候..."
+  "loan.payment.loading.description": "正在加载还款记录，请稍候...",
+  "loan.contract.deleted": "贷款合约已删除"
 }

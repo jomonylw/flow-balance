@@ -6,21 +6,24 @@ import {
   validationErrorResponse,
 } from '@/lib/api/response'
 import crypto from 'crypto'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { email } = body
 
+    const t = createServerTranslator() // 使用默认语言，因为用户还未登录
+
     // 验证必填字段
     if (!email) {
-      return validationErrorResponse('邮箱不能为空')
+      return validationErrorResponse(t('auth.email.required'))
     }
 
     // 验证邮箱格式
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      return validationErrorResponse('邮箱格式不正确')
+      return validationErrorResponse(t('auth.email.format.invalid'))
     }
 
     // 查找用户
@@ -57,10 +60,11 @@ export async function POST(request: NextRequest) {
     )
 
     return successResponse({
-      message: '如果该邮箱存在，我们已发送重置链接到您的邮箱',
+      message: t('auth.password.reset.email.sent'),
     })
   } catch (error) {
     console.error('Request password reset error:', error)
-    return errorResponse('服务器内部错误', 500)
+    const t = createServerTranslator()
+    return errorResponse(t('common.server.error'), 500)
   }
 }

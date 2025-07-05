@@ -13,17 +13,18 @@ export default function SignupPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [isSignupInProgress, setIsSignupInProgress] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   useEffect(() => {
-    // 如果用户已登录，重定向到根页面
-    if (mounted && isAuthenticated && !authLoading) {
+    // 如果用户已登录且不是在注册流程中，重定向到根页面
+    if (mounted && isAuthenticated && !authLoading && !isSignupInProgress) {
       router.replace('/')
     }
-  }, [mounted, isAuthenticated, authLoading, router])
+  }, [mounted, isAuthenticated, authLoading, isSignupInProgress, router])
 
   // 简化加载状态
   if (!mounted) {
@@ -49,7 +50,7 @@ export default function SignupPage() {
       title={t('auth.signup.title')}
       subtitle={t('auth.signup.subtitle')}
     >
-      <SignupForm />
+      <SignupForm onSignupStart={() => setIsSignupInProgress(true)} />
     </AuthLayout>
   )
 }

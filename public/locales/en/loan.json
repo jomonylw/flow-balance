@@ -46,6 +46,7 @@
   "loan.payment.reset.error": "Reset failed",
   "loan.payment.reset.all.success": "Reset all successful",
   "loan.payment.reset.all.error": "Reset all failed",
+  "loan.payment.reset.success.message": "Successfully reset {resetCount} payment records and deleted {deletedTransactions} transaction records",
   "loan.payment.reset.confirm.title": "Confirm Reset Payment Records",
   "loan.payment.reset.confirm.message": "Are you sure you want to reset the selected {count} payment records? This will delete related transaction records and cannot be undone.",
   "loan.payment.reset.all.confirm.title": "Confirm Reset All Payment Records",
@@ -94,11 +95,11 @@
   "loan.contract.save": "Save Contract",
   "loan.contract.cancel": "Cancel",
   "loan.transaction.template": "Transaction Template",
-  "loan.transaction.description.placeholder": "Payment - {Contract Name}",
-  "loan.transaction.notes.placeholder": "Period {Period Number} Payment",
+  "loan.transaction.description.placeholder": "Payment - {contractName}",
+  "loan.transaction.notes.placeholder": "Period {period} Payment",
   "mortgage.loan.transaction.template": "Transaction Template",
   "mortgage.loan.transaction.description.placeholder": "Mortgage Payment",
-  "mortgage.loan.transaction.notes.placeholder": "Period {Period Number} Mortgage Payment",
+  "mortgage.loan.transaction.notes.placeholder": "Period {period} Mortgage Payment",
   "mortgage.loan.contract.name.placeholder": "Enter mortgage contract name",
   "loan.amount.required": "Please enter a valid loan amount",
   "loan.interest.rate.required": "Please enter a valid interest rate",
@@ -111,5 +112,6 @@
   "frequency.quarterly": "Quarterly",
   "frequency.semi_annually": "Semi-annually",
   "frequency.annually": "Annually",
-  "loan.payment.loading.description": "Loading payment records, please wait..."
+  "loan.payment.loading.description": "Loading payment records, please wait...",
+  "loan.contract.deleted": "Loan contract deleted"
 }

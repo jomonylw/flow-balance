@@ -36,5 +36,7 @@
   "chart.series.total_liabilities": "Total Liabilities",
   "chart.series.income": "Income",
   "chart.series.expense": "Expense",
-  "chart.series.net_cash_flow": "Net Cash Flow"
+  "chart.series.net_cash_flow": "Net Cash Flow",
+  "chart.category.breakdown": "Category Breakdown",
+  "chart.pie.click.hint": "Click bar chart to select month, click pie chart to highlight corresponding data"
 }

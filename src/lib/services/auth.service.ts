@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { PrismaClient } from '@prisma/client'
+import { generateRecoveryKey } from '@/lib/utils/recovery-key'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
 
 const prisma = new PrismaClient()
 
@@ -15,6 +17,16 @@ export function generateToken(payload: JWTPayload): string {
   const secret = process.env.JWT_SECRET
   if (!secret) {
     throw new Error('JWT_SECRET is not defined')
+  }
+
+  // 验证payload类型
+  if (
+    !payload ||
+    typeof payload !== 'object' ||
+    !payload.userId ||
+    !payload.email
+  ) {
+    throw new Error('Invalid payload: must be an object with userId and email')
   }
 
   return jwt.sign(payload, secret, { expiresIn: '7d' })
@@ -104,20 +116,25 @@ export function isValidEmail(email: string): boolean {
 }
 
 // 验证密码强度
-export function isValidPassword(password: string): {
+export function isValidPassword(
+  password: string,
+  language: string = 'zh'
+): {
   valid: boolean
   message?: string
 } {
+  const t = createServerTranslator(language)
+
   if (password.length < 6) {
-    return { valid: false, message: '密码至少需要6个字符' }
+    return { valid: false, message: t('auth.password.min.length') }
   }
 
   if (!/(?=.*[a-z])/.test(password)) {
-    return { valid: false, message: '密码需要包含至少一个小写字母' }
+    return { valid: false, message: t('auth.password.lowercase.required') }
   }
 
   if (!/(?=.*\d)/.test(password)) {
-    return { valid: false, message: '密码需要包含至少一个数字' }
+    return { valid: false, message: t('auth.password.number.required') }
   }
 
   return { valid: true }
@@ -125,10 +142,12 @@ export function isValidPassword(password: string): {
 
 // 用户注册
 export async function registerUser(email: string, password: string) {
+  const t = createServerTranslator() // 使用默认语言，因为用户还未登录
+
   try {
     // 验证邮箱格式
     if (!isValidEmail(email)) {
-      throw new Error('邮箱格式不正确')
+      throw new Error(t('auth.email.format.invalid'))
     }
 
     // 验证密码强度
@@ -143,19 +162,23 @@ export async function registerUser(email: string, password: string) {
     })
 
     if (existingUser) {
-      throw new Error('该邮箱已被注册')
+      throw new Error(t('auth.email.already.registered'))
     }
 
     // 创建用户
     const hashedPassword = await hashPassword(password)
     // 从邮箱提取默认昵称（@之前的部分）
     const defaultName = email.split('@')[0]
+    // 生成恢复密钥
+    const recoveryKey = generateRecoveryKey()
 
     const user = await prisma.user.create({
       data: {
         email,
         name: defaultName,
         password: hashedPassword,
+        recoveryKey,
+        recoveryKeyCreatedAt: new Date(),
         settings: {
           create: {
             dateFormat: 'YYYY-MM-DD',
@@ -173,13 +196,15 @@ export async function registerUser(email: string, password: string) {
     console.error('Registration error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '未知错误',
+      error: error instanceof Error ? error.message : t('auth.unknown.error'),
     }
   }
 }
 
 // 用户登录
 export async function loginUser(email: string, password: string) {
+  const t = createServerTranslator() // 使用默认语言，因为用户还未登录
+
   try {
     // 查找用户
     const user = await prisma.user.findUnique({
@@ -194,13 +219,13 @@ export async function loginUser(email: string, password: string) {
     })
 
     if (!user) {
-      throw new Error('邮箱或密码错误')
+      throw new Error(t('auth.email.password.incorrect'))
     }
 
     // 验证密码
     const isPasswordValid = await verifyPassword(password, user.password)
     if (!isPasswordValid) {
-      throw new Error('邮箱或密码错误')
+      throw new Error(t('auth.email.password.incorrect'))
     }
 
     // 生成 JWT token
@@ -214,7 +239,7 @@ export async function loginUser(email: string, password: string) {
     console.error('Login error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '未知错误',
+      error: error instanceof Error ? error.message : t('auth.unknown.error'),
     }
   }
 }
@@ -223,7 +248,8 @@ export async function loginUser(email: string, password: string) {
 export async function requireAuth() {
   const user = await getCurrentUser()
   if (!user) {
-    throw new Error('未授权访问')
+    const t = createServerTranslator()
+    throw new Error(t('auth.unauthorized'))
   }
   return user
 }

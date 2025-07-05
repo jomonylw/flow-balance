@@ -12,6 +12,7 @@ import CurrencyManagement from './CurrencyManagement'
 import DataManagementSection from './DataManagementSection'
 import ExchangeRateManagement from './ExchangeRateManagement'
 import TagManagement from './TagManagement'
+import RecoveryKeyManagement from './RecoveryKeyManagement'
 import SettingsNavigation, { TabType, SettingGroup } from './SettingsNavigation'
 import SettingsContent from './SettingsContent'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
@@ -138,7 +139,12 @@ export default function UserSettingsPage({
       case 'profile':
         return <ProfileSettingsForm user={user} />
       case 'security':
-        return <ChangePasswordForm />
+        return (
+          <div className='space-y-6'>
+            <ChangePasswordForm />
+            <RecoveryKeyManagement />
+          </div>
+        )
       case 'preferences':
         return (
           <PreferencesForm

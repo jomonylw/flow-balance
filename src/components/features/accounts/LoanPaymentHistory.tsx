@@ -150,7 +150,7 @@ export default function LoanPaymentHistory({
       const result = await response.json()
 
       if (!result.success) {
-        throw new Error(result.error || '重置失败')
+        throw new Error(result.error || t('loan.payment.reset.error'))
       }
 
       showSuccess(t('loan.payment.reset.success'), result.data.message)
@@ -167,10 +167,10 @@ export default function LoanPaymentHistory({
       setSelectedPaymentIds([])
       setShowResetConfirm(false)
     } catch (error) {
-      console.error('重置还款记录失败:', error)
+      console.error('Failed to reset payment records:', error)
       showError(
         t('loan.payment.reset.error'),
-        error instanceof Error ? error.message : '重置失败'
+        error instanceof Error ? error.message : t('loan.payment.reset.error')
       )
     } finally {
       setIsResetting(false)
@@ -198,7 +198,7 @@ export default function LoanPaymentHistory({
       const result = await response.json()
 
       if (!result.success) {
-        throw new Error(result.error || '重置失败')
+        throw new Error(result.error || t('loan.payment.reset.all.error'))
       }
 
       showSuccess(t('loan.payment.reset.all.success'), result.data.message)
@@ -215,10 +215,12 @@ export default function LoanPaymentHistory({
       setSelectedPaymentIds([])
       setShowResetAllConfirm(false)
     } catch (error) {
-      console.error('重置所有还款记录失败:', error)
+      console.error('Failed to reset all payment records:', error)
       showError(
         t('loan.payment.reset.all.error'),
-        error instanceof Error ? error.message : '重置失败'
+        error instanceof Error
+          ? error.message
+          : t('loan.payment.reset.all.error')
       )
     } finally {
       setIsResetting(false)

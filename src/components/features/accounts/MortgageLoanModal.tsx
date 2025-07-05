@@ -179,7 +179,7 @@ export default function MortgageLoanModal({
       onClose()
     } catch (error) {
       console.error('Failed to save mortgage loan contract:', error)
-      setError(error instanceof Error ? error.message : '未知错误')
+      setError(error instanceof Error ? error.message : t('error.unknown'))
     } finally {
       setIsLoading(false)
     }

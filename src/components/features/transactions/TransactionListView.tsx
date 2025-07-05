@@ -13,6 +13,7 @@ import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import { TransactionListSkeleton } from '@/components/ui/data-display/page-skeletons'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { Transaction, User } from '@/types/business/transaction'
@@ -29,6 +30,7 @@ export default function TransactionListView({
 }: TransactionListViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { isAuthenticated } = useAuth()
   const { currencies, tags } = useUserData()
   const { formatInputDate } = useUserDateFormatter()
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -61,6 +63,9 @@ export default function TransactionListView({
 
   // 加载统计数据
   const loadStats = useCallback(async () => {
+    // 只有在用户已认证时才加载数据
+    if (!isAuthenticated) return
+
     setIsLoadingStats(true)
     try {
       const params = new URLSearchParams()
@@ -101,10 +106,13 @@ export default function TransactionListView({
     } finally {
       setIsLoadingStats(false)
     }
-  }, [filters, showError, t])
+  }, [filters, showError, t, isAuthenticated])
 
   // 加载交易数据
   const loadTransactions = useCallback(async () => {
+    // 只有在用户已认证时才加载数据
+    if (!isAuthenticated) return
+
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -150,7 +158,14 @@ export default function TransactionListView({
     } finally {
       setIsLoading(false)
     }
-  }, [pagination.page, pagination.limit, filters, showError, t])
+  }, [
+    pagination.page,
+    pagination.limit,
+    filters,
+    showError,
+    t,
+    isAuthenticated,
+  ])
 
   // 初始加载和过滤条件变化时重新加载
   useEffect(() => {
@@ -174,8 +189,11 @@ export default function TransactionListView({
   }
 
   const handleTransactionSuccess = () => {
-    loadTransactions()
-    loadStats()
+    // 只有在用户已认证时才重新加载数据
+    if (isAuthenticated) {
+      loadTransactions()
+      loadStats()
+    }
   }
 
   const handleFilterChange = (newFilters: Partial<TransactionFilters>) => {
@@ -363,8 +381,11 @@ export default function TransactionListView({
               // 智能粘贴相关属性 - 全局交易页面支持多账户
               showAccountSelector={true}
               onSmartPasteSuccess={() => {
-                loadTransactions()
-                loadStats()
+                // 只有在用户已认证时才重新加载数据
+                if (isAuthenticated) {
+                  loadTransactions()
+                  loadStats()
+                }
               }}
             />
           )}

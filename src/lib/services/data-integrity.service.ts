@@ -365,7 +365,11 @@ export class DataIntegrityService {
     // 检查交易金额
     data.transactions.forEach(transaction => {
       const amount = parseFloat(transaction.amount)
-      if (isNaN(amount) || amount <= 0) {
+      // BALANCE类型交易允许为0（如贷款还完时余额为0），其他类型必须大于0
+      const isInvalidAmount =
+        isNaN(amount) ||
+        (transaction.type === 'BALANCE' ? amount < 0 : amount <= 0)
+      if (isInvalidAmount) {
         errors.push({
           type: 'invalid_data',
           entity: 'transaction',

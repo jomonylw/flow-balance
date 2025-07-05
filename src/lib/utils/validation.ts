@@ -69,7 +69,12 @@ export function validateAccountDataWithI18n(
     // 验证交易数据
     account.transactions.forEach(transaction => {
       // 验证交易金额
-      if (transaction.amount <= 0) {
+      // BALANCE类型交易允许为0（如贷款还完时余额为0），其他类型必须大于0
+      if (
+        transaction.type === 'BALANCE'
+          ? transaction.amount < 0
+          : transaction.amount <= 0
+      ) {
         errors.push(
           `账户 "${account.name}" 中存在无效的交易金额: ${transaction.amount}`
         )
@@ -137,8 +142,8 @@ export function validateAccountDataWithI18n(
       sum +
       acc.transactions.filter(t => {
         // 无效交易的条件：
-        // 1. 金额无效
-        if (t.amount <= 0) return true
+        // 1. 金额无效 - BALANCE类型交易允许为0，其他类型必须大于0
+        if (t.type === 'BALANCE' ? t.amount < 0 : t.amount <= 0) return true
         // 2. 日期无效
         if (isNaN(new Date(t.date).getTime())) return true
         // 3. 描述为空
@@ -204,7 +209,12 @@ export function validateAccountData(
     // 验证交易数据
     account.transactions.forEach(transaction => {
       // 验证交易金额
-      if (transaction.amount <= 0) {
+      // BALANCE类型交易允许为0（如贷款还完时余额为0），其他类型必须大于0
+      if (
+        transaction.type === 'BALANCE'
+          ? transaction.amount < 0
+          : transaction.amount <= 0
+      ) {
         errors.push(
           `账户 "${account.name}" 中存在无效的交易金额: ${transaction.amount}`
         )
@@ -268,8 +278,8 @@ export function validateAccountData(
       sum +
       acc.transactions.filter(t => {
         // 无效交易的条件：
-        // 1. 金额无效
-        if (t.amount <= 0) return true
+        // 1. 金额无效 - BALANCE类型交易允许为0，其他类型必须大于0
+        if (t.type === 'BALANCE' ? t.amount < 0 : t.amount <= 0) return true
         // 2. 日期无效
         if (isNaN(new Date(t.date).getTime())) return true
         // 3. 描述为空

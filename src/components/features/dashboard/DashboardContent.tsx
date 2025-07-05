@@ -64,8 +64,10 @@ export default function DashboardContent({
 
   // 监听所有数据更新事件
   useAllDataListener(async () => {
-    // 重新获取仪表板数据
-    await handleTransactionSuccess()
+    // 只有在用户已认证时才重新获取仪表板数据
+    if (user) {
+      await handleTransactionSuccess()
+    }
   })
 
   // 辅助函数：智能格式化货币
@@ -118,6 +120,9 @@ export default function DashboardContent({
 
   // 获取财务概览数据
   useEffect(() => {
+    // 只有在用户已认证时才获取数据
+    if (!user) return
+
     const fetchSummaryData = async () => {
       try {
         setIsLoadingSummary(true)
@@ -136,7 +141,7 @@ export default function DashboardContent({
     }
 
     fetchSummaryData()
-  }, [])
+  }, [user])
 
   // 获取图表数据 - 初始加载时获取所有数据
   const fetchInitialChartData = useCallback(async () => {
@@ -174,8 +179,11 @@ export default function DashboardContent({
 
   // 初始加载图表数据
   useEffect(() => {
-    fetchInitialChartData()
-  }, [fetchInitialChartData])
+    // 只有在用户已认证时才获取数据
+    if (user) {
+      fetchInitialChartData()
+    }
+  }, [fetchInitialChartData, user])
 
   // 处理净资产图表时间范围变化
   const handleNetWorthTimeRangeChange = useCallback(

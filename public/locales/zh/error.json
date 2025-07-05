@@ -129,5 +129,6 @@
   "error.request.failed": "请求失败",
   "error.request.process": "请求处理错误",
   "error.load.exchange.rates": "加载汇率数据失败",
-  "error.clipboard.access": "无法访问剪贴板"
+  "error.clipboard.access": "无法访问剪贴板",
+  "error.fetch.trend.data.failed": "获取趋势数据失败"
 }

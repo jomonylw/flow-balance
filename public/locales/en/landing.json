@@ -1,0 +1,133 @@
+{
+  "landing.hero.title": "Smart Personal Finance Management",
+  "landing.hero.subtitle": "Based on scientific financial concepts, correctly distinguishing between stock and flow, providing clear financial analysis tools",
+  "landing.hero.description": "Support multi-currency management, intelligent categorization, real-time statistics, making your financial management clearer and more efficient",
+  "landing.hero.cta.primary": "Get Started",
+  "landing.hero.cta.secondary": "Already have an account? Login",
+  "landing.hero.feature.professional.title": "Scientific Financial Concepts",
+  "landing.hero.feature.professional.description": "Distinguish between stock and flow, providing clear balance sheets and cash flow statements",
+  "landing.hero.feature.multicurrency.title": "Multi-Currency Support",
+  "landing.hero.feature.multicurrency.description": "Support multiple currency management, automatic exchange rate conversion, unified base currency analysis",
+  "landing.hero.feature.modern.title": "Modern Experience",
+  "landing.hero.feature.modern.description": "Responsive design, support for light/dark themes, perfect for desktop and mobile",
+
+  "landing.features.title": "Powerful Features",
+  "landing.features.subtitle": "Providing modern smart tools and analytical capabilities for personal financial management",
+
+  "landing.features.accounts.title": "Smart Account Management",
+  "landing.features.accounts.description": "Support tree-structured account categorization, automatically distinguish between assets, liabilities, income, and expenses",
+  "landing.features.accounts.highlight.1": "Tree-structured category management",
+  "landing.features.accounts.highlight.2": "Automatic account type recognition",
+  "landing.features.accounts.highlight.3": "Independent currency setting support",
+
+  "landing.features.reports.title": "Clear Financial Reports",
+  "landing.features.reports.description": "Provide intuitive balance sheets and cash flow statements, financial analysis based on scientific principles",
+  "landing.features.reports.highlight.1": "Clear balance sheet",
+  "landing.features.reports.highlight.2": "Cash flow analysis statement",
+  "landing.features.reports.highlight.3": "Multi-period trend comparison",
+
+  "landing.features.currency.title": "Multi-Currency Management",
+  "landing.features.currency.description": "Support multiple currencies and exchange rate management, unified conversion to base currency for summary analysis",
+  "landing.features.currency.highlight.1": "Multi-currency support management",
+  "landing.features.currency.highlight.2": "Custom exchange rate settings",
+  "landing.features.currency.highlight.3": "Base currency unified analysis",
+
+  "landing.features.fire.title": "FIRE Financial Freedom",
+  "landing.features.fire.description": "Smart financial independence calculator to help you plan and track your path to financial freedom",
+  "landing.features.fire.highlight.1": "Financial freedom goal setting",
+  "landing.features.fire.highlight.2": "Investment return analysis",
+  "landing.features.fire.highlight.3": "Retirement planning visualization",
+
+  "landing.features.experience.title": "Excellent User Experience",
+  "landing.features.experience.description": "Responsive design, support for internationalization and theme switching, real-time data synchronization",
+  "landing.features.experience.highlight.1": "Perfect mobile adaptation",
+  "landing.features.experience.highlight.2": "Chinese and English bilingual support",
+  "landing.features.experience.highlight.3": "Light/dark theme switching",
+
+  "landing.features.smart.title": "Smart Batch Operations",
+  "landing.features.smart.description": "Support smart paste, batch editing, Excel-like data entry experience",
+  "landing.features.smart.highlight.1": "Smart data paste",
+  "landing.features.smart.highlight.2": "Batch transaction entry",
+  "landing.features.smart.highlight.3": "Real-time data validation",
+
+  "landing.tech.title": "Modern Technology Stack",
+  "landing.tech.subtitle": "Built with the latest web technologies to ensure performance, security, and maintainability",
+
+  "landing.tech.frontend.title": "Frontend Technologies",
+  "landing.tech.frontend.nextjs": "Latest React full-stack framework",
+  "landing.tech.frontend.react": "Latest version of React library",
+  "landing.tech.frontend.typescript": "Type-safe JavaScript",
+  "landing.tech.frontend.tailwind": "Modern CSS framework",
+
+  "landing.tech.backend.title": "Backend Technologies",
+  "landing.tech.backend.nodejs": "High-performance JavaScript runtime",
+  "landing.tech.backend.prisma": "Modern database ORM",
+  "landing.tech.backend.database": "Flexible database support",
+  "landing.tech.backend.auth": "Secure authentication",
+
+  "landing.tech.features.title": "Featured Functions",
+  "landing.tech.features.echarts": "Professional chart visualization",
+  "landing.tech.features.i18n": "Complete internationalization support",
+  "landing.tech.features.darkmode": "Elegant light/dark themes",
+  "landing.tech.features.responsive": "Perfect responsive design",
+
+  "landing.tech.version.description": "Continuously updated to provide you with the best financial management experience",
+  "landing.tech.version.build": "Build Date",
+  "landing.tech.version.author": "Development Team",
+
+  "landing.footer.description": "Flow Balance is committed to providing modern financial management tools for individual users, helping you better manage and analyze your personal financial situation.",
+  "landing.footer.links.title": "Quick Links",
+  "landing.footer.features.title": "Core Features",
+  "landing.footer.features.accounts": "Account Management",
+  "landing.footer.features.reports": "Financial Reports",
+  "landing.footer.features.multicurrency": "Multi-Currency",
+  "landing.footer.features.fire": "FIRE Calculator",
+  "landing.footer.copyright": "All rights reserved.",
+  "landing.footer.build": "Build",
+
+  "landing.showcase.title": "Product Interface Showcase",
+  "landing.showcase.subtitle": "Experience Flow Balance's professional interface design and powerful features firsthand",
+
+  "landing.showcase.dashboard.title": "Smart Dashboard",
+  "landing.showcase.dashboard.description": "Get a clear overview of your finances at a glance, stay on top of your financial situation in real-time",
+  "landing.showcase.dashboard.feature.1": "Real-time financial data statistics",
+  "landing.showcase.dashboard.feature.2": "Intuitive chart visualization",
+  "landing.showcase.dashboard.feature.3": "Quick account balance viewing",
+
+  "landing.showcase.reports.title": "Clear Reports",
+  "landing.showcase.reports.description": "Intuitive financial reports based on scientific principles, clearly analyze your financial situation",
+  "landing.showcase.reports.feature.1": "Clear balance sheet",
+  "landing.showcase.reports.feature.2": "Cash flow analysis",
+  "landing.showcase.reports.feature.3": "Multi-dimensional data comparison",
+
+  "landing.showcase.fire.title": "FIRE Calculator",
+  "landing.showcase.fire.description": "Smart financial independence planning tool to help you achieve your financial freedom goals",
+  "landing.showcase.fire.feature.1": "Financial freedom goal setting",
+  "landing.showcase.fire.feature.2": "Investment return analysis",
+  "landing.showcase.fire.feature.3": "Retirement planning visualization",
+
+  "landing.showcase.smart.title": "Smart Batch Operations",
+  "landing.showcase.smart.description": "Excel-like data entry experience that dramatically improves data processing efficiency",
+  "landing.showcase.smart.feature.1": "Smart data paste",
+  "landing.showcase.smart.feature.2": "Batch transaction entry",
+  "landing.showcase.smart.feature.3": "Real-time data validation",
+
+  "landing.comparison.title": "Diverse Experience",
+  "landing.comparison.subtitle": "Support for light/dark theme switching and complete internationalization, providing personalized experience for different users",
+
+  "landing.comparison.theme.title": "Light/Dark Themes",
+  "landing.comparison.theme.description": "Elegant light and dark theme design, adapting to different usage environments and personal preferences",
+  "landing.comparison.theme.light": "Light Theme",
+  "landing.comparison.theme.dark": "Dark Theme",
+
+  "landing.comparison.i18n.title": "Internationalization Support",
+  "landing.comparison.i18n.description": "Complete Chinese and English bilingual support with fully localized interface elements",
+  "landing.comparison.i18n.chinese": "Chinese Interface",
+  "landing.comparison.i18n.english": "English Interface",
+
+  "landing.comparison.responsive.title": "Responsive Design",
+  "landing.comparison.responsive.description": "Perfect adaptation for desktop, tablet and mobile, manage finances anytime, anywhere",
+
+  "landing.comparison.currency.title": "Multi-Currency Management",
+  "landing.comparison.currency.description": "Support for multiple currencies and exchange rate management, global financial management solution"
+}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import type { RecurringTransaction } from '@/types/core'
@@ -19,6 +20,7 @@ export default function RecurringTransactionsList({
   onDelete,
 }: RecurringTransactionsListProps) {
   const { t } = useLanguage()
+  const { isAuthenticated } = useAuth()
   const { formatCurrency } = useUserCurrencyFormatter()
   const { theme: _theme } = useTheme()
   const [transactions, setTransactions] = useState<RecurringTransaction[]>([])
@@ -27,6 +29,9 @@ export default function RecurringTransactionsList({
 
   // 获取定期交易列表
   const fetchTransactions = async () => {
+    // 只有在用户已认证时才获取数据
+    if (!isAuthenticated) return
+
     try {
       setIsLoading(true)
       setError(null)
@@ -54,8 +59,10 @@ export default function RecurringTransactionsList({
   }
 
   useEffect(() => {
-    fetchTransactions()
-  }, [accountId])
+    if (isAuthenticated) {
+      fetchTransactions()
+    }
+  }, [accountId, isAuthenticated])
 
   // 删除定期交易
   const handleDelete = async (transactionId: string) => {

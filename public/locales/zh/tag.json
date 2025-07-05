@@ -28,5 +28,9 @@
   "tag.operation.failed": "操作失败",
   "tag.created.and.added": "标签已创建并添加到当前交易",
   "tag.label.optional": "标签（可选）",
-  "tag.create.new": "创建新标签"
+  "tag.create.new": "创建新标签",
+  "tag.get.failed": "获取标签失败",
+  "tag.name.too.long": "标签名称不能超过50个字符",
+  "tag.color.format.invalid": "颜色格式不正确",
+  "tag.name.already.exists": "该标签名称已存在"
 }

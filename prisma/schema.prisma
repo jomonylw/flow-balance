@@ -16,8 +16,10 @@ model User {
   email            String    @unique
   name             String    // 用户昵称/显示名称，默认为邮箱@前的部分
   password         String    // 哈希后的密码
-  resetToken       String?   // 密码重置令牌
-  resetTokenExpiry DateTime? // 重置令牌过期时间
+  resetToken       String?   // 密码重置令牌（保留兼容性）
+  resetTokenExpiry DateTime? // 重置令牌过期时间（保留兼容性）
+  recoveryKey      String?   @unique // 恢复密钥，格式：FB-XXXX-XXXX-XXXX-XXXX
+  recoveryKeyCreatedAt DateTime? // 恢复密钥创建时间
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

@@ -6,15 +6,18 @@ import {
   validationErrorResponse,
 } from '@/lib/api/response'
 import { getCommonError } from '@/lib/constants/api-messages'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { email, password } = body
 
+    const t = createServerTranslator() // 使用默认语言，因为用户还未登录
+
     // 验证必填字段
     if (!email || !password) {
-      return validationErrorResponse('邮箱和密码不能为空')
+      return validationErrorResponse(t('auth.email.password.required'))
     }
 
     // 尝试登录
@@ -31,16 +34,17 @@ export async function POST(request: NextRequest) {
 
     // 返回用户信息（不包含密码）
     if (!result.user) {
-      return errorResponse('用户信息获取失败', 500)
+      return errorResponse(t('auth.user.info.failed'), 500)
     }
     const { password: _password, ...userWithoutPassword } = result.user
 
     return successResponse({
       user: userWithoutPassword,
-      message: '登录成功',
+      message: t('auth.login.success'),
     })
   } catch (error) {
     console.error('Login API error:', error)
-    return errorResponse('服务器内部错误', 500)
+    const t = createServerTranslator()
+    return errorResponse(t('common.server.error'), 500)
   }
 }

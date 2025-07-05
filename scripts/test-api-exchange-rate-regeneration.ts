@@ -115,7 +115,7 @@ async function main() {
   if (autoRates.length > 0) {
     console.log('  🎉 API创建汇率后成功生成了AUTO汇率!')
     autoRates.forEach(rate => {
-      console.log(`    ${rate.fromCurrencyRef.code} → ${rate.toCurrencyRef.code}: ${rate.rate}`)
+      console.log(`    ${rate.fromCurrencyId} → ${rate.toCurrencyId}: ${rate.rate}`)
     })
   } else {
     console.log('  ❌ API创建汇率后没有生成AUTO汇率')

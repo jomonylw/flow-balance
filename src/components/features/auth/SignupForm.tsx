@@ -7,11 +7,17 @@ import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 
-export default function SignupForm() {
+interface SignupFormProps {
+  onSignupStart?: () => void
+}
+
+export default function SignupForm({ onSignupStart }: SignupFormProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { setAuthenticatedUser } = useAuth()
   const router = useRouter()
   const [formData, setFormData] = useState({
     email: '',
@@ -81,6 +87,9 @@ export default function SignupForm() {
     setGeneralError('')
     setSuccessMessage('')
 
+    // 通知父组件注册开始
+    onSignupStart?.()
+
     try {
       const response = await fetch(ApiEndpoints.auth.REGISTER, {
         method: 'POST',
@@ -93,14 +102,30 @@ export default function SignupForm() {
       const result = await response.json()
 
       if (result.success) {
-        const successMsg = t('auth.signup.success')
+        const successMsg = result.data.message || t('auth.signup.success')
         setSuccessMessage(successMsg)
-        showSuccess(t('auth.signup.success'), t('auth.signup.success.message'))
+        showSuccess(t('auth.signup.success'), successMsg)
 
-        // 2秒后自动跳转到登录页
+        // 更新认证状态
+        if (result.data.user) {
+          setAuthenticatedUser(result.data.user)
+        }
+
+        // 设置注册流程标记
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('signup-flow', 'true')
+          console.log('SignupForm - Set signup-flow flag')
+        }
+
+        // 如果有重定向URL，立即跳转到指定页面
+        const redirectTo = result.data.redirectTo || '/login?redirect=setup'
+        console.log('SignupForm - About to redirect to:', redirectTo)
+
+        // 使用 setTimeout 确保状态更新完成后再跳转
         setTimeout(() => {
-          router.push('/login?redirect=setup')
-        }, 2000)
+          console.log('SignupForm - Executing redirect to:', redirectTo)
+          router.push(redirectTo)
+        }, 100)
       } else {
         const errorMessage = result.error || t('auth.signup.failed')
         setGeneralError(errorMessage)

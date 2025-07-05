@@ -416,7 +416,9 @@ export class DataConsistencyValidator {
         }
 
         // 验证金额有效性
-        if (Number(transaction.amount) <= 0) {
+        // BALANCE类型交易允许为0（如贷款还完时余额为0），其他类型必须大于0
+        const amount = Number(transaction.amount)
+        if (transaction.type === 'BALANCE' ? amount < 0 : amount <= 0) {
           errors.push(`交易"${transaction.description}"金额无效`)
         }
 

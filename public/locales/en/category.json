@@ -169,5 +169,20 @@
   "category.name.duplicate.warning": "Category name already exists, please choose another name",
   "category.name.available": "Category name is available",
   "category.name.duplicate.error": "Category name \"{{name}}\" already exists, please use another name",
-  "category.create.unknown.error": "An unknown error occurred while creating the category"
+  "category.create.unknown.error": "An unknown error occurred while creating the category",
+  "category.get.failed": "Failed to get categories",
+  "category.not.found": "Category not found",
+  "category.parent.not.found": "Parent category not found",
+  "category.top.level.type.required": "Top-level category must specify account type",
+  "category.create.success": "Category created successfully",
+  "category.parent.invalid": "Parent category does not exist or is invalid",
+  "category.name.already.exists": "This category name already exists",
+  "category.top.level.cannot.move": "Top-level categories cannot be moved",
+  "category.cannot.set.self.as.parent": "Category cannot set itself as parent",
+  "category.type.change.not.allowed": "Cannot change category type: accounts or transaction data exist under this category, changing type would cause data inconsistency",
+  "category.update.success": "Category updated successfully",
+  "category.update.failed": "Failed to update category",
+  "category.has.children.cannot.delete": "This category has subcategories and cannot be deleted",
+  "category.has.accounts.cannot.delete": "This category has accounts and cannot be deleted",
+  "category.delete.failed": "Failed to delete category"
 }

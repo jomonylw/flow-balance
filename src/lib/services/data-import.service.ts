@@ -190,6 +190,7 @@ export class DataImportService {
           loanContracts: IdMapping
           loanPayments: IdMapping
           transactions: IdMapping
+          exchangeRates: IdMapping
         } = {
           categories: {},
           accounts: {},
@@ -200,7 +201,10 @@ export class DataImportService {
           loanContracts: {},
           loanPayments: {},
           transactions: {},
+          exchangeRates: {},
         }
+
+        const loanPaymentsToUpdate: any[] = []
 
         // 1. 导入用户设置
         if (data.userSettings) {
@@ -236,6 +240,7 @@ export class DataImportService {
             userId,
             data.exchangeRates,
             idMappings.currencies,
+            idMappings.exchangeRates,
             result
           )
         }
@@ -287,6 +292,7 @@ export class DataImportService {
             idMappings.accounts,
             idMappings.categories,
             idMappings.currencies,
+            idMappings.tags,
             idMappings.transactionTemplates,
             result,
             options
@@ -301,6 +307,7 @@ export class DataImportService {
             data.recurringTransactions,
             idMappings.accounts,
             idMappings.currencies,
+            idMappings.tags,
             idMappings.recurringTransactions,
             result,
             options
@@ -315,6 +322,7 @@ export class DataImportService {
             data.loanContracts,
             idMappings.accounts,
             idMappings.currencies,
+            idMappings.tags,
             idMappings.loanContracts,
             result,
             options
@@ -329,6 +337,7 @@ export class DataImportService {
             data.loanPayments,
             idMappings.loanContracts,
             idMappings.loanPayments,
+            loanPaymentsToUpdate,
             result,
             options
           )
@@ -351,6 +360,32 @@ export class DataImportService {
             result,
             options
           )
+        }
+
+        // 13. 后处理：更新贷款还款记录中的交易ID
+        if (loanPaymentsToUpdate.length > 0) {
+          for (const paymentToUpdate of loanPaymentsToUpdate) {
+            const newPrincipalTxId =
+              paymentToUpdate.oldPrincipalTxId &&
+              idMappings.transactions[paymentToUpdate.oldPrincipalTxId]
+            const newInterestTxId =
+              paymentToUpdate.oldInterestTxId &&
+              idMappings.transactions[paymentToUpdate.oldInterestTxId]
+            const newBalanceTxId =
+              paymentToUpdate.oldBalanceTxId &&
+              idMappings.transactions[paymentToUpdate.oldBalanceTxId]
+
+            if (newPrincipalTxId || newInterestTxId || newBalanceTxId) {
+              await tx.loanPayment.update({
+                where: { id: paymentToUpdate.newPaymentId },
+                data: {
+                  principalTransactionId: newPrincipalTxId,
+                  interestTransactionId: newInterestTxId,
+                  balanceTransactionId: newBalanceTxId,
+                },
+              })
+            }
+          }
         }
       })
 
@@ -599,8 +634,11 @@ export class DataImportService {
     userId: string,
     exchangeRates: any[],
     currencyIdMapping: IdMapping,
+    exchangeRateIdMapping: IdMapping,
     result: ImportResult
   ): Promise<void> {
+    const ratesToUpdate: { newRateId: string; oldSourceRateId: string }[] = []
+
     for (const rate of exchangeRates) {
       try {
         // 查找货币ID
@@ -639,9 +677,10 @@ export class DataImportService {
           },
         })
 
+        let newRate
         if (existing) {
           // 更新现有汇率
-          await tx.exchangeRate.update({
+          newRate = await tx.exchangeRate.update({
             where: { id: existing.id },
             data: {
               rate: new Decimal(rate.rate),
@@ -652,7 +691,7 @@ export class DataImportService {
           result.statistics.updated++
         } else {
           // 创建新汇率
-          await tx.exchangeRate.create({
+          newRate = await tx.exchangeRate.create({
             data: {
               userId,
               fromCurrencyId: fromCurrency.id,
@@ -661,9 +700,18 @@ export class DataImportService {
               effectiveDate,
               type: rate.type || 'USER',
               notes: rate.notes,
+              // sourceRateId 将在后续步骤中更新
             },
           })
           result.statistics.created++
+        }
+
+        exchangeRateIdMapping[rate.id] = newRate.id
+        if (rate.sourceRateId) {
+          ratesToUpdate.push({
+            newRateId: newRate.id,
+            oldSourceRateId: rate.sourceRateId,
+          })
         }
 
         result.statistics.processed++
@@ -672,6 +720,18 @@ export class DataImportService {
           `导入汇率 ${rate.fromCurrencyCode}/${rate.toCurrencyCode} 失败: ${error instanceof Error ? error.message : '未知错误'}`
         )
         result.statistics.failed++
+      }
+    }
+
+    // 后处理：更新源汇率ID
+    for (const rateToUpdate of ratesToUpdate) {
+      const newSourceRateId =
+        exchangeRateIdMapping[rateToUpdate.oldSourceRateId]
+      if (newSourceRateId) {
+        await tx.exchangeRate.update({
+          where: { id: rateToUpdate.newRateId },
+          data: { sourceRateId: newSourceRateId },
+        })
       }
     }
   }
@@ -928,6 +988,7 @@ export class DataImportService {
     accountIdMapping: IdMapping,
     categoryIdMapping: IdMapping,
     currencyIdMapping: IdMapping,
+    tagIdMapping: IdMapping,
     templateIdMapping: IdMapping,
     result: ImportResult,
     options: ImportOptions
@@ -1001,6 +1062,12 @@ export class DataImportService {
           }
         }
 
+        // 映射标签ID
+        const newTagIds =
+          template.tagIds
+            ?.map((oldId: string) => tagIdMapping[oldId])
+            .filter(Boolean) || []
+
         const newTemplate = await tx.transactionTemplate.create({
           data: {
             userId,
@@ -1011,7 +1078,7 @@ export class DataImportService {
             accountId,
             categoryId,
             currencyId,
-            tagIds: template.tagIds,
+            tagIds: newTagIds,
           },
         })
 
@@ -1036,6 +1103,7 @@ export class DataImportService {
     recurringTransactions: any[],
     accountIdMapping: IdMapping,
     currencyIdMapping: IdMapping,
+    tagIdMapping: IdMapping,
     recurringIdMapping: IdMapping,
     result: ImportResult,
     _options: ImportOptions
@@ -1068,6 +1136,12 @@ export class DataImportService {
           continue
         }
 
+        // 映射标签ID
+        const newTagIds =
+          rt.tagIds
+            ?.map((oldId: string) => tagIdMapping[oldId])
+            .filter(Boolean) || []
+
         const newRecurring = await tx.recurringTransaction.create({
           data: {
             userId,
@@ -1077,7 +1151,7 @@ export class DataImportService {
             amount: new Decimal(rt.amount),
             description: rt.description,
             notes: rt.notes,
-            tagIds: rt.tagIds,
+            tagIds: newTagIds,
             frequency: rt.frequency,
             interval: rt.interval,
             dayOfMonth: rt.dayOfMonth,
@@ -1113,6 +1187,7 @@ export class DataImportService {
     loanContracts: any[],
     accountIdMapping: IdMapping,
     currencyIdMapping: IdMapping,
+    tagIdMapping: IdMapping,
     loanIdMapping: IdMapping,
     result: ImportResult,
     _options: ImportOptions
@@ -1160,6 +1235,12 @@ export class DataImportService {
           }
         }
 
+        // 映射标签ID
+        const newTagIds =
+          loan.transactionTagIds
+            ?.map((oldId: string) => tagIdMapping[oldId])
+            .filter(Boolean) || []
+
         const newLoan = await tx.loanContract.create({
           data: {
             userId,
@@ -1175,7 +1256,7 @@ export class DataImportService {
             paymentAccountId,
             transactionDescription: loan.transactionDescription,
             transactionNotes: loan.transactionNotes,
-            transactionTagIds: loan.transactionTagIds,
+            transactionTagIds: newTagIds,
             isActive: loan.isActive,
           },
         })
@@ -1201,6 +1282,7 @@ export class DataImportService {
     loanPayments: any[],
     loanIdMapping: IdMapping,
     paymentIdMapping: IdMapping,
+    paymentsToUpdate: any[],
     result: ImportResult,
     _options: ImportOptions
   ): Promise<void> {
@@ -1230,11 +1312,26 @@ export class DataImportService {
             processedAt: payment.processedAt
               ? new Date(payment.processedAt)
               : null,
-            // 交易ID将在导入交易时重新关联
+            // 交易ID将在后续步骤中更新
           },
         })
 
         paymentIdMapping[payment.id] = newPayment.id
+
+        // 暂存需要后续更新的交易ID
+        if (
+          payment.principalTransactionId ||
+          payment.interestTransactionId ||
+          payment.balanceTransactionId
+        ) {
+          paymentsToUpdate.push({
+            newPaymentId: newPayment.id,
+            oldPrincipalTxId: payment.principalTransactionId,
+            oldInterestTxId: payment.interestTransactionId,
+            oldBalanceTxId: payment.balanceTransactionId,
+          })
+        }
+
         result.statistics.processed++
         result.statistics.created++
       } catch (error) {
@@ -1254,7 +1351,7 @@ export class DataImportService {
     userId: string,
     transactions: any[],
     accountIdMapping: IdMapping,
-    categoryIdMapping: IdMapping,
+    _categoryIdMapping: IdMapping, // 分类信息通过账户获取，此参数不再需要
     currencyIdMapping: IdMapping,
     tagIdMapping: IdMapping,
     recurringIdMapping: IdMapping,

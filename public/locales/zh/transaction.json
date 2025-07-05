@@ -140,5 +140,7 @@
   "transaction.title": "交易",
   "transaction.description.placeholder": "请输入{{type}}描述...",
   "transaction.notes.optional": "备注（可选）",
-  "transaction.notes.placeholder": "添加备注信息..."
+  "transaction.notes.placeholder": "添加备注信息...",
+  "transaction.not.found": "交易记录不存在",
+  "transaction.get.failed": "获取交易记录失败"
 }

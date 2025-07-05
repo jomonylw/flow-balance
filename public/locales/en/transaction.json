@@ -140,5 +140,7 @@
   "transaction.title": "Transaction",
   "transaction.description.placeholder": "Please enter {{type}} description...",
   "transaction.notes.optional": "Notes (Optional)",
-  "transaction.notes.placeholder": "Add notes..."
+  "transaction.notes.placeholder": "Add notes...",
+  "transaction.not.found": "Transaction record not found",
+  "transaction.get.failed": "Failed to get transaction record"
 }

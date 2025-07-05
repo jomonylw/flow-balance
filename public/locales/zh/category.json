@@ -169,5 +169,20 @@
   "category.name.duplicate.warning": "分类名称已存在，请选择其他名称",
   "category.name.available": "分类名称可用",
   "category.name.duplicate.error": "分类名称 \"{{name}}\" 已存在，请使用其他名称",
-  "category.create.unknown.error": "创建分类时发生未知错误"
+  "category.create.unknown.error": "创建分类时发生未知错误",
+  "category.get.failed": "获取分类失败",
+  "category.not.found": "分类不存在",
+  "category.parent.not.found": "父分类不存在",
+  "category.top.level.type.required": "顶级分类必须指定账户类型",
+  "category.create.success": "分类创建成功",
+  "category.parent.invalid": "父分类不存在或无效",
+  "category.name.already.exists": "该分类名称已存在",
+  "category.top.level.cannot.move": "顶层分类不允许移动",
+  "category.cannot.set.self.as.parent": "分类不能设置自己为父分类",
+  "category.type.change.not.allowed": "无法变更分类类型：该分类下存在账户或交易数据，变更类型会导致数据不一致",
+  "category.update.success": "分类更新成功",
+  "category.update.failed": "更新分类失败",
+  "category.has.children.cannot.delete": "该分类存在子分类，无法删除",
+  "category.has.accounts.cannot.delete": "该分类存在账户，无法删除",
+  "category.delete.failed": "删除分类失败"
 }

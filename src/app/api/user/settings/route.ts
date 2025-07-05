@@ -7,6 +7,28 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/api/response'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
+
+/**
+ * 获取用户语言偏好并创建翻译函数
+ */
+async function getUserTranslator(userId: string) {
+  try {
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { language: true },
+    })
+
+    const userLanguage = userSettings?.language || 'zh'
+    return createServerTranslator(userLanguage)
+  } catch (error) {
+    console.warn(
+      'Failed to get user language preference, using default:',
+      error
+    )
+    return createServerTranslator('zh') // 默认使用中文
+  }
+}
 
 export async function GET() {
   try {
@@ -26,7 +48,8 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Get user settings error:', error)
-    return errorResponse('获取设置失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('settings.get.failed'), 500)
   }
 }
 
@@ -66,7 +89,8 @@ export async function PUT(request: NextRequest) {
       })
 
       if (!currency) {
-        return validationErrorResponse('无效的货币ID')
+        const t = await getUserTranslator(user.id)
+        return validationErrorResponse(t('settings.currency.id.invalid'))
       }
 
       finalBaseCurrencyId = currency.id
@@ -84,11 +108,14 @@ export async function PUT(request: NextRequest) {
       })
 
       if (!currency) {
-        return validationErrorResponse('无效的币种代码')
+        const t = await getUserTranslator(user.id)
+        return validationErrorResponse(t('settings.currency.code.invalid'))
       }
 
       finalBaseCurrencyId = currency.id
     }
+
+    const t = await getUserTranslator(user.id)
 
     // 验证日期格式
     const validDateFormats = [
@@ -98,30 +125,30 @@ export async function PUT(request: NextRequest) {
       'DD-MM-YYYY',
     ]
     if (dateFormat && !validDateFormats.includes(dateFormat)) {
-      return validationErrorResponse('无效的日期格式')
+      return validationErrorResponse(t('settings.date.format.invalid'))
     }
 
     // 验证主题设置
     const validThemes = ['light', 'dark', 'system']
     if (theme && !validThemes.includes(theme)) {
-      return validationErrorResponse('无效的主题设置')
+      return validationErrorResponse(t('settings.theme.invalid'))
     }
 
     // 验证语言设置
     const validLanguages = ['zh', 'en']
     if (language && !validLanguages.includes(language)) {
-      return validationErrorResponse('无效的语言设置')
+      return validationErrorResponse(t('settings.language.invalid'))
     }
 
     // 验证FIRE设置
     if (fireEnabled !== undefined && typeof fireEnabled !== 'boolean') {
-      return validationErrorResponse('无效的FIRE启用设置')
+      return validationErrorResponse(t('settings.fire.enabled.invalid'))
     }
 
     if (fireSWR !== undefined) {
       const swrValue = parseFloat(fireSWR)
       if (isNaN(swrValue) || swrValue < 0 || swrValue > 20) {
-        return validationErrorResponse('安全提取率必须在0-20%之间')
+        return validationErrorResponse(t('settings.fire.swr.invalid'))
       }
     }
 
@@ -129,13 +156,18 @@ export async function PUT(request: NextRequest) {
     if (futureDataDays !== undefined) {
       const daysValue = parseInt(futureDataDays)
       if (isNaN(daysValue) || daysValue < 0 || daysValue > 30) {
-        return validationErrorResponse('未来数据生成天数必须在0-30天之间')
+        return validationErrorResponse(t('settings.future.data.days.invalid'))
       }
     }
 
     // 验证汇率自动更新设置
-    if (autoUpdateExchangeRates !== undefined && typeof autoUpdateExchangeRates !== 'boolean') {
-      return validationErrorResponse('无效的汇率自动更新设置')
+    if (
+      autoUpdateExchangeRates !== undefined &&
+      typeof autoUpdateExchangeRates !== 'boolean'
+    ) {
+      return validationErrorResponse(
+        t('settings.auto.update.exchange.rates.invalid')
+      )
     }
 
     // 获取或创建用户设置
@@ -156,7 +188,9 @@ export async function PUT(request: NextRequest) {
           ...(fireEnabled !== undefined && { fireEnabled }),
           ...(fireSWR !== undefined && { fireSWR }),
           ...(futureDataDays !== undefined && { futureDataDays }),
-          ...(autoUpdateExchangeRates !== undefined && { autoUpdateExchangeRates }),
+          ...(autoUpdateExchangeRates !== undefined && {
+            autoUpdateExchangeRates,
+          }),
         },
         include: { baseCurrency: true },
       })
@@ -188,18 +222,22 @@ export async function PUT(request: NextRequest) {
           fireEnabled: fireEnabled !== undefined ? fireEnabled : false,
           fireSWR: fireSWR !== undefined ? fireSWR : 4.0,
           futureDataDays: futureDataDays !== undefined ? futureDataDays : 7,
-          autoUpdateExchangeRates: autoUpdateExchangeRates !== undefined ? autoUpdateExchangeRates : false,
+          autoUpdateExchangeRates:
+            autoUpdateExchangeRates !== undefined
+              ? autoUpdateExchangeRates
+              : false,
         },
         include: { baseCurrency: true },
       })
     }
 
     return successResponse({
-      message: '设置更新成功',
+      message: t('settings.update.success'),
       userSettings,
     })
   } catch (error) {
     console.error('Update user settings error:', error)
-    return errorResponse('更新设置失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('settings.update.failed'), 500)
   }
 }

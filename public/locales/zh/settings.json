@@ -75,5 +75,16 @@
   "settings.version.database": "数据库",
   "settings.version.styling": "样式",
   "settings.version.charts": "图表",
-  "settings.version.developed.by": "开发团队"
+  "settings.version.developed.by": "开发团队",
+  "settings.get.failed": "获取设置失败",
+  "settings.currency.id.invalid": "无效的货币ID",
+  "settings.currency.code.invalid": "无效的币种代码",
+  "settings.date.format.invalid": "无效的日期格式",
+  "settings.theme.invalid": "无效的主题设置",
+  "settings.language.invalid": "无效的语言设置",
+  "settings.fire.enabled.invalid": "无效的FIRE启用设置",
+  "settings.fire.swr.invalid": "安全提取率必须在0-20%之间",
+  "settings.future.data.days.invalid": "未来数据生成天数必须在0-30天之间",
+  "settings.auto.update.exchange.rates.invalid": "无效的汇率自动更新设置",
+  "settings.update.success": "设置更新成功"
 }

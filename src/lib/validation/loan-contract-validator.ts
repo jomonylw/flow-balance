@@ -8,8 +8,10 @@ import { PrismaClient } from '@prisma/client'
 import { RepaymentType, AccountType } from '@/types/core/constants'
 import type { ValidationResult } from '@/types/core'
 import { LoanCalculationService } from '@/lib/services/loan-calculation.service'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
 
 const prisma = new PrismaClient()
+const t = createServerTranslator()
 
 // ============================================================================
 // 贷款合约验证 Schema
@@ -112,14 +114,14 @@ export class LoanContractValidator {
           isValid: false,
           errors: zodErrors,
           warnings: [],
-          suggestions: ['请检查输入数据格式是否正确'],
+          suggestions: [t('loan.validation.data.format.error')],
           score: 0,
         }
       }
 
       return {
         isValid: false,
-        errors: ['验证过程中发生未知错误'],
+        errors: [t('loan.validation.unknown.error')],
         warnings: [],
         suggestions: [],
         score: 0,
@@ -140,23 +142,23 @@ export class LoanContractValidator {
 
     // 验证利率合理性
     if (data.interestRate > 0.3) {
-      warnings.push('利率超过30%，请确认是否正确')
+      warnings.push(t('loan.validation.rate.too.high'))
     }
     if (data.interestRate < 0.01) {
-      warnings.push('利率低于1%，请确认是否为优惠利率')
+      warnings.push(t('loan.validation.rate.too.low'))
     }
 
     // 验证期数合理性
     if (data.totalPeriods > 360) {
-      warnings.push('贷款期数超过30年，请确认是否合理')
+      warnings.push(t('loan.validation.periods.too.long'))
     }
     if (data.totalPeriods < 12) {
-      suggestions.push('短期贷款建议考虑其他融资方式')
+      suggestions.push(t('loan.validation.periods.too.short'))
     }
 
     // 验证贷款金额合理性
     if (data.loanAmount > 10000000) {
-      warnings.push('贷款金额较大，请确认风险承受能力')
+      warnings.push(t('loan.validation.amount.too.large'))
     }
 
     // 验证开始日期
@@ -167,14 +169,14 @@ export class LoanContractValidator {
         (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
       )
       if (daysDiff > 30) {
-        warnings.push('贷款开始日期距今超过30天，请确认是否为历史贷款')
+        warnings.push(t('loan.validation.start.date.too.old'))
       }
     }
 
     // 验证还款日期合理性
     if (data.paymentDay > 28) {
-      warnings.push('还款日设置在月末可能导致某些月份无法正常还款')
-      suggestions.push('建议将还款日设置在1-28号之间')
+      warnings.push(t('loan.validation.payment.day.month.end'))
+      suggestions.push(t('loan.validation.payment.day.suggestion'))
     }
 
     // 验证还款类型与期数的匹配
@@ -182,7 +184,7 @@ export class LoanContractValidator {
       data.repaymentType === RepaymentType.INTEREST_ONLY &&
       data.totalPeriods > 60
     ) {
-      warnings.push('只还利息的贷款期数较长，请确认最终还本计划')
+      warnings.push(t('loan.validation.interest.only.too.long'))
     }
 
     return { errors, warnings, suggestions }
@@ -208,12 +210,12 @@ export class LoanContractValidator {
       })
 
       if (!loanAccount) {
-        errors.push('指定的贷款账户不存在')
+        errors.push(t('loan.validation.account.not.found'))
         return { errors, warnings, suggestions }
       }
 
       if (loanAccount.category.type !== AccountType.LIABILITY) {
-        errors.push('贷款账户必须是负债类型')
+        errors.push(t('loan.validation.account.not.liability'))
       }
 
       // 验证还款账户（如果提供）
@@ -224,22 +226,22 @@ export class LoanContractValidator {
         })
 
         if (!paymentAccount) {
-          errors.push('指定的还款账户不存在')
+          errors.push(t('loan.validation.payment.account.not.found'))
         } else {
           if (paymentAccount.category.type !== AccountType.EXPENSE) {
-            errors.push('还款账户必须是支出类型')
+            errors.push(t('loan.validation.payment.account.not.expense'))
           }
 
           // 验证货币一致性
           if (loanAccount.currencyId !== paymentAccount.currencyId) {
-            errors.push('贷款账户和还款账户的货币必须一致')
+            errors.push(t('loan.validation.currency.mismatch'))
           }
         }
       } else {
-        suggestions.push('建议设置还款账户以便自动生成还款交易')
+        suggestions.push(t('loan.validation.payment.account.suggestion'))
       }
     } catch {
-      errors.push('验证账户关联时发生错误')
+      errors.push(t('loan.validation.account.association.error'))
     }
 
     return { errors, warnings, suggestions }
@@ -265,10 +267,10 @@ export class LoanContractValidator {
       })
 
       if (existingContract) {
-        errors.push('该账户已存在活跃的贷款合约')
+        errors.push(t('loan.validation.duplicate.contract'))
       }
     } catch {
-      warnings.push('无法检查重复合约，请手动确认')
+      warnings.push(t('loan.validation.duplicate.check.error'))
     }
 
     return { errors, warnings }

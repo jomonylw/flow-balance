@@ -14,6 +14,8 @@ export const AUTH_ENDPOINTS = {
   REGISTER: `${API_BASE}/auth/signup`,
   REQUEST_PASSWORD_RESET: `${API_BASE}/auth/request-password-reset`,
   RESET_PASSWORD: `${API_BASE}/auth/reset-password`,
+  VERIFY_RECOVERY_KEY: `${API_BASE}/auth/verify-recovery-key`,
+  RESET_PASSWORD_WITH_KEY: `${API_BASE}/auth/reset-password-with-key`,
 } as const
 
 /** 用户相关端点 */
@@ -25,6 +27,7 @@ export const USER_ENDPOINTS = {
     `${API_BASE}/user/currencies/${currencyCodeOrId}`,
   DELETE: `${API_BASE}/user/delete`,
   CHANGE_PASSWORD: `${API_BASE}/user/change-password`,
+  RECOVERY_KEY: `${API_BASE}/user/recovery-key`,
 } as const
 
 /** 账户相关端点 */

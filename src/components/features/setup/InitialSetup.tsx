@@ -131,6 +131,11 @@ export default function InitialSetup({ user: _user }: InitialSetupProps) {
       // 3. 刷新 UserDataContext 以获取最新的用户设置
       await refreshAll()
 
+      // 清除注册流程标记
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('signup-flow')
+      }
+
       // 设置完成，跳转到仪表板
       router.push('/dashboard')
       router.refresh()

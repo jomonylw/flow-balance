@@ -720,7 +720,8 @@ export default function FlowCategoryDetailView({
                   monthlyData={filteredData}
                   baseCurrency={baseCurrencyForChart}
                   title={`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
-                  height={400}
+                  height={600}
+                  showPieChart={true}
                   accounts={categoryAccounts.map(account => ({
                     id: account.id,
                     name: account.name,

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import type { MissingRateInfo } from '@/types/core'
 
 interface ExchangeRateAlertProps {
@@ -15,13 +16,19 @@ export default function ExchangeRateAlert({
 }: ExchangeRateAlertProps) {
   const { t } = useLanguage()
   const { resolvedTheme } = useTheme()
+  const { isAuthenticated } = useAuth()
   const [missingRates, setMissingRates] = useState<MissingRateInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    fetchMissingRates()
-  }, [])
+    // 只有在用户已认证时才获取数据
+    if (isAuthenticated) {
+      fetchMissingRates()
+    } else {
+      setLoading(false)
+    }
+  }, [isAuthenticated])
 
   const fetchMissingRates = async () => {
     try {

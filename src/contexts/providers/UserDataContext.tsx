@@ -385,6 +385,9 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
 
   // 刷新所有数据
   const refreshAll = useCallback(async () => {
+    // 只有在用户已认证时才刷新数据
+    if (!isAuthenticated) return
+
     try {
       setUserData(prev => ({
         ...prev,
@@ -493,55 +496,73 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
         error: error instanceof Error ? error.message : '获取数据失败',
       }))
     }
-  }, [])
+  }, [isAuthenticated])
 
   // 刷新特定数据的函数
   const refreshCurrencies = useCallback(async () => {
+    // 只有在用户已认证时才刷新数据
+    if (!isAuthenticated) return
+
     try {
       const currencies = await fetchCurrencies()
       setUserData(prev => ({ ...prev, currencies, lastUpdated: new Date() }))
     } catch (error) {
       console.error('Error refreshing currencies:', error)
     }
-  }, [])
+  }, [isAuthenticated])
 
   const refreshTags = useCallback(async () => {
+    // 只有在用户已认证时才刷新数据
+    if (!isAuthenticated) return
+
     try {
       const tags = await fetchTags()
       setUserData(prev => ({ ...prev, tags, lastUpdated: new Date() }))
     } catch (error) {
       console.error('Error refreshing tags:', error)
     }
-  }, [])
+  }, [isAuthenticated])
 
   const refreshAccounts = useCallback(async () => {
+    // 只有在用户已认证时才刷新数据
+    if (!isAuthenticated) return
+
     try {
       const accounts = await fetchAccounts()
       setUserData(prev => ({ ...prev, accounts, lastUpdated: new Date() }))
     } catch (error) {
       console.error('Error refreshing accounts:', error)
     }
-  }, [])
+  }, [isAuthenticated])
 
   const refreshCategories = useCallback(async () => {
+    // 只有在用户已认证时才刷新数据
+    if (!isAuthenticated) return
+
     try {
       const categories = await fetchCategories()
       setUserData(prev => ({ ...prev, categories, lastUpdated: new Date() }))
     } catch (error) {
       console.error('Error refreshing categories:', error)
     }
-  }, [])
+  }, [isAuthenticated])
 
   const refreshUserSettings = useCallback(async () => {
+    // 只有在用户已认证时才刷新数据
+    if (!isAuthenticated) return
+
     try {
       const userSettings = await fetchUserSettings()
       setUserData(prev => ({ ...prev, userSettings, lastUpdated: new Date() }))
     } catch (error) {
       console.error('Error refreshing user settings:', error)
     }
-  }, [])
+  }, [isAuthenticated])
 
   const refreshTemplates = useCallback(async () => {
+    // 只有在用户已认证时才刷新数据
+    if (!isAuthenticated) return
+
     try {
       setUserData(prev => ({
         ...prev,
@@ -564,9 +585,12 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
           error instanceof Error ? error.message : '获取模板数据失败',
       }))
     }
-  }, [])
+  }, [isAuthenticated])
 
   const refreshExchangeRates = useCallback(async () => {
+    // 只有在用户已认证时才刷新数据
+    if (!isAuthenticated) return
+
     try {
       // 获取当前用户设置中的本位币代码
       let baseCurrencyCode: string | undefined
@@ -593,10 +617,13 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
         exchangeRates: [],
       }))
     }
-  }, [])
+  }, [isAuthenticated])
 
   const fetchBalances = useCallback(
     async (force = false) => {
+      // 只有在用户已认证时才获取数据
+      if (!isAuthenticated) return
+
       try {
         // 如果是强制刷新，直接获取数据
         if (force) {
@@ -656,16 +683,22 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
         }))
       }
     },
-    [] // 移除依赖项，避免循环依赖
+    [isAuthenticated] // 添加认证状态依赖
   )
 
   // 强制刷新余额数据
   const refreshBalances = useCallback(async () => {
+    // 只有在用户已认证时才刷新数据
+    if (!isAuthenticated) return
+
     return fetchBalances(true)
-  }, [fetchBalances])
+  }, [fetchBalances, isAuthenticated])
 
   // 刷新同步状态
   const refreshSyncStatus = useCallback(async () => {
+    // 只有在用户已认证时才刷新数据
+    if (!isAuthenticated) return
+
     try {
       const syncStatus = await fetchSyncStatus()
       setUserData(prev => ({
@@ -685,7 +718,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
         },
       }))
     }
-  }, [])
+  }, [isAuthenticated])
 
   // 触发同步
   const triggerSync = useCallback(

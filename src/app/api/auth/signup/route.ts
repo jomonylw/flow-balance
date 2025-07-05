@@ -1,45 +1,61 @@
 import { NextRequest } from 'next/server'
-import { registerUser } from '@/lib/services/auth.service'
+import {
+  registerUser,
+  generateToken,
+  setAuthCookie,
+} from '@/lib/services/auth.service'
 import {
   successResponse,
   errorResponse,
   validationErrorResponse,
 } from '@/lib/api/response'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { email, password, confirmPassword } = body
 
+    const t = createServerTranslator() // 使用默认语言，因为用户还未登录
+
     // 验证必填字段
     if (!email || !password || !confirmPassword) {
-      return validationErrorResponse('所有字段都不能为空')
+      return validationErrorResponse(t('auth.all.fields.required'))
     }
 
     // 验证密码确认
     if (password !== confirmPassword) {
-      return validationErrorResponse('两次输入的密码不一致')
+      return validationErrorResponse(t('auth.password.mismatch'))
     }
 
     // 尝试注册
     const result = await registerUser(email, password)
 
     if (!result.success) {
-      return errorResponse(result.error || '注册失败', 400)
+      return errorResponse(result.error || t('auth.signup.failed'), 400)
     }
 
     // 返回用户信息（不包含密码）
     if (!result.user) {
-      return errorResponse('用户信息获取失败', 500)
+      return errorResponse(t('auth.user.info.failed'), 500)
     }
     const { password: _password, ...userWithoutPassword } = result.user
 
+    // 自动登录用户
+    const token = generateToken({
+      userId: result.user.id,
+      email: result.user.email,
+    })
+    await setAuthCookie(token)
+
     return successResponse({
       user: userWithoutPassword,
-      message: '注册成功，请登录',
+      message: t('auth.signup.success.save.recovery.key'),
+      redirectTo: '/recovery-key-setup?from=signup',
     })
   } catch (error) {
     console.error('Signup API error:', error)
-    return errorResponse('服务器内部错误', 500)
+    const t = createServerTranslator()
+    return errorResponse(t('common.server.error'), 500)
   }
 }

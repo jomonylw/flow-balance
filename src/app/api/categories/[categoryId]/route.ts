@@ -8,6 +8,28 @@ import {
   notFoundResponse,
 } from '@/lib/api/response'
 import type { Prisma, Category, AccountType } from '@prisma/client'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
+
+/**
+ * 获取用户语言偏好并创建翻译函数
+ */
+async function getUserTranslator(userId: string) {
+  try {
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { language: true },
+    })
+
+    const userLanguage = userSettings?.language || 'zh'
+    return createServerTranslator(userLanguage)
+  } catch (error) {
+    console.warn(
+      'Failed to get user language preference, using default:',
+      error
+    )
+    return createServerTranslator('zh') // 默认使用中文
+  }
+}
 
 export async function GET(
   request: NextRequest,
@@ -35,13 +57,15 @@ export async function GET(
     })
 
     if (!category) {
-      return notFoundResponse('分类不存在')
+      const t = await getUserTranslator(user.id)
+      return notFoundResponse(t('category.not.found'))
     }
 
     return successResponse(category)
   } catch (error) {
     console.error('Get category error:', error)
-    return errorResponse('获取分类失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('category.get.failed'), 500)
   }
 }
 
@@ -65,25 +89,29 @@ export async function PUT(
     })
 
     if (!existingCategory) {
-      return notFoundResponse('分类不存在')
+      const t = await getUserTranslator(user.id)
+      return notFoundResponse(t('category.not.found'))
     }
 
     const body = await request.json()
     const { name, parentId, order, type } = body
 
     if (!name) {
-      return errorResponse('分类名称不能为空', 400)
+      const t = await getUserTranslator(user.id)
+      return errorResponse(t('category.name.required'), 400)
     }
 
     // 如果要更改父分类，验证新父分类是否属于当前用户且不是自己或自己的子分类
     if (parentId && parentId !== existingCategory.parentId) {
+      const t = await getUserTranslator(user.id)
+
       // 检查是否是顶层分类（顶层分类不允许移动）
       if (!existingCategory.parentId) {
-        return errorResponse('顶层分类不允许移动', 400)
+        return errorResponse(t('category.top.level.cannot.move'), 400)
       }
 
       if (parentId === categoryId) {
-        return errorResponse('分类不能设置自己为父分类', 400)
+        return errorResponse(t('category.cannot.set.self.as.parent'), 400)
       }
 
       const parentCategory = await prisma.category.findFirst({
@@ -94,7 +122,7 @@ export async function PUT(
       })
 
       if (!parentCategory) {
-        return errorResponse('父分类不存在', 400)
+        return errorResponse(t('category.parent.not.found'), 400)
       }
 
       // 检查是否会形成循环引用
@@ -124,7 +152,8 @@ export async function PUT(
     })
 
     if (duplicateCategory) {
-      return errorResponse('该分类名称已存在', 400)
+      const t = await getUserTranslator(user.id)
+      return errorResponse(t('category.name.already.exists'), 400)
     }
 
     // 准备更新数据
@@ -140,10 +169,8 @@ export async function PUT(
       if (existingCategory.type && type !== existingCategory.type) {
         const canChange = await checkTypeChangeSafety(categoryId)
         if (!canChange) {
-          return errorResponse(
-            '无法变更分类类型：该分类下存在账户或交易数据，变更类型会导致数据不一致',
-            400
-          )
+          const t = await getUserTranslator(user.id)
+          return errorResponse(t('category.type.change.not.allowed'), 400)
         }
       }
       updateData.type = type
@@ -159,10 +186,12 @@ export async function PUT(
       await updateChildrenAccountType(categoryId, type)
     }
 
-    return successResponse(updatedCategory, '分类更新成功')
+    const t = await getUserTranslator(user.id)
+    return successResponse(updatedCategory, t('category.update.success'))
   } catch (error) {
     console.error('Update category error:', error)
-    return errorResponse('更新分类失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('category.update.failed'), 500)
   }
 }
 
@@ -186,8 +215,11 @@ export async function DELETE(
     })
 
     if (!existingCategory) {
-      return notFoundResponse('分类不存在')
+      const t = await getUserTranslator(user.id)
+      return notFoundResponse(t('category.not.found'))
     }
+
+    const t = await getUserTranslator(user.id)
 
     // 检查分类是否有子分类
     const childrenCount = await prisma.category.count({
@@ -197,7 +229,7 @@ export async function DELETE(
     })
 
     if (childrenCount > 0) {
-      return errorResponse('该分类存在子分类，无法删除', 400)
+      return errorResponse(t('category.has.children.cannot.delete'), 400)
     }
 
     // 检查分类是否有账户
@@ -208,7 +240,7 @@ export async function DELETE(
     })
 
     if (accountCount > 0) {
-      return errorResponse('该分类存在账户，无法删除', 400)
+      return errorResponse(t('category.has.accounts.cannot.delete'), 400)
     }
 
     // 删除分类
@@ -216,10 +248,11 @@ export async function DELETE(
       where: { id: categoryId },
     })
 
-    return successResponse(null, '分类删除成功')
+    return successResponse(null, t('category.delete.success'))
   } catch (error) {
     console.error('Delete category error:', error)
-    return errorResponse('删除分类失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('category.delete.failed'), 500)
   }
 }
 

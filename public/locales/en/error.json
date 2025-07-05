@@ -22,5 +22,6 @@
   "error.request.process": "Request processing error",
   "error.load.exchange.rates": "Failed to load exchange rates",
   "error.operation.failed": "Operation failed",
-  "error.clipboard.access": "Unable to access clipboard"
+  "error.clipboard.access": "Unable to access clipboard",
+  "error.fetch.trend.data.failed": "Failed to fetch trend data"
 }

@@ -17,19 +17,33 @@ function loadTranslations(locale: string): Record<string, string> {
     return translationCache[locale]
   }
 
-  try {
-    const filePath = path.join(
-      process.cwd(),
-      `public/locales/${locale}/common.json`
-    )
-    const content = fs.readFileSync(filePath, 'utf8')
-    const translations = JSON.parse(content)
-    translationCache[locale] = translations
-    return translations
-  } catch (error) {
-    console.warn(`Failed to load translations for locale ${locale}:`, error)
-    return {}
+  const translations: Record<string, string> = {}
+
+  // 需要加载的翻译文件列表
+  const translationFiles = ['common', 'loan', 'auth', 'dashboard']
+
+  for (const fileName of translationFiles) {
+    try {
+      const filePath = path.join(
+        process.cwd(),
+        `public/locales/${locale}/${fileName}.json`
+      )
+
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8')
+        const fileTranslations = JSON.parse(content)
+        Object.assign(translations, fileTranslations)
+      }
+    } catch (error) {
+      console.warn(
+        `Failed to load ${fileName}.json for locale ${locale}:`,
+        error
+      )
+    }
   }
+
+  translationCache[locale] = translations
+  return translations
 }
 
 /**

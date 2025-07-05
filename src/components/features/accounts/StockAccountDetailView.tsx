@@ -15,11 +15,13 @@ import LoanContractModal from './LoanContractModal'
 import { calculateAccountBalance } from '@/lib/services/account.service'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { SkeletonTable } from '@/components/ui/data-display/skeleton'
 import {
   useBalanceUpdateListener,
   useTransactionListener,
+  useLoanPaymentResetListener,
 } from '@/hooks/business/useDataUpdateListener'
 import {
   publishTransactionDelete,
@@ -52,6 +54,7 @@ export default function StockAccountDetailView({
 }: StockAccountDetailViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { isAuthenticated } = useAuth()
   const { formatInputDate } = useUserDateFormatter()
   const router = useRouter()
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] =
@@ -82,8 +85,8 @@ export default function StockAccountDetailView({
   // 监听余额更新事件
   useBalanceUpdateListener(
     async event => {
-      // 检查是否是当前账户的更新
-      if (event.accountId === account.id) {
+      // 只有在用户已认证且是当前账户的更新时才刷新数据
+      if (isAuthenticated && event.accountId === account.id) {
         await loadTransactions(pagination.currentPage)
         await fetchTrendData(timeRange)
       }
@@ -94,8 +97,8 @@ export default function StockAccountDetailView({
   // 监听交易相关事件（主要是删除操作）
   useTransactionListener(
     async event => {
-      // 检查是否是当前账户的交易
-      if (event.accountId === account.id) {
+      // 只有在用户已认证且是当前账户的交易时才刷新数据
+      if (isAuthenticated && event.accountId === account.id) {
         await loadTransactions(pagination.currentPage)
         await fetchTrendData(timeRange)
       }
@@ -103,7 +106,27 @@ export default function StockAccountDetailView({
     [account.id]
   )
 
+  // 监听贷款还款重置事件
+  useLoanPaymentResetListener(
+    async event => {
+      // 只有在用户已认证且是当前账户的重置时才刷新数据
+      if (isAuthenticated && event.accountId === account.id) {
+        console.log(
+          '[StockAccountDetailView] Loan payment reset event received, refreshing data'
+        )
+        await loadTransactions(pagination.currentPage)
+        await fetchTrendData(timeRange)
+        // 同时刷新贷款合约列表
+        setLoanContractsKey(prev => prev + 1)
+      }
+    },
+    [account.id]
+  )
+
   const fetchTrendData = async (range: TimeRange) => {
+    // 只有在用户已认证时才获取数据
+    if (!isAuthenticated) return
+
     setIsTrendLoading(true)
     try {
       const granularity = range === 'lastMonth' ? 'daily' : 'monthly'
@@ -121,8 +144,8 @@ export default function StockAccountDetailView({
     } catch (error) {
       console.error('Error fetching trend data:', error)
       showError(
-        '获取趋势数据失败',
-        error instanceof Error ? error.message : '未知错误'
+        t('error.fetch.trend.data.failed'),
+        error instanceof Error ? error.message : t('error.unknown')
       )
       setTrendData([])
     } finally {
@@ -220,6 +243,9 @@ export default function StockAccountDetailView({
   }
 
   const loadTransactions = async (page = 1) => {
+    // 只有在用户已认证时才获取数据
+    if (!isAuthenticated) return
+
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -403,7 +429,10 @@ export default function StockAccountDetailView({
       setLoanContractsKey(prev => prev + 1)
     } catch (error) {
       console.error('Failed to save loan contract:', error)
-      showError('保存失败', error instanceof Error ? error.message : '未知错误')
+      showError(
+        t('error.save.failed'),
+        error instanceof Error ? error.message : t('error.unknown')
+      )
       throw error // 重新抛出错误，让模态框处理
     }
   }
@@ -411,7 +440,7 @@ export default function StockAccountDetailView({
   const handleDeleteLoanContract = (_contractId: string) => {
     // 刷新贷款合约列表
     setLoanContractsKey(prev => prev + 1)
-    showSuccess('删除成功', '贷款合约已删除')
+    showSuccess(t('success.deleted'), t('loan.contract.deleted'))
   }
 
   // 使用专业的余额计算服务，计算截止至当前日期的余额

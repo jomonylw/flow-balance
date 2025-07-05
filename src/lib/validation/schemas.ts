@@ -85,20 +85,53 @@ export const AccountUpdateSchema = AccountCreateSchema.partial()
 // 交易验证 Schema
 // ============================================================================
 
-/** 交易创建验证 Schema */
-export const TransactionCreateSchema = z.object({
+/** 交易创建验证 Schema 基础部分 */
+const TransactionCreateBaseSchema = z.object({
   accountId: cuidSchema(),
   currencyCode: z.string().min(3).max(3),
   type: z.enum(ConstantsManager.getZodTransactionTypeEnum()),
-  amount: z.number().positive(),
+  amount: z.number(),
   description: z.string().min(1).max(200),
   notes: z.string().max(1000).optional(),
   date: z.string().datetime().or(z.date()),
   tagIds: z.array(cuidSchema()).optional(),
 })
 
+/** 交易创建验证 Schema */
+export const TransactionCreateSchema = TransactionCreateBaseSchema.refine(
+  data => {
+    // BALANCE类型交易允许为0（如贷款还完时余额为0），其他类型必须大于0
+    if (data.type === 'BALANCE') {
+      return data.amount >= 0
+    } else {
+      return data.amount > 0
+    }
+  },
+  {
+    message: '金额必须为正数（BALANCE类型允许为0）',
+    path: ['amount'],
+  }
+)
+
 /** 交易更新验证 Schema */
-export const TransactionUpdateSchema = TransactionCreateSchema.partial()
+export const TransactionUpdateSchema =
+  TransactionCreateBaseSchema.partial().refine(
+    data => {
+      // 如果提供了金额和类型，则进行验证
+      if (data.amount !== undefined && data.type !== undefined) {
+        if (data.type === 'BALANCE') {
+          return data.amount >= 0
+        } else {
+          return data.amount > 0
+        }
+      }
+      return true
+    },
+    {
+      message: '金额必须为正数（BALANCE类型允许为0）',
+      path: ['amount'],
+    }
+  )
 
 /** 交易查询参数验证 Schema */
 export const TransactionQuerySchema = z.object({

@@ -3,6 +3,7 @@
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
+import AnimatedNumber from '@/components/ui/data-display/AnimatedNumber'
 import type { SimpleCurrency } from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
@@ -136,9 +137,12 @@ export default function RealitySnapshot({
           </div>
 
           <div className='mb-3'>
-            <div className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-              {formatCurrency(data.past12MonthsExpenses, currency.code)}
-            </div>
+            <AnimatedNumber
+              value={data.past12MonthsExpenses}
+              currency={currency}
+              className='text-2xl font-bold text-gray-900 dark:text-gray-100'
+              duration={200}
+            />
 
             {/* 月平均开销 - 与CAGR样式统一 */}
             <div className='mt-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50'>
@@ -198,9 +202,12 @@ export default function RealitySnapshot({
           </div>
 
           <div className='mb-3'>
-            <div className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-              {formatCurrency(data.currentNetWorth, currency.code)}
-            </div>
+            <AnimatedNumber
+              value={data.currentNetWorth}
+              currency={currency}
+              className='text-2xl font-bold text-gray-900 dark:text-gray-100'
+              duration={200}
+            />
           </div>
 
           <div className='text-xs text-gray-500 dark:text-gray-400 mb-4 flex-grow'>
@@ -247,8 +254,18 @@ export default function RealitySnapshot({
                   : 'text-red-600 dark:text-red-400'
               }`}
             >
-              {data.historicalAnnualReturn >= 0 ? '+' : ''}
-              {data.historicalAnnualReturn.toFixed(1)}%
+              <AnimatedNumber
+                value={data.historicalAnnualReturn}
+                showSign={true}
+                className={`${
+                  data.historicalAnnualReturn >= 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
+                }`}
+                duration={200}
+                formatOptions={{ precision: 1 }}
+              />
+              %
             </div>
 
             {/* CAGR详细信息 */}
@@ -349,9 +366,12 @@ export default function RealitySnapshot({
           </div>
 
           <div className='mb-3'>
-            <div className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
-              {formatCurrency(data.monthlyNetInvestment, currency.code)}
-            </div>
+            <AnimatedNumber
+              value={data.monthlyNetInvestment}
+              currency={currency}
+              className='text-2xl font-bold text-gray-900 dark:text-gray-100'
+              duration={200}
+            />
           </div>
 
           <div className='text-xs text-gray-500 dark:text-gray-400 mb-4 flex-grow'>

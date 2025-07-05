@@ -22,6 +22,7 @@ interface StockMonthlySummaryChartProps {
   title?: string
   height?: number
   accounts?: ChartStockAccount[] // 新增账户信息，用于获取颜色
+  showPieChart?: boolean
 }
 
 export default function StockMonthlySummaryChart({
@@ -30,6 +31,7 @@ export default function StockMonthlySummaryChart({
   title,
   height = CHART.DEFAULT_HEIGHT,
   accounts = [],
+  showPieChart = false,
 }: StockMonthlySummaryChartProps) {
   const { t, isLoading } = useLanguage()
   const { formatCurrency, getUserLocale: _getUserLocale } =
@@ -38,8 +40,13 @@ export default function StockMonthlySummaryChart({
   const { resolvedTheme } = useTheme()
 
   const chartRef = useRef<HTMLDivElement>(null)
+  const pieChartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
+  const pieChartInstance = useRef<echarts.ECharts | null>(null)
   const [timeRange, setTimeRange] = useState<StockTimeRange>('last12months')
+
+  // 状态管理：当前选中的月份（用于饼状图显示）
+  const [selectedMonth, setSelectedMonth] = useState<string>('')
 
   // 根据时间范围过滤数据
   const getFilteredData = useCallback(() => {
@@ -63,6 +70,46 @@ export default function StockMonthlySummaryChart({
 
     return filteredData
   }, [stockMonthlyData, timeRange])
+
+  // 获取最新月份（基于过滤后的数据）
+  const getLatestMonth = useCallback(() => {
+    const filteredData = getFilteredData()
+    if (!filteredData || Object.keys(filteredData).length === 0) return ''
+    const months = Object.keys(filteredData).sort()
+    return months[months.length - 1]
+  }, [getFilteredData])
+
+  // 初始化选中月份为最新月份
+  useEffect(() => {
+    if (!selectedMonth && stockMonthlyData) {
+      const latestMonth = getLatestMonth()
+      if (latestMonth) {
+        setSelectedMonth(latestMonth)
+      }
+    }
+  }, [stockMonthlyData, selectedMonth, getLatestMonth])
+
+  // 获取指定月份的饼状图数据
+  const getPieChartData = useCallback(
+    (month: string) => {
+      const filteredData = getFilteredData()
+      if (!filteredData || !filteredData[month]) return []
+
+      const monthData = filteredData[month]
+      const currencyData = monthData[baseCurrency.code]
+      if (!currencyData?.accounts) return []
+
+      return Object.entries(currencyData.accounts)
+        .map(([, account]) => ({
+          name: account.name,
+          value: Math.abs(account.balance), // 使用绝对值显示饼状图
+          originalValue: account.balance, // 保留原始值用于颜色判断
+        }))
+        .filter(item => item.value > 0)
+        .sort((a, b) => b.value - a.value)
+    },
+    [getFilteredData, baseCurrency.code]
+  )
 
   useEffect(() => {
     if (!chartRef.current || !stockMonthlyData) {
@@ -106,6 +153,11 @@ export default function StockMonthlySummaryChart({
       const date = new Date(month + '-01')
       return formatChartDate(date, 'month')
     })
+
+    // 根据数据点数量动态设置X轴显示
+    const dataPointCount = formattedMonths.length
+    const shouldRotateLabels = dataPointCount > 12 || window.innerWidth < 768
+    const labelInterval = dataPointCount > 24 ? 'auto' : 0
 
     // 获取所有账户名称
     const allAccounts = new Set<string>()
@@ -275,10 +327,10 @@ export default function StockMonthlySummaryChart({
         type: 'category',
         data: formattedMonths,
         axisLabel: {
-          rotate: window.innerWidth < 768 ? 45 : 0,
-          fontSize: window.innerWidth < 768 ? 10 : 12,
-          interval: window.innerWidth < 768 ? 'auto' : 0,
           color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+          rotate: shouldRotateLabels ? 45 : 0,
+          fontSize: window.innerWidth < 768 ? 10 : 12,
+          interval: labelInterval,
         },
       },
       yAxis: {
@@ -301,7 +353,74 @@ export default function StockMonthlySummaryChart({
     }
 
     // 设置图表选项
-    chartInstance.current.setOption(option)
+    try {
+      if (chartInstance.current && !chartInstance.current.isDisposed()) {
+        chartInstance.current.setOption(option)
+
+        // 添加柱状图点击事件 - 优化为响应整个 x 轴区域
+        chartInstance.current.off('click')
+        chartInstance.current.on('click', (params: echarts.ECElementEvent) => {
+          let monthIndex = -1
+
+          // 处理不同的点击区域
+          if (
+            params.componentType === 'series' &&
+            typeof params.dataIndex === 'number'
+          ) {
+            // 点击柱状图或线图
+            monthIndex = params.dataIndex
+          } else if (
+            params.componentType === 'xAxis' &&
+            typeof params.dataIndex === 'number'
+          ) {
+            // 点击 x 轴标签
+            monthIndex = params.dataIndex
+          }
+
+          if (monthIndex >= 0) {
+            const clickedMonth = Object.keys(filteredData).sort()[monthIndex]
+            if (clickedMonth) {
+              setSelectedMonth(clickedMonth)
+            }
+          }
+        })
+
+        // 添加图表区域点击事件，通过坐标计算月份
+        chartInstance.current.getZr().off('click')
+        chartInstance.current
+          .getZr()
+          .on('click', (event: { offsetX: number; offsetY: number }) => {
+            try {
+              const canvasPosition = chartInstance.current!.convertFromPixel(
+                'grid',
+                [event.offsetX, event.offsetY]
+              )
+
+              if (canvasPosition && Array.isArray(canvasPosition)) {
+                // 计算点击位置对应的月份索引
+                const monthCount = formattedMonths.length
+                const xValue = canvasPosition[0]
+
+                // 将 x 坐标转换为月份索引
+                const monthIndex = Math.round(xValue)
+
+                // 确保索引在有效范围内
+                if (monthIndex >= 0 && monthIndex < monthCount) {
+                  const clickedMonth =
+                    Object.keys(filteredData).sort()[monthIndex]
+                  if (clickedMonth) {
+                    setSelectedMonth(clickedMonth)
+                  }
+                }
+              }
+            } catch {
+              // 如果坐标转换失败，忽略错误
+            }
+          })
+      }
+    } catch (error) {
+      console.error('Error setting chart option:', error)
+    }
   }, [
     stockMonthlyData,
     baseCurrency,
@@ -312,7 +431,144 @@ export default function StockMonthlySummaryChart({
     isLoading,
     accounts,
     formatChartDate,
+    formatCurrency,
   ])
+
+  // 饼状图渲染函数
+  const renderPieChart = useCallback(
+    (chart: echarts.ECharts) => {
+      if (!chart || chart.isDisposed() || !selectedMonth) {
+        return
+      }
+
+      const pieData = getPieChartData(selectedMonth)
+      if (pieData.length === 0) {
+        try {
+          chart.clear()
+        } catch (error) {
+          console.warn('Error clearing pie chart:', error)
+        }
+        return
+      }
+
+      // 获取与柱状图相同的颜色
+      const accountNames = pieData.map(item => item.name)
+      const accountColors = ColorManager.generateSmartChartColors(
+        accountNames.map(name => ({ name })),
+        item => {
+          const account = accounts.find(acc => acc.name === item.name)
+          if (account && account.color) {
+            return ColorManager.getAccountColor(
+              account.id,
+              account.color,
+              account.type as AccountType
+            )
+          }
+          return null
+        }
+      )
+
+      const option: echarts.EChartsOption = {
+        backgroundColor: 'transparent',
+        title: {
+          text: `${formatChartDate(new Date(selectedMonth + '-01'), 'month')} ${t('chart.account.balance')} ${t('chart.category.breakdown')}`,
+          left: 'center',
+          top: '5%',
+          textStyle: {
+            fontSize: 15,
+            fontWeight: 'bold',
+            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+          },
+        },
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: resolvedTheme === 'dark' ? '#374151' : '#ffffff',
+          borderColor: resolvedTheme === 'dark' ? '#4b5563' : '#e5e7eb',
+          textStyle: {
+            color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+          },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          formatter: function (params: any) {
+            const percentage = params.percent || 0
+            const value = Number(params.value) || 0
+            const originalValue =
+              pieData.find(item => item.name === params.name)?.originalValue ||
+              0
+            return `
+            <div style="font-weight: bold; margin-bottom: 4px;">${params.name}</div>
+            <div style="color: ${originalValue >= 0 ? '#059669' : '#dc2626'};">
+              ${formatCurrency(Math.abs(value), baseCurrency.code)} (${percentage}%)${originalValue < 0 ? ` (${t('common.negative')})` : ''}
+            </div>
+          `
+          },
+        },
+        legend: {
+          show: false, // 去掉图例显示
+        },
+        series: [
+          {
+            name: t('chart.account.balance'),
+            type: 'pie',
+            radius: ['20%', '55%'],
+            center: ['50%', '60%'],
+            data: pieData.map((item, index) => ({
+              name: item.name,
+              value: item.value,
+              itemStyle: {
+                color: accountColors[index],
+                emphasis: {
+                  shadowBlur: 10,
+                  shadowOffsetX: 0,
+                  shadowColor: 'rgba(0, 0, 0, 0.5)',
+                },
+              },
+            })),
+            emphasis: {
+              itemStyle: {
+                shadowBlur: 10,
+                shadowOffsetX: 0,
+                shadowColor: 'rgba(0, 0, 0, 0.5)',
+              },
+            },
+            label: {
+              show: true,
+              formatter: '{b}: {d}%',
+              fontSize: 11,
+              color: resolvedTheme === 'dark' ? '#ffffff' : '#000000',
+              position: 'outside',
+              distanceToLabelLine: 5,
+            },
+            labelLine: {
+              show: true,
+              length: 15,
+              length2: 10,
+              smooth: 0.2,
+            },
+          },
+        ],
+      }
+
+      try {
+        if (chart && !chart.isDisposed()) {
+          chart.setOption(option)
+          chart.off('click')
+        }
+      } catch (error) {
+        console.error('Error setting pie chart option:', error)
+      }
+    },
+    [
+      selectedMonth,
+      stockMonthlyData,
+      baseCurrency,
+      resolvedTheme,
+      t,
+      accounts,
+      formatChartDate,
+      formatCurrency,
+      getPieChartData,
+    ]
+  )
 
   // 单独的 useEffect 来处理图表渲染
   useEffect(() => {
@@ -320,6 +576,59 @@ export default function StockMonthlySummaryChart({
       renderStockChart()
     }
   }, [renderStockChart, stockMonthlyData])
+
+  // 饼状图渲染 useEffect
+  useEffect(() => {
+    if (!showPieChart || !pieChartRef.current || !selectedMonth) {
+      return
+    }
+
+    try {
+      if (!pieChartInstance.current) {
+        pieChartInstance.current = echarts.init(
+          pieChartRef.current,
+          resolvedTheme === 'dark' ? 'dark' : null
+        )
+      }
+
+      renderPieChart(pieChartInstance.current)
+
+      const handleResize = () => {
+        if (
+          pieChartInstance.current &&
+          !pieChartInstance.current.isDisposed()
+        ) {
+          pieChartInstance.current.resize()
+        }
+      }
+      window.addEventListener('resize', handleResize)
+
+      return () => {
+        window.removeEventListener('resize', handleResize)
+        if (
+          pieChartInstance.current &&
+          !pieChartInstance.current.isDisposed()
+        ) {
+          pieChartInstance.current.dispose()
+          pieChartInstance.current = null
+        }
+      }
+    } catch (error) {
+      console.error('Error with pie chart:', error)
+      return undefined
+    }
+  }, [
+    showPieChart,
+    selectedMonth,
+    stockMonthlyData,
+    baseCurrency,
+    resolvedTheme,
+    t,
+    accounts,
+    formatChartDate,
+    formatCurrency,
+    renderPieChart,
+  ])
 
   if (isLoading) {
     return (
@@ -374,7 +683,30 @@ export default function StockMonthlySummaryChart({
         </div>
       </div>
 
-      <div ref={chartRef} style={{ width: '100%', height: `${height}px` }} />
+      {/* 柱状图 */}
+      <div
+        key={`bar-${resolvedTheme}-${isLoading}`}
+        ref={chartRef}
+        style={{
+          width: '100%',
+          height: showPieChart
+            ? `${Math.floor(height * 0.6)}px`
+            : `${height}px`,
+        }}
+      />
+
+      {/* 饼状图 */}
+      {showPieChart && (
+        <div
+          key={`pie-${resolvedTheme}-${isLoading}-${selectedMonth}`}
+          ref={pieChartRef}
+          style={{
+            width: '100%',
+            height: `${Math.floor(height * 0.4)}px`,
+            marginTop: '16px',
+          }}
+        />
+      )}
     </div>
   )
 }

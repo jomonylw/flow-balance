@@ -6,6 +6,28 @@ import {
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
+
+/**
+ * 获取用户语言偏好并创建翻译函数
+ */
+async function getUserTranslator(userId: string) {
+  try {
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { language: true },
+    })
+
+    const userLanguage = userSettings?.language || 'zh'
+    return createServerTranslator(userLanguage)
+  } catch (error) {
+    console.warn(
+      'Failed to get user language preference, using default:',
+      error
+    )
+    return createServerTranslator('zh') // 默认使用中文
+  }
+}
 
 export async function GET() {
   try {
@@ -30,7 +52,8 @@ export async function GET() {
     return successResponse(accounts)
   } catch (error) {
     console.error('Get accounts error:', error)
-    return errorResponse('获取账户失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('account.get.failed'), 500)
   }
 }
 
@@ -44,16 +67,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, categoryId, description, color, currencyId } = body
 
+    const t = await getUserTranslator(user.id)
+
     if (!name) {
-      return errorResponse('账户名称不能为空', 400)
+      return errorResponse(t('account.name.required'), 400)
     }
 
     if (!categoryId) {
-      return errorResponse('请选择分类', 400)
+      return errorResponse(t('account.category.required'), 400)
     }
 
     if (!currencyId) {
-      return errorResponse('请选择账户货币', 400)
+      return errorResponse(t('account.currency.required'), 400)
     }
 
     // 验证分类是否属于当前用户
@@ -65,7 +90,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!category) {
-      return errorResponse('分类不存在', 400)
+      return errorResponse(t('category.not.found'), 400)
     }
 
     // 验证货币是否存在且用户有权使用
@@ -80,7 +105,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!currency) {
-      return errorResponse('指定的货币不存在', 400)
+      return errorResponse(t('currency.not.found'), 400)
     }
 
     // 验证用户是否有权使用此货币
@@ -93,7 +118,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!userCurrency) {
-      return errorResponse('您没有权限使用此货币，请先在货币管理中添加', 400)
+      return errorResponse(t('currency.permission.denied'), 400)
     }
 
     // 检查同一用户下是否已存在同名账户
@@ -105,7 +130,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingAccount) {
-      return errorResponse('该账户名称已存在', 400)
+      return errorResponse(t('account.name.already.exists'), 400)
     }
 
     const account = await prisma.account.create({
@@ -123,9 +148,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return successResponse(account, '账户创建成功')
+    return successResponse(account, t('account.create.success'))
   } catch (error) {
     console.error('Create account error:', error)
-    return errorResponse('创建账户失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('account.create.failed'), 500)
   }
 }

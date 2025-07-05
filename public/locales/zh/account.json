@@ -110,5 +110,12 @@
   "account.settings.currency.selected": "已选择货币",
   "account.settings.currency.select": "请选择货币",
   "account.settings.saving": "保存中...",
-  "account.settings.save": "保存设置"
+  "account.settings.save": "保存设置",
+  "account.get.failed": "获取账户失败",
+  "account.name.required": "账户名称不能为空",
+  "account.category.required": "请选择分类",
+  "account.currency.required": "请选择账户货币",
+  "account.name.already.exists": "该账户名称已存在",
+  "account.create.success": "账户创建成功",
+  "account.create.failed": "创建账户失败"
 }

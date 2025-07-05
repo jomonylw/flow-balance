@@ -1,8 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
-import LanguageToggle from '@/components/features/layout/LanguageToggle'
-import ThemeToggle from '@/components/features/layout/ThemeToggle'
+import AuthHeader from '@/components/features/auth/AuthHeader'
 
 interface SetupLayoutProps {
   children: React.ReactNode
@@ -19,11 +18,8 @@ export default function SetupLayout({
 
   return (
     <div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-6 sm:py-12 px-4 sm:px-6 lg:px-8 safe-area-inset-top safe-area-inset-bottom transition-colors duration-200'>
-      {/* 顶部工具栏 */}
-      <div className='absolute top-4 right-4 flex items-center space-x-2'>
-        <LanguageToggle />
-        <ThemeToggle />
-      </div>
+      {/* 统一的认证页面头部 */}
+      <AuthHeader />
 
       <div className='max-w-4xl w-full space-y-8'>
         <div className='text-center'>

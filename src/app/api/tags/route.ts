@@ -6,10 +6,33 @@ import {
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
+
+/**
+ * 获取用户语言偏好并创建翻译函数
+ */
+async function getUserTranslator(userId: string) {
+  try {
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { language: true },
+    })
+
+    const userLanguage = userSettings?.language || 'zh'
+    return createServerTranslator(userLanguage)
+  } catch (error) {
+    console.warn(
+      'Failed to get user language preference, using default:',
+      error
+    )
+    return createServerTranslator('zh') // 默认使用中文
+  }
+}
 
 export async function GET() {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -33,13 +56,15 @@ export async function GET() {
     return successResponse(tags)
   } catch (error) {
     console.error('Get tags error:', error)
-    return errorResponse('获取标签失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('tag.get.failed'), 500)
   }
 }
 
 export async function POST(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -47,22 +72,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, color } = body
 
+    const t = await getUserTranslator(user.id)
+
     if (!name || typeof name !== 'string') {
-      return errorResponse('标签名称不能为空', 400)
+      return errorResponse(t('tag.name.required'), 400)
     }
 
     // 验证标签名称长度
     if (name.trim().length === 0) {
-      return errorResponse('标签名称不能为空', 400)
+      return errorResponse(t('tag.name.required'), 400)
     }
 
     if (name.length > 50) {
-      return errorResponse('标签名称不能超过50个字符', 400)
+      return errorResponse(t('tag.name.too.long'), 400)
     }
 
     // 验证颜色格式（如果提供）
     if (color && typeof color !== 'string') {
-      return errorResponse('颜色格式不正确', 400)
+      return errorResponse(t('tag.color.format.invalid'), 400)
     }
 
     // 检查同一用户下是否已存在同名标签
@@ -74,7 +101,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingTag) {
-      return errorResponse('该标签名称已存在', 400)
+      return errorResponse(t('tag.name.already.exists'), 400)
     }
 
     const tag = await prisma.tag.create({
@@ -85,9 +112,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return successResponse(tag, '标签创建成功')
+    return successResponse(tag, t('tag.create.success'))
   } catch (error) {
     console.error('Create tag error:', error)
-    return errorResponse('创建标签失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('tag.create.failed'), 500)
   }
 }

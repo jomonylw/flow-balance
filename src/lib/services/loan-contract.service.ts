@@ -14,8 +14,50 @@ import { calculateLoanPaymentDateForPeriod } from '@/lib/utils/format'
 import { DuplicateCheckService, CheckType } from './duplicate-check.service'
 import { createServerTranslator } from '@/lib/utils/server-i18n'
 
-// 创建服务端翻译函数
+// 创建服务端翻译函数（默认）
 const t = createServerTranslator()
+
+/**
+ * 获取用户语言偏好并创建翻译函数
+ */
+async function getUserTranslator(userId: string) {
+  try {
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { language: true },
+    })
+
+    const userLanguage = userSettings?.language || 'zh'
+    return createServerTranslator(userLanguage)
+  } catch (error) {
+    console.warn(
+      'Failed to get user language preference, using default:',
+      error
+    )
+    return createServerTranslator('zh') // 默认使用中文
+  }
+}
+
+/**
+ * 处理模板占位符替换
+ * 支持中英文占位符
+ */
+function replaceTemplatePlaceholders(
+  template: string,
+  variables: {
+    period: number
+    contractName: string
+    remainingBalance: number
+  }
+): string {
+  return template
+    .replace('{期数}', variables.period.toString())
+    .replace('{period}', variables.period.toString())
+    .replace('{contractName}', variables.contractName)
+    .replace('{合约名称}', variables.contractName)
+    .replace('{remainingBalance}', variables.remainingBalance.toLocaleString())
+    .replace('{剩余本金}', variables.remainingBalance.toLocaleString())
+}
 
 interface LoanContractUpdateData {
   contractName?: string
@@ -166,7 +208,7 @@ export class LoanContractService {
       })
 
       if (!paymentAccount) {
-        throw new Error('还款账户不存在、不是支出账户或货币不匹配')
+        throw new Error(t('loan.contract.payment.account.invalid'))
       }
     }
 
@@ -229,6 +271,7 @@ export class LoanContractService {
             orderBy: { period: 'desc' },
             take: 1,
           },
+          currency: true,
         },
       })
 
@@ -269,7 +312,7 @@ export class LoanContractService {
         })
 
         if (!paymentAccount) {
-          throw new Error('还款账户不存在、不是支出账户或货币不匹配')
+          throw new Error(t('loan.contract.payment.account.invalid'))
         }
       }
 
@@ -280,7 +323,9 @@ export class LoanContractService {
         data.repaymentType ||
         data.startDate ||
         data.paymentDay ||
-        data.totalPeriods
+        data.totalPeriods ||
+        (accountId && accountId !== existing.accountId) ||
+        (currencyCode && currencyCode !== existing.currency?.code)
       )
 
       // 如果更新了关键参数，重新验证
@@ -308,7 +353,9 @@ export class LoanContractService {
 
           if (data.totalPeriods <= maxCompletedPeriod) {
             throw new Error(
-              `新的总期数必须大于已完成的最大期数 (${maxCompletedPeriod})`
+              t('loan.contract.periods.too.small', {
+                maxPeriod: maxCompletedPeriod,
+              })
             )
           }
         }
@@ -329,7 +376,63 @@ export class LoanContractService {
         }
       }
 
-      const updateData: LoanContractUpdateData = { ...data }
+      // 过滤掉不能直接更新的字段（外键字段需要通过关系更新）
+      const { accountId, currencyCode, ...filteredData } = data
+      const updateData: LoanContractUpdateData = { ...filteredData }
+
+      // 处理账户变更
+      if (accountId && accountId !== existing.accountId) {
+        // 检查新账户是否存在且为负债账户
+        const newAccount = await tx.account.findFirst({
+          where: {
+            id: accountId,
+            userId,
+            category: { type: 'LIABILITY' },
+          },
+          include: { category: true },
+        })
+
+        if (!newAccount) {
+          throw new Error(t('loan.contract.account.invalid'))
+        }
+
+        // 检查是否已有还款记录，如果有则不允许更改账户
+        const hasPayments = await tx.loanPayment.count({
+          where: { loanContractId: id, status: 'COMPLETED' },
+        })
+
+        if (hasPayments > 0) {
+          throw new Error(
+            t('loan.contract.account.cannot.change.with.payments')
+          )
+        }
+      }
+
+      // 处理货币变更
+      if (currencyCode && currencyCode !== existing.currency?.code) {
+        // 查找新货币
+        const newCurrency = await tx.currency.findFirst({
+          where: {
+            code: currencyCode,
+            OR: [{ createdBy: userId }, { createdBy: null }],
+          },
+        })
+
+        if (!newCurrency) {
+          throw new Error(t('loan.contract.currency.not.found'))
+        }
+
+        // 检查是否已有还款记录，如果有则不允许更改货币
+        const hasPayments = await tx.loanPayment.count({
+          where: { loanContractId: id, status: 'COMPLETED' },
+        })
+
+        if (hasPayments > 0) {
+          throw new Error(
+            t('loan.contract.currency.cannot.change.with.payments')
+          )
+        }
+      }
 
       if (data.startDate) {
         updateData.startDate = new Date(data.startDate)
@@ -344,10 +447,35 @@ export class LoanContractService {
         updateData.paymentAccountId = data.paymentAccountId
       }
 
+      // 准备更新数据，包括关系更新
+      const prismaUpdateData: any = { ...updateData }
+
+      // 处理账户关系更新
+      if (accountId && accountId !== existing.accountId) {
+        prismaUpdateData.account = {
+          connect: { id: accountId },
+        }
+      }
+
+      // 处理货币关系更新
+      if (currencyCode && currencyCode !== existing.currency?.code) {
+        const newCurrency = await tx.currency.findFirst({
+          where: {
+            code: currencyCode,
+            OR: [{ createdBy: userId }, { createdBy: null }],
+          },
+        })
+        if (newCurrency) {
+          prismaUpdateData.currency = {
+            connect: { id: newCurrency.id },
+          }
+        }
+      }
+
       // 更新贷款合约
       const updatedContract = await tx.loanContract.update({
         where: { id },
-        data: updateData,
+        data: prismaUpdateData,
         include: {
           account: {
             include: { category: true, currency: true },
@@ -517,7 +645,7 @@ export class LoanContractService {
       })
 
       if (paymentsToReset.length === 0) {
-        throw new Error('没有找到可重置的还款记录')
+        throw new Error(t('loan.contract.no.payments.to.reset'))
       }
 
       // 收集所有相关的交易ID
@@ -651,7 +779,7 @@ export class LoanContractService {
       })
 
       if (completedPayments.length === 0) {
-        throw new Error('没有已完成的还款记录可重置')
+        throw new Error(t('loan.contract.no.completed.payments'))
       }
 
       // 收集所有相关的交易ID
@@ -1134,7 +1262,7 @@ export class LoanContractService {
         processed++
       } catch (error) {
         errors.push(
-          `还款记录 ${payment.id} 处理失败: ${error instanceof Error ? error.message : '未知错误'}`
+          `Payment record ${payment.id} processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
         )
       }
     }
@@ -1170,11 +1298,16 @@ export class LoanContractService {
 
     // 检查贷款合约是否处于活跃状态
     if (!loanContract.isActive) {
-      console.log(`贷款合约 ${loanContract.id} 已失效，跳过还款处理`)
+      console.log(
+        `Loan contract ${loanContract.id} is inactive, skipping payment processing`
+      )
       return false
     }
 
     try {
+      // 获取用户的翻译函数
+      const userT = await getUserTranslator(loanContract.userId)
+
       await prisma.$transaction(async tx => {
         // 使用统一的并发检查服务
         const concurrencyCheck = await DuplicateCheckService.checkConcurrency(
@@ -1211,21 +1344,26 @@ export class LoanContractService {
             type: 'EXPENSE',
             amount: Number(loanPayment.principalAmount),
             description: contractFields.transactionDescription
-              ? contractFields.transactionDescription.replace(
-                  '{期数}',
-                  loanPayment.period.toString()
+              ? replaceTemplatePlaceholders(
+                  contractFields.transactionDescription,
+                  {
+                    period: loanPayment.period,
+                    contractName: contractFields.contractName || '',
+                    remainingBalance: Number(loanPayment.remainingBalance),
+                  }
                 )
-              : t('loan.contract.template.default.description', {
+              : userT('loan.contract.template.default.description', {
                   contractName: contractFields.contractName,
                   period: loanPayment.period,
-                  type: '本金',
+                  type: userT('loan.type.principal'),
                 }),
             notes: contractFields.transactionNotes
-              ? contractFields.transactionNotes.replace(
-                  '{期数}',
-                  loanPayment.period.toString()
-                )
-              : t('loan.contract.template.default.notes', {
+              ? replaceTemplatePlaceholders(contractFields.transactionNotes, {
+                  period: loanPayment.period,
+                  contractName: contractFields.contractName || '',
+                  remainingBalance: Number(loanPayment.remainingBalance),
+                })
+              : userT('loan.contract.template.default.notes', {
                   contractName: contractFields.contractName,
                 }),
             date: loanPayment.paymentDate,
@@ -1264,21 +1402,26 @@ export class LoanContractService {
             type: 'EXPENSE',
             amount: Number(loanPayment.interestAmount),
             description: contractFields.transactionDescription
-              ? contractFields.transactionDescription.replace(
-                  '{期数}',
-                  loanPayment.period.toString()
+              ? replaceTemplatePlaceholders(
+                  contractFields.transactionDescription,
+                  {
+                    period: loanPayment.period,
+                    contractName: contractFields.contractName || '',
+                    remainingBalance: Number(loanPayment.remainingBalance),
+                  }
                 )
-              : t('loan.contract.template.default.description', {
+              : userT('loan.contract.template.default.description', {
                   contractName: contractFields.contractName,
                   period: loanPayment.period,
-                  type: '利息',
+                  type: userT('loan.type.interest'),
                 }),
             notes: contractFields.transactionNotes
-              ? contractFields.transactionNotes.replace(
-                  '{期数}',
-                  loanPayment.period.toString()
-                )
-              : t('loan.contract.template.default.notes', {
+              ? replaceTemplatePlaceholders(contractFields.transactionNotes, {
+                  period: loanPayment.period,
+                  contractName: contractFields.contractName || '',
+                  remainingBalance: Number(loanPayment.remainingBalance),
+                })
+              : userT('loan.contract.template.default.notes', {
                   contractName: contractFields.contractName,
                 }),
             date: loanPayment.paymentDate,
@@ -1315,21 +1458,26 @@ export class LoanContractService {
           type: 'BALANCE',
           amount: Number(loanPayment.remainingBalance), // 使用剩余余额作为负债账户的新余额
           description: contractFields.transactionDescription
-            ? contractFields.transactionDescription.replace(
-                '{期数}',
-                loanPayment.period.toString()
+            ? replaceTemplatePlaceholders(
+                contractFields.transactionDescription,
+                {
+                  period: loanPayment.period,
+                  contractName: contractFields.contractName || '',
+                  remainingBalance: Number(loanPayment.remainingBalance),
+                }
               )
-            : t('loan.contract.template.default.description', {
+            : userT('loan.contract.template.default.description', {
                 contractName: contractFields.contractName,
                 period: loanPayment.period,
-                type: '余额更新',
+                type: userT('loan.type.balance.update'),
               }),
           notes: contractFields.transactionNotes
-            ? contractFields.transactionNotes.replace(
-                '{期数}',
-                loanPayment.period.toString()
-              )
-            : t('loan.contract.template.balance.notes', {
+            ? replaceTemplatePlaceholders(contractFields.transactionNotes, {
+                period: loanPayment.period,
+                contractName: contractFields.contractName || '',
+                remainingBalance: Number(loanPayment.remainingBalance),
+              })
+            : userT('loan.contract.template.balance.notes', {
                 contractName: contractFields.contractName,
                 remainingBalance: Number(
                   loanPayment.remainingBalance

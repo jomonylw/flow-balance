@@ -233,8 +233,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证金额
-    if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      return errorResponse('金额必须是大于0的数字', 400)
+    // BALANCE类型交易允许为0（如贷款还完时余额为0），其他类型必须大于0
+    const amountValue = parseFloat(amount)
+    if (
+      isNaN(amountValue) ||
+      (type === 'BALANCE' ? amountValue < 0 : amountValue <= 0)
+    ) {
+      return errorResponse(
+        type === 'BALANCE' ? '余额调整金额不能为负数' : '金额必须是大于0的数字',
+        400
+      )
     }
 
     // 验证账户是否属于当前用户

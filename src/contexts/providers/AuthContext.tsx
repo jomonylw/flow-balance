@@ -18,6 +18,7 @@ interface AuthContextType extends AuthState {
   logout: () => Promise<void>
   checkAuth: () => Promise<boolean>
   updateUser: (userData: Partial<AuthState['user']>) => void
+  setAuthenticatedUser: (user: AuthState['user']) => void
   clearError: () => void
 }
 
@@ -179,6 +180,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }))
   }, [])
 
+  const setAuthenticatedUser = useCallback((user: AuthState['user']) => {
+    setAuthState({
+      user,
+      isAuthenticated: true,
+      isLoading: false,
+      error: null,
+    })
+  }, [])
+
   const clearError = useCallback(() => {
     setAuthState(prev => ({ ...prev, error: null }))
   }, [])
@@ -195,6 +205,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setHasInitialized(true)
         }
       } else {
+        // 如果用户已经认证（比如通过注册流程），跳过重新检查
+        if (authState.isAuthenticated && authState.user) {
+          if (isMounted) {
+            setAuthState(prev => ({ ...prev, isLoading: false }))
+            setHasInitialized(true)
+          }
+          return
+        }
+
         // 对于根路径和其他需要认证的路径，都进行认证检查
         try {
           const response = await fetch(ApiEndpoints.auth.ME, {
@@ -317,6 +336,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     checkAuth,
     updateUser,
+    setAuthenticatedUser,
     clearError,
   }
 

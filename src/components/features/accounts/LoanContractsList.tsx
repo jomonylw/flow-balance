@@ -95,12 +95,12 @@ export default function LoanContractsList({
       )
 
       if (!response.ok) {
-        throw new Error('删除贷款合约失败')
+        throw new Error(t('loan.contract.delete.failed'))
       }
 
       const result = await response.json()
       if (!result.success) {
-        throw new Error(result.error || '删除贷款合约失败')
+        throw new Error(result.error || t('loan.contract.delete.failed'))
       }
 
       // 关闭模态框
@@ -114,7 +114,7 @@ export default function LoanContractsList({
       onDelete?.(deletingContract.id)
     } catch (error) {
       console.error('Failed to delete loan contract:', error)
-      setError(error instanceof Error ? error.message : '未知错误')
+      setError(error instanceof Error ? error.message : t('error.unknown'))
     }
   }
 
@@ -350,9 +350,14 @@ export default function LoanContractsList({
                 <div className='flex items-center justify-between mb-2'>
                   <span className='text-lg font-semibold text-blue-600 dark:text-blue-400'>
                     {contract.currency?.id
-                      ? formatCurrencyById(Number(contract.loanAmount), contract.currency.id)
-                      : formatCurrency(Number(contract.loanAmount), contract.currency?.code || currencyCode)
-                    }
+                      ? formatCurrencyById(
+                          Number(contract.loanAmount),
+                          contract.currency.id
+                        )
+                      : formatCurrency(
+                          Number(contract.loanAmount),
+                          contract.currency?.code || currencyCode
+                        )}
                   </span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBgColor(contract.isActive)} ${getStatusColor(contract.isActive)}`}
@@ -377,7 +382,9 @@ export default function LoanContractsList({
                   <div className='flex items-center justify-between'>
                     <span>{t('loan.payment.day')}:</span>
                     <span className='font-medium text-orange-600 dark:text-orange-400'>
-                      每月{contract.paymentDay}号
+                      {t('loan.payment.day.monthly', {
+                        day: contract.paymentDay,
+                      })}
                     </span>
                   </div>
                   <div className='flex items-center justify-between'>

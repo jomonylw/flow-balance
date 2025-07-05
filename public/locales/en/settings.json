@@ -75,5 +75,16 @@
   "settings.version.database": "Database",
   "settings.version.styling": "Styling",
   "settings.version.charts": "Charts",
-  "settings.version.developed.by": "Developed by"
+  "settings.version.developed.by": "Developed by",
+  "settings.get.failed": "Failed to get settings",
+  "settings.currency.id.invalid": "Invalid currency ID",
+  "settings.currency.code.invalid": "Invalid currency code",
+  "settings.date.format.invalid": "Invalid date format",
+  "settings.theme.invalid": "Invalid theme setting",
+  "settings.language.invalid": "Invalid language setting",
+  "settings.fire.enabled.invalid": "Invalid FIRE enable setting",
+  "settings.fire.swr.invalid": "Safe withdrawal rate must be between 0-20%",
+  "settings.future.data.days.invalid": "Future data generation days must be between 0-30 days",
+  "settings.auto.update.exchange.rates.invalid": "Invalid auto-update exchange rates setting",
+  "settings.update.success": "Settings updated successfully"
 }

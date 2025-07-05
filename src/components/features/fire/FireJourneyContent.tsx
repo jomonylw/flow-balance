@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import PageContainer from '@/components/ui/layout/PageContainer'
 import TranslationLoader from '@/components/ui/data-display/TranslationLoader'
 import { FirePageSkeleton } from '@/components/ui/data-display/page-skeletons'
@@ -43,6 +44,7 @@ export default function FireJourneyContent({
   userSettings,
 }: FireJourneyContentProps) {
   const { t } = useLanguage()
+  const { isAuthenticated } = useAuth()
   const [fireData, setFireData] = useState<FireData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -56,11 +58,10 @@ export default function FireJourneyContent({
     monthlyInvestment: 0,
   })
 
-  useEffect(() => {
-    fetchFireData()
-  }, [])
+  const fetchFireData = useCallback(async () => {
+    // 只有在用户已认证时才获取数据
+    if (!isAuthenticated) return
 
-  const fetchFireData = async () => {
     try {
       setIsLoading(true)
       const response = await fetch('/api/fire/data')
@@ -93,7 +94,14 @@ export default function FireJourneyContent({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [isAuthenticated, t])
+
+  useEffect(() => {
+    // 只有在用户已认证时才获取数据
+    if (isAuthenticated) {
+      fetchFireData()
+    }
+  }, [isAuthenticated, fetchFireData])
 
   const handleParamChange = (param: string, value: number) => {
     setFireParams(prev => ({

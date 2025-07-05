@@ -9,14 +9,37 @@ import {
   notFoundResponse,
 } from '@/lib/api/response'
 import { TransactionType } from '@prisma/client'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
+
+/**
+ * 获取用户语言偏好并创建翻译函数
+ */
+async function getUserTranslator(userId: string) {
+  try {
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { language: true },
+    })
+
+    const userLanguage = userSettings?.language || 'zh'
+    return createServerTranslator(userLanguage)
+  } catch (error) {
+    console.warn(
+      'Failed to get user language preference, using default:',
+      error
+    )
+    return createServerTranslator('zh') // 默认使用中文
+  }
+}
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let user: any = null
   try {
     const { id } = await params
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -42,7 +65,8 @@ export async function GET(
     })
 
     if (!transaction) {
-      return notFoundResponse('交易记录不存在')
+      const t = await getUserTranslator(user.id)
+      return notFoundResponse(t('transaction.not.found'))
     }
 
     // 格式化交易数据，移除标签颜色信息
@@ -65,7 +89,8 @@ export async function GET(
     return successResponse(formattedTransaction)
   } catch (error) {
     console.error('Get transaction error:', error)
-    return errorResponse('获取交易记录失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('transaction.get.failed'), 500)
   }
 }
 
@@ -117,8 +142,16 @@ export async function PUT(
     }
 
     // 验证金额
-    if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      return errorResponse('金额必须是大于0的数字', 400)
+    // BALANCE类型交易允许为0（如贷款还完时余额为0），其他类型必须大于0
+    const amountValue = parseFloat(amount)
+    if (
+      isNaN(amountValue) ||
+      (type === 'BALANCE' ? amountValue < 0 : amountValue <= 0)
+    ) {
+      return errorResponse(
+        type === 'BALANCE' ? '余额调整金额不能为负数' : '金额必须是大于0的数字',
+        400
+      )
     }
 
     // 验证账户是否属于当前用户

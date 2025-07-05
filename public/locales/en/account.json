@@ -110,5 +110,12 @@
   "account.settings.currency.selected": "Selected Currency",
   "account.settings.currency.select": "Please select currency",
   "account.settings.saving": "Saving...",
-  "account.settings.save": "Save Settings"
+  "account.settings.save": "Save Settings",
+  "account.get.failed": "Failed to get accounts",
+  "account.name.required": "Account name is required",
+  "account.category.required": "Please select a category",
+  "account.currency.required": "Please select account currency",
+  "account.name.already.exists": "This account name already exists",
+  "account.create.success": "Account created successfully",
+  "account.create.failed": "Failed to create account"
 }

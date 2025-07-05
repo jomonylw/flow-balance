@@ -12,6 +12,7 @@ import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import { useToast } from '@/contexts/providers/ToastContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import {
@@ -44,6 +45,7 @@ export default function StockCategoryDetailView({
 }: StockCategoryDetailViewProps) {
   const { t } = useLanguage()
   const { showSuccess, showError } = useToast()
+  const { isAuthenticated } = useAuth()
   const { accounts, categories } = useUserData()
   const { formatInputDate } = useUserDateFormatter()
   const [summaryData, setSummaryData] = useState<StockSummaryData | null>(null)
@@ -84,8 +86,9 @@ export default function StockCategoryDetailView({
   // 监听余额更新事件
   useBalanceUpdateListener(
     event => {
-      // 检查是否是当前分类相关的账户
+      // 只有在用户已认证且是当前分类相关的账户时才刷新数据
       if (
+        isAuthenticated &&
         event.accountId &&
         categoryAccounts.some(account => account.id === event.accountId)
       ) {
@@ -98,8 +101,10 @@ export default function StockCategoryDetailView({
   // 监听交易相关事件
   useTransactionListener(
     () => {
-      // 重新加载交易列表和汇总数据
-      handleBalanceUpdateSuccess()
+      // 只有在用户已认证时才重新加载交易列表和汇总数据
+      if (isAuthenticated) {
+        handleBalanceUpdateSuccess()
+      }
     },
     categoryAccounts.map(account => account.id),
     [category.id]
@@ -198,6 +203,9 @@ export default function StockCategoryDetailView({
   // 获取交易记录
   const loadTransactions = useCallback(
     async (page = 1) => {
+      // 只有在用户已认证时才获取数据
+      if (!isAuthenticated) return
+
       setIsLoadingTransactions(true)
       try {
         const params = new URLSearchParams({
@@ -355,6 +363,9 @@ export default function StockCategoryDetailView({
 
   // 处理余额更新成功
   const handleBalanceUpdateSuccess = () => {
+    // 只有在用户已认证时才重新获取数据
+    if (!isAuthenticated) return
+
     // 重新获取汇总数据和交易记录
     const fetchSummaryData = async () => {
       try {
@@ -614,7 +625,8 @@ export default function StockCategoryDetailView({
                 stockMonthlyData={monthlyData.monthlyData}
                 baseCurrency={baseCurrencyForChart}
                 title={`${category.name} - ${t('category.monthly.balance.summary')}`}
-                height={400}
+                height={600}
+                showPieChart={true}
                 accounts={categoryAccounts.map(account => ({
                   id: account.id,
                   name: account.name,

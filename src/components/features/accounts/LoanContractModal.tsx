@@ -203,7 +203,7 @@ export default function LoanContractModal({
       onClose()
     } catch (error) {
       console.error('Failed to save loan contract:', error)
-      setError(error instanceof Error ? error.message : '未知错误')
+      setError(error instanceof Error ? error.message : t('error.unknown'))
     } finally {
       setIsLoading(false)
     }

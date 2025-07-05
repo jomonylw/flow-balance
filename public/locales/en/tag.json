@@ -28,5 +28,9 @@
   "tag.operation.failed": "Operation failed",
   "tag.created.and.added": "Tag created and added to current transaction",
   "tag.label.optional": "Tags (Optional)",
-  "tag.create.new": "Create New Tag"
+  "tag.create.new": "Create New Tag",
+  "tag.get.failed": "Failed to get tags",
+  "tag.name.too.long": "Tag name cannot exceed 50 characters",
+  "tag.color.format.invalid": "Invalid color format",
+  "tag.name.already.exists": "This tag name already exists"
 }

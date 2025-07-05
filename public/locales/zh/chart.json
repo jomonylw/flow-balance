@@ -36,5 +36,7 @@
   "chart.series.total_liabilities": "总负债",
   "chart.series.income": "收入",
   "chart.series.expense": "支出",
-  "chart.series.net_cash_flow": "净现金流"
+  "chart.series.net_cash_flow": "净现金流",
+  "chart.category.breakdown": "分类占比",
+  "chart.pie.click.hint": "点击柱状图选择月份，点击饼状图高亮对应数据"
 }

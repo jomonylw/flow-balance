@@ -1,0 +1,133 @@
+{
+  "landing.hero.title": "智能的个人财务管理",
+  "landing.hero.subtitle": "基于科学的财务理念，正确区分存量与流量，为您提供清晰的财务分析工具",
+  "landing.hero.description": "支持多币种管理、智能分类、实时统计，让您的财务管理更加清晰和高效",
+  "landing.hero.cta.primary": "立即开始",
+  "landing.hero.cta.secondary": "已有账户？登录",
+  "landing.hero.feature.professional.title": "科学财务理念",
+  "landing.hero.feature.professional.description": "区分存量与流量，提供清晰的资产负债表和现金流量表",
+  "landing.hero.feature.multicurrency.title": "多币种支持",
+  "landing.hero.feature.multicurrency.description": "支持多种货币管理，自动汇率转换，统一本位币分析",
+  "landing.hero.feature.modern.title": "现代化体验",
+  "landing.hero.feature.modern.description": "响应式设计，支持明暗主题，完美适配桌面端和移动端",
+
+  "landing.features.title": "强大的功能特性",
+  "landing.features.subtitle": "为个人财务管理提供现代化的智能工具和分析能力",
+
+  "landing.features.accounts.title": "智能账户管理",
+  "landing.features.accounts.description": "支持树状结构的账户分类，自动区分资产、负债、收入、支出四种类型",
+  "landing.features.accounts.highlight.1": "树状分类体系管理",
+  "landing.features.accounts.highlight.2": "自动账户类型识别",
+  "landing.features.accounts.highlight.3": "独立货币设置支持",
+
+  "landing.features.reports.title": "清晰财务报表",
+  "landing.features.reports.description": "提供直观的资产负债表和现金流量表，基于科学原理的财务分析",
+  "landing.features.reports.highlight.1": "清晰资产负债表",
+  "landing.features.reports.highlight.2": "现金流量分析表",
+  "landing.features.reports.highlight.3": "多时间段趋势对比",
+
+  "landing.features.currency.title": "多币种管理",
+  "landing.features.currency.description": "支持多种货币和汇率管理，统一转换为本位币进行汇总分析",
+  "landing.features.currency.highlight.1": "多货币支持管理",
+  "landing.features.currency.highlight.2": "自定义汇率设置",
+  "landing.features.currency.highlight.3": "本位币统一分析",
+
+  "landing.features.fire.title": "FIRE 财务自由",
+  "landing.features.fire.description": "智能的财务自由计算器，帮助您规划和追踪财务独立之路",
+  "landing.features.fire.highlight.1": "财务自由目标设定",
+  "landing.features.fire.highlight.2": "投资回报率分析",
+  "landing.features.fire.highlight.3": "退休规划可视化",
+
+  "landing.features.experience.title": "优秀用户体验",
+  "landing.features.experience.description": "响应式设计，支持国际化和主题切换，数据变更实时同步",
+  "landing.features.experience.highlight.1": "完美移动端适配",
+  "landing.features.experience.highlight.2": "中英文双语支持",
+  "landing.features.experience.highlight.3": "明暗主题切换",
+
+  "landing.features.smart.title": "智能批量操作",
+  "landing.features.smart.description": "支持智能粘贴、批量编辑，Excel式的数据录入体验",
+  "landing.features.smart.highlight.1": "智能数据粘贴",
+  "landing.features.smart.highlight.2": "批量交易录入",
+  "landing.features.smart.highlight.3": "实时数据验证",
+
+  "landing.tech.title": "现代化技术栈",
+  "landing.tech.subtitle": "基于最新的 Web 技术构建，确保性能、安全性和可维护性",
+
+  "landing.tech.frontend.title": "前端技术",
+  "landing.tech.frontend.nextjs": "最新的 React 全栈框架",
+  "landing.tech.frontend.react": "最新版本的 React 库",
+  "landing.tech.frontend.typescript": "类型安全的 JavaScript",
+  "landing.tech.frontend.tailwind": "现代化的 CSS 框架",
+
+  "landing.tech.backend.title": "后端技术",
+  "landing.tech.backend.nodejs": "高性能 JavaScript 运行时",
+  "landing.tech.backend.prisma": "现代化数据库 ORM",
+  "landing.tech.backend.database": "灵活的数据库支持",
+  "landing.tech.backend.auth": "安全的身份认证",
+
+  "landing.tech.features.title": "特色功能",
+  "landing.tech.features.echarts": "专业的图表可视化",
+  "landing.tech.features.i18n": "完整的国际化支持",
+  "landing.tech.features.darkmode": "优雅的明暗主题",
+  "landing.tech.features.responsive": "完美的响应式设计",
+
+  "landing.tech.version.description": "持续更新，为您提供最佳的财务管理体验",
+  "landing.tech.version.build": "构建日期",
+  "landing.tech.version.author": "开发团队",
+
+  "landing.footer.description": "Flow Balance 致力于为个人用户提供现代化的财务管理工具，帮助您更好地管理和分析个人财务状况。",
+  "landing.footer.links.title": "快速链接",
+  "landing.footer.features.title": "核心功能",
+  "landing.footer.features.accounts": "账户管理",
+  "landing.footer.features.reports": "财务报表",
+  "landing.footer.features.multicurrency": "多币种",
+  "landing.footer.features.fire": "FIRE 计算",
+  "landing.footer.copyright": "保留所有权利。",
+  "landing.footer.build": "构建",
+
+  "landing.showcase.title": "产品界面展示",
+  "landing.showcase.subtitle": "直观体验 Flow Balance 的专业界面设计和强大功能",
+
+  "landing.showcase.dashboard.title": "智能仪表板",
+  "landing.showcase.dashboard.description": "一目了然的财务概览，实时掌握您的财务状况",
+  "landing.showcase.dashboard.feature.1": "实时财务数据统计",
+  "landing.showcase.dashboard.feature.2": "直观的图表可视化",
+  "landing.showcase.dashboard.feature.3": "快速账户余额查看",
+
+  "landing.showcase.reports.title": "清晰报表",
+  "landing.showcase.reports.description": "基于科学原理的直观财务报表，清晰分析您的财务状况",
+  "landing.showcase.reports.feature.1": "清晰资产负债表",
+  "landing.showcase.reports.feature.2": "现金流量分析",
+  "landing.showcase.reports.feature.3": "多维度数据对比",
+
+  "landing.showcase.fire.title": "FIRE 计算器",
+  "landing.showcase.fire.description": "智能的财务自由规划工具，帮助您实现财务独立目标",
+  "landing.showcase.fire.feature.1": "财务自由目标设定",
+  "landing.showcase.fire.feature.2": "投资回报率分析",
+  "landing.showcase.fire.feature.3": "退休规划可视化",
+
+  "landing.showcase.smart.title": "智能批量操作",
+  "landing.showcase.smart.description": "Excel式的数据录入体验，大幅提升数据处理效率",
+  "landing.showcase.smart.feature.1": "智能数据粘贴",
+  "landing.showcase.smart.feature.2": "批量交易录入",
+  "landing.showcase.smart.feature.3": "实时数据验证",
+
+  "landing.comparison.title": "多样化体验",
+  "landing.comparison.subtitle": "支持明暗主题切换和完整的国际化，为不同用户提供个性化体验",
+
+  "landing.comparison.theme.title": "明暗主题",
+  "landing.comparison.theme.description": "优雅的明暗主题设计，适应不同使用环境和个人偏好",
+  "landing.comparison.theme.light": "明亮主题",
+  "landing.comparison.theme.dark": "暗黑主题",
+
+  "landing.comparison.i18n.title": "国际化支持",
+  "landing.comparison.i18n.description": "完整的中英文双语支持，界面元素完全本地化",
+  "landing.comparison.i18n.chinese": "中文界面",
+  "landing.comparison.i18n.english": "英文界面",
+
+  "landing.comparison.responsive.title": "响应式设计",
+  "landing.comparison.responsive.description": "完美适配桌面端、平板和移动端，随时随地管理财务",
+
+  "landing.comparison.currency.title": "多币种管理",
+  "landing.comparison.currency.description": "支持多种货币和汇率管理，全球化财务管理解决方案"
+}

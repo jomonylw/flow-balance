@@ -50,5 +50,7 @@
   "currency.remove.success": "Currency removed successfully",
   "currency.custom.delete.success": "Custom currency deleted successfully",
   "currency.invalid.currency": "Invalid currency",
-  "currency.decimal.places.invalid": "Decimal places must be between 0-10"
+  "currency.decimal.places.invalid": "Decimal places must be between 0-10",
+  "currency.not.found": "Specified currency does not exist",
+  "currency.permission.denied": "You do not have permission to use this currency, please add it in currency management first"
 }

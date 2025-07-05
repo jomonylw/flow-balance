@@ -179,6 +179,33 @@ export function useTagListener(
 }
 
 /**
+ * 监听贷款还款重置事件
+ */
+export function useLoanPaymentResetListener(
+  callback: (event: DataUpdateEvent) => void | Promise<void>,
+  accountIds?: string[]
+) {
+  return useDataUpdateListener(
+    ['loan-payment-reset'],
+    useCallback(
+      event => {
+        // 如果指定了账户ID，只监听相关账户的重置
+        if (
+          accountIds &&
+          event.accountId &&
+          !accountIds.includes(event.accountId)
+        ) {
+          return
+        }
+        callback(event)
+      },
+      [callback, accountIds?.join(',')]
+    ),
+    [accountIds?.join(',')]
+  )
+}
+
+/**
  * 监听所有数据更新事件
  */
 export function useAllDataListener(
