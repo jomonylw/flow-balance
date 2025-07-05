@@ -6,28 +6,7 @@ import {
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
-import { createServerTranslator } from '@/lib/utils/server-i18n'
-
-/**
- * 获取用户语言偏好并创建翻译函数
- */
-async function getUserTranslator(userId: string) {
-  try {
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId },
-      select: { language: true },
-    })
-
-    const userLanguage = userSettings?.language || 'zh'
-    return createServerTranslator(userLanguage)
-  } catch (error) {
-    console.warn(
-      'Failed to get user language preference, using default:',
-      error
-    )
-    return createServerTranslator('zh') // 默认使用中文
-  }
-}
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 export async function GET() {
   let user: any = null

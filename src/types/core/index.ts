@@ -40,6 +40,8 @@ export interface User {
   id: string
   email: string
   name: string // 用户昵称/显示名称，必需字段
+  recoveryKey?: string | null // 恢复密钥
+  recoveryKeyCreatedAt?: Date | null // 恢复密钥创建时间
   createdAt: Date
   updatedAt: Date
   settings?: UserSettings

@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { TransactionType } from '@/types/core/constants'
 import { VALIDATION } from '@/lib/constants/app-config'
 
+// import { getUserTranslator } from '@/lib/utils/server-i18n'
 // 创建模板验证schema
 const createTemplateSchema = z.object({
   name: z

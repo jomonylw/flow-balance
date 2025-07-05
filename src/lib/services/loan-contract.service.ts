@@ -12,31 +12,13 @@ import {
 import { LoanCalculationService } from './loan-calculation.service'
 import { calculateLoanPaymentDateForPeriod } from '@/lib/utils/format'
 import { DuplicateCheckService, CheckType } from './duplicate-check.service'
-import { createServerTranslator } from '@/lib/utils/server-i18n'
+import {
+  createServerTranslator,
+  getUserTranslator,
+} from '@/lib/utils/server-i18n'
 
 // 创建服务端翻译函数（默认）
 const t = createServerTranslator()
-
-/**
- * 获取用户语言偏好并创建翻译函数
- */
-async function getUserTranslator(userId: string) {
-  try {
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId },
-      select: { language: true },
-    })
-
-    const userLanguage = userSettings?.language || 'zh'
-    return createServerTranslator(userLanguage)
-  } catch (error) {
-    console.warn(
-      'Failed to get user language preference, using default:',
-      error
-    )
-    return createServerTranslator('zh') // 默认使用中文
-  }
-}
 
 /**
  * 处理模板占位符替换
@@ -316,6 +298,9 @@ export class LoanContractService {
         }
       }
 
+      // 过滤掉不能直接更新的字段（外键字段需要通过关系更新）
+      const { accountId, currencyCode, ...filteredData } = data
+
       // 检查是否修改了影响还款计划的关键参数
       const hasKeyParameterChanges = !!(
         data.loanAmount ||
@@ -376,8 +361,6 @@ export class LoanContractService {
         }
       }
 
-      // 过滤掉不能直接更新的字段（外键字段需要通过关系更新）
-      const { accountId, currencyCode, ...filteredData } = data
       const updateData: LoanContractUpdateData = { ...filteredData }
 
       // 处理账户变更

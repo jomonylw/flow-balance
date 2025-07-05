@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { FutureDataGenerationService } from '@/lib/services/future-data-generation.service'
 
+// import { getUserTranslator } from '@/lib/utils/server-i18n'
 export async function POST() {
   try {
     const user = await getCurrentUser()
@@ -24,8 +25,12 @@ export async function POST() {
       )
 
     // 生成历史遗漏的贷款还款记录（包含历史检查和未来生成）
-    const { LoanContractService } = await import('@/lib/services/loan-contract.service')
-    const loanResult = await LoanContractService.processLoanPaymentsBySchedule(user.id)
+    const { LoanContractService } = await import(
+      '@/lib/services/loan-contract.service'
+    )
+    const loanResult = await LoanContractService.processLoanPaymentsBySchedule(
+      user.id
+    )
 
     const totalGenerated = recurringResult.generated + loanResult.processed
     const allErrors = [...recurringResult.errors, ...loanResult.errors]

@@ -1,19 +1,21 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
-import { getCommonError } from '@/lib/constants/api-messages'
+// import { getCommonError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 /**
  * 获取所有可用货币列表（全局货币）
  */
 export async function GET(_request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -54,6 +56,7 @@ export async function GET(_request: NextRequest) {
     })
   } catch (error) {
     console.error('获取货币列表失败:', error)
-    return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('currency.get.failed'), 500)
   }
 }

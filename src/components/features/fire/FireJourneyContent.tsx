@@ -10,7 +10,7 @@ import RealitySnapshot, { type CAGRDetails } from './RealitySnapshot'
 import NorthStarMetrics from './NorthStarMetrics'
 import JourneyVisualization from './JourneyVisualization'
 import CockpitControls from './CockpitControls'
-import type { SimpleUser, SimpleCurrency } from '@/types/core'
+import type { SimpleUser, SimpleCurrency, FireParams } from '@/types/core'
 
 // 本地类型定义（用于这个组件的特定需求）
 interface FireUserSettings {
@@ -50,7 +50,7 @@ export default function FireJourneyContent({
   const [error, setError] = useState<string | null>(null)
 
   // FIRE 计算参数状态
-  const [fireParams, setFireParams] = useState({
+  const [fireParams, setFireParams] = useState<FireParams>({
     retirementExpenses: 0,
     safeWithdrawalRate: userSettings.fireSWR || 4.0,
     currentInvestableAssets: 0,

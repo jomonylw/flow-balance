@@ -8,18 +8,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { LoanContractService } from '@/lib/services/loan-contract.service'
 import { LoanContractFormData } from '@/types/core'
-import { createServerTranslator } from '@/lib/utils/server-i18n'
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const t = createServerTranslator()
-
+  let user: any = null
   try {
     const { id } = await params
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
+      const t = await getUserTranslator('')
       return NextResponse.json(
         { success: false, error: t('loan.contract.unauthorized') },
         { status: 401 }
@@ -27,6 +27,7 @@ export async function PUT(
     }
 
     const data: Partial<LoanContractFormData> = await request.json()
+    const t = await getUserTranslator(user.id)
 
     // 验证数据
     if (data.loanAmount !== undefined && data.loanAmount <= 0) {
@@ -106,6 +107,7 @@ export async function PUT(
     })
   } catch (error) {
     console.error('Failed to update loan contract:', error)
+    const t = await getUserTranslator(user?.id || '')
     return NextResponse.json(
       {
         success: false,
@@ -121,12 +123,12 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const t = createServerTranslator()
-
+  let user: any = null
   try {
     const { id } = await params
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
+      const t = await getUserTranslator('')
       return NextResponse.json(
         { success: false, error: t('loan.contract.unauthorized') },
         { status: 401 }
@@ -150,6 +152,7 @@ export async function DELETE(
       options
     )
 
+    const t = await getUserTranslator(user.id)
     return NextResponse.json({
       success: true,
       message: t('loan.contract.deleted'),
@@ -157,6 +160,7 @@ export async function DELETE(
     })
   } catch (error) {
     console.error('Failed to delete loan contract:', error)
+    const t = await getUserTranslator(user?.id || '')
     return NextResponse.json(
       {
         success: false,

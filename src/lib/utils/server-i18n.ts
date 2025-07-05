@@ -5,9 +5,19 @@
 
 import fs from 'fs'
 import path from 'path'
+import { prisma } from '@/lib/database/prisma'
+import { CACHE } from '@/lib/constants/app-config'
 
 // 缓存翻译数据
 const translationCache: Record<string, Record<string, string>> = {}
+
+// 用户语言设置缓存
+interface UserLanguageCache {
+  language: string
+  timestamp: number
+}
+
+const userLanguageCache = new Map<string, UserLanguageCache>()
 
 /**
  * 加载翻译文件
@@ -97,4 +107,65 @@ export function preloadTranslations(locales: string[] = ['zh', 'en']) {
   locales.forEach(locale => {
     loadTranslations(locale)
   })
+}
+
+/**
+ * 获取用户语言设置（带缓存）
+ * @param userId 用户ID
+ * @returns 用户语言设置
+ */
+async function getUserLanguage(userId: string): Promise<string> {
+  try {
+    // 检查缓存
+    const cached = userLanguageCache.get(userId)
+    const now = Date.now()
+
+    if (cached && now - cached.timestamp < CACHE.USER_DATA_TTL) {
+      return cached.language
+    }
+
+    // 从数据库获取
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+      select: { language: true },
+    })
+
+    const language = userSettings?.language || 'zh'
+
+    // 更新缓存
+    userLanguageCache.set(userId, {
+      language,
+      timestamp: now,
+    })
+
+    return language
+  } catch (error) {
+    console.warn(
+      'Failed to get user language preference, using default:',
+      error
+    )
+    return 'zh' // 默认使用中文
+  }
+}
+
+/**
+ * 获取用户语言偏好并创建翻译函数
+ * @param userId 用户ID
+ * @returns 翻译函数
+ */
+export async function getUserTranslator(userId: string) {
+  const userLanguage = await getUserLanguage(userId)
+  return createServerTranslator(userLanguage)
+}
+
+/**
+ * 清除用户语言缓存
+ * @param userId 可选，指定用户ID则只清除该用户的缓存，否则清除所有
+ */
+export function clearUserLanguageCache(userId?: string) {
+  if (userId) {
+    userLanguageCache.delete(userId)
+  } else {
+    userLanguageCache.clear()
+  }
 }

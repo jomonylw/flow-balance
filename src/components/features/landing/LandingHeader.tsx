@@ -18,9 +18,9 @@ interface LandingHeaderProps {
 export default function LandingHeader({
   onLogin,
   onSignup,
-  theme,
-  setTheme,
-  resolvedTheme,
+  theme: _theme,
+  setTheme: _setTheme,
+  resolvedTheme: _resolvedTheme,
 }: LandingHeaderProps) {
   const { t } = useLanguage()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -37,11 +37,7 @@ export default function LandingHeader({
           {/* Desktop Navigation */}
           <div className='hidden md:flex items-center space-x-6'>
             {/* Theme Toggle */}
-            <ThemeToggle
-              theme={theme}
-              setTheme={setTheme}
-              resolvedTheme={resolvedTheme}
-            />
+            <ThemeToggle />
 
             {/* Language Toggle */}
             <LanguageToggle />
@@ -65,11 +61,7 @@ export default function LandingHeader({
 
           {/* Mobile Menu Button */}
           <div className='md:hidden flex items-center space-x-2'>
-            <ThemeToggle
-              theme={theme}
-              setTheme={setTheme}
-              resolvedTheme={resolvedTheme}
-            />
+            <ThemeToggle />
             <LanguageToggle />
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import { PAGINATION } from '@/lib/constants/app-config'
 
+// import { getUserTranslator } from '@/lib/utils/server-i18n'
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

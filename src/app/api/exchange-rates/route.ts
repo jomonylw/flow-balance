@@ -9,17 +9,15 @@ import {
 } from '@/lib/api/response'
 import type { Prisma } from '@prisma/client'
 import { generateAutoExchangeRates } from '@/lib/services/exchange-rate-auto-generation.service'
-import { createServerTranslator } from '@/lib/utils/server-i18n'
-
-// 创建服务端翻译函数
-const t = createServerTranslator()
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 /**
  * 获取用户的汇率设置
  */
 export async function GET(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -86,7 +84,8 @@ export async function GET(request: NextRequest) {
     return successResponse(serializedRates)
   } catch (error) {
     console.error('获取汇率失败:', error)
-    return errorResponse('获取汇率失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('exchange.rate.get.failed'), 500)
   }
 }
 
@@ -94,8 +93,9 @@ export async function GET(request: NextRequest) {
  * 创建或更新汇率
  */
 export async function POST(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -105,25 +105,27 @@ export async function POST(request: NextRequest) {
 
     // 验证必填字段
     if (!fromCurrency || !toCurrency || !rate || !effectiveDate) {
-      return validationErrorResponse('缺少必填字段')
+      const t = await getUserTranslator(user.id)
+      return validationErrorResponse(t('exchange.rate.required.fields'))
     }
 
     // 验证汇率值
     const rateValue = parseFloat(rate)
+    const t = await getUserTranslator(user.id)
     if (isNaN(rateValue) || rateValue <= 0) {
-      return validationErrorResponse('汇率必须是大于0的数字')
+      return validationErrorResponse(t('exchange.rate.invalid.value'))
     }
 
     // 验证汇率精度（不能超过8位小数）
     const rateStr = rateValue.toString()
     const decimalIndex = rateStr.indexOf('.')
     if (decimalIndex !== -1 && rateStr.length - decimalIndex - 1 > 8) {
-      return validationErrorResponse('汇率精度不能超过8位小数')
+      return validationErrorResponse(t('exchange.rate.precision.limit'))
     }
 
     // 验证汇率合理性
     if (rateValue > 1000000) {
-      return validationErrorResponse('汇率值过大，请确认是否正确')
+      return validationErrorResponse(t('exchange.rate.value.too.large'))
     }
 
     // 验证货币代码（优先查找用户自定义货币）
@@ -150,22 +152,26 @@ export async function POST(request: NextRequest) {
     })
 
     if (!fromCurrencyExists) {
-      return validationErrorResponse(`源货币 ${fromCurrency} 不存在`)
+      return validationErrorResponse(
+        t('exchange.rate.from.currency.not.found', { currency: fromCurrency })
+      )
     }
 
     if (!toCurrencyExists) {
-      return validationErrorResponse(`目标货币 ${toCurrency} 不存在`)
+      return validationErrorResponse(
+        t('exchange.rate.to.currency.not.found', { currency: toCurrency })
+      )
     }
 
     // 验证不能设置相同货币的汇率
     if (fromCurrency === toCurrency) {
-      return validationErrorResponse('不能设置相同货币之间的汇率')
+      return validationErrorResponse(t('exchange.rate.same.currency.error'))
     }
 
     // 验证日期
     const parsedDate = new Date(effectiveDate)
     if (isNaN(parsedDate.getTime())) {
-      return validationErrorResponse('无效的生效日期')
+      return validationErrorResponse(t('exchange.rate.invalid.date'))
     }
 
     // 验证生效日期不能是未来日期
@@ -253,7 +259,8 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     console.error('创建/更新汇率失败:', error)
-    return errorResponse('操作失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('exchange.rate.operation.failed'), 500)
   }
 }
 
@@ -261,8 +268,9 @@ export async function POST(request: NextRequest) {
  * 批量创建汇率
  */
 export async function PUT(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -417,7 +425,7 @@ export async function PUT(request: NextRequest) {
         // 重新生成所有自动汇率
         await generateAutoExchangeRates(user.id)
       } catch (error) {
-        console.error(t('exchange.rate.auto.generate.failed'), error)
+        console.error('汇率自动生成失败:', error)
         // 不影响主要操作，只记录错误
       }
     }
@@ -433,6 +441,7 @@ export async function PUT(request: NextRequest) {
     )
   } catch (error) {
     console.error('批量创建汇率失败:', error)
-    return errorResponse('批量操作失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('exchange.rate.batch.operation.failed'), 500)
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { LoanContractService } from '@/lib/services/loan-contract.service'
 
+// import { getUserTranslator } from '@/lib/utils/server-i18n'
 /**
  * 测试贷款还款处理API
  * 用于验证修复后的还款处理逻辑是否正常工作

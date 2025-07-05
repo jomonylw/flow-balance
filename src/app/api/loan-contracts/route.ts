@@ -8,14 +8,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { LoanContractService } from '@/lib/services/loan-contract.service'
 import { LoanContractFormData } from '@/types/core'
-import { createServerTranslator } from '@/lib/utils/server-i18n'
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 export async function GET() {
-  const t = createServerTranslator()
-
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
+      const t = await getUserTranslator('')
       return NextResponse.json(
         { success: false, error: t('loan.contract.unauthorized') },
         { status: 401 }
@@ -32,6 +32,7 @@ export async function GET() {
     })
   } catch (error) {
     console.error('获取贷款合约列表失败:', error)
+    const t = await getUserTranslator(user?.id || '')
     return NextResponse.json(
       {
         success: false,
@@ -44,11 +45,11 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const t = createServerTranslator()
-
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
+      const t = await getUserTranslator('')
       return NextResponse.json(
         { success: false, error: t('loan.contract.unauthorized') },
         { status: 401 }
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data: LoanContractFormData = await request.json()
+    const t = await getUserTranslator(user.id)
 
     // 基础验证
     if (
@@ -129,6 +131,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('创建贷款合约失败:', error)
+    const t = await getUserTranslator(user?.id || '')
     return NextResponse.json(
       {
         success: false,

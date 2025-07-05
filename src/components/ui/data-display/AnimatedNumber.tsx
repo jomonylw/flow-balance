@@ -49,8 +49,10 @@ export default function AnimatedNumber({
       return
     }
 
-    // 如果值没有变化，不需要动画
-    if (Math.abs(displayValue - value) < 0.01) {
+    // 如果值没有变化，不需要动画，但要确保显示值是准确的
+    if (Math.abs(displayValue - value) < 0.001) {
+      // 使用更小的阈值，并确保最终值是准确的
+      setDisplayValue(value)
       return
     }
 

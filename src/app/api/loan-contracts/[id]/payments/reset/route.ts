@@ -1,31 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { LoanContractService } from '@/lib/services/loan-contract.service'
-import { createServerTranslator } from '@/lib/utils/server-i18n'
-import { PrismaClient } from '@prisma/client'
+import {
+  getUserTranslator,
+  createServerTranslator,
+} from '@/lib/utils/server-i18n'
+// import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
-
-/**
- * 获取用户语言偏好并创建翻译函数
- */
-async function getUserTranslator(userId: string) {
-  try {
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId },
-      select: { language: true },
-    })
-
-    const userLanguage = userSettings?.language || 'zh'
-    return createServerTranslator(userLanguage)
-  } catch (error) {
-    console.warn(
-      'Failed to get user language preference, using default:',
-      error
-    )
-    return createServerTranslator('zh') // 默认使用中文
-  }
-}
+// const _prisma = new PrismaClient()
 
 /**
  * 重置指定的还款记录

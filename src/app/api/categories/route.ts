@@ -9,32 +9,12 @@ import {
 } from '@/lib/api/response'
 import { CategoryCreateSchema, validateData } from '@/lib/validation/schemas'
 import type { Prisma } from '@prisma/client'
-import { createServerTranslator } from '@/lib/utils/server-i18n'
-
-/**
- * 获取用户语言偏好并创建翻译函数
- */
-async function getUserTranslator(userId: string) {
-  try {
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId },
-      select: { language: true },
-    })
-
-    const userLanguage = userSettings?.language || 'zh'
-    return createServerTranslator(userLanguage)
-  } catch (error) {
-    console.warn(
-      'Failed to get user language preference, using default:',
-      error
-    )
-    return createServerTranslator('zh') // 默认使用中文
-  }
-}
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 export async function GET() {
+  let user = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -56,9 +36,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   let createData: Prisma.CategoryCreateInput | undefined
+  let user = null
 
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       console.error('Category creation failed: No user found')
       return unauthorizedResponse()

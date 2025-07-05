@@ -85,8 +85,8 @@ async function testFinalExchangeRateRefresh() {
     console.log(`✅ 获取汇率成功: ${exchangeRates.length} 条`)
     
     // 分析汇率类型
-    const userRates = exchangeRates.filter(r => r.type === 'USER')
-    const autoRates = exchangeRates.filter(r => r.type === 'AUTO')
+    const userRates = exchangeRates.filter((r: any) => r.type === 'USER')
+    const autoRates = exchangeRates.filter((r: any) => r.type === 'AUTO')
     console.log(`  - USER: ${userRates.length} 条`)
     console.log(`  - AUTO: ${autoRates.length} 条`)
     
@@ -106,13 +106,13 @@ async function testFinalExchangeRateRefresh() {
       
       // 查找汇率
       let rate = exchangeRates.find(
-        r => r.fromCurrency === currency.code && r.toCurrency === baseCurrency.code
+        (r: any) => r.fromCurrency === currency.code && r.toCurrency === baseCurrency.code
       )
-      
+
       let isReverse = false
       if (!rate) {
         const reverseRate = exchangeRates.find(
-          r => r.fromCurrency === baseCurrency.code && r.toCurrency === currency.code
+          (r: any) => r.fromCurrency === baseCurrency.code && r.toCurrency === currency.code
         )
         if (reverseRate) {
           rate = { ...reverseRate, rate: 1 / reverseRate.rate }
@@ -158,7 +158,7 @@ async function testFinalExchangeRateRefresh() {
       console.log(`✅ 刷新汇率成功: ${refreshedRates.length} 条`)
       
       // 检查汇率是否已更新
-      const updatedRate = refreshedRates.find(r => r.id === userRate.id)
+      const updatedRate = refreshedRates.find((r: any) => r.id === userRate.id)
       if (updatedRate && updatedRate.rate === 0.15) {
         console.log(`✅ 汇率值已更新: ${updatedRate.rate}`)
       } else {
@@ -166,7 +166,7 @@ async function testFinalExchangeRateRefresh() {
       }
       
       // 检查AUTO汇率是否重新生成
-      const autoRates = refreshedRates.filter(r => r.type === 'AUTO')
+      const autoRates = refreshedRates.filter((r: any) => r.type === 'AUTO')
       console.log(`✅ AUTO汇率重新生成: ${autoRates.length} 条`)
       
     } else {

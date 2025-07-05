@@ -28,7 +28,7 @@ export class DataImportService {
     try {
       // 验证基本结构
       if (!data.exportInfo || !data.user) {
-        errors.push('导入数据格式不正确：缺少基本信息')
+        errors.push('data.import.format.invalid.missing.basic.info')
         return {
           isValid: false,
           errors,
@@ -416,16 +416,15 @@ export class DataImportService {
       }
 
       result.success = result.statistics.failed === 0
+      // 返回结构化的结果，让调用层处理国际化
       result.message = result.success
-        ? `导入成功：创建 ${result.statistics.created} 条记录，更新 ${result.statistics.updated} 条记录`
-        : `导入部分成功：${result.statistics.failed} 条记录失败`
+        ? 'import.success'
+        : 'import.partial.success'
 
       return result
-    } catch (error) {
-      result.errors.push(
-        `导入过程中发生错误: ${error instanceof Error ? error.message : '未知错误'}`
-      )
-      result.message = '导入失败'
+    } catch {
+      result.errors.push('data.import.process.error')
+      result.message = 'import.failed'
       return result
     }
   }
@@ -633,7 +632,7 @@ export class DataImportService {
     tx: any,
     userId: string,
     exchangeRates: any[],
-    currencyIdMapping: IdMapping,
+    _currencyIdMapping: IdMapping,
     exchangeRateIdMapping: IdMapping,
     result: ImportResult
   ): Promise<void> {

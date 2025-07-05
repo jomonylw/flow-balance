@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { PrismaClient } from '@prisma/client'
 
+// import { getUserTranslator } from '@/lib/utils/server-i18n'
 const prisma = new PrismaClient()
 
 export async function POST() {

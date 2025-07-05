@@ -10,12 +10,12 @@ import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 import Link from 'next/link'
 
-interface FormData {
+interface ForgotPasswordFormData {
   email: string
   recoveryKey: string
 }
 
-interface FormErrors {
+interface ForgotPasswordFormErrors {
   email?: string
   recoveryKey?: string
   general?: string
@@ -25,15 +25,15 @@ export default function ForgotPasswordWithKey() {
   const { t } = useLanguage()
   const { showError } = useToast()
   const router = useRouter()
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<ForgotPasswordFormData>({
     email: '',
     recoveryKey: '',
   })
-  const [errors, setErrors] = useState<FormErrors>({})
+  const [errors, setErrors] = useState<ForgotPasswordFormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
 
   const validateForm = (): boolean => {
-    const newErrors: FormErrors = {}
+    const newErrors: ForgotPasswordFormErrors = {}
 
     // 验证邮箱
     if (!formData.email.trim()) {
@@ -61,7 +61,7 @@ export default function ForgotPasswordWithKey() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    const field = name as keyof FormData
+    const field = name as keyof ForgotPasswordFormData
     setFormData(prev => ({ ...prev, [field]: value }))
     // 清除对应字段的错误
     if (errors[field]) {

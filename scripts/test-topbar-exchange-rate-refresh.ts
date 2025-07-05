@@ -184,7 +184,7 @@ async function testTopBarExchangeRateRefresh() {
 
       // 查找从其他货币到本位币的汇率
       let rate = exchangeRates.find(
-        r => r.fromCurrency === currency.code && r.toCurrency === baseCurrency.code
+        (r: any) => r.fromCurrency === currency.code && r.toCurrency === baseCurrency.code
       )
 
       let isReverse = false
@@ -192,7 +192,7 @@ async function testTopBarExchangeRateRefresh() {
       // 如果没有直接汇率，查找反向汇率
       if (!rate) {
         const reverseRate = exchangeRates.find(
-          r => r.fromCurrency === baseCurrency.code && r.toCurrency === currency.code
+          (r: any) => r.fromCurrency === baseCurrency.code && r.toCurrency === currency.code
         )
         if (reverseRate) {
           rate = {
@@ -252,7 +252,7 @@ async function testTopBarExchangeRateRefresh() {
       console.log(`📊 更新后获取到 ${updatedExchangeRates.length} 条汇率记录`)
       
       // 检查汇率是否已更新
-      const updatedRate = updatedExchangeRates.find(r => r.id === createdRate.id)
+      const updatedRate = updatedExchangeRates.find((r: any) => r.id === createdRate.id)
       if (updatedRate) {
         console.log(`✅ 汇率已更新: ${updatedRate.rate} (原值: ${createdRate.rate})`)
       } else {

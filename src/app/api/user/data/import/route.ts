@@ -7,14 +7,16 @@ import {
   validationErrorResponse,
 } from '@/lib/api/response'
 import type { ExportedData, ImportOptions } from '@/types/data-import'
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 /**
  * 用户数据导入API
  * POST /api/user/data/import - 导入用户数据
  */
 export async function POST(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -25,19 +27,25 @@ export async function POST(request: NextRequest) {
 
     // 验证必要字段
     if (!data) {
-      return validationErrorResponse('缺少导入数据')
+      const t = await getUserTranslator(user.id)
+      return validationErrorResponse(t('data.import.data.required'))
     }
 
     // 验证数据格式
     if (!data.exportInfo || !data.user) {
-      return validationErrorResponse('导入数据格式不正确')
+      const t = await getUserTranslator(user.id)
+      return validationErrorResponse(t('data.import.format.invalid'))
     }
 
     // 检查数据版本
     const supportedVersions = ['1.0', '2.0']
     if (!supportedVersions.includes(data.exportInfo.version)) {
+      const t = await getUserTranslator(user.id)
       return validationErrorResponse(
-        `不支持的数据版本: ${data.exportInfo.version}，支持的版本: ${supportedVersions.join(', ')}`
+        t('data.import.version.unsupported', {
+          version: data.exportInfo.version,
+          supported: supportedVersions.join(', '),
+        })
       )
     }
 
@@ -57,19 +65,36 @@ export async function POST(request: NextRequest) {
       importOptions
     )
 
+    const t = await getUserTranslator(user.id)
+
     if (result.success) {
+      const message =
+        result.message === 'import.success'
+          ? t('data.import.success', {
+              created: result.statistics.created,
+              updated: result.statistics.updated,
+            })
+          : result.message
+
       return successResponse(
         {
           statistics: result.statistics,
           warnings: result.warnings,
         },
-        result.message
+        message
       )
     } else {
+      const errorMessage =
+        result.message === 'import.partial.success'
+          ? t('data.import.partial.success', {
+              failed: result.statistics.failed,
+            })
+          : result.message
+
       return NextResponse.json(
         {
           success: false,
-          error: result.message,
+          error: errorMessage,
           data: {
             statistics: result.statistics,
             errors: result.errors,
@@ -81,18 +106,19 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Import data error:', error)
+    const t = await getUserTranslator(user?.id || '')
 
     // 处理特定错误类型
     if (error instanceof SyntaxError) {
-      return validationErrorResponse('导入数据格式错误，请确保是有效的JSON格式')
+      return validationErrorResponse(t('data.import.json.format.error'))
     }
 
     return NextResponse.json(
       {
         success: false,
-        error: '导入数据失败',
+        error: t('data.import.failed'),
         data: {
-          details: error instanceof Error ? error.message : '未知错误',
+          details: error instanceof Error ? error.message : t('error.unknown'),
         },
       },
       { status: 500 }
@@ -105,8 +131,9 @@ export async function POST(request: NextRequest) {
  * PUT /api/user/data/import - 验证导入数据但不执行导入
  */
 export async function PUT(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -117,12 +144,14 @@ export async function PUT(request: NextRequest) {
 
     // 验证必要字段
     if (!data) {
-      return validationErrorResponse('缺少导入数据')
+      const t = await getUserTranslator(user.id)
+      return validationErrorResponse(t('data.import.data.required'))
     }
 
     // 验证数据格式
     if (!data.exportInfo || !data.user) {
-      return validationErrorResponse('导入数据格式不正确')
+      const t = await getUserTranslator(user.id)
+      return validationErrorResponse(t('data.import.format.invalid'))
     }
 
     // 执行数据验证
@@ -145,18 +174,19 @@ export async function PUT(request: NextRequest) {
     })
   } catch (error) {
     console.error('Validate import data error:', error)
+    const t = await getUserTranslator(user?.id || '')
 
     // 处理特定错误类型
     if (error instanceof SyntaxError) {
-      return validationErrorResponse('导入数据格式错误，请确保是有效的JSON格式')
+      return validationErrorResponse(t('data.import.json.format.error'))
     }
 
     return NextResponse.json(
       {
         success: false,
-        error: '验证导入数据失败',
+        error: t('data.import.validation.failed'),
         data: {
-          details: error instanceof Error ? error.message : '未知错误',
+          details: error instanceof Error ? error.message : t('error.unknown'),
         },
       },
       { status: 500 }

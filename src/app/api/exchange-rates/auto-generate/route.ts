@@ -7,17 +7,15 @@ import {
   validationErrorResponse,
 } from '@/lib/api/response'
 import { generateAutoExchangeRates } from '@/lib/services/exchange-rate-auto-generation.service'
-import { createServerTranslator } from '@/lib/utils/server-i18n'
-
-// 创建服务端翻译函数
-const t = createServerTranslator()
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 /**
  * 自动生成汇率
  */
 export async function POST(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -29,12 +27,14 @@ export async function POST(request: NextRequest) {
     if (effectiveDate) {
       parsedDate = new Date(effectiveDate)
       if (isNaN(parsedDate.getTime())) {
+        const t = await getUserTranslator(user.id)
         return validationErrorResponse(t('exchange.rate.invalid.date.format'))
       }
     }
 
     // 执行自动生成
     const result = await generateAutoExchangeRates(user.id, parsedDate)
+    const t = await getUserTranslator(user.id)
 
     if (!result.success) {
       return errorResponse(
@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       }),
     })
   } catch (error) {
+    const t = await getUserTranslator(user?.id || '')
     console.error(t('exchange.rate.auto.generate.process.failed'), error)
     return errorResponse(t('exchange.rate.auto.generate.process.failed'), 500)
   }
@@ -62,8 +63,9 @@ export async function POST(request: NextRequest) {
  * 获取自动生成汇率的预览信息
  */
 export async function GET(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -75,6 +77,7 @@ export async function GET(request: NextRequest) {
     if (effectiveDate) {
       parsedDate = new Date(effectiveDate)
       if (isNaN(parsedDate.getTime())) {
+        const t = await getUserTranslator(user.id)
         return validationErrorResponse(t('exchange.rate.invalid.date.format'))
       }
     }

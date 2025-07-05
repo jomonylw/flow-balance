@@ -92,7 +92,10 @@ export default function DataManagementSection() {
 
     // 检查文件类型
     if (!file.name.endsWith('.json')) {
-      showError(t('data.import.invalid.file'), '请选择JSON格式的文件')
+      showError(
+        t('data.import.invalid.file'),
+        t('data.import.invalid.file.message')
+      )
       return
     }
 
@@ -120,21 +123,35 @@ export default function DataManagementSection() {
 
         if (result.data.warnings?.length > 0) {
           showWarning(
-            '数据验证完成',
-            `发现 ${result.data.warnings.length} 个警告，请查看详情`
+            t('data.import.validation.complete'),
+            t('data.import.validation.warnings.found', {
+              count: result.data.warnings.length,
+            })
           )
         } else {
-          showSuccess('数据验证成功', '数据格式正确，可以进行导入')
+          showSuccess(
+            t('data.import.validation.success'),
+            t('data.import.validation.success.message')
+          )
         }
       } else {
-        showError('数据验证失败', result.error || '未知错误')
+        showError(
+          t('data.import.validation.failed'),
+          result.error || t('error.unknown')
+        )
       }
     } catch (error) {
       console.error('File validation error:', error)
       if (error instanceof SyntaxError) {
-        showError('文件格式错误', '请确保选择的是有效的JSON文件')
+        showError(
+          t('data.import.file.format.error'),
+          t('data.import.file.format.error.message')
+        )
       } else {
-        showError('验证失败', '文件读取或验证过程中发生错误')
+        showError(
+          t('data.import.validation.error'),
+          t('data.import.validation.error.message')
+        )
       }
     } finally {
       setIsValidating(false)
@@ -175,15 +192,25 @@ export default function DataManagementSection() {
 
       if (response.ok) {
         const stats = result.data.statistics
+        const skippedText =
+          stats.skipped > 0
+            ? t('data.import.success.skipped', { count: stats.skipped })
+            : ''
         showSuccess(
-          '数据导入成功',
-          `成功创建 ${stats.created} 条记录，更新 ${stats.updated} 条记录${stats.skipped > 0 ? `，跳过 ${stats.skipped} 条记录` : ''}`
+          t('data.import.success'),
+          t('data.import.success.message', {
+            created: stats.created,
+            updated: stats.updated,
+            skipped: skippedText,
+          })
         )
 
         if (result.data.warnings?.length > 0) {
           showWarning(
-            '导入完成',
-            `有 ${result.data.warnings.length} 个警告，请查看详情`
+            t('data.import.complete'),
+            t('data.import.complete.warnings', {
+              count: result.data.warnings.length,
+            })
           )
         }
 
@@ -191,11 +218,11 @@ export default function DataManagementSection() {
         setImportData(null)
         setValidationResult(null)
       } else {
-        showError('数据导入失败', result.error || '未知错误')
+        showError(t('data.import.failed'), result.error || t('error.unknown'))
       }
     } catch (error) {
       console.error('Import data error:', error)
-      showError('导入失败', '导入过程中发生错误')
+      showError(t('data.import.error'), t('data.import.error.message'))
     } finally {
       setIsImporting(false)
     }
@@ -227,12 +254,15 @@ export default function DataManagementSection() {
         // 开始轮询进度
         startProgressPolling(sessionId)
       } else {
-        showError('启动导入失败', result.error || '未知错误')
+        showError(
+          t('data.import.start.failed'),
+          result.error || t('error.unknown')
+        )
         setShowProgressModal(false)
       }
     } catch (error) {
       console.error('Start import with progress error:', error)
-      showError('启动导入失败', '启动导入过程中发生错误')
+      showError(t('data.import.start.failed'), t('data.import.start.error'))
       setShowProgressModal(false)
     }
   }
@@ -251,7 +281,7 @@ export default function DataManagementSection() {
           // 检查是否完成
           if (result.data.stage === 'completed') {
             clearInterval(pollInterval)
-            showSuccess('数据导入成功', result.data.message)
+            showSuccess(t('data.import.success'), result.data.message)
             setShowProgressModal(false)
             setImportData(null)
             setValidationResult(null)
@@ -259,20 +289,23 @@ export default function DataManagementSection() {
             setImportSessionId(null)
           } else if (result.data.stage === 'failed') {
             clearInterval(pollInterval)
-            showError('数据导入失败', result.data.message)
+            showError(t('data.import.failed'), result.data.message)
             setShowProgressModal(false)
             setImportProgress(null)
             setImportSessionId(null)
           } else if (result.data.stage === 'cancelled') {
             clearInterval(pollInterval)
-            showWarning('导入已取消', result.data.message)
+            showWarning(t('data.import.cancelled'), result.data.message)
             setShowProgressModal(false)
             setImportProgress(null)
             setImportSessionId(null)
           }
         } else {
           clearInterval(pollInterval)
-          showError('获取导入进度失败', result.error || '未知错误')
+          showError(
+            t('data.import.progress.failed'),
+            result.error || t('error.unknown')
+          )
           setShowProgressModal(false)
           setImportProgress(null)
           setImportSessionId(null)
@@ -280,7 +313,7 @@ export default function DataManagementSection() {
       } catch (error) {
         console.error('Poll progress error:', error)
         clearInterval(pollInterval)
-        showError('获取导入进度失败', '网络错误')
+        showError(t('data.import.progress.failed'), t('error.network'))
         setShowProgressModal(false)
         setImportProgress(null)
         setImportSessionId(null)
@@ -294,7 +327,7 @@ export default function DataManagementSection() {
         importProgress?.stage !== 'completed' &&
         importProgress?.stage !== 'failed'
       ) {
-        showWarning('导入超时', '导入过程超时，请检查导入状态')
+        showWarning(t('data.import.timeout'), t('data.import.timeout.message'))
         setShowProgressModal(false)
         setImportProgress(null)
         setImportSessionId(null)
@@ -314,13 +347,16 @@ export default function DataManagementSection() {
       const result = await response.json()
 
       if (response.ok) {
-        showSuccess('导入已取消', result.data.message)
+        showSuccess(t('data.import.cancel.success'), result.data.message)
       } else {
-        showWarning('取消导入', result.error || '无法取消导入')
+        showWarning(
+          t('data.import.cancel.failed'),
+          result.error || t('data.import.cancel.failed.message')
+        )
       }
     } catch (error) {
       console.error('Cancel import error:', error)
-      showError('取消导入失败', '网络错误')
+      showError(t('data.import.cancel.error'), t('error.network'))
     }
 
     setShowProgressModal(false)
@@ -394,15 +430,15 @@ export default function DataManagementSection() {
         </p>
         <div className='bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-4'>
           <h5 className='text-sm font-medium text-blue-900 dark:text-blue-200 mb-2'>
-            导出内容包括：
+            {t('data.export.includes')}
           </h5>
           <ul className='text-sm text-blue-700 dark:text-blue-300 space-y-1'>
-            <li>• 账户和分类信息</li>
-            <li>• 所有交易记录</li>
-            <li>• 标签和货币设置</li>
-            <li>• 汇率和交易模板</li>
-            <li>• 定期交易和贷款合约</li>
-            <li>• 用户偏好设置</li>
+            <li>• {t('data.export.includes.accounts')}</li>
+            <li>• {t('data.export.includes.transactions')}</li>
+            <li>• {t('data.export.includes.tags')}</li>
+            <li>• {t('data.export.includes.rates')}</li>
+            <li>• {t('data.export.includes.recurring')}</li>
+            <li>• {t('data.export.includes.preferences')}</li>
           </ul>
         </div>
         <button
@@ -417,10 +453,10 @@ export default function DataManagementSection() {
                 color='white'
                 className='-ml-1 mr-2'
               />
-              导出中...
+              {t('data.export.exporting')}
             </>
           ) : (
-            '导出数据'
+            t('data.export.button')
           )}
         </button>
       </div>
@@ -428,21 +464,21 @@ export default function DataManagementSection() {
       {/* 数据导入 */}
       <div>
         <h4 className='text-md font-medium text-gray-900 dark:text-gray-100 mb-3'>
-          数据导入
+          {t('data.import.title')}
         </h4>
         <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
-          导入之前导出的数据文件，恢复您的财务记录。导入过程会自动处理ID映射，确保数据完整性。
+          {t('data.import.description')}
         </p>
         <div className='bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3 mb-4'>
           <h5 className='text-sm font-medium text-green-900 dark:text-green-200 mb-2'>
-            导入特性：
+            {t('data.import.features')}
           </h5>
           <ul className='text-sm text-green-700 dark:text-green-300 space-y-1'>
-            <li>• 自动处理ID重新映射</li>
-            <li>• 智能处理重复数据</li>
-            <li>• 保持数据关联关系</li>
-            <li>• 支持部分导入和错误恢复</li>
-            <li>• 与用户账户无关，支持跨账户导入</li>
+            <li>• {t('data.import.features.mapping')}</li>
+            <li>• {t('data.import.features.duplicates')}</li>
+            <li>• {t('data.import.features.relations')}</li>
+            <li>• {t('data.import.features.recovery')}</li>
+            <li>• {t('data.import.features.cross')}</li>
           </ul>
         </div>
 
@@ -466,10 +502,10 @@ export default function DataManagementSection() {
                 color='white'
                 className='-ml-1 mr-2'
               />
-              验证中...
+              {t('data.import.validating')}
             </>
           ) : (
-            '选择导入文件'
+            t('data.import.button')
           )}
         </button>
       </div>
@@ -507,10 +543,14 @@ export default function DataManagementSection() {
       {/* 导入确认模态框 */}
       <ConfirmationModal
         isOpen={showImportModal}
-        title='确认数据导入'
+        title={t('data.import.confirm.title')}
         message=''
-        confirmLabel={isImporting ? '导入中...' : '确认导入'}
-        cancelLabel='取消'
+        confirmLabel={
+          isImporting
+            ? t('data.import.importing')
+            : t('data.import.confirm.button')
+        }
+        cancelLabel={t('common.cancel')}
         onConfirm={
           isImporting || !validationResult?.isValid
             ? () => {}
@@ -529,19 +569,25 @@ export default function DataManagementSection() {
               {/* 数据信息 */}
               <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-3'>
                 <h5 className='text-sm font-medium text-gray-900 dark:text-gray-100 mb-2'>
-                  数据文件信息
+                  {t('data.import.file.info')}
                 </h5>
                 <div className='text-sm text-gray-600 dark:text-gray-400 space-y-1'>
-                  <p>版本: {validationResult.dataInfo?.version}</p>
                   <p>
-                    导出时间:{' '}
+                    {t('data.import.file.version')}:{' '}
+                    {validationResult.dataInfo?.version}
+                  </p>
+                  <p>
+                    {t('data.import.file.export.time')}:{' '}
                     {validationResult.dataInfo?.exportDate
                       ? new Date(
                           validationResult.dataInfo.exportDate
                         ).toLocaleString()
-                      : '未知'}
+                      : t('data.import.file.unknown')}
                   </p>
-                  <p>应用: {validationResult.dataInfo?.appName}</p>
+                  <p>
+                    {t('data.import.file.app')}:{' '}
+                    {validationResult.dataInfo?.appName}
+                  </p>
                 </div>
               </div>
 
@@ -549,29 +595,31 @@ export default function DataManagementSection() {
               {validationResult.dataInfo?.statistics && (
                 <div className='bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3'>
                   <h5 className='text-sm font-medium text-blue-900 dark:text-blue-200 mb-2'>
-                    数据统计
+                    {t('data.import.statistics')}
                   </h5>
                   <div className='grid grid-cols-2 gap-2 text-sm text-blue-700 dark:text-blue-300'>
                     <div>
-                      分类:{' '}
+                      {t('data.import.statistics.categories')}:{' '}
                       {validationResult.dataInfo.statistics.totalCategories}
                     </div>
                     <div>
-                      账户: {validationResult.dataInfo.statistics.totalAccounts}
+                      {t('data.import.statistics.accounts')}:{' '}
+                      {validationResult.dataInfo.statistics.totalAccounts}
                     </div>
                     <div>
-                      交易:{' '}
+                      {t('data.import.statistics.transactions')}:{' '}
                       {validationResult.dataInfo.statistics.totalTransactions}
                     </div>
                     <div>
-                      标签: {validationResult.dataInfo.statistics.totalTags}
+                      {t('data.import.statistics.tags')}:{' '}
+                      {validationResult.dataInfo.statistics.totalTags}
                     </div>
                     <div>
-                      货币:{' '}
+                      {t('data.import.statistics.currencies')}:{' '}
                       {validationResult.dataInfo.statistics.totalUserCurrencies}
                     </div>
                     <div>
-                      汇率:{' '}
+                      {t('data.import.statistics.rates')}:{' '}
                       {validationResult.dataInfo.statistics.totalExchangeRates}
                     </div>
                   </div>
@@ -582,7 +630,8 @@ export default function DataManagementSection() {
               {validationResult.errors.length > 0 && (
                 <div className='bg-red-50 dark:bg-red-900/20 rounded-lg p-3'>
                   <h5 className='text-sm font-medium text-red-900 dark:text-red-200 mb-2'>
-                    验证错误 ({validationResult.errors.length})
+                    {t('data.import.validation.errors')} (
+                    {validationResult.errors.length})
                   </h5>
                   <ul className='text-sm text-red-700 dark:text-red-300 space-y-1'>
                     {validationResult.errors.map((error, index) => (
@@ -596,7 +645,8 @@ export default function DataManagementSection() {
               {validationResult.warnings.length > 0 && (
                 <div className='bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3'>
                   <h5 className='text-sm font-medium text-yellow-900 dark:text-yellow-200 mb-2'>
-                    注意事项 ({validationResult.warnings.length})
+                    {t('data.import.validation.warnings')} (
+                    {validationResult.warnings.length})
                   </h5>
                   <ul className='text-sm text-yellow-700 dark:text-yellow-300 space-y-1'>
                     {validationResult.warnings.map((warning, index) => (
@@ -609,7 +659,7 @@ export default function DataManagementSection() {
               {/* 导入选项 */}
               <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-3'>
                 <h5 className='text-sm font-medium text-gray-900 dark:text-gray-100 mb-3'>
-                  导入选项
+                  {t('data.import.options')}
                 </h5>
                 <div className='space-y-2'>
                   <label className='flex items-center'>
@@ -625,7 +675,7 @@ export default function DataManagementSection() {
                       className='mr-2'
                     />
                     <span className='text-sm text-gray-700 dark:text-gray-300'>
-                      跳过重复数据
+                      {t('data.import.options.skip.duplicates')}
                     </span>
                   </label>
                   <label className='flex items-center'>
@@ -641,7 +691,7 @@ export default function DataManagementSection() {
                       className='mr-2'
                     />
                     <span className='text-sm text-gray-700 dark:text-gray-300'>
-                      覆盖现有数据
+                      {t('data.import.options.overwrite')}
                     </span>
                   </label>
                   <label className='flex items-center'>
@@ -657,7 +707,7 @@ export default function DataManagementSection() {
                       className='mr-2'
                     />
                     <span className='text-sm text-gray-700 dark:text-gray-300'>
-                      创建缺失的货币
+                      {t('data.import.options.create.currencies')}
                     </span>
                   </label>
                 </div>
@@ -670,31 +720,31 @@ export default function DataManagementSection() {
       {/* 删除确认模态框 */}
       <ConfirmationModal
         isOpen={showDeleteModal}
-        title='确认删除账户'
+        title={t('data.delete.confirm.title')}
         message=''
-        confirmLabel='确认删除'
-        cancelLabel='取消'
+        confirmLabel={t('data.delete.confirm')}
+        cancelLabel={t('common.cancel')}
         onConfirm={handleDeleteAccount}
         onCancel={closeDeleteModal}
       >
         <div className='space-y-4'>
           <p className='text-gray-700 dark:text-gray-300'>
-            此操作将永久删除您的账户和所有相关数据，包括：
+            {t('data.delete.confirm.description')}
           </p>
           <ul className='text-sm text-gray-600 dark:text-gray-400 space-y-1 ml-4'>
-            <li>• 所有账户和交易记录</li>
-            <li>• 分类和标签</li>
-            <li>• 用户设置和偏好</li>
-            <li>• 贷款合约和定期交易</li>
+            <li>• {t('data.delete.confirm.list.accounts')}</li>
+            <li>• {t('data.delete.confirm.list.categories')}</li>
+            <li>• {t('data.delete.confirm.list.settings')}</li>
+            <li>• {t('data.delete.confirm.list.loans')}</li>
           </ul>
           <p className='text-gray-700 dark:text-gray-300'>
-            请输入您的密码以确认删除：
+            {t('data.delete.password.prompt')}
           </p>
           <input
             type='password'
             value={deletePassword}
             onChange={e => setDeletePassword(e.target.value)}
-            placeholder='请输入密码'
+            placeholder={t('data.delete.password.placeholder')}
             className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500'
           />
           {deleteError && (

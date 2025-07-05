@@ -10,7 +10,7 @@ interface AuthButtonProps {
   type?: 'button' | 'submit' | 'reset'
   isLoading?: boolean
   disabled?: boolean
-  variant?: 'primary' | 'secondary' | 'danger'
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline'
   className?: string
 }
 
@@ -48,6 +48,10 @@ export default function AuthButton({
     danger: `
       bg-red-600 text-white hover:bg-red-700 focus:ring-red-500
       disabled:bg-red-300
+    `,
+    outline: `
+      bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500
+      disabled:bg-gray-50 disabled:text-gray-400
     `,
   }
 

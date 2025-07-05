@@ -13,6 +13,7 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/api/response'
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 import type {
   ExportedData,
   ImportOptions,
@@ -26,8 +27,9 @@ const progressStore = new Map<string, ImportProgress>()
  * 获取导入进度
  */
 export async function GET(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -36,16 +38,18 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId')
 
     if (!sessionId) {
-      return validationErrorResponse('缺少会话ID')
+      const t = await getUserTranslator(user.id)
+      return validationErrorResponse(t('data.import.session.id.required'))
     }
 
     const progress = progressStore.get(`${user.id}_${sessionId}`)
 
     if (!progress) {
+      const t = await getUserTranslator(user.id)
       return NextResponse.json(
         {
           success: false,
-          error: '未找到导入会话',
+          error: t('data.import.session.not.found'),
         },
         { status: 404 }
       )
@@ -53,12 +57,13 @@ export async function GET(request: NextRequest) {
 
     return successResponse(progress)
   } catch (error) {
-    console.error('获取导入进度失败:', error)
+    console.error('Failed to get import progress:', error)
+    const t = await getUserTranslator(user?.id || '')
     return NextResponse.json(
       {
         success: false,
-        error: '获取导入进度失败',
-        details: error instanceof Error ? error.message : '未知错误',
+        error: t('data.import.progress.get.failed'),
+        details: error instanceof Error ? error.message : t('error.unknown'),
       },
       { status: 500 }
     )
@@ -69,8 +74,9 @@ export async function GET(request: NextRequest) {
  * 开始带进度跟踪的数据导入
  */
 export async function POST(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -81,23 +87,30 @@ export async function POST(request: NextRequest) {
 
     // 验证必要字段
     if (!data) {
-      return validationErrorResponse('缺少导入数据')
+      const t = await getUserTranslator(user.id)
+      return validationErrorResponse(t('data.import.data.required'))
     }
 
     if (!sessionId) {
-      return validationErrorResponse('缺少会话ID')
+      const t = await getUserTranslator(user.id)
+      return validationErrorResponse(t('data.import.session.id.required'))
     }
 
     // 验证数据格式
     if (!data.exportInfo || !data.user) {
-      return validationErrorResponse('导入数据格式不正确')
+      const t = await getUserTranslator(user.id)
+      return validationErrorResponse(t('data.import.format.invalid'))
     }
 
     // 检查数据版本
     const supportedVersions = ['1.0', '2.0']
     if (!supportedVersions.includes(data.exportInfo.version)) {
+      const t = await getUserTranslator(user.id)
       return validationErrorResponse(
-        `不支持的数据版本: ${data.exportInfo.version}，支持的版本: ${supportedVersions.join(', ')}`
+        t('data.import.version.unsupported', {
+          version: data.exportInfo.version,
+          supported: supportedVersions.join(', '),
+        })
       )
     }
 
@@ -131,12 +144,13 @@ export async function POST(request: NextRequest) {
     setImmediate(async () => {
       try {
         // 更新进度：开始验证
+        const t = await getUserTranslator(user.id)
         progressStore.set(progressKey, {
           stage: 'validating',
           current: 0,
           total: 100,
           percentage: 5,
-          message: '正在验证数据完整性...',
+          message: t('data.import.validating'),
         })
 
         // 执行数据完整性检查
@@ -151,7 +165,9 @@ export async function POST(request: NextRequest) {
             current: 0,
             total: 100,
             percentage: 0,
-            message: `数据完整性检查失败: ${integrityResult.errors[0]?.message || '未知错误'}`,
+            message: t('data.import.integrity.check.failed', {
+              error: integrityResult.errors[0]?.message || t('error.unknown'),
+            }),
           })
           return
         }
@@ -162,7 +178,7 @@ export async function POST(request: NextRequest) {
           current: 0,
           total: 100,
           percentage: 10,
-          message: '开始导入数据...',
+          message: t('data.import.starting'),
         })
 
         // 执行数据导入
@@ -174,20 +190,25 @@ export async function POST(request: NextRequest) {
 
         // 更新最终进度
         if (result.success) {
+          const t = await getUserTranslator(user.id)
           progressStore.set(progressKey, {
             stage: 'completed',
             current: 100,
             total: 100,
             percentage: 100,
-            message: `导入完成：创建 ${result.statistics.created} 条记录，更新 ${result.statistics.updated} 条记录`,
+            message: t('data.import.completed', {
+              created: result.statistics.created,
+              updated: result.statistics.updated,
+            }),
           })
         } else {
+          const t = await getUserTranslator(user.id)
           progressStore.set(progressKey, {
             stage: 'failed',
             current: result.statistics.processed,
             total: result.statistics.processed + result.statistics.failed,
             percentage: 90,
-            message: `导入失败：${result.message}`,
+            message: t('data.import.failed', { message: result.message }),
           })
         }
 
@@ -196,13 +217,16 @@ export async function POST(request: NextRequest) {
           progressStore.delete(progressKey)
         }, 30000)
       } catch (error) {
-        console.error('异步导入过程中发生错误:', error)
+        console.error('Error during async import process:', error)
+        const t = await getUserTranslator(user.id)
         progressStore.set(progressKey, {
           stage: 'failed',
           current: 0,
           total: 100,
           percentage: 0,
-          message: `导入过程中发生错误: ${error instanceof Error ? error.message : '未知错误'}`,
+          message: t('data.import.error', {
+            error: error instanceof Error ? error.message : t('error.unknown'),
+          }),
         })
 
         // 30秒后清理进度数据
@@ -213,23 +237,25 @@ export async function POST(request: NextRequest) {
     })
 
     // 立即返回会话ID，客户端可以用来轮询进度
+    const t = await getUserTranslator(user.id)
     return successResponse({
       sessionId,
-      message: '导入已开始，请使用会话ID查询进度',
+      message: t('data.import.started'),
     })
   } catch (error) {
-    console.error('启动导入失败:', error)
+    console.error('Failed to start import:', error)
+    const t = await getUserTranslator(user?.id || '')
 
     // 处理特定错误类型
     if (error instanceof SyntaxError) {
-      return validationErrorResponse('导入数据格式错误，请确保是有效的JSON格式')
+      return validationErrorResponse(t('data.import.json.format.error'))
     }
 
     return NextResponse.json(
       {
         success: false,
-        error: '启动导入失败',
-        details: error instanceof Error ? error.message : '未知错误',
+        error: t('data.import.start.failed'),
+        details: error instanceof Error ? error.message : t('error.unknown'),
       },
       { status: 500 }
     )
@@ -240,8 +266,9 @@ export async function POST(request: NextRequest) {
  * 取消导入操作
  */
 export async function DELETE(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -250,17 +277,19 @@ export async function DELETE(request: NextRequest) {
     const sessionId = searchParams.get('sessionId')
 
     if (!sessionId) {
-      return validationErrorResponse('缺少会话ID')
+      const t = await getUserTranslator(user.id)
+      return validationErrorResponse(t('data.import.session.id.required'))
     }
 
     const progressKey = `${user.id}_${sessionId}`
     const progress = progressStore.get(progressKey)
 
     if (!progress) {
+      const t = await getUserTranslator(user.id)
       return NextResponse.json(
         {
           success: false,
-          error: '未找到导入会话',
+          error: t('data.import.session.not.found'),
         },
         { status: 404 }
       )
@@ -268,10 +297,11 @@ export async function DELETE(request: NextRequest) {
 
     // 如果导入还在进行中，标记为已取消
     if (progress.stage === 'validating' || progress.stage === 'importing') {
+      const t = await getUserTranslator(user.id)
       progressStore.set(progressKey, {
         ...progress,
         stage: 'cancelled',
-        message: '导入已被用户取消',
+        message: t('data.import.cancelled.by.user'),
       })
 
       // 5秒后清理进度数据
@@ -280,24 +310,26 @@ export async function DELETE(request: NextRequest) {
       }, 5000)
 
       return successResponse({
-        message: '导入已取消',
+        message: t('data.import.cancelled'),
       })
     } else {
+      const t = await getUserTranslator(user.id)
       return NextResponse.json(
         {
           success: false,
-          error: '无法取消已完成或失败的导入',
+          error: t('data.import.cannot.cancel.completed'),
         },
         { status: 400 }
       )
     }
   } catch (error) {
-    console.error('取消导入失败:', error)
+    console.error('Failed to cancel import:', error)
+    const t = await getUserTranslator(user?.id || '')
     return NextResponse.json(
       {
         success: false,
-        error: '取消导入失败',
-        details: error instanceof Error ? error.message : '未知错误',
+        error: t('data.import.cancel.failed'),
+        details: error instanceof Error ? error.message : t('error.unknown'),
       },
       { status: 500 }
     )

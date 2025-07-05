@@ -6,10 +6,12 @@ import {
   errorResponse,
   validationErrorResponse,
 } from '@/lib/api/response'
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 export async function GET(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -23,7 +25,8 @@ export async function GET(request: NextRequest) {
     if (incremental && since) {
       sinceDate = new Date(since)
       if (isNaN(sinceDate.getTime())) {
-        return validationErrorResponse('无效的since日期格式')
+        const t = await getUserTranslator(user.id)
+        return validationErrorResponse(t('data.export.invalid.since.date'))
       }
     }
 
@@ -380,6 +383,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Export data error:', error)
-    return errorResponse('导出数据失败', 500)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('data.export.failed'), 500)
   }
 }

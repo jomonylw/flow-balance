@@ -8,12 +8,12 @@ import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 
-interface FormData {
+interface ResetPasswordFormData {
   newPassword: string
   confirmPassword: string
 }
 
-interface FormErrors {
+interface ResetPasswordFormErrors {
   newPassword?: string
   confirmPassword?: string
   general?: string
@@ -24,11 +24,11 @@ export default function ResetPasswordWithKey() {
   const { showSuccess, showError } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<ResetPasswordFormData>({
     newPassword: '',
     confirmPassword: '',
   })
-  const [errors, setErrors] = useState<FormErrors>({})
+  const [errors, setErrors] = useState<ResetPasswordFormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [token, setToken] = useState<string | null>(null)
@@ -43,7 +43,7 @@ export default function ResetPasswordWithKey() {
   }, [searchParams, router])
 
   const validateForm = (): boolean => {
-    const newErrors: FormErrors = {}
+    const newErrors: ResetPasswordFormErrors = {}
 
     // 验证新密码
     if (!formData.newPassword) {
@@ -65,7 +65,7 @@ export default function ResetPasswordWithKey() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    const field = name as keyof FormData
+    const field = name as keyof ResetPasswordFormData
     setFormData(prev => ({ ...prev, [field]: value }))
     // 清除对应字段的错误
     if (errors[field]) {

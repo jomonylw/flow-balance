@@ -7,32 +7,15 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/api/response'
-import { createServerTranslator } from '@/lib/utils/server-i18n'
-
-/**
- * 获取用户语言偏好并创建翻译函数
- */
-async function getUserTranslator(userId: string) {
-  try {
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId },
-      select: { language: true },
-    })
-
-    const userLanguage = userSettings?.language || 'zh'
-    return createServerTranslator(userLanguage)
-  } catch (error) {
-    console.warn(
-      'Failed to get user language preference, using default:',
-      error
-    )
-    return createServerTranslator('zh') // 默认使用中文
-  }
-}
+import {
+  getUserTranslator,
+  clearUserLanguageCache,
+} from '@/lib/utils/server-i18n'
 
 export async function GET() {
+  let user = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -54,8 +37,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  let user = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -177,6 +161,9 @@ export async function PUT(request: NextRequest) {
 
     let userSettings
     if (existingSettings) {
+      // 检查语言是否发生变化
+      const languageChanged = language && existingSettings.language !== language
+
       // 更新现有设置
       userSettings = await prisma.userSettings.update({
         where: { userId: user.id },
@@ -194,6 +181,11 @@ export async function PUT(request: NextRequest) {
         },
         include: { baseCurrency: true },
       })
+
+      // 如果语言发生变化，清除该用户的语言缓存
+      if (languageChanged) {
+        clearUserLanguageCache(user.id)
+      }
     } else {
       // 创建新设置
       // 如果没有指定货币，使用默认的 USD
@@ -229,6 +221,11 @@ export async function PUT(request: NextRequest) {
         },
         include: { baseCurrency: true },
       })
+
+      // 创建新设置时，如果指定了语言，清除缓存以确保一致性
+      if (language) {
+        clearUserLanguageCache(user.id)
+      }
     }
 
     return successResponse({
