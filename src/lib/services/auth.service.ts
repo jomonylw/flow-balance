@@ -95,9 +95,17 @@ export async function getCurrentUser() {
 // 设置认证 Cookie
 export async function setAuthCookie(token: string) {
   const cookieStore = await cookies()
+
+  // 在 Docker 环境中，即使是生产模式也可能使用 HTTP
+  // 只有在明确使用 HTTPS 时才设置 secure
+  const isHttps =
+    process.env.NEXT_PUBLIC_APP_URL?.startsWith('https://') ||
+    process.env.NEXTAUTH_URL?.startsWith('https://') ||
+    (process.env.NODE_ENV === 'production' && !process.env.DOCKER_CONTAINER)
+
   cookieStore.set('auth-token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/',
