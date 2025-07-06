@@ -62,10 +62,7 @@ export default function MobileSidebarOverlay({
   if (!isOpen && !isAnimating) return null
 
   return (
-    <div
-      className='fixed inset-0 lg:hidden'
-      style={{ zIndex: Z_INDEX.MODAL }}
-    >
+    <div className='fixed inset-0 lg:hidden' style={{ zIndex: Z_INDEX.MODAL }}>
       {/* 背景遮罩 */}
       <div
         className={`

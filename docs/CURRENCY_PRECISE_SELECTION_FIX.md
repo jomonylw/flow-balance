@@ -7,7 +7,8 @@
 ### 问题原因
 
 1. **前端传递货币代码**：前端只传递 `currencyCode`，没有传递具体的货币ID
-2. **后端优先级逻辑**：后端使用 `findFirst` + `orderBy: { createdBy: 'desc' }` 总是优先选择自定义货币
+2. **后端优先级逻辑**：后端使用 `findFirst` + `orderBy: { createdBy: 'desc' }`
+   总是优先选择自定义货币
 3. **用户体验问题**：用户无法精确选择想要的货币版本
 
 ## ✅ 解决方案
@@ -25,7 +26,7 @@ const handleAddCurrency = async (currencyCode: string) => {
 
 onClick={() => handleAddCurrency(currency.code)}
 
-// 修改后  
+// 修改后
 const handleAddCurrency = async (currencyId: string) => {
   // ...
   body: JSON.stringify({ currencyId }),
@@ -69,11 +70,13 @@ if (currencyId) {
 ### 测试场景
 
 1. **精确选择测试**
+
    - ✅ 点击全局AUD → 添加全局Australian Dollar
    - ✅ 点击自定义AUD → 添加自定义bbbbm
    - ✅ 每次都添加用户实际点击的货币
 
 2. **重复代码检测**
+
    - ✅ 已选择全局AUD后，尝试添加自定义AUD被阻止
    - ✅ 错误信息准确显示
 
@@ -90,7 +93,7 @@ if (currencyId) {
 ✅ 成功添加全局货币
 ✅ 验证通过: 添加的货币ID为 cmc7rsj9200012mlxren2zbi5
 
-📝 测试添加自定义货币: bbbbm (ID: cmc8v609200499rxgkve1b73u)  
+📝 测试添加自定义货币: bbbbm (ID: cmc8v609200499rxgkve1b73u)
 ✅ 成功添加自定义货币
 ✅ 验证通过: 添加的货币ID为 cmc8v609200499rxgkve1b73u
 
@@ -101,11 +104,13 @@ if (currencyId) {
 ## 🎯 修复效果
 
 ### Before (修复前)
+
 - 🔴 点击全局AUD → 添加自定义AUD
-- 🔴 点击自定义AUD → 添加自定义AUD  
+- 🔴 点击自定义AUD → 添加自定义AUD
 - 🔴 用户无法选择全局版本
 
 ### After (修复后)
+
 - ✅ 点击全局AUD → 添加全局AUD
 - ✅ 点击自定义AUD → 添加自定义AUD
 - ✅ 用户可以精确选择任意版本
@@ -115,14 +120,17 @@ if (currencyId) {
 ### API参数变更
 
 **新增支持**:
+
 - `currencyId`: 货币ID（优先使用，精确匹配）
 
 **保持兼容**:
+
 - `currencyCode`: 货币代码（向后兼容，使用优先级逻辑）
 
 ### 验证逻辑
 
 重复代码检测逻辑保持不变：
+
 - 仍然按货币代码检测重复
 - 确保同一用户不能选择相同代码的多个货币
 - 错误信息准确反映冲突情况
@@ -133,7 +141,7 @@ if (currencyId) {
 -- 精确匹配（新方式）
 SELECT * FROM currencies WHERE id = ? AND (createdBy = ? OR createdBy IS NULL)
 
--- 代码匹配（兼容方式）  
+-- 代码匹配（兼容方式）
 SELECT * FROM currencies WHERE code = ? AND (createdBy = ? OR createdBy IS NULL)
 ORDER BY createdBy DESC
 ```

@@ -97,8 +97,7 @@ export default function SyncStatusCard() {
               : t('sync.processed.summary', {
                   recurring: syncStatus.processedRecurring || 0,
                   loans: syncStatus.processedLoans || 0,
-                })
-            }
+                })}
           </div>
           {syncStatus.futureDataGenerated && syncStatus.futureDataUntil && (
             <div className='flex items-center space-x-1'>

@@ -200,7 +200,8 @@ export async function GET(_request: NextRequest) {
     }
 
     // 计算过去6个月的平均月投入
-    const { startDate: sixMonthsAgo, endDate: sixMonthsEndDate } = getDaysAgoDateRange(180) // 约6个月
+    const { startDate: sixMonthsAgo, endDate: sixMonthsEndDate } =
+      getDaysAgoDateRange(180) // 约6个月
 
     const [recentIncomeTransactions, recentExpenseTransactions] =
       await Promise.all([
@@ -303,8 +304,6 @@ export async function GET(_request: NextRequest) {
       (totalIncomeRecent - totalExpensesRecent) / 6
     )
 
-
-
     // 获取CAGR详细信息
     let cagrDetails = null
     try {
@@ -329,8 +328,6 @@ export async function GET(_request: NextRequest) {
     } catch (error) {
       console.error('获取CAGR详细信息失败:', error)
     }
-
-
 
     // 返回 FIRE 计算基础数据
     return successResponse({

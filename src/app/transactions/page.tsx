@@ -28,15 +28,19 @@ export default async function TransactionsPage() {
                 id: userSettings.id,
                 userId: userSettings.userId,
                 baseCurrencyId: userSettings.baseCurrencyId || '',
-                language: ConstantsManager.convertPrismaLanguage(userSettings.language),
+                language: ConstantsManager.convertPrismaLanguage(
+                  userSettings.language
+                ),
                 theme: ConstantsManager.convertPrismaTheme(userSettings.theme),
                 baseCurrency: userSettings.baseCurrency || undefined,
                 createdAt: userSettings.createdAt,
                 updatedAt: userSettings.updatedAt,
                 fireSWR: userSettings.fireSWR,
                 futureDataDays: userSettings.futureDataDays,
-                autoUpdateExchangeRates: (userSettings as any).autoUpdateExchangeRates || false,
-                lastExchangeRateUpdate: (userSettings as any).lastExchangeRateUpdate || null,
+                autoUpdateExchangeRates:
+                  (userSettings as any).autoUpdateExchangeRates || false,
+                lastExchangeRateUpdate:
+                  (userSettings as any).lastExchangeRateUpdate || null,
               }
             : undefined,
         }}

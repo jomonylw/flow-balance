@@ -19,10 +19,10 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   NODE_ENV: test
-  DATABASE_URL: "file:./dev.db"
-  JWT_SECRET: "test-jwt-secret-for-ci"
-  NEXTAUTH_SECRET: "test-nextauth-secret-for-ci"
-  NEXTAUTH_URL: "http://localhost:3000"
+  DATABASE_URL: 'file:./dev.db'
+  JWT_SECRET: 'test-jwt-secret-for-ci'
+  NEXTAUTH_SECRET: 'test-nextauth-secret-for-ci'
+  NEXTAUTH_URL: 'http://localhost:3000'
 
 jobs:
   # 代码质量检查
@@ -130,7 +130,7 @@ jobs:
     needs: docker-build
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
-    
+
     steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -150,7 +150,7 @@ jobs:
     needs: [quality-check, docker-build]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -164,36 +164,36 @@ jobs:
           release_name: Release ${{ github.ref }}
           body: |
             ## 🚀 Flow Balance Release ${{ github.ref }}
-            
+
             ### 📦 Docker Images
-            
+
             ```bash
             # 拉取最新镜像
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
-            
+
             # 运行容器
             docker run -p 3000:3000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
             ```
-            
+
             ### 🔧 部署说明
-            
+
             1. **Docker Compose 部署**:
                ```bash
                wget https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.yml
                docker-compose up -d
                ```
-            
+
             2. **Vercel 部署**: 
                - 连接 GitHub 仓库
                - 设置环境变量
                - 自动部署
-            
+
             ### 📋 更新内容
-            
+
             请查看 [Commits](${{ github.event.compare }}) 了解详细更新内容。
-            
+
             ### 🐛 问题反馈
-            
+
             如有问题，请在 [Issues](https://github.com/${{ github.repository }}/issues) 中反馈。
           draft: false
           prerelease: false

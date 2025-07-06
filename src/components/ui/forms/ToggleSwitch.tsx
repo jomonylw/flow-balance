@@ -86,7 +86,9 @@ export default function ToggleSwitch({
           }
 
           .toggle-switch:focus {
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2), 0 0 0 4px rgba(59, 130, 246, 0.1);
+            box-shadow:
+              0 0 0 2px rgba(59, 130, 246, 0.2),
+              0 0 0 4px rgba(59, 130, 246, 0.1);
           }
 
           /* 选中状态 */
@@ -129,7 +131,11 @@ export default function ToggleSwitch({
             background: white;
             border: 2px solid ${COLORS.BACKGROUND};
             box-shadow: ${SHADOW.MD};
-            transform: translateX(${COMPONENT_SIZE.TOGGLE.WIDTH - COMPONENT_SIZE.TOGGLE.THUMB_SIZE - (COMPONENT_SIZE.TOGGLE.PADDING * 2)}px);
+            transform: translateX(
+              ${COMPONENT_SIZE.TOGGLE.WIDTH -
+              COMPONENT_SIZE.TOGGLE.THUMB_SIZE -
+              COMPONENT_SIZE.TOGGLE.PADDING * 2}px
+            );
           }
 
           /* 暗色主题下的小球 */
@@ -142,11 +148,13 @@ export default function ToggleSwitch({
           }
 
           /* 小球hover效果 - 与Slider一致 */
-          .toggle-switch:hover:not(.toggle-switch--disabled) .toggle-switch__thumb {
+          .toggle-switch:hover:not(.toggle-switch--disabled)
+            .toggle-switch__thumb {
             box-shadow: ${SHADOW.MD};
           }
 
-          .toggle-switch--checked:hover:not(.toggle-switch--disabled) .toggle-switch__thumb {
+          .toggle-switch--checked:hover:not(.toggle-switch--disabled)
+            .toggle-switch__thumb {
             box-shadow: ${SHADOW.LG};
           }
         `}</style>

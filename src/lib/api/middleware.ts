@@ -33,7 +33,9 @@ export function withApiHandler(handler: ApiHandler) {
           settings: user.settings
             ? {
                 ...user.settings,
-                language: ConstantsManager.safeConvertLanguage(user.settings.language),
+                language: ConstantsManager.safeConvertLanguage(
+                  user.settings.language
+                ),
                 theme: ConstantsManager.safeConvertTheme(user.settings.theme),
                 baseCurrency: user.settings.baseCurrency || undefined,
               }
@@ -54,7 +56,9 @@ export function withApiHandler(handler: ApiHandler) {
           settings: user.settings
             ? {
                 ...user.settings,
-                language: ConstantsManager.safeConvertLanguage(user.settings.language),
+                language: ConstantsManager.safeConvertLanguage(
+                  user.settings.language
+                ),
                 theme: ConstantsManager.safeConvertTheme(user.settings.theme),
                 baseCurrency: user.settings.baseCurrency || undefined,
               }

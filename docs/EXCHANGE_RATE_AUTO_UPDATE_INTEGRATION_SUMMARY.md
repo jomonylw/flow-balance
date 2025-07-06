@@ -16,6 +16,7 @@
 ### 1. 数据库模型更新
 
 #### UserSettings 表
+
 ```sql
 -- 添加汇率自动更新相关字段
 ALTER TABLE user_settings ADD COLUMN autoUpdateExchangeRates BOOLEAN DEFAULT false;
@@ -23,6 +24,7 @@ ALTER TABLE user_settings ADD COLUMN lastExchangeRateUpdate DATETIME;
 ```
 
 #### RecurringProcessingLog 表
+
 ```sql
 -- 添加汇率处理统计字段
 ALTER TABLE recurring_processing_logs ADD COLUMN processedExchangeRates INTEGER DEFAULT 0;
@@ -31,9 +33,11 @@ ALTER TABLE recurring_processing_logs ADD COLUMN processedExchangeRates INTEGER 
 ### 2. 核心服务架构
 
 #### ExchangeRateAutoUpdateService
+
 **文件**: `src/lib/services/exchange-rate-auto-update.service.ts`
 
 核心功能：
+
 - `updateExchangeRates(userId, forceUpdate)` - 主要更新方法
 - `needsUpdate(userId)` - 检查是否需要更新
 - `getUpdateStatus(userId)` - 获取更新状态
@@ -42,9 +46,11 @@ ALTER TABLE recurring_processing_logs ADD COLUMN processedExchangeRates INTEGER 
 - 错误处理和日志记录
 
 #### UnifiedSyncService 集成
+
 **文件**: `src/lib/services/unified-sync.service.ts`
 
 集成点：
+
 ```typescript
 // 3. 处理汇率自动更新
 const exchangeRateResult = await this.processExchangeRateUpdate(userId)
@@ -52,6 +58,7 @@ processedExchangeRates += exchangeRateResult.processed
 ```
 
 执行顺序：
+
 1. 处理到期的PENDING交易
 2. 清理过期的未来交易
 3. **汇率自动更新** ← 新增
@@ -63,11 +70,13 @@ processedExchangeRates += exchangeRateResult.processed
 ### 3. API 接口更新
 
 #### 手动更新接口
+
 **路径**: `POST /api/exchange-rates/auto-update`
 
 现在调用统一的 `ExchangeRateAutoUpdateService.updateExchangeRates(userId, true)`
 
 #### 用户设置接口
+
 **路径**: `PUT /api/user/settings`
 
 支持更新 `autoUpdateExchangeRates` 字段
@@ -75,13 +84,14 @@ processedExchangeRates += exchangeRateResult.processed
 ### 4. 类型定义更新
 
 #### SyncStatus 接口
+
 ```typescript
 export interface SyncStatus {
   status: 'idle' | 'processing' | 'completed' | 'failed'
   lastSyncTime?: Date
   processedRecurring?: number
   processedLoans?: number
-  processedExchangeRates?: number  // 新增
+  processedExchangeRates?: number // 新增
   failedCount?: number
   errorMessage?: string
   futureDataGenerated?: boolean
@@ -90,10 +100,11 @@ export interface SyncStatus {
 ```
 
 #### RecurringProcessingLog 接口
+
 ```typescript
 export interface RecurringProcessingLog {
   // ... 其他字段
-  processedExchangeRates: number  // 新增
+  processedExchangeRates: number // 新增
   // ... 其他字段
 }
 ```
@@ -103,12 +114,14 @@ export interface RecurringProcessingLog {
 ### 1. 智能更新策略
 
 #### 24小时限制机制
+
 - 检查 `lastExchangeRateUpdate` 时间戳
 - 计算距离上次更新的小时数
 - 小于24小时则跳过更新
 - 强制更新模式可忽略此限制
 
 #### 条件检查
+
 ```typescript
 // 检查是否启用自动更新
 if (!userSettings.autoUpdateExchangeRates && !forceUpdate) {
@@ -124,6 +137,7 @@ if (!forceUpdate && hoursSinceLastUpdate < 24) {
 ### 2. Frankfurter API 集成
 
 #### API 调用
+
 ```typescript
 const frankfurterUrl = `https://api.frankfurter.dev/v1/latest?base=${baseCurrencyCode}`
 const response = await fetch(frankfurterUrl)
@@ -131,6 +145,7 @@ const data = await response.json()
 ```
 
 #### 数据处理
+
 - 仅更新用户已选择的活跃货币
 - 跳过本位币（自己对自己的汇率为1）
 - 创建或更新当日汇率记录
@@ -139,12 +154,14 @@ const data = await response.json()
 ### 3. 错误处理和日志
 
 #### 错误收集
+
 ```typescript
 const errors: string[] = []
 // 收集各种错误：API失败、货币不支持、数据库错误等
 ```
 
 #### 处理日志
+
 - 记录处理开始和结束时间
 - 统计成功和失败的数量
 - 记录错误信息
@@ -155,22 +172,26 @@ const errors: string[] = []
 ### 功能测试结果
 
 #### ✅ 基础功能测试
+
 - 汇率自动更新正常工作
 - 成功更新3个用户货币的汇率
 - 自动生成9条汇率记录（包含反向和传递汇率）
 - Frankfurter API 调用成功
 
 #### ✅ 24小时限制测试
+
 - 首次同步：处理汇率更新
 - 第二次同步：跳过汇率更新（24小时内）
 - 限制机制正常工作
 
 #### ✅ 集成测试
+
 - 统一同步服务正常调用汇率更新
 - 处理日志正确记录汇率处理数量
 - 同步状态包含汇率处理信息
 
 #### ✅ UI 集成测试
+
 - 用户可以在设置中启用/禁用汇率自动更新
 - 手动更新按钮正常工作
 - 最后更新时间正确显示
@@ -206,12 +227,14 @@ const errors: string[] = []
 ### 1. 启用汇率自动更新
 
 #### 方法一：偏好设置页面
+
 1. 进入 **设置** → **偏好设置**
 2. 在货币设置部分找到 **汇率自动更新** 开关
 3. 确保已设置本位币
 4. 启用开关
 
 #### 方法二：汇率设置页面
+
 1. 进入 **设置** → **汇率设置**
 2. 在汇率自动更新设置区域
 3. 启用 **自动更新汇率** 开关
@@ -221,6 +244,7 @@ const errors: string[] = []
 汇率自动更新会在以下情况下触发：
 
 1. **统一同步服务执行时**
+
    - 用户登录时的自动同步
    - 定期的后台同步任务
    - 手动触发的同步操作
@@ -247,21 +271,25 @@ const errors: string[] = []
 ## 🚀 技术优势
 
 ### 1. 架构优势
+
 - **统一管理**：集成到现有同步服务，避免重复逻辑
 - **模块化设计**：独立的汇率更新服务，易于维护
 - **类型安全**：完整的 TypeScript 类型定义
 
 ### 2. 性能优势
+
 - **智能限制**：24小时内避免重复更新
 - **选择性更新**：仅更新用户相关货币
 - **批量处理**：一次性处理所有汇率
 
 ### 3. 用户体验优势
+
 - **自动化**：无需手动干预，自动保持汇率最新
 - **可控性**：用户可以启用/禁用自动更新
 - **透明性**：清晰的状态显示和错误反馈
 
 ### 4. 数据完整性
+
 - **自动生成**：创建反向汇率和传递汇率
 - **类型标识**：区分用户输入和自动更新的汇率
 - **日期管理**：按日期组织汇率记录

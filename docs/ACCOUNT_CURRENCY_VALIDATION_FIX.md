@@ -10,7 +10,9 @@
 ## 问题分析
 
 ### 账户删除验证
-经过检查，账户删除API (`src/app/api/accounts/[accountId]/route.ts` DELETE方法) 已经正确实现了所有必要的验证：
+
+经过检查，账户删除API (`src/app/api/accounts/[accountId]/route.ts`
+DELETE方法) 已经正确实现了所有必要的验证：
 
 - ✅ 检查交易记录
 - ✅ 检查交易模板
@@ -19,11 +21,13 @@
 - ✅ 检查贷款合约（作为还款账户）
 
 ### 账户货币转换验证
+
 发现账户更新API在货币转换时只检查了交易记录，**缺少对定期交易设置和贷款合约的检查**。
 
 ## 修复方案
 
 ### 1. 增强账户查询
+
 修改账户查询以包含相关的关联数据：
 
 ```typescript
@@ -59,6 +63,7 @@ include: {
 ```
 
 ### 2. 添加定期交易设置验证
+
 ```typescript
 // 检查账户是否有定期交易设置
 const hasRecurringTransactions = existingAccount.recurringTransactions.length > 0
@@ -69,8 +74,11 @@ if (hasRecurringTransactions) {
     .slice(0, 3)
     .join('、')
   const moreCount = existingAccount.recurringTransactions.length - 3
-  const nameText = moreCount > 0 ? `${recurringNames}等${existingAccount.recurringTransactions.length}个` : recurringNames
-  
+  const nameText =
+    moreCount > 0
+      ? `${recurringNames}等${existingAccount.recurringTransactions.length}个`
+      : recurringNames
+
   return errorResponse(
     `账户存在定期交易设置（${nameText}），无法更换货币。请先删除或转移相关定期交易设置。`,
     400
@@ -79,6 +87,7 @@ if (hasRecurringTransactions) {
 ```
 
 ### 3. 添加贷款合约验证（作为贷款账户）
+
 ```typescript
 // 检查账户是否有贷款合约（作为贷款账户）
 const hasLoanContracts = existingAccount.loanContracts.length > 0
@@ -89,8 +98,9 @@ if (hasLoanContracts) {
     .slice(0, 3)
     .join('、')
   const moreCount = existingAccount.loanContracts.length - 3
-  const nameText = moreCount > 0 ? `${contractNames}等${existingAccount.loanContracts.length}个` : contractNames
-  
+  const nameText =
+    moreCount > 0 ? `${contractNames}等${existingAccount.loanContracts.length}个` : contractNames
+
   return errorResponse(
     `账户存在贷款合约（${nameText}），无法更换货币。请先删除或转移相关贷款合约。`,
     400
@@ -99,6 +109,7 @@ if (hasLoanContracts) {
 ```
 
 ### 4. 添加还款账户验证
+
 ```typescript
 // 检查账户是否有贷款合约（作为还款账户）
 const hasPaymentLoanContracts = existingAccount.paymentLoanContracts.length > 0
@@ -109,8 +120,11 @@ if (hasPaymentLoanContracts) {
     .slice(0, 3)
     .join('、')
   const moreCount = existingAccount.paymentLoanContracts.length - 3
-  const nameText = moreCount > 0 ? `${contractNames}等${existingAccount.paymentLoanContracts.length}个` : contractNames
-  
+  const nameText =
+    moreCount > 0
+      ? `${contractNames}等${existingAccount.paymentLoanContracts.length}个`
+      : contractNames
+
   return errorResponse(
     `账户被贷款合约用作还款账户（${nameText}），无法更换货币。请先删除或转移相关贷款合约。`,
     400
@@ -125,19 +139,24 @@ if (hasPaymentLoanContracts) {
 ## 测试验证
 
 ### 1. 数据库层面验证
+
 创建了测试脚本 `scripts/test-account-currency-validation.ts` 来验证：
+
 - ✅ 定期交易设置检查
 - ✅ 贷款合约检查（作为贷款账户）
 - ✅ 还款账户检查（作为还款账户）
 - ✅ 账户删除验证
 
 ### 2. API层面验证
+
 创建了测试脚本 `scripts/test-api-currency-validation.ts` 来验证：
+
 - ✅ 贷款账户的货币转换验证逻辑
 - ✅ 还款账户的货币转换验证逻辑
 - ✅ 错误信息格式化正确
 
 ### 3. 测试结果
+
 所有测试都通过，验证逻辑工作正常：
 
 ```
@@ -158,16 +177,19 @@ if (hasPaymentLoanContracts) {
 ## 特性
 
 ### 1. 完整的验证覆盖
+
 - 交易记录验证
 - 定期交易设置验证
 - 贷款合约验证（双向：贷款账户和还款账户）
 
 ### 2. 友好的错误信息
+
 - 提供具体的合约名称或定期交易描述
 - 当数量较多时显示"等X个"的格式
 - 给出明确的解决建议
 
 ### 3. 性能优化
+
 - 只获取必要的字段（id, description, contractName）
 - 限制查询数量（take: 5）避免大量数据传输
 
@@ -182,15 +204,18 @@ if (hasPaymentLoanContracts) {
 ## 总结
 
 ✅ **问题已完全解决**
+
 - 账户删除验证：原本就已完整实现
 - 账户货币转换验证：已添加完整的定期交易设置和贷款合约检查
 
 ✅ **验证逻辑完整**
+
 - 覆盖所有相关的关联数据
 - 提供清晰的错误信息
 - 性能优化良好
 
 ✅ **测试充分**
+
 - 数据库层面验证
 - API层面验证
 - 真实数据测试

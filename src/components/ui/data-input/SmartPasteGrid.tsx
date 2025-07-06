@@ -1282,8 +1282,8 @@ export default function SmartPasteGrid({
                 validationSummary.activeRows === 0
                   ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
                   : validationSummary.invalidRows > 0
-                  ? 'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white hover:shadow-md hover:scale-105 border border-orange-500/50'
-                  : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white hover:shadow-md hover:scale-105 border border-blue-500/50'
+                    ? 'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white hover:shadow-md hover:scale-105 border border-orange-500/50'
+                    : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white hover:shadow-md hover:scale-105 border border-blue-500/50'
               }
             `}
           >
@@ -1303,12 +1303,16 @@ export default function SmartPasteGrid({
             <span>
               {validationSummary.invalidRows > 0
                 ? t('smart.paste.toolbar.submit.with.errors', {
-                    valid: validationSummary.validRows + validationSummary.partialRows,
-                    total: validationSummary.activeRows || validationSummary.totalRows,
+                    valid:
+                      validationSummary.validRows +
+                      validationSummary.partialRows,
+                    total:
+                      validationSummary.activeRows ||
+                      validationSummary.totalRows,
                     errors: validationSummary.invalidRows,
                   })
-                : t('smart.paste.toolbar.submit')} (
-              {validationSummary.validRows + validationSummary.partialRows}/
+                : t('smart.paste.toolbar.submit')}{' '}
+              ({validationSummary.validRows + validationSummary.partialRows}/
               {validationSummary.activeRows || validationSummary.totalRows})
             </span>
           </button>
@@ -1329,9 +1333,11 @@ export default function SmartPasteGrid({
         <div className='space-y-4'>
           <p className='text-gray-700 dark:text-gray-300 text-sm'>
             {t('smart.paste.submit.confirm.message', {
-              valid: validationSummary.validRows + validationSummary.partialRows,
+              valid:
+                validationSummary.validRows + validationSummary.partialRows,
               invalid: validationSummary.invalidRows,
-              total: validationSummary.activeRows || validationSummary.totalRows,
+              total:
+                validationSummary.activeRows || validationSummary.totalRows,
             })}
           </p>
 
@@ -1342,10 +1348,12 @@ export default function SmartPasteGrid({
             </h5>
             <div className='grid grid-cols-2 gap-2 text-sm'>
               <div className='text-green-700 dark:text-green-300'>
-                ✓ {t('smart.paste.submit.confirm.valid')}: {validationSummary.validRows + validationSummary.partialRows}
+                ✓ {t('smart.paste.submit.confirm.valid')}:{' '}
+                {validationSummary.validRows + validationSummary.partialRows}
               </div>
               <div className='text-red-700 dark:text-red-300'>
-                ✗ {t('smart.paste.submit.confirm.invalid')}: {validationSummary.invalidRows}
+                ✗ {t('smart.paste.submit.confirm.invalid')}:{' '}
+                {validationSummary.invalidRows}
               </div>
             </div>
           </div>

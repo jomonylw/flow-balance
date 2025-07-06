@@ -75,7 +75,10 @@ export async function getUserExchangeRate(
     const targetDate = asOfDate || new Date()
 
     // 查找用户实际使用的货币记录
-    const fromCurrencyRecord = await findUserActiveCurrency(userId, fromCurrency)
+    const fromCurrencyRecord = await findUserActiveCurrency(
+      userId,
+      fromCurrency
+    )
     const toCurrencyRecord = await findUserActiveCurrency(userId, toCurrency)
 
     if (!fromCurrencyRecord || !toCurrencyRecord) {
@@ -290,7 +293,9 @@ export async function getUserCurrencies(userId: string): Promise<string[]> {
  * @param userId 用户ID
  * @returns 货币记录数组
  */
-export async function getUserCurrencyRecords(userId: string): Promise<Array<{ id: string; code: string; name: string; symbol: string }>> {
+export async function getUserCurrencyRecords(
+  userId: string
+): Promise<Array<{ id: string; code: string; name: string; symbol: string }>> {
   try {
     // 首先获取用户设置的可用货币
     const userCurrencies = await prisma.userCurrency.findMany({
@@ -330,7 +335,10 @@ export async function getUserCurrencyRecords(userId: string): Promise<Array<{ id
       },
     })
 
-    const currencyMap = new Map<string, { id: string; code: string; name: string; symbol: string }>()
+    const currencyMap = new Map<
+      string,
+      { id: string; code: string; name: string; symbol: string }
+    >()
 
     // 添加交易中的货币
     transactions.forEach(t => {
@@ -395,7 +403,11 @@ export async function getMissingExchangeRates(
     for (const currencyRecord of userCurrencyRecords) {
       // 使用货币ID进行比较，避免相同代码不同ID的问题
       if (currencyRecord.id !== baseCurrencyRecord.id) {
-        const rate = await getUserExchangeRate(userId, currencyRecord.code, baseCurrency)
+        const rate = await getUserExchangeRate(
+          userId,
+          currencyRecord.code,
+          baseCurrency
+        )
         if (!rate) {
           missingRates.push({
             fromCurrency: currencyRecord.code,

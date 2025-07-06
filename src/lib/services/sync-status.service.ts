@@ -43,7 +43,11 @@ export class SyncStatusService {
     // 检查是否需要汇率更新
     const needsExchangeRateUpdate = await this.needsExchangeRateUpdate(userId)
 
-    return hoursSinceLastSync > 6 || needsFutureDataRefresh || needsExchangeRateUpdate
+    return (
+      hoursSinceLastSync > 6 ||
+      needsFutureDataRefresh ||
+      needsExchangeRateUpdate
+    )
   }
 
   /**
@@ -67,7 +71,8 @@ export class SyncStatusService {
     // 检查是否超过24小时
     const lastUpdate = new Date(userSettings.lastExchangeRateUpdate)
     const now = new Date()
-    const hoursSinceLastUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
+    const hoursSinceLastUpdate =
+      (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60)
 
     return hoursSinceLastUpdate >= 24
   }
@@ -262,7 +267,9 @@ export class SyncStatusService {
     const recentStats = recentLogs.reduce(
       (acc, log) => {
         acc.totalProcessed +=
-          (log.processedRecurring || 0) + (log.processedLoans || 0) + (log.processedExchangeRates || 0)
+          (log.processedRecurring || 0) +
+          (log.processedLoans || 0) +
+          (log.processedExchangeRates || 0)
         acc.totalFailed += log.failedCount || 0
         if (log.status === 'completed') acc.completedTasks++
         if (log.status === 'failed') acc.failedTasks++

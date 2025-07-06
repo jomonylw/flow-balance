@@ -5,14 +5,16 @@
 您提到的三个文件夹确实存在大量杂乱文件的问题：
 
 ### 📁 docs/ 文件夹问题 (200+ 文件)
+
 - **测试文档过多**: `test-*.md` (20+ 个)
-- **调试记录冗余**: `debug-*.md` (10+ 个)  
+- **调试记录冗余**: `debug-*.md` (10+ 个)
 - **修复总结重复**: `*_FIX_SUMMARY.md` (50+ 个)
 - **实现总结冗余**: `*_IMPLEMENTATION_SUMMARY.md` (30+ 个)
 - **完成总结重复**: `*_COMPLETION_SUMMARY.md` (20+ 个)
 - **临时文件**: `todo.md`, `review_results.md` 等
 
 ### 📁 scripts/ 文件夹问题 (150+ 文件)
+
 - **测试脚本过多**: `test-*.ts/js` (80+ 个)
 - **调试脚本冗余**: `debug-*.ts/js` (30+ 个)
 - **修复脚本临时**: `fix-*.ts/js` (20+ 个)
@@ -21,6 +23,7 @@
 - **迁移脚本一次性**: `migrate-*.ts/js` (10+ 个)
 
 ### 📁 CODE_GUIDE_DOC/ 文件夹 (7 文件)
+
 - 相对整洁，但如果您觉得开发规范也比较杂乱，可以选择忽略
 
 ## 🎯 解决方案
@@ -80,6 +83,7 @@ scripts/refactor-success-report.md
 ```
 
 **优点**：
+
 - ✅ 保留重要的文档和脚本
 - ✅ 忽略杂乱的开发文件
 - ✅ 精确控制，避免误删
@@ -91,15 +95,17 @@ scripts/refactor-success-report.md
 ```gitignore
 # 如果您希望完全忽略这些文件夹，取消下面的注释
 # /docs
-# /CODE_GUIDE_DOC  
+# /CODE_GUIDE_DOC
 # /scripts
 ```
 
 **优点**：
+
 - ✅ 简单直接
 - ✅ 完全避免杂乱文件
 
 **缺点**：
+
 - ❌ 会丢失重要的文档和脚本
 - ❌ 影响项目的完整性
 
@@ -122,6 +128,7 @@ scripts/refactor-success-report.md
 ```
 
 **优点**：
+
 - ✅ 物理删除杂乱文件
 - ✅ 自动备份删除的文件
 - ✅ 保留重要文件
@@ -129,6 +136,7 @@ scripts/refactor-success-report.md
 ## 📊 保留的重要文件
 
 ### 📚 重要文档 (docs/)
+
 ```
 API_DOCUMENTATION.md          # API 接口文档
 DEPLOYMENT_GUIDE.md           # 完整部署指南
@@ -141,6 +149,7 @@ DEV_FILES_CLEANUP_ANALYSIS.md # 本文档
 ```
 
 ### 🔧 重要脚本 (scripts/)
+
 ```
 backup-data.js          # 数据备份工具
 deploy-check.sh         # 部署前检查
@@ -154,6 +163,7 @@ cleanup-dev-files.sh    # 开发文件清理脚本
 ```
 
 ### 📋 开发规范 (CODE_GUIDE_DOC/)
+
 ```
 DEVELOPMENT_STANDARDS.md    # 开发标准和规范
 CODE_QUALITY_CHECKLIST.md  # 代码质量检查清单
@@ -167,6 +177,7 @@ QUICK_REFERENCE.md         # 快速参考
 ## 🗑️ 将被忽略的杂乱文件
 
 ### 📁 docs/ 中的杂乱文件 (150+ 个)
+
 - `test-*.md` - 临时测试文档
 - `debug-*.md` - 调试记录
 - `*_FIX_SUMMARY.md` - 修复总结
@@ -177,6 +188,7 @@ QUICK_REFERENCE.md         # 快速参考
 - `review_results.md` - 审查结果
 
 ### 📁 scripts/ 中的杂乱文件 (120+ 个)
+
 - `test-*.ts/js` - 测试脚本
 - `debug-*.ts/js` - 调试脚本
 - `fix-*.ts/js` - 修复脚本
@@ -192,17 +204,20 @@ QUICK_REFERENCE.md         # 快速参考
 ## 📈 清理效果
 
 ### 减少文件数量
+
 - **docs/**: 从 200+ 个文件减少到 ~20 个重要文档
 - **scripts/**: 从 150+ 个文件减少到 ~10 个重要脚本
 - **总计**: 减少约 300+ 个杂乱文件
 
 ### 提升项目质量
+
 - ✅ 仓库更加整洁
 - ✅ 重要文件更容易找到
 - ✅ 减少 Git 操作时间
 - ✅ 降低新开发者的困惑
 
 ### 保持功能完整性
+
 - ✅ 所有重要的部署脚本保留
 - ✅ 关键文档和指南保留
 - ✅ 项目功能不受影响
@@ -210,6 +225,7 @@ QUICK_REFERENCE.md         # 快速参考
 ## 🚀 推荐操作步骤
 
 1. **选择方案**：
+
    ```bash
    # 推荐：使用选择性忽略（已配置）
    git add .gitignore
@@ -217,19 +233,21 @@ QUICK_REFERENCE.md         # 快速参考
    ```
 
 2. **可选：物理清理**：
+
    ```bash
    # 预览要删除的文件
    ./scripts/cleanup-dev-files.sh --dry-run
-   
+
    # 确认后执行清理
    ./scripts/cleanup-dev-files.sh
    ```
 
 3. **验证效果**：
+
    ```bash
    # 查看被忽略的文件
    git status --ignored
-   
+
    # 查看仓库中的文件
    git ls-files | grep -E "(docs|scripts)/"
    ```
@@ -237,6 +255,7 @@ QUICK_REFERENCE.md         # 快速参考
 ## ✅ 总结
 
 通过这次优化，您的项目将：
+
 - 🎯 **保留核心价值** - 重要文档和脚本完整保留
 - 🧹 **清理杂乱内容** - 开发过程中的临时文件被忽略
 - 📦 **优化仓库结构** - 更加整洁和专业

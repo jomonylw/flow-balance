@@ -5,10 +5,12 @@
 ### 发现的问题
 
 1. **InputField组件硬编码中文文本**
+
    - 日期格式提示文本：`格式: ${userDateFormat} (例: ${example})`
    - 缺少国际化处理
 
 2. **原生HTML date input的限制**
+
    - 浏览器控制显示格式，无法完全自定义
    - 不同浏览器和操作系统显示不同
    - 中文环境下显示中文日期选择器（如截图所示）
@@ -25,7 +27,7 @@
 {
   "form.date.format.hint": "格式: {{format}} (例: {{example}})",
   "form.date.format.YYYY-MM-DD": "年-月-日",
-  "form.date.format.DD/MM/YYYY": "日/月/年", 
+  "form.date.format.DD/MM/YYYY": "日/月/年",
   "form.date.format.MM/DD/YYYY": "月/日/年",
   "form.date.format.DD-MM-YYYY": "日-月-年"
 }
@@ -37,7 +39,7 @@
 // 修改前
 return `格式: ${userDateFormat} (例: ${example})`
 
-// 修改后  
+// 修改后
 return t('form.date.format.hint', { format: userDateFormat, example })
 ```
 
@@ -59,7 +61,7 @@ import DateInput from '@/components/ui/forms/DateInput'
 
 function MyForm() {
   const [date, setDate] = useState('')
-  
+
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDate(e.target.value)
   }
@@ -195,9 +197,9 @@ function testDateInputI18n() {
     'form.date.format.YYYY-MM-DD',
     'form.date.format.DD/MM/YYYY',
     'form.date.format.MM/DD/YYYY',
-    'form.date.format.DD-MM-YYYY'
+    'form.date.format.DD-MM-YYYY',
   ]
-  
+
   // 验证中英文翻译
   // 检查格式提示显示
   // 测试用户格式偏好生效

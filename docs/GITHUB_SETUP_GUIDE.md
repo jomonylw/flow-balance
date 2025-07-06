@@ -56,6 +56,7 @@ grep "\.env" .gitignore
 1. 访问 [GitHub](https://github.com)
 2. 点击右上角的 "+" 按钮，选择 "New repository"
 3. 填写仓库信息：
+
    - **Repository name**: `flow-balance`
    - **Description**: `Personal Finance Management System - 个人财务管理系统`
    - **Visibility**: 选择 Public 或 Private
@@ -68,6 +69,7 @@ grep "\.env" .gitignore
 ### 2. 记录仓库信息
 
 创建完成后，记录以下信息：
+
 - **仓库 URL**: `https://github.com/jomonylw/flow-balance`
 - **Git URL**: `git@github.com:jomonylw/flow-balance.git`
 
@@ -164,6 +166,7 @@ images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 ### 3. 检查工作流权限
 
 在 GitHub 仓库中：
+
 1. 进入 **Settings** > **Actions** > **General**
 2. 在 "Workflow permissions" 部分选择：
    - ✅ **Read and write permissions**
@@ -173,7 +176,8 @@ images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
 ### 1. 启用 GitHub Container Registry
 
-1. 进入 GitHub 个人设置：**Settings** > **Developer settings** > **Personal access tokens** > **Tokens (classic)**
+1. 进入 GitHub 个人设置：**Settings** > **Developer settings** > **Personal access tokens** >
+   **Tokens (classic)**
 2. 点击 "Generate new token (classic)"
 3. 设置权限：
    - ✅ `write:packages`
@@ -189,6 +193,7 @@ images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 ### 3. 更新镜像引用
 
 在所有文档中，将镜像引用更新为：
+
 ```bash
 # 替换 jomonylw 为您的 GitHub 用户名
 ghcr.io/jomonylw/flow-balance:latest
@@ -201,6 +206,7 @@ ghcr.io/jomonylw/flow-balance:latest
 在 GitHub 仓库中，进入 **Settings** > **Secrets and variables** > **Actions**：
 
 #### Repository secrets（必需）
+
 ```bash
 # 如果需要自定义 Docker registry（可选）
 DOCKER_USERNAME=your-docker-username
@@ -211,6 +217,7 @@ VERCEL_TOKEN=your-vercel-token
 ```
 
 #### Repository variables（可选）
+
 ```bash
 # 应用配置
 APP_NAME=flow-balance
@@ -253,6 +260,7 @@ git push origin main
 ### 3. 验证构建结果
 
 构建成功后，检查：
+
 - ✅ 所有测试通过
 - ✅ Docker 镜像构建成功
 - ✅ 镜像推送到 GitHub Container Registry
@@ -295,6 +303,7 @@ git push origin --tags
 ### 3. 验证发布
 
 发布后检查：
+
 - ✅ GitHub Release 页面有新版本
 - ✅ Docker 镜像有新标签
 - ✅ 可以拉取新镜像：`docker pull ghcr.io/jomonylw/flow-balance:v1.0.0`
@@ -304,6 +313,7 @@ git push origin --tags
 ### 1. 设置通知
 
 在 GitHub 仓库 **Settings** > **Notifications** 中：
+
 - ✅ 启用 Actions 失败通知
 - ✅ 启用安全警报
 - ✅ 启用依赖更新通知
@@ -336,12 +346,14 @@ docker image prune -f
 ### 1. 常见构建问题
 
 #### 问题：权限被拒绝
+
 ```bash
 # 解决方案：检查 GitHub token 权限
 # 确保在 Settings > Actions > General 中启用了写权限
 ```
 
 #### 问题：Docker 构建失败
+
 ```bash
 # 检查 Dockerfile 语法
 docker build -t test-build .
@@ -351,6 +363,7 @@ docker build -t test-build .
 ```
 
 #### 问题：测试失败
+
 ```bash
 # 本地运行测试
 npm test
@@ -365,6 +378,7 @@ npm run type-check
 ### 2. 推送问题
 
 #### 问题：推送被拒绝
+
 ```bash
 # 可能是分支保护规则，检查：
 # Settings > Branches > Branch protection rules
@@ -375,6 +389,7 @@ git push origin main
 ```
 
 #### 问题：大文件推送失败
+
 ```bash
 # 检查文件大小
 find . -size +100M -not -path "./node_modules/*" -not -path "./.git/*"
@@ -387,6 +402,7 @@ git add .gitattributes
 ### 3. 镜像问题
 
 #### 问题：无法拉取镜像
+
 ```bash
 # 检查镜像是否存在
 docker search ghcr.io/jomonylw/flow-balance
@@ -401,15 +417,18 @@ docker pull ghcr.io/jomonylw/flow-balance:latest
 ## 📚 相关资源
 
 ### GitHub 文档
+
 - [GitHub Actions 文档](https://docs.github.com/en/actions)
 - [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 - [创建 Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
 ### Docker 文档
+
 - [Docker 多阶段构建](https://docs.docker.com/develop/dev-best-practices/dockerfile_best-practices/)
 - [Docker Compose 文档](https://docs.docker.com/compose/)
 
 ### 项目相关文档
+
 - [部署指南](DEPLOYMENT_GUIDE.md)
 - [项目状态](../PROJECT_STATUS.md)
 - [部署总结](../DEPLOYMENT_SUMMARY.md)

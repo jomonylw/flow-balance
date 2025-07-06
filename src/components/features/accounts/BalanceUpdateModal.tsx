@@ -76,11 +76,17 @@ export default function BalanceUpdateModal({
     if (isOpen) {
       if (editingTransaction) {
         // 编辑模式：从现有交易记录加载数据
-        const transactionDate = formatInputDate(new Date(editingTransaction.date))
+        const transactionDate = formatInputDate(
+          new Date(editingTransaction.date)
+        )
 
         // 查找对应的货币ID
-        const editCurrency = currencies.find(c =>
-          c.code === (editingTransaction.currencyCode || account.currency?.code || currencyCode)
+        const editCurrency = currencies.find(
+          c =>
+            c.code ===
+            (editingTransaction.currencyCode ||
+              account.currency?.code ||
+              currencyCode)
         )
 
         setFormData({
@@ -91,8 +97,8 @@ export default function BalanceUpdateModal({
         })
       } else {
         // 新建模式 - 优先使用账户的货币限制
-        const defaultCurrency = currencies.find(c =>
-          c.code === (account.currency?.code || currencyCode)
+        const defaultCurrency = currencies.find(
+          c => c.code === (account.currency?.code || currencyCode)
         )
         setFormData({
           newBalance: currentBalance.toString(),
@@ -124,7 +130,9 @@ export default function BalanceUpdateModal({
         account.currency?.code ||
         currencyCode
 
-      const correctCurrency = currencies.find(c => c.code === correctCurrencyCode)
+      const correctCurrency = currencies.find(
+        c => c.code === correctCurrencyCode
+      )
 
       setFormData(prev => ({
         ...prev,
@@ -196,7 +204,9 @@ export default function BalanceUpdateModal({
 
     try {
       // 将货币ID转换为货币代码（保持API兼容性）
-      const selectedCurrency = currencies.find(c => c.id === formData.currencyId)
+      const selectedCurrency = currencies.find(
+        c => c.id === formData.currencyId
+      )
       if (!selectedCurrency) {
         setErrors({ general: t('balance.update.invalid.currency') })
         return
@@ -371,7 +381,10 @@ export default function BalanceUpdateModal({
     const transactionCurrency = currencies.find(
       c => c.code === editingTransaction.currencyCode
     )
-    if (transactionCurrency && !currencyOptions.find(opt => opt.value === transactionCurrency.id)) {
+    if (
+      transactionCurrency &&
+      !currencyOptions.find(opt => opt.value === transactionCurrency.id)
+    ) {
       currencyOptions.push({
         value: transactionCurrency.id,
         label: `${editingTransaction.currencyCode} - ${transactionCurrency.name || editingTransaction.currencyCode}`,
@@ -458,7 +471,8 @@ export default function BalanceUpdateModal({
                 {t('balance.update.modal.current.balance')}:{' '}
                 {currentBalanceCurrencyId
                   ? formatCurrencyById(currentBalance, currentBalanceCurrencyId)
-                  : `${currentBalance} ${currencyCode}`} ({currencyCode})
+                  : `${currentBalance} ${currencyCode}`}{' '}
+                ({currencyCode})
               </p>
             </div>
           </div>

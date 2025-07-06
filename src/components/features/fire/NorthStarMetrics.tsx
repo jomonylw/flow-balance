@@ -139,7 +139,9 @@ export default function NorthStarMetrics({
             {t('fire.north.star.fire.date')}
           </h3>
           <div className='text-4xl font-bold text-orange-900 dark:text-orange-100 mb-2 animate-pulse'>
-            {isFireDateValid ? formatDate(fireDate) : t('fire.north.star.fire.date.invalid')}
+            {isFireDateValid
+              ? formatDate(fireDate)
+              : t('fire.north.star.fire.date.invalid')}
           </div>
           <p className='text-sm text-orange-700 dark:text-orange-300'>
             {isFireDateValid
@@ -147,8 +149,7 @@ export default function NorthStarMetrics({
                   years: yearsToFire,
                   months: remainingMonths,
                 })
-              : t('fire.north.star.fire.date.invalid.description')
-            }
+              : t('fire.north.star.fire.date.invalid.description')}
           </p>
           {/* 呼吸灯效果 */}
           <div className='absolute inset-0 bg-orange-200 dark:bg-orange-700 opacity-20 animate-ping rounded-lg'></div>

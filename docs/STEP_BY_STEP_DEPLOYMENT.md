@@ -14,6 +14,7 @@
 ## 📋 准备清单
 
 在开始之前，确保您有：
+
 - [ ] GitHub 账户
 - [ ] Git 已安装并配置
 - [ ] 项目代码在本地
@@ -63,15 +64,17 @@ ls -la package.json prisma/schema.prisma
 
 1. 访问 https://github.com/new
 2. 填写信息：
+
    ```
    Repository name: flow-balance
    Description: Personal Finance Management System - 个人财务管理系统
    Visibility: Public (推荐) 或 Private
-   
+
    ❌ 不要勾选 "Add a README file"
    ❌ 不要勾选 "Add .gitignore"
    ✅ 可以选择 MIT License
    ```
+
 3. 点击 "Create repository"
 
 ### 2.2 记录仓库信息
@@ -122,7 +125,7 @@ git commit -m "feat: initial commit - Flow Balance personal finance management s
 
 Features:
 - Complete Next.js application with TypeScript
-- Docker support with multi-stage builds  
+- Docker support with multi-stage builds
 - PostgreSQL and SQLite database support
 - GitHub Actions CI/CD pipeline
 - Comprehensive deployment documentation
@@ -138,7 +141,8 @@ git push -u origin main
 ### 4.1 启用 GitHub Actions
 
 1. 在 GitHub 仓库页面，点击 **Actions** 标签
-2. 如果看到 "Get started with GitHub Actions"，点击 "I understand my workflows, go ahead and enable them"
+2. 如果看到 "Get started with GitHub Actions"，点击 "I understand my workflows, go ahead and enable
+   them"
 
 ### 4.2 配置仓库权限
 
@@ -193,17 +197,19 @@ echo "访问: https://github.com/jomonylw/flow-balance/actions"
 
 1. 在 GitHub 仓库中，点击 **Actions** 标签
 2. 应该看到两个工作流正在运行：
+
    - ✅ **CI** - 代码质量检查和测试
    - ✅ **Docker Build and Release** - Docker 镜像构建
 
 3. 点击工作流查看详细进度：
+
    ```
    CI 工作流步骤：
    ├── lint-and-test (Node.js 18.x, 20.x)
-   ├── build-check  
+   ├── build-check
    ├── database-check
    └── security-check
-   
+
    Docker 工作流步骤：
    ├── quality-check
    ├── docker-build
@@ -303,6 +309,7 @@ docker rm flow-balance-test
 
 ```markdown
 <!-- 在 README.md 中添加 -->
+
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jomonylw/flow-balance)
 
 ![CI](https://github.com/jomonylw/flow-balance/workflows/CI/badge.svg)
@@ -325,6 +332,7 @@ make health
 恭喜！您已经成功完成了完整的部署配置。现在您拥有：
 
 ### ✅ 已完成的功能
+
 - 🐳 **自动化 Docker 镜像构建和发布**
 - 🔄 **完整的 CI/CD 流水线**
 - 🏷️ **自动版本管理和发布**
@@ -332,6 +340,7 @@ make health
 - 📚 **完善的文档和使用指南**
 
 ### 🚀 可用的部署方式
+
 ```bash
 # 1. 使用最新镜像
 docker run -p 3000:3000 ghcr.io/jomonylw/flow-balance:latest
@@ -360,12 +369,14 @@ git push origin main  # 自动触发 CI/CD
 ## 🆘 如果遇到问题
 
 ### 常见问题解决
+
 1. **构建失败**：检查 GitHub Actions 日志
 2. **权限问题**：确认 Actions 权限设置
 3. **镜像推送失败**：检查仓库可见性设置
 4. **测试失败**：本地运行 `npm test` 检查
 
 ### 获取帮助
+
 - 查看 [故障排除指南](GITHUB_SETUP_GUIDE.md#故障排除)
 - 检查 [CI/CD 配置文档](CICD_CONFIGURATION.md)
 - 在 GitHub Issues 中报告问题

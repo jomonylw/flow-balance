@@ -15,6 +15,7 @@ docker run -p 3000:3000 ghcr.io/jomonylw/flow-balance:latest
 ## 📋 常用命令速查
 
 ### 开发环境
+
 ```bash
 # 本地开发
 make dev                    # 启动开发服务器
@@ -28,6 +29,7 @@ make docker-down-dev       # 停止开发环境
 ```
 
 ### 生产部署
+
 ```bash
 # Docker 部署
 make docker-prod           # 启动生产环境
@@ -40,6 +42,7 @@ make start                 # 启动生产服务器
 ```
 
 ### 监控和维护
+
 ```bash
 # 健康检查
 make health                # 检查应用状态
@@ -52,10 +55,11 @@ make db-reset              # 重置数据库
 ```
 
 ### 版本发布
+
 ```bash
 # 自动发布
 make release-patch         # 发布补丁版本 (1.0.0 -> 1.0.1)
-make release-minor         # 发布次版本 (1.0.0 -> 1.1.0)  
+make release-minor         # 发布次版本 (1.0.0 -> 1.1.0)
 make release-major         # 发布主版本 (1.0.0 -> 2.0.0)
 
 # 部署检查
@@ -66,6 +70,7 @@ make prod-ready            # 生产环境准备
 ## 🐳 Docker 命令速查
 
 ### 基础操作
+
 ```bash
 # 构建镜像
 docker build -t flow-balance .
@@ -88,6 +93,7 @@ docker run -d \
 ```
 
 ### Docker Compose
+
 ```bash
 # 启动服务
 docker-compose up -d                    # 后台启动
@@ -101,6 +107,7 @@ docker-compose down                     # 停止服务
 ```
 
 ### 镜像管理
+
 ```bash
 # 拉取镜像
 docker pull ghcr.io/jomonylw/flow-balance:latest
@@ -116,6 +123,7 @@ docker image prune -f
 ## 🔧 环境变量速查
 
 ### 必需变量
+
 ```bash
 DATABASE_URL="file:./data/production.db"                    # SQLite
 DATABASE_URL="postgresql://user:pass@host:5432/db"          # PostgreSQL
@@ -123,6 +131,7 @@ JWT_SECRET="your-secure-jwt-secret-minimum-32-characters"   # JWT 密钥
 ```
 
 ### 可选变量
+
 ```bash
 NODE_ENV="production"                                        # 环境
 NEXT_PUBLIC_APP_URL="https://your-domain.com"              # 应用 URL
@@ -131,6 +140,7 @@ REDIS_URL="redis://localhost:6379"                         # Redis 缓存
 ```
 
 ### Docker 专用
+
 ```bash
 POSTGRES_DB="flowbalance"                                   # 数据库名
 POSTGRES_USER="flowbalance"                                 # 数据库用户
@@ -140,6 +150,7 @@ POSTGRES_PASSWORD="your-secure-password"                    # 数据库密码
 ## 📊 监控命令速查
 
 ### 健康检查
+
 ```bash
 # API 健康检查
 curl http://localhost:3000/api/health
@@ -151,6 +162,7 @@ curl http://localhost:3000/api/health
 ```
 
 ### 日志查看
+
 ```bash
 # Docker 容器日志
 docker logs -f flow-balance
@@ -164,6 +176,7 @@ journalctl -u flow-balance -f
 ```
 
 ### 性能监控
+
 ```bash
 # 容器资源使用
 docker stats flow-balance
@@ -177,6 +190,7 @@ df -h
 ## 🗄️ 数据库命令速查
 
 ### Prisma 操作
+
 ```bash
 # 生成客户端
 pnpm db:generate
@@ -192,6 +206,7 @@ pnpm db:reset                           # 重置数据库
 ```
 
 ### 数据库切换
+
 ```bash
 # 切换数据库类型
 node scripts/switch-database.js sqlite      # 切换到 SQLite
@@ -199,6 +214,7 @@ node scripts/switch-database.js postgresql  # 切换到 PostgreSQL
 ```
 
 ### 备份恢复
+
 ```bash
 # 自动备份
 node scripts/backup-data.js auto           # 自动检测类型
@@ -213,6 +229,7 @@ node scripts/backup-data.js cleanup        # 清理旧备份
 ## 🔄 Git 和 CI/CD 速查
 
 ### Git 操作
+
 ```bash
 # 基础操作
 git add .
@@ -226,6 +243,7 @@ git push origin feature/new-feature
 ```
 
 ### 版本发布
+
 ```bash
 # 使用发布脚本
 ./scripts/release.sh patch             # 补丁版本
@@ -238,6 +256,7 @@ git push origin --tags
 ```
 
 ### CI/CD 监控
+
 ```bash
 # GitHub Actions 状态
 # 访问: https://github.com/jomonylw/flow-balance/actions
@@ -252,6 +271,7 @@ git push origin --tags
 ## 🚨 故障排除速查
 
 ### 常见问题
+
 ```bash
 # 容器启动失败
 docker logs flow-balance                # 查看错误日志
@@ -267,6 +287,7 @@ kill -9 $(lsof -t -i:3000)            # 杀死占用进程
 ```
 
 ### 重置和清理
+
 ```bash
 # 重置 Docker 环境
 docker-compose down -v                 # 停止并删除卷
@@ -280,14 +301,14 @@ pnpm install                           # 重新安装
 
 ## 📚 文档链接速查
 
-| 文档 | 用途 | 链接 |
-|------|------|------|
-| 快速开始 | 项目介绍和基础使用 | [README.md](../README.md) |
-| GitHub 设置 | 仓库创建和配置 | [GITHUB_SETUP_GUIDE.md](GITHUB_SETUP_GUIDE.md) |
-| 分步部署 | 详细操作指南 | [STEP_BY_STEP_DEPLOYMENT.md](STEP_BY_STEP_DEPLOYMENT.md) |
-| CI/CD 配置 | 流水线详细说明 | [CICD_CONFIGURATION.md](CICD_CONFIGURATION.md) |
-| 部署指南 | 完整部署文档 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) |
-| 项目状态 | 功能完成情况 | [PROJECT_STATUS.md](../PROJECT_STATUS.md) |
+| 文档        | 用途               | 链接                                                     |
+| ----------- | ------------------ | -------------------------------------------------------- |
+| 快速开始    | 项目介绍和基础使用 | [README.md](../README.md)                                |
+| GitHub 设置 | 仓库创建和配置     | [GITHUB_SETUP_GUIDE.md](GITHUB_SETUP_GUIDE.md)           |
+| 分步部署    | 详细操作指南       | [STEP_BY_STEP_DEPLOYMENT.md](STEP_BY_STEP_DEPLOYMENT.md) |
+| CI/CD 配置  | 流水线详细说明     | [CICD_CONFIGURATION.md](CICD_CONFIGURATION.md)           |
+| 部署指南    | 完整部署文档       | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)               |
+| 项目状态    | 功能完成情况       | [PROJECT_STATUS.md](../PROJECT_STATUS.md)                |
 
 ## 🆘 获取帮助
 

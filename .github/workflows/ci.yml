@@ -5,9 +5,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 permissions:
   contents: read
@@ -16,20 +16,20 @@ permissions:
 
 env:
   NODE_ENV: test
-  DATABASE_URL: "file:./dev.db"
-  JWT_SECRET: "test-jwt-secret-for-ci"
-  NEXTAUTH_SECRET: "test-nextauth-secret-for-ci"
-  NEXTAUTH_URL: "http://localhost:3000"
+  DATABASE_URL: 'file:./dev.db'
+  JWT_SECRET: 'test-jwt-secret-for-ci'
+  NEXTAUTH_SECRET: 'test-nextauth-secret-for-ci'
+  NEXTAUTH_URL: 'http://localhost:3000'
 
 jobs:
   # 代码质量检查
   lint-and-test:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [18.x, 20.x]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -94,7 +94,7 @@ jobs:
   # 构建检查
   build-check:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -165,17 +165,15 @@ jobs:
 
       - name: Test SQLite migrations
         env:
-          DATABASE_URL: "file:./test.db"
+          DATABASE_URL: 'file:./test.db'
         run: |
           pnpm db:generate
           pnpm db:deploy
 
-
-
   # 安全检查
   security-check:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

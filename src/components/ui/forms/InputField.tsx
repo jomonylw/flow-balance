@@ -49,8 +49,6 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
     },
     ref
   ) => {
-
-
     // 如果是日期类型，使用DateInput组件
     if (type === 'date') {
       return (
@@ -71,8 +69,6 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
         />
       )
     }
-
-
 
     return (
       <div className={`space-y-2 ${className}`}>

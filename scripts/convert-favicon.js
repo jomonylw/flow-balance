@@ -2,10 +2,10 @@
 
 /**
  * 使用 Sharp 库转换 SVG favicon 到其他格式
- * 
+ *
  * 使用前需要安装 Sharp:
  * npm install sharp --save-dev
- * 
+ *
  * 然后运行:
  * node scripts/convert-favicon.js
  */
@@ -25,7 +25,7 @@ try {
 }
 
 console.log('🎨 使用 Sharp 转换 favicon')
-console.log('=' .repeat(40))
+console.log('='.repeat(40))
 
 const svgPath = path.join(process.cwd(), 'public', 'favicon.svg')
 const publicDir = path.join(process.cwd(), 'public')
@@ -47,21 +47,21 @@ const iconConfigs = [
 
 async function convertIcons() {
   console.log('📁 读取 SVG 文件...')
-  
+
   try {
     for (const config of iconConfigs) {
       const outputPath = path.join(publicDir, config.name)
-      
+
       console.log(`🔄 生成 ${config.name} (${config.size}x${config.size})...`)
-      
+
       await sharp(svgPath)
         .resize(config.size, config.size)
         .png()
         .toFile(outputPath)
-      
+
       console.log(`✅ 已生成: ${config.name}`)
     }
-    
+
     console.log('')
     console.log('🎉 所有图标已生成完成！')
     console.log('')
@@ -88,7 +88,6 @@ export const metadata: Metadata = {
     ],
   },
 }`)
-    
   } catch (error) {
     console.error('❌ 转换过程中出错:', error.message)
     process.exit(1)

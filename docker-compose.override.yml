@@ -23,16 +23,16 @@ services:
       # 持久化开发数据库
       - dev_data:/app/data
     command: pnpm dev
-    
+
   # 开发环境不需要 Nginx
   nginx:
     profiles:
       - production
-    
+
   # 开发环境使用轻量级 Redis 配置
   redis:
     command: redis-server --appendonly no --save ""
-    
+
   # PostgreSQL 开发配置
   postgres:
     environment:
@@ -40,17 +40,17 @@ services:
       POSTGRES_USER: flowbalance
       POSTGRES_PASSWORD: dev_password
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
-      
+
   # 开发工具服务
   prisma-studio:
     build:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - "5555:5555"
+      - '5555:5555'
     environment:
       - DATABASE_URL=file:./data/dev.db
     volumes:

@@ -243,9 +243,14 @@ export default function RecurringTransactionCards({
                   >
                     {transaction.type === 'EXPENSE' ? '-' : '+'}
                     {transaction.currency?.id
-                      ? formatCurrencyById(transaction.amount, transaction.currency.id)
-                      : formatCurrency(transaction.amount, transaction.currency?.code || 'CNY')
-                    }
+                      ? formatCurrencyById(
+                          transaction.amount,
+                          transaction.currency.id
+                        )
+                      : formatCurrency(
+                          transaction.amount,
+                          transaction.currency?.code || 'CNY'
+                        )}
                   </span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBgColor(transaction.isActive)} ${getStatusColor(transaction.isActive)}`}

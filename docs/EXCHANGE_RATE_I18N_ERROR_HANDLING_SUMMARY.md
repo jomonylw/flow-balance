@@ -2,7 +2,9 @@
 
 ## 🎯 问题描述
 
-当用户使用不支持的货币代码（如 AAA）作为本位币时，Frankfurter API 返回 404 错误和 `{"message":"not found"}` 响应。原有的错误处理逻辑只显示通用的"获取汇率数据失败，请稍后重试"信息，用户体验不佳。
+当用户使用不支持的货币代码（如 AAA）作为本位币时，Frankfurter API 返回 404 错误和
+`{"message":"not found"}`
+响应。原有的错误处理逻辑只显示通用的"获取汇率数据失败，请稍后重试"信息，用户体验不佳。
 
 ## 🔧 解决方案
 
@@ -24,8 +26,8 @@
 interface ExchangeRateUpdateResult {
   success: boolean
   message: string
-  errorCode?: string        // 新增：错误代码
-  errorParams?: Record<string, any>  // 新增：错误参数
+  errorCode?: string // 新增：错误代码
+  errorParams?: Record<string, any> // 新增：错误参数
   data?: {
     // ... 现有字段
   }
@@ -81,24 +83,27 @@ if (error instanceof TypeError && error.message.includes('fetch')) {
 ```typescript
 if (!result.success) {
   const errorData: any = {
-    error: result.message || '汇率更新失败'
+    error: result.message || '汇率更新失败',
   }
-  
+
   if (result.errorCode) {
     errorData.errorCode = result.errorCode
   }
-  
+
   if (result.errorParams) {
     errorData.errorParams = result.errorParams
   }
-  
-  return new Response(JSON.stringify({
-    success: false,
-    ...errorData
-  }), {
-    status: 500,
-    headers: { 'Content-Type': 'application/json' }
-  })
+
+  return new Response(
+    JSON.stringify({
+      success: false,
+      ...errorData,
+    }),
+    {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    }
+  )
 }
 ```
 
@@ -189,11 +194,13 @@ showError(t('exchange.rate.update.failed'), errorMessage)
 ## 🎯 用户体验改进
 
 ### 修改前
+
 - 所有错误都显示："获取汇率数据失败，请稍后重试"
 - 用户无法了解具体错误原因
 - 无法采取针对性的解决措施
 
 ### 修改后
+
 - **货币不支持**："本位币 AAA 不支持自动汇率更新，请检查货币代码是否正确或手动输入汇率"
 - **服务不可用**："汇率服务暂时不可用，请稍后重试"
 - **网络错误**："网络连接失败，请检查网络连接后重试"

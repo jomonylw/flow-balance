@@ -31,19 +31,19 @@ export async function GET(_request: NextRequest) {
         database: prisma ? 'connected' : 'disconnected',
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
       },
       { status: 200 }
     )
   } catch (error) {
     console.error('Health check failed:', error)
-    
+
     return NextResponse.json(
       {
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : 'Unknown error',
-        database: 'disconnected'
+        database: 'disconnected',
       },
       { status: 503 }
     )

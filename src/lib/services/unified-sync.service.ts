@@ -134,7 +134,10 @@ export class UnifiedSyncService {
     let processed = 0
 
     try {
-      const result = await ExchangeRateAutoUpdateService.updateExchangeRates(userId, false)
+      const result = await ExchangeRateAutoUpdateService.updateExchangeRates(
+        userId,
+        false
+      )
 
       if (result.success && result.data) {
         processed = result.data.updatedCount
@@ -145,7 +148,9 @@ export class UnifiedSyncService {
         // 如果跳过了更新，记录原因
         if (result.data.skipped) {
           // 使用 console.warn 记录跳过信息
-          console.warn(`汇率更新跳过 - 用户 ${userId}: ${result.data.skipReason}`)
+          console.warn(
+            `汇率更新跳过 - 用户 ${userId}: ${result.data.skipReason}`
+          )
         }
       } else if (!result.success) {
         errors.push(result.message || '汇率更新失败')
@@ -158,8 +163,6 @@ export class UnifiedSyncService {
 
     return { processed, errors }
   }
-
-
 
   /**
    * 手动重试失败的同步

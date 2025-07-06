@@ -39,6 +39,7 @@ model UserSettings {
 - 更新最后更新时间戳
 
 **API 响应格式**:
+
 ```json
 {
   "updatedCount": 3,
@@ -62,9 +63,11 @@ model UserSettings {
 ### 4. UI 组件更新
 
 #### 汇率管理页面
+
 **文件**: `src/components/features/settings/ExchangeRateManagement.tsx`
 
 新增功能：
+
 - 汇率自动更新设置区域
 - 自动更新开关 (ToggleSwitch)
 - 手动更新按钮
@@ -73,19 +76,23 @@ model UserSettings {
 - 加载状态和错误处理
 
 #### 偏好设置页面
+
 **文件**: `src/components/features/settings/PreferencesForm.tsx`
 
 在货币设置部分添加：
+
 - 汇率自动更新开关
 - 与本位币设置联动（需要先设置本位币）
 
 ### 5. 国际化支持
 
-**文件**: 
+**文件**:
+
 - `public/locales/zh/exchange-rate.json`
 - `public/locales/en/exchange-rate.json`
 
 新增翻译键值：
+
 ```json
 {
   "exchange.rate.auto.update": "自动更新汇率",
@@ -110,6 +117,7 @@ model UserSettings {
 **文件**: `src/types/core/index.ts`
 
 更新 `UserSettings` 接口：
+
 ```typescript
 export interface UserSettings {
   // ... 其他字段

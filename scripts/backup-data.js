@@ -37,13 +37,9 @@ function ensureBackupDir() {
 // 备份 SQLite 数据库
 function backupSQLite() {
   console.log('🗄️  开始备份 SQLite 数据库...')
-  
-  const dbPaths = [
-    'data/production.db',
-    'prisma/dev.db',
-    'dev.db'
-  ]
-  
+
+  const dbPaths = ['data/production.db', 'prisma/dev.db', 'dev.db']
+
   let dbPath = null
   for (const path of dbPaths) {
     if (fileExists(path)) {
@@ -51,20 +47,20 @@ function backupSQLite() {
       break
     }
   }
-  
+
   if (!dbPath) {
     console.log('⚠️  未找到 SQLite 数据库文件')
     return false
   }
-  
+
   const backupDir = ensureBackupDir()
   const timestamp = getTimestamp()
   const backupPath = path.join(backupDir, `sqlite-backup-${timestamp}.db`)
-  
+
   try {
     fs.copyFileSync(dbPath, backupPath)
     console.log(`✅ SQLite 备份完成: ${backupPath}`)
-    
+
     // 压缩备份文件
     try {
       execSync(`gzip "${backupPath}"`)
@@ -72,7 +68,7 @@ function backupSQLite() {
     } catch (error) {
       console.log('ℹ️  压缩失败，保留原始备份文件')
     }
-    
+
     return true
   } catch (error) {
     console.error(`❌ SQLite 备份失败: ${error.message}`)
@@ -83,24 +79,24 @@ function backupSQLite() {
 // 备份 PostgreSQL 数据库
 function backupPostgreSQL() {
   console.log('🗄️  开始备份 PostgreSQL 数据库...')
-  
+
   const databaseUrl = process.env.DATABASE_URL
   if (!databaseUrl || !databaseUrl.includes('postgresql://')) {
     console.log('⚠️  未找到 PostgreSQL 连接字符串')
     return false
   }
-  
+
   const backupDir = ensureBackupDir()
   const timestamp = getTimestamp()
   const backupPath = path.join(backupDir, `postgresql-backup-${timestamp}.sql`)
-  
+
   try {
     // 使用 pg_dump 备份数据库
     const command = `pg_dump "${databaseUrl}" > "${backupPath}"`
     execSync(command, { stdio: 'inherit' })
-    
+
     console.log(`✅ PostgreSQL 备份完成: ${backupPath}`)
-    
+
     // 压缩备份文件
     try {
       execSync(`gzip "${backupPath}"`)
@@ -108,7 +104,7 @@ function backupPostgreSQL() {
     } catch (error) {
       console.log('ℹ️  压缩失败，保留原始备份文件')
     }
-    
+
     return true
   } catch (error) {
     console.error(`❌ PostgreSQL 备份失败: ${error.message}`)
@@ -120,30 +116,30 @@ function backupPostgreSQL() {
 // 清理旧备份文件
 function cleanupOldBackups() {
   console.log('🧹 清理旧备份文件...')
-  
+
   const backupDir = path.join(process.cwd(), 'backups')
   if (!fs.existsSync(backupDir)) {
     return
   }
-  
+
   try {
     const files = fs.readdirSync(backupDir)
     const now = Date.now()
     const maxAge = 30 * 24 * 60 * 60 * 1000 // 30 天
-    
+
     let deletedCount = 0
-    
+
     files.forEach(file => {
       const filePath = path.join(backupDir, file)
       const stats = fs.statSync(filePath)
-      
+
       if (now - stats.mtime.getTime() > maxAge) {
         fs.unlinkSync(filePath)
         deletedCount++
         console.log(`🗑️  删除旧备份: ${file}`)
       }
     })
-    
+
     if (deletedCount === 0) {
       console.log('ℹ️  没有需要清理的旧备份文件')
     } else {
@@ -161,14 +157,14 @@ function showBackupInfo() {
     console.log('📋 暂无备份文件')
     return
   }
-  
+
   try {
     const files = fs.readdirSync(backupDir)
     if (files.length === 0) {
       console.log('📋 暂无备份文件')
       return
     }
-    
+
     console.log('📋 备份文件列表:')
     files.forEach(file => {
       const filePath = path.join(backupDir, file)
@@ -186,20 +182,20 @@ function showBackupInfo() {
 function main() {
   const args = process.argv.slice(2)
   const command = args[0]
-  
+
   console.log('💾 Flow Balance 数据备份工具')
   console.log('================================')
-  
+
   switch (command) {
     case 'sqlite':
       backupSQLite()
       break
-      
+
     case 'postgresql':
     case 'postgres':
       backupPostgreSQL()
       break
-      
+
     case 'auto':
       // 自动检测数据库类型
       const databaseUrl = process.env.DATABASE_URL
@@ -209,15 +205,15 @@ function main() {
         backupSQLite()
       }
       break
-      
+
     case 'cleanup':
       cleanupOldBackups()
       break
-      
+
     case 'list':
       showBackupInfo()
       break
-      
+
     case 'help':
     case '--help':
     case '-h':
@@ -239,18 +235,20 @@ function main() {
   node scripts/backup-data.js cleanup
 `)
       break
-      
+
     default:
       console.log('🚀 自动备份模式')
-      const success = main.auto ? main.auto() : (() => {
-        const databaseUrl = process.env.DATABASE_URL
-        if (databaseUrl && databaseUrl.includes('postgresql://')) {
-          return backupPostgreSQL()
-        } else {
-          return backupSQLite()
-        }
-      })()
-      
+      const success = main.auto
+        ? main.auto()
+        : (() => {
+            const databaseUrl = process.env.DATABASE_URL
+            if (databaseUrl && databaseUrl.includes('postgresql://')) {
+              return backupPostgreSQL()
+            } else {
+              return backupSQLite()
+            }
+          })()
+
       if (success) {
         cleanupOldBackups()
       }
@@ -267,5 +265,5 @@ module.exports = {
   backupSQLite,
   backupPostgreSQL,
   cleanupOldBackups,
-  showBackupInfo
+  showBackupInfo,
 }

@@ -17,108 +17,111 @@ interface DateFormatOptions {
 export function useUserDateFormatter() {
   const { userSettings } = useUserData()
   const { language, t } = useLanguage()
-  
+
   // 获取 date-fns locale
   const dateLocale = useMemo(() => {
     return language === 'zh' ? zhCN : enUS
   }, [language])
-  
+
   // 用户日期格式映射到 date-fns 格式
   const formatMapping = useMemo(() => {
     const userFormat = userSettings?.dateFormat || 'YYYY-MM-DD'
-    
+
     const mappings = {
       'YYYY-MM-DD': 'yyyy-MM-dd',
-      'DD/MM/YYYY': 'dd/MM/yyyy', 
+      'DD/MM/YYYY': 'dd/MM/yyyy',
       'MM/DD/YYYY': 'MM/dd/yyyy',
-      'DD-MM-YYYY': 'dd-MM-yyyy'
+      'DD-MM-YYYY': 'dd-MM-yyyy',
     }
-    
+
     return mappings[userFormat as keyof typeof mappings] || 'yyyy-MM-dd'
   }, [userSettings?.dateFormat])
-  
+
   // 获取用户日期格式的分隔符
   const getDateSeparator = useMemo(() => {
     const userFormat = userSettings?.dateFormat || 'YYYY-MM-DD'
     return userFormat.includes('/') ? '/' : '-'
   }, [userSettings?.dateFormat])
-  
+
   /**
    * 图表专用格式化
    * @param date 要格式化的日期
    * @param chartType 图表类型
    * @returns 适合图表显示的日期字符串
    */
-  const formatChartDate = useCallback((
-    date: Date,
-    chartType: 'month' | 'day' | 'year'
-  ): string => {
-    try {
-      const separator = getDateSeparator
+  const formatChartDate = useCallback(
+    (date: Date, chartType: 'month' | 'day' | 'year'): string => {
+      try {
+        const separator = getDateSeparator
 
-      switch (chartType) {
-        case 'month':
-          return format(date, `yyyy${separator}MM`)
-        case 'day':
-          // 根据用户格式调整日期显示
-          const userFormat = userSettings?.dateFormat || 'YYYY-MM-DD'
-          if (userFormat.startsWith('DD')) {
-            return format(date, `dd${separator}MM`)
-          } else if (userFormat.startsWith('MM')) {
-            return format(date, `MM${separator}dd`)
-          } else {
-            return format(date, `MM${separator}dd`)
-          }
-        case 'year':
-          return format(date, 'yyyy')
-        default:
-          return format(date, formatMapping)
+        switch (chartType) {
+          case 'month':
+            return format(date, `yyyy${separator}MM`)
+          case 'day':
+            // 根据用户格式调整日期显示
+            const userFormat = userSettings?.dateFormat || 'YYYY-MM-DD'
+            if (userFormat.startsWith('DD')) {
+              return format(date, `dd${separator}MM`)
+            } else if (userFormat.startsWith('MM')) {
+              return format(date, `MM${separator}dd`)
+            } else {
+              return format(date, `MM${separator}dd`)
+            }
+          case 'year':
+            return format(date, 'yyyy')
+          default:
+            return format(date, formatMapping)
+        }
+      } catch (error) {
+        console.error('Chart date formatting error:', error)
+        return format(date, 'yyyy-MM-dd')
       }
-    } catch (error) {
-      console.error('Chart date formatting error:', error)
-      return format(date, 'yyyy-MM-dd')
-    }
-  }, [userSettings?.dateFormat, formatMapping, getDateSeparator])
-  
+    },
+    [userSettings?.dateFormat, formatMapping, getDateSeparator]
+  )
+
   /**
    * 智能日期显示（保持现有的相对时间逻辑）
    * @param date 要格式化的日期
    * @returns 智能格式化的日期字符串
    */
-  const formatSmartDate = useCallback((date: Date): string => {
-    try {
-      const now = new Date()
-      // 设置时间为当天的开始，避免时间部分的影响
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const normalizedDate = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-      )
+  const formatSmartDate = useCallback(
+    (date: Date): string => {
+      try {
+        const now = new Date()
+        // 设置时间为当天的开始，避免时间部分的影响
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        const normalizedDate = new Date(
+          date.getFullYear(),
+          date.getMonth(),
+          date.getDate()
+        )
 
-      const diffTime = normalizedDate.getTime() - today.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        const diffTime = normalizedDate.getTime() - today.getTime()
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-      // 使用国际化文本
-      if (diffDays === 0) {
-        return t('common.date.today')
-      } else if (diffDays === -1) {
-        return t('common.date.yesterday')
-      } else if (diffDays === 1) {
-        return t('common.date.tomorrow')
-      } else if (diffDays > 1 && diffDays <= 7) {
-        return t('common.date.days.later', { days: diffDays })
-      } else if (diffDays < -1 && diffDays >= -7) {
-        return t('common.date.days.ago', { days: Math.abs(diffDays) })
-      } else {
-        // 超出范围使用用户设置的格式
+        // 使用国际化文本
+        if (diffDays === 0) {
+          return t('common.date.today')
+        } else if (diffDays === -1) {
+          return t('common.date.yesterday')
+        } else if (diffDays === 1) {
+          return t('common.date.tomorrow')
+        } else if (diffDays > 1 && diffDays <= 7) {
+          return t('common.date.days.later', { days: diffDays })
+        } else if (diffDays < -1 && diffDays >= -7) {
+          return t('common.date.days.ago', { days: Math.abs(diffDays) })
+        } else {
+          // 超出范围使用用户设置的格式
+          return format(date, formatMapping, { locale: dateLocale })
+        }
+      } catch (error) {
+        console.error('Smart date formatting error:', error)
         return format(date, formatMapping, { locale: dateLocale })
       }
-    } catch (error) {
-      console.error('Smart date formatting error:', error)
-      return format(date, formatMapping, { locale: dateLocale })
-    }
-  }, [formatMapping, dateLocale, t])
+    },
+    [formatMapping, dateLocale, t]
+  )
 
   /**
    * 基础日期格式化
@@ -126,41 +129,39 @@ export function useUserDateFormatter() {
    * @param options 格式化选项
    * @returns 格式化后的日期字符串
    */
-  const formatDate = useCallback((
-    date: Date | string,
-    options: DateFormatOptions = {}
-  ): string => {
-    try {
-      const dateObj = typeof date === 'string' ? parseISO(date) : date
+  const formatDate = useCallback(
+    (date: Date | string, options: DateFormatOptions = {}): string => {
+      try {
+        const dateObj = typeof date === 'string' ? parseISO(date) : date
 
-      // 检查日期对象的有效性
-      if (!dateObj || isNaN(dateObj.getTime())) {
-        console.warn('Invalid date object provided to formatDate:', date)
+        // 检查日期对象的有效性
+        if (!dateObj || isNaN(dateObj.getTime())) {
+          console.warn('Invalid date object provided to formatDate:', date)
+          return 'Invalid Date'
+        }
+
+        if (options.relative) {
+          return formatSmartDate(dateObj)
+        }
+
+        if (options.chartFormat) {
+          return formatChartDate(dateObj, options.chartFormat)
+        }
+
+        let formatString = formatMapping
+        if (options.includeTime) {
+          formatString += ' HH:mm'
+        }
+
+        return format(dateObj, formatString, { locale: dateLocale })
+      } catch (error) {
+        console.error('Date formatting error:', error, 'for date:', date)
         return 'Invalid Date'
       }
+    },
+    [formatMapping, dateLocale, formatSmartDate, formatChartDate]
+  )
 
-      if (options.relative) {
-        return formatSmartDate(dateObj)
-      }
-
-      if (options.chartFormat) {
-        return formatChartDate(dateObj, options.chartFormat)
-      }
-
-      let formatString = formatMapping
-      if (options.includeTime) {
-        formatString += ' HH:mm'
-      }
-
-      return format(dateObj, formatString, { locale: dateLocale })
-    } catch (error) {
-      console.error('Date formatting error:', error, 'for date:', date)
-      return 'Invalid Date'
-    }
-  }, [formatMapping, dateLocale, formatSmartDate, formatChartDate])
-  
-
-  
   /**
    * 表单输入专用格式化
    * @param date 要格式化的日期
@@ -175,7 +176,7 @@ export function useUserDateFormatter() {
       return ''
     }
   }, [])
-  
+
   /**
    * 解析用户输入的日期字符串
    * @param dateString 日期字符串
@@ -187,7 +188,7 @@ export function useUserDateFormatter() {
       if (dateString.includes('T') || dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
         return parseISO(dateString)
       }
-      
+
       // 尝试解析为 Date 对象
       const parsed = new Date(dateString)
       return isNaN(parsed.getTime()) ? null : parsed
@@ -195,7 +196,7 @@ export function useUserDateFormatter() {
       return null
     }
   }, [])
-  
+
   return {
     formatDate,
     formatSmartDate,
@@ -204,6 +205,6 @@ export function useUserDateFormatter() {
     parseUserDate,
     userDateFormat: userSettings?.dateFormat || 'YYYY-MM-DD',
     dateLocale,
-    getDateSeparator
+    getDateSeparator,
   }
 }

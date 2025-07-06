@@ -2,9 +2,9 @@
 
 /**
  * Favicon 生成脚本
- * 
+ *
  * 此脚本提供了生成不同格式和尺寸 favicon 的说明和工具
- * 
+ *
  * 使用方法:
  * 1. 确保已有 public/favicon.svg 文件
  * 2. 运行此脚本获取生成其他格式的说明
@@ -15,7 +15,7 @@ const fs = require('fs')
 const path = require('path')
 
 console.log('🎨 Flow Balance Favicon 生成工具')
-console.log('=' .repeat(50))
+console.log('='.repeat(50))
 
 // 检查 SVG 文件是否存在
 const svgPath = path.join(process.cwd(), 'public', 'favicon.svg')
@@ -32,12 +32,36 @@ console.log('📋 需要生成的 favicon 文件:')
 console.log('')
 
 const faviconSizes = [
-  { name: 'favicon.ico', size: '16x16,32x32,48x48', description: '传统 ICO 格式，包含多个尺寸' },
-  { name: 'favicon-16x16.png', size: '16x16', description: '小尺寸 PNG favicon' },
-  { name: 'favicon-32x32.png', size: '32x32', description: '标准尺寸 PNG favicon' },
-  { name: 'apple-touch-icon.png', size: '180x180', description: 'Apple 设备图标' },
-  { name: 'android-chrome-192x192.png', size: '192x192', description: 'Android Chrome 图标' },
-  { name: 'android-chrome-512x512.png', size: '512x512', description: 'Android Chrome 大图标' },
+  {
+    name: 'favicon.ico',
+    size: '16x16,32x32,48x48',
+    description: '传统 ICO 格式，包含多个尺寸',
+  },
+  {
+    name: 'favicon-16x16.png',
+    size: '16x16',
+    description: '小尺寸 PNG favicon',
+  },
+  {
+    name: 'favicon-32x32.png',
+    size: '32x32',
+    description: '标准尺寸 PNG favicon',
+  },
+  {
+    name: 'apple-touch-icon.png',
+    size: '180x180',
+    description: 'Apple 设备图标',
+  },
+  {
+    name: 'android-chrome-192x192.png',
+    size: '192x192',
+    description: 'Android Chrome 图标',
+  },
+  {
+    name: 'android-chrome-512x512.png',
+    size: '512x512',
+    description: 'Android Chrome 大图标',
+  },
 ]
 
 faviconSizes.forEach((favicon, index) => {
@@ -64,9 +88,15 @@ console.log('')
 console.log('然后运行以下命令:')
 console.log('convert public/favicon.svg -resize 16x16 public/favicon-16x16.png')
 console.log('convert public/favicon.svg -resize 32x32 public/favicon-32x32.png')
-console.log('convert public/favicon.svg -resize 180x180 public/apple-touch-icon.png')
-console.log('convert public/favicon.svg -resize 192x192 public/android-chrome-192x192.png')
-console.log('convert public/favicon.svg -resize 512x512 public/android-chrome-512x512.png')
+console.log(
+  'convert public/favicon.svg -resize 180x180 public/apple-touch-icon.png'
+)
+console.log(
+  'convert public/favicon.svg -resize 192x192 public/android-chrome-192x192.png'
+)
+console.log(
+  'convert public/favicon.svg -resize 512x512 public/android-chrome-512x512.png'
+)
 console.log('')
 
 console.log('方法 3: 使用 Node.js 包 (需要安装依赖)')

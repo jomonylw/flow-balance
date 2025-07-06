@@ -20,29 +20,29 @@ async function cleanDuplicateCurrencies() {
 
     // 删除重复的 CNY 用户货币记录（保留原始的，删除自定义的）
     console.log('\n🗑️  删除重复的 CNY 用户货币记录...')
-    
+
     const deletedUserCurrency = await prisma.userCurrency.deleteMany({
       where: {
-        id: { in: ["cmc7v4cnb00039rzslerrnycy"] }
-      }
+        id: { in: ['cmc7v4cnb00039rzslerrnycy'] },
+      },
     })
-    
+
     console.log(`✅ 删除了 ${deletedUserCurrency.count} 条重复的用户货币记录`)
 
     // 删除重复的 CNY 货币记录（删除自定义的）
     console.log('\n🗑️  删除重复的 CNY 货币记录...')
-    
+
     const deletedCurrency = await prisma.currency.deleteMany({
       where: {
-        id: { in: ["cmc7v4cna00019rzs2bv3x4qz"] }
-      }
+        id: { in: ['cmc7v4cna00019rzs2bv3x4qz'] },
+      },
     })
-    
+
     console.log(`✅ 删除了 ${deletedCurrency.count} 条重复的货币记录`)
 
     // 验证清理结果
     console.log('\n🔍 验证清理结果...')
-    
+
     const remainingUserCurrencies = await prisma.userCurrency.findMany({
       where: {
         userId: user.id,
@@ -50,22 +50,25 @@ async function cleanDuplicateCurrencies() {
       include: {
         currency: true,
       },
-      orderBy: [
-        { currency: { code: 'asc' } },
-      ],
+      orderBy: [{ currency: { code: 'asc' } }],
     })
 
     console.log(`💰 剩余用户货币记录 (${remainingUserCurrencies.length} 条):`)
     remainingUserCurrencies.forEach((uc, index) => {
-      console.log(`${index + 1}. ${uc.currency.code} - ${uc.currency.name} (${uc.isActive ? '活跃' : '非活跃'})`)
+      console.log(
+        `${index + 1}. ${uc.currency.code} - ${uc.currency.name} (${uc.isActive ? '活跃' : '非活跃'})`
+      )
     })
 
     // 检查是否还有重复
-    const currencyCodeCounts = remainingUserCurrencies.reduce((counts, uc) => {
-      const code = uc.currency.code
-      counts[code] = (counts[code] || 0) + 1
-      return counts
-    }, {} as Record<string, number>)
+    const currencyCodeCounts = remainingUserCurrencies.reduce(
+      (counts, uc) => {
+        const code = uc.currency.code
+        counts[code] = (counts[code] || 0) + 1
+        return counts
+      },
+      {} as Record<string, number>
+    )
 
     const duplicates = Object.entries(currencyCodeCounts)
       .filter(([_, count]) => count > 1)
@@ -78,7 +81,6 @@ async function cleanDuplicateCurrencies() {
     }
 
     console.log('\n🎉 清理完成!')
-
   } catch (error) {
     console.error('❌ 清理失败:', error)
   } finally {

@@ -16,6 +16,7 @@
 ### 问题机制
 
 1. `processCurrentRecurringTransactions()` 会：
+
    - 查找到期的定期交易
    - 执行 `RecurringTransactionService.executeRecurringTransaction()`
    - 创建交易记录并更新 `nextDate`
@@ -28,6 +29,7 @@
 ### 重复创建的原因
 
 虽然有 `DuplicateCheckService` 进行重复检查，但两个处理步骤之间存在时间差，可能导致：
+
 - 第一个步骤创建了交易记录
 - 第二个步骤在检查时还没有看到第一个步骤的结果
 - 导致重复创建相同日期的交易记录
@@ -37,6 +39,7 @@
 ### 解决思路
 
 移除重复的处理步骤，只保留 `generateFutureRecurringTransactions()`，因为它已经包含了：
+
 - 历史遗漏检查
 - 未来记录生成
 - 完整的重复检查机制
@@ -46,6 +49,7 @@
 #### 1. 修改 `UnifiedSyncService.processUserData()`
 
 **修改前：**
+
 ```typescript
 // 4. 处理当前到期的定期交易
 const recurringResult = await this.processCurrentRecurringTransactions(userId)
@@ -58,7 +62,8 @@ processedLoans += loanResult.processed
 failedCount += loanResult.failed
 
 // 6. 生成未来7天的定期交易数据
-const futureRecurringResult = await FutureDataGenerationService.generateFutureRecurringTransactions(userId)
+const futureRecurringResult =
+  await FutureDataGenerationService.generateFutureRecurringTransactions(userId)
 processedRecurring += futureRecurringResult.generated
 
 // 7. 生成未来7天的贷款还款数据
@@ -67,9 +72,11 @@ processedLoans += futureLoanResult.generated
 ```
 
 **修改后：**
+
 ```typescript
 // 4. 生成定期交易记录（包含历史遗漏检查和未来生成）
-const recurringResult = await FutureDataGenerationService.generateFutureRecurringTransactions(userId)
+const recurringResult =
+  await FutureDataGenerationService.generateFutureRecurringTransactions(userId)
 processedRecurring += recurringResult.generated
 
 // 5. 生成贷款还款记录（包含历史遗漏检查和未来生成）
@@ -80,12 +87,14 @@ processedLoans += loanResult.generated
 #### 2. 移除不再使用的方法
 
 删除了以下私有方法：
+
 - `processCurrentRecurringTransactions()`
 - `processCurrentLoanPayments()`
 
 #### 3. 清理相关变量
 
-移除了 `failedCount` 变量的更新逻辑，因为现在统一同步不会有失败的项目，错误会记录在 `errorMessage` 中。
+移除了 `failedCount` 变量的更新逻辑，因为现在统一同步不会有失败的项目，错误会记录在 `errorMessage`
+中。
 
 ## 测试验证
 
@@ -135,10 +144,12 @@ processedLoans += loanResult.generated
 ## 影响范围
 
 ### 直接影响
+
 - `UnifiedSyncService` 的处理逻辑
 - 手动同步功能的行为
 
 ### 无影响
+
 - 定期交易的创建、编辑、删除功能
 - 重复检查机制 (`DuplicateCheckService`)
 - 未来数据生成功能 (`FutureDataGenerationService`)
@@ -158,6 +169,7 @@ processedLoans += loanResult.generated
 在修复定期交易重复生成问题时，发现贷款合约的处理逻辑也存在类似的冗余：
 
 1. **`FutureDataGenerationService.generateFutureLoanPayments()`**：
+
    - 这个方法只是一个包装器
    - 直接调用 `LoanContractService.processLoanPaymentsBySchedule(userId)`
    - 没有提供任何额外的逻辑或处理
@@ -175,6 +187,7 @@ processedLoans += loanResult.generated
 ### 具体修改
 
 1. **修改 `UnifiedSyncService.processUserData()`**：
+
    ```typescript
    // 修改前
    const loanResult = await FutureDataGenerationService.generateFutureLoanPayments(userId)
@@ -184,6 +197,7 @@ processedLoans += loanResult.generated
    ```
 
 2. **修改其他调用位置**：
+
    - `FutureDataGenerationService.forceRegenerateFutureData()`
    - `generate-historical` API 路由
 
@@ -231,9 +245,17 @@ const updateData: Record<string, unknown> = {}
 
 // 只复制允许直接更新的字段
 const allowedFields = [
-  'type', 'amount', 'description', 'notes',
-  'frequency', 'interval', 'dayOfMonth', 'dayOfWeek', 'monthOfYear',
-  'isActive', 'maxOccurrences',
+  'type',
+  'amount',
+  'description',
+  'notes',
+  'frequency',
+  'interval',
+  'dayOfMonth',
+  'dayOfWeek',
+  'monthOfYear',
+  'isActive',
+  'maxOccurrences',
 ]
 
 // 处理货币代码转换
@@ -258,6 +280,7 @@ if (data.accountId !== undefined) {
 ### 测试验证
 
 通过测试脚本验证了以下功能：
+
 - ✅ 基本字段更新（金额、描述等）
 - ✅ 账户ID更新
 - ✅ 货币代码更新（自动转换为货币ID）

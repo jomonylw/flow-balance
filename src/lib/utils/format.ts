@@ -18,7 +18,10 @@ export function formatCurrency(
 ): string {
   // 使用统一的货币符号映射
 
-  const currencySymbol = symbol || CURRENCY_SYMBOLS[currencyCode as keyof typeof CURRENCY_SYMBOLS] || currencyCode
+  const currencySymbol =
+    symbol ||
+    CURRENCY_SYMBOLS[currencyCode as keyof typeof CURRENCY_SYMBOLS] ||
+    currencyCode
 
   // 注意：这个函数已被弃用，请使用 useUserCurrencyFormatter Hook
   // 这里保留硬编码的 'zh-CN' 是为了向后兼容，但建议迁移到新的Hook

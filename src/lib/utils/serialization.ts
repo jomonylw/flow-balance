@@ -5,7 +5,10 @@
 
 import { Decimal } from '@prisma/client/runtime/library'
 import type { Account, Transaction, Category, Currency } from '@prisma/client'
-import { convertPrismaTransactionType, convertPrismaAccountType } from '@/types/core/constants'
+import {
+  convertPrismaTransactionType,
+  convertPrismaAccountType,
+} from '@/types/core/constants'
 
 /**
  * 递归地将对象中的所有Decimal类型转换为number类型

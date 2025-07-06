@@ -1699,17 +1699,17 @@ on:
     branches: [main, develop]
 
 jobs:
-  quality-check:    # 代码质量检查
-  docker-build:     # Docker 镜像构建
-  security-scan:    # 安全扫描
-  release:          # 自动发布
+  quality-check: # 代码质量检查
+  docker-build: # Docker 镜像构建
+  security-scan: # 安全扫描
+  release: # 自动发布
 ```
 
 #### 2.1.2 触发条件
 
 - **推送到 main/develop 分支**：触发构建和测试
 - **创建 Pull Request**：触发代码检查
-- **创建 Tag (v*)**：触发正式发布
+- **创建 Tag (v\*)**：触发正式发布
 
 #### 2.1.3 发布流程
 
@@ -2212,25 +2212,30 @@ pnpm type-check:detailed           # 详细类型检查报告
 ## 📚 文档导航
 
 ### 🚀 快速开始
+
 - **[README.md](README.md)** - 项目介绍和基础使用指南
 - **[快速参考](docs/QUICK_REFERENCE.md)** - 常用命令和操作速查表
 
 ### 🐳 部署指南
+
 - **[GitHub 设置指南](docs/GITHUB_SETUP_GUIDE.md)** - 从零开始的 GitHub 仓库设置
 - **[分步部署指南](docs/STEP_BY_STEP_DEPLOYMENT.md)** - 详细的实操部署流程
 - **[完整部署指南](docs/DEPLOYMENT_GUIDE.md)** - 全面的部署文档
 - **[部署总结](DEPLOYMENT_SUMMARY.md)** - 部署方式对比和总结
 
 ### ⚙️ CI/CD 和自动化
+
 - **[CI/CD 配置指南](docs/CICD_CONFIGURATION.md)** - GitHub Actions 流水线详解
 - **[项目状态](PROJECT_STATUS.md)** - 功能完成情况和项目亮点
 
 ### 🔧 开发文档
+
 - **[开发规范](CODE_GUIDE_DOC/DEVELOPMENT_STANDARDS.md)** - 代码规范和最佳实践
 - **[API 文档](docs/API_DOCUMENTATION.md)** - API 接口说明
 - **[数据库设计](docs/DATABASE_DESIGN.md)** - 数据库结构和设计
 
 ### 🛠️ 实用工具
+
 - **脚本工具**:
   - `scripts/quick-start.sh` - 交互式快速部署
   - `scripts/monitor.sh` - 应用监控和健康检查
