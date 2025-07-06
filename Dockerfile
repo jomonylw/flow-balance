@@ -72,7 +72,8 @@ COPY scripts/docker-entrypoint.sh ./scripts/
 COPY healthcheck.js ./
 
 # Install Prisma CLI globally using npm (more reliable than pnpm global)
-RUN npm install -g prisma @prisma/client
+RUN npm install -g prisma @prisma/client && \
+    npm cache clean --force
 
 # Create data directory for SQLite
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
