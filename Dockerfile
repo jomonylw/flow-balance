@@ -93,6 +93,10 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+# 标记这是 Docker 环境，用于智能配置检测
+ENV DOCKER_CONTAINER=true
+# 设置默认的数据库 URL（如果用户没有提供）
+ENV DATABASE_URL="file:/app/data/flow-balance.db"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \

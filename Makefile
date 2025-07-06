@@ -101,13 +101,16 @@ docker-build: ## 构建 Docker 镜像
 	docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
 	@echo "✅ Docker 镜像构建完成"
 
-docker-run: ## 运行 Docker 容器
-	@echo "🐳 运行 Docker 容器..."
+docker-run: ## 运行 Docker 容器（简单模式，自动配置）
+	@echo "🐳 运行 Docker 容器（简单模式）..."
+	./scripts/docker-run-simple.sh
+
+docker-run-manual: ## 运行 Docker 容器（手动配置）
+	@echo "🐳 运行 Docker 容器（手动配置）..."
 	docker run -d \
 		--name $(APP_NAME) \
 		-p 3000:3000 \
-		-e DATABASE_URL="file:./data/production.db" \
-		-e JWT_SECRET="your-secure-jwt-secret" \
+		-e DATABASE_URL="file:/app/data/production.db" \
 		-v $(APP_NAME)-data:/app/data \
 		$(DOCKER_IMAGE):$(DOCKER_TAG)
 	@echo "✅ Docker 容器启动完成"
