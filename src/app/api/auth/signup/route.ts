@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const { password: _password, ...userWithoutPassword } = result.user
 
     // 自动登录用户
-    const token = generateToken({
+    const token = await generateToken({
       userId: result.user.id,
       email: result.user.email,
     })

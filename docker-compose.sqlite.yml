@@ -13,9 +13,9 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/data/flow-balance.db
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       - NEXT_TELEMETRY_DISABLED=1
+      # JWT_SECRET 会自动生成，无需手动配置
     volumes:
       # 持久化数据库文件
       - ./data:/app/data

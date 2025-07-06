@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { PrismaClient } from '@prisma/client'
 import { generateRecoveryKey } from '@/lib/utils/recovery-key'
 import { createServerTranslator } from '@/lib/utils/server-i18n'
+import { getJWTSecret } from '@/lib/utils/jwt-secret-manager'
 
 const prisma = new PrismaClient()
 
@@ -13,11 +14,8 @@ export interface JWTPayload {
 }
 
 // JWT 相关函数
-export function generateToken(payload: JWTPayload): string {
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    throw new Error('JWT_SECRET is not defined')
-  }
+export async function generateToken(payload: JWTPayload): Promise<string> {
+  const secret = await getJWTSecret()
 
   // 验证payload类型
   if (
@@ -32,13 +30,9 @@ export function generateToken(payload: JWTPayload): string {
   return jwt.sign(payload, secret, { expiresIn: '7d' })
 }
 
-export function verifyToken(token: string): JWTPayload | null {
+export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const secret = process.env.JWT_SECRET
-    if (!secret) {
-      throw new Error('JWT_SECRET is not defined')
-    }
-
+    const secret = await getJWTSecret()
     const decoded = jwt.verify(token, secret) as JWTPayload
     return decoded
   } catch {
@@ -68,7 +62,7 @@ export async function getCurrentUser() {
       return null
     }
 
-    const payload = verifyToken(token)
+    const payload = await verifyToken(token)
     if (!payload) {
       return null
     }
@@ -229,7 +223,7 @@ export async function loginUser(email: string, password: string) {
     }
 
     // 生成 JWT token
-    const token = generateToken({
+    const token = await generateToken({
       userId: user.id,
       email: user.email,
     })

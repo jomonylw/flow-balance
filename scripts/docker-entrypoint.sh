@@ -82,6 +82,66 @@ else
 fi
 echo "✅ Prisma client generated"
 
+# 初始化应用（包括 JWT 密钥生成）
+echo "🔑 Initializing application..."
+if node -e "
+const path = require('path');
+const fs = require('fs');
+
+// 确保数据目录存在
+const dataDir = '/app/data';
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+    console.log('Created data directory:', dataDir);
+}
+
+// 初始化 JWT 密钥
+const crypto = require('crypto');
+const jwtSecretFile = path.join(dataDir, '.jwt-secret');
+
+if (!fs.existsSync(jwtSecretFile)) {
+    const jwtSecret = crypto.randomBytes(64).toString('hex');
+    fs.writeFileSync(jwtSecretFile, jwtSecret, { mode: 0o600 });
+    console.log('✅ Generated new JWT secret');
+} else {
+    console.log('✅ JWT secret already exists');
+}
+"; then
+    echo "✅ Application initialized successfully"
+else
+    echo "⚠️  Application initialization failed, but continuing..."
+fi
+
+# 检查并导入种子数据（仅在数据库为空时）
+echo "🔍 Checking if seed data is needed..."
+if node -e "
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+prisma.currency.count().then(count => {
+    if (count === 0) {
+        console.log('SEED_NEEDED');
+        process.exit(0);
+    } else {
+        console.log('SEED_EXISTS');
+        process.exit(1);
+    }
+}).catch(() => {
+    console.log('SEED_NEEDED');
+    process.exit(0);
+}).finally(() => {
+    prisma.\$disconnect();
+});
+"; then
+    echo "🌱 Database is empty, importing seed data..."
+    if pnpm db:seed; then
+        echo "✅ Seed data imported successfully"
+    else
+        echo "⚠️  Seed data import failed, but continuing..."
+    fi
+else
+    echo "✅ Seed data already exists, skipping import"
+fi
+
 # 检查数据库连接
 echo "🔍 Testing database connection..."
 if ! node -e "

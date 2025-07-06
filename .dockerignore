@@ -108,8 +108,9 @@ jspm_packages/
 # TernJS port file
 .tern-port
 
-# Documentation
+# Documentation and guides
 docs/
+CODE_GUIDE_DOC/
 *.md
 !README.md
 
@@ -125,6 +126,12 @@ docker-compose*
 # Scripts (keep only essential ones)
 scripts/
 !scripts/docker-entrypoint.sh
+
+# Development backup files
+dev-files-backup-*/
+
+# Data directories
+data/
 
 # Test files
 **/*.test.js

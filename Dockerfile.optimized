@@ -1,0 +1,93 @@
+# Flow Balance - Optimized Docker Build
+# 优化版 Docker 构建，显著减少镜像大小
+
+# Stage 1: Dependencies (优化依赖安装)
+FROM node:18-alpine AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# 安装 pnpm（使用更轻量的方式）
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# 复制依赖文件
+COPY package.json pnpm-lock.yaml ./
+COPY prisma ./prisma/
+
+# 只安装生产依赖 + 构建依赖
+RUN pnpm install --frozen-lockfile --production=false && \
+    pnpm db:generate && \
+    # 清理缓存
+    pnpm store prune && \
+    rm -rf ~/.pnpm-store
+
+# Stage 2: Builder (优化构建过程)
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+# 启用 corepack
+RUN corepack enable
+
+# 复制依赖和源码
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/prisma ./prisma
+COPY . .
+
+# 构建应用
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm build && \
+    # 只保留生产依赖
+    pnpm install --frozen-lockfile --production && \
+    # 清理不需要的文件
+    rm -rf .next/cache && \
+    rm -rf node_modules/.cache
+
+# Stage 3: Runner (极简运行环境)
+FROM node:18-alpine AS runner
+WORKDIR /app
+
+# 只安装必要的系统包
+RUN apk add --no-cache \
+    dumb-init \
+    # 移除不必要的包：netcat-openbsd bash
+    && rm -rf /var/cache/apk/*
+
+# 创建用户
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# 只复制必要的文件
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# 复制 Prisma 相关文件（只复制必要的）
+COPY --from=builder /app/prisma/schema.prisma ./prisma/
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# 复制脚本和配置
+COPY scripts/docker-entrypoint.sh ./scripts/
+COPY healthcheck.js ./
+
+# 创建数据目录
+RUN mkdir -p /app/data && \
+    chmod +x ./scripts/docker-entrypoint.sh && \
+    chown -R nextjs:nodejs /app
+
+USER nextjs
+
+# 环境变量
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME="0.0.0.0"
+
+EXPOSE 3000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node healthcheck.js
+
+ENTRYPOINT ["./scripts/docker-entrypoint.sh"]
+CMD ["dumb-init", "node", "server.js"]

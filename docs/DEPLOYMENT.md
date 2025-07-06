@@ -1,5 +1,71 @@
 # Flow Balance 部署指南
 
+## 🚀 快速部署（Docker）
+
+Flow Balance 支持一键 Docker 部署，**无需复杂配置**。
+
+### 🔑 自动化特性
+
+- **JWT 密钥自动生成**：无需手动配置，首次启动时自动生成安全密钥
+- **种子数据自动导入**：自动导入 34 种国际货币基础数据
+- **智能初始化**：只在数据库为空时执行初始化，不影响现有数据
+
+### 系统要求
+
+- **Docker**: 20.10+
+- **Docker Compose**: 1.29+
+- **磁盘空间**: 至少 1GB 可用空间
+
+### SQLite 部署（单机推荐）
+
+```bash
+# 克隆项目
+git clone https://github.com/jomonylw/flow-balance.git
+cd flow-balance
+
+# 一键启动
+docker-compose -f docker-compose.sqlite.yml up -d
+
+# 访问应用
+open http://localhost:3000
+```
+
+### PostgreSQL 部署（生产环境推荐）
+
+```bash
+# 启动应用（包含 PostgreSQL 数据库）
+docker-compose -f docker-compose.postgresql.yml up -d
+```
+
+## 🔒 安全配置
+
+### JWT 密钥管理
+
+- **自动生成**：首次启动时自动生成 64 字节随机密钥
+- **持久化存储**：保存在 `/app/data/.jwt-secret` 文件中
+- **容器重启保持**：确保会话不会因重启而中断
+- **无需用户配置**：完全自动化，提升用户体验
+
+### 自定义 JWT 密钥（可选）
+
+如果需要使用自定义密钥：
+
+```yaml
+environment:
+  - JWT_SECRET=your-custom-secret-minimum-32-characters
+```
+
+## 🚨 故障排除
+
+### 会话过期问题
+
+**症状**：登录后立即提示"会话已过期"
+
+**解决方案**：
+1. 检查数据目录挂载：`ls -la ./data`
+2. 重启容器重新生成密钥：`docker-compose restart`
+3. 查看容器日志：`docker logs flow-balance-app`
+
 ## 开发环境设置
 
 ### 1. 克隆项目

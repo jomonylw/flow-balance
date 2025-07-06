@@ -7,7 +7,7 @@ const packageJsonPath = path.join(__dirname, 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
 
 const nextConfig = {
-  // Docker 部署配置
+  // Docker 部署配置 - standalone 模式减少镜像大小
   output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
 
   eslint: {
@@ -20,10 +20,24 @@ const nextConfig = {
   // 服务器外部包配置
   serverExternalPackages: ['@prisma/client'],
 
-  // 图片优化配置
+  // 图片优化配置 - 禁用优化减少依赖
   images: {
     domains: [],
     unoptimized: process.env.NODE_ENV === 'production',
+  },
+
+  // 实验性功能 - 减少包大小
+  experimental: {
+    // 优化包导入（移除与 serverExternalPackages 冲突的包）
+    optimizePackageImports: ['echarts', 'lucide-react'],
+  },
+
+  // 编译器优化
+  compiler: {
+    // 移除 console.log (生产环境)
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn']
+    } : false,
   },
 
   // 环境变量

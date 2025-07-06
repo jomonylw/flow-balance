@@ -1,0 +1,52 @@
+# Flow Balance - 优化版 Docker Compose 配置
+# 使用优化的 Dockerfile 构建更小的镜像
+
+version: '3.8'
+
+services:
+  flow-balance:
+    build:
+      context: .
+      dockerfile: Dockerfile.optimized
+      # 构建参数
+      args:
+        - NODE_ENV=production
+    container_name: flow-balance-optimized
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env.docker
+    environment:
+      # 覆盖环境变量文件中的配置
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/flow-balance.db
+      - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      # 数据持久化
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # 资源限制（可选）
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    # 只读根文件系统（除了数据目录）
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+volumes:
+  # 如果需要命名卷
+  flow_balance_data:
+    driver: local
