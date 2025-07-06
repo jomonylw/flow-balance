@@ -139,8 +139,9 @@ __mocks__/
 .editorconfig
 
 # TypeScript
-tsconfig*.json
 *.tsbuildinfo
+# Keep tsconfig.json for path mapping
+!tsconfig.json
 
 # Husky
 .husky/
