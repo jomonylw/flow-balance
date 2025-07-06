@@ -9,9 +9,14 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 env:
   NODE_ENV: test
-  DATABASE_URL: "file:./test.db"
+  DATABASE_URL: "file:./dev.db"
   JWT_SECRET: "test-jwt-secret-for-ci"
   NEXTAUTH_SECRET: "test-nextauth-secret-for-ci"
   NEXTAUTH_URL: "http://localhost:3000"
@@ -55,7 +60,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "NODE_ENV=test" > .env
-          echo "DATABASE_URL=file:./test.db" >> .env
+          echo "DATABASE_URL=file:./dev.db" >> .env
           echo "JWT_SECRET=test-jwt-secret-for-ci" >> .env
           echo "NEXTAUTH_SECRET=test-nextauth-secret-for-ci" >> .env
           echo "NEXTAUTH_URL=http://localhost:3000" >> .env
@@ -107,7 +112,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "NODE_ENV=test" > .env
-          echo "DATABASE_URL=file:./test.db" >> .env
+          echo "DATABASE_URL=file:./dev.db" >> .env
           echo "JWT_SECRET=test-jwt-secret-for-ci" >> .env
           echo "NEXTAUTH_SECRET=test-nextauth-secret-for-ci" >> .env
           echo "NEXTAUTH_URL=http://localhost:3000" >> .env
@@ -164,7 +169,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "NODE_ENV=test" > .env
-          echo "DATABASE_URL=file:./test.db" >> .env
+          echo "DATABASE_URL=file:./dev.db" >> .env
           echo "JWT_SECRET=test-jwt-secret-for-ci" >> .env
           echo "NEXTAUTH_SECRET=test-nextauth-secret-for-ci" >> .env
           echo "NEXTAUTH_URL=http://localhost:3000" >> .env
@@ -207,7 +212,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "NODE_ENV=test" > .env
-          echo "DATABASE_URL=file:./test.db" >> .env
+          echo "DATABASE_URL=file:./dev.db" >> .env
           echo "JWT_SECRET=test-jwt-secret-for-ci" >> .env
           echo "NEXTAUTH_SECRET=test-nextauth-secret-for-ci" >> .env
           echo "NEXTAUTH_URL=http://localhost:3000" >> .env
