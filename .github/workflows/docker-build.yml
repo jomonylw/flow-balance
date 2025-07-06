@@ -18,6 +18,21 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  NODE_ENV: test
+  DATABASE_URL: "file:./test.db"
+  JWT_SECRET: "test-jwt-secret-for-ci"
+  NEXTAUTH_SECRET: "test-nextauth-secret-for-ci"
+  NEXTAUTH_URL: "http://localhost:3000"
+  NODE_ENV: test
+  DATABASE_URL: "file:./test.db"
+  JWT_SECRET: "test-jwt-secret-for-ci"
+  NEXTAUTH_SECRET: "test-nextauth-secret-for-ci"
+  NEXTAUTH_URL: "http://localhost:3000"
+  NODE_ENV: test
+  DATABASE_URL: "file:./test.db"
+  JWT_SECRET: "test-jwt-secret-for-ci"
+  NEXTAUTH_SECRET: "test-nextauth-secret-for-ci"
+  NEXTAUTH_URL: "http://localhost:3000"
 
 jobs:
   # 代码质量检查
@@ -33,9 +48,9 @@ jobs:
           node-version: '18'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 9
 
       - name: Get pnpm store directory
         shell: bash
@@ -43,12 +58,20 @@ jobs:
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
+
+      - name: Create .env file
+        run: |
+          echo "NODE_ENV=test" > .env
+          echo "DATABASE_URL=file:./test.db" >> .env
+          echo "JWT_SECRET=test-jwt-secret-for-ci" >> .env
+          echo "NEXTAUTH_SECRET=test-nextauth-secret-for-ci" >> .env
+          echo "NEXTAUTH_URL=http://localhost:3000" >> .env
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
