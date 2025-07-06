@@ -40,8 +40,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Generate Prisma client (ensure it exists and is up to date)
 RUN pnpm db:generate
 
-# Verify Prisma client was generated
-RUN ls -la node_modules/.prisma/ || echo "Warning: Prisma client not found"
+# Verify Prisma client location for debugging
+RUN echo "Prisma client locations:" && \
+    find node_modules -path "*/@prisma/client*" -type d | head -3 || \
+    echo "No Prisma client found in expected locations"
 
 # Build the application
 RUN pnpm build
@@ -69,8 +71,8 @@ COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY scripts/docker-entrypoint.sh ./scripts/
 COPY healthcheck.js ./
 
-# Create Prisma directory (will be populated by entrypoint script)
-RUN mkdir -p ./node_modules/.prisma
+# Install only Prisma CLI for runtime generation
+RUN pnpm add -g prisma @prisma/client
 
 # Create data directory for SQLite
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data

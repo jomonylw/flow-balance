@@ -73,12 +73,14 @@ if ! pnpm db:deploy; then
 fi
 echo "✅ Database migrations completed"
 
-# 生成 Prisma 客户端（如果需要）
-if [ ! -d "node_modules/.prisma" ]; then
-    echo "🔄 Generating Prisma client..."
+# 生成 Prisma 客户端（运行时生成确保与环境匹配）
+echo "🔄 Generating Prisma client..."
+if command -v prisma >/dev/null 2>&1; then
+    prisma generate
+else
     pnpm db:generate
-    echo "✅ Prisma client generated"
 fi
+echo "✅ Prisma client generated"
 
 # 检查数据库连接
 echo "🔍 Testing database connection..."
