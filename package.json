@@ -23,12 +23,24 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
+    "db:deploy": "prisma migrate deploy",
     "analyze": "ANALYZE=true npm run build",
     "clean": "rm -rf .next out dist build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky install",
-    "pre-commit": "lint-staged"
+    "pre-commit": "lint-staged",
+    "docker:build": "docker build -t flow-balance .",
+    "docker:run": "docker run -p 3000:3000 flow-balance",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up",
+    "docker:prod": "docker-compose up",
+    "docker:down": "docker-compose down",
+    "quick-start": "./scripts/quick-start.sh",
+    "switch-db": "node scripts/switch-database.js",
+    "health": "curl -f http://localhost:3000/api/health",
+    "backup": "node scripts/backup-data.js",
+    "deploy:vercel": "vercel --prod",
+    "deploy:docker": "docker-compose up -d --build"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

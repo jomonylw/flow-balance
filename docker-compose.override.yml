@@ -1,0 +1,69 @@
+# Flow Balance - Docker Compose Override
+# 本地开发环境覆盖配置
+
+version: '3.8'
+
+services:
+  # 应用服务 - 开发模式覆盖
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=file:./data/dev.db
+      - JWT_SECRET=dev-jwt-secret-change-in-production
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      # 挂载源代码以支持热重载
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+      # 持久化开发数据库
+      - dev_data:/app/data
+    command: pnpm dev
+    
+  # 开发环境不需要 Nginx
+  nginx:
+    profiles:
+      - production
+    
+  # 开发环境使用轻量级 Redis 配置
+  redis:
+    command: redis-server --appendonly no --save ""
+    
+  # PostgreSQL 开发配置
+  postgres:
+    environment:
+      POSTGRES_DB: flowbalance_dev
+      POSTGRES_USER: flowbalance
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      
+  # 开发工具服务
+  prisma-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5555:5555"
+    environment:
+      - DATABASE_URL=file:./data/dev.db
+    volumes:
+      - .:/app
+      - dev_data:/app/data
+    command: pnpm db:studio
+    depends_on:
+      - app
+    profiles:
+      - tools
+
+volumes:
+  dev_data:
+    driver: local
+  postgres_dev_data:
+    driver: local

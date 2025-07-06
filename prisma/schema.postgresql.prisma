@@ -1,0 +1,112 @@
+// Flow Balance - Personal Finance Management System
+// Prisma Schema Definition for PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表 - 核心用户信息
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String    // 用户昵称/显示名称，默认为邮箱@前的部分
+  password         String    // 哈希后的密码
+  resetToken       String?   // 密码重置令牌（保留兼容性）
+  resetTokenExpiry DateTime? // 重置令牌过期时间（保留兼容性）
+  recoveryKey      String?   @unique // 恢复密钥，格式：FB-XXXX-XXXX-XXXX-XXXX
+  recoveryKeyCreatedAt DateTime? // 恢复密钥创建时间
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // 关联关系
+  settings         UserSettings?
+  userCurrencies   UserCurrency[]
+  customCurrencies Currency[]     // 用户创建的自定义货币
+  accounts         Account[]
+  categories       Category[]
+  transactions     Transaction[]
+  transactionTemplates TransactionTemplate[] // 用户的交易模板
+  tags             Tag[]
+  exchangeRates    ExchangeRate[]
+  recurringTransactions RecurringTransaction[] // 用户的定期交易
+  recurringProcessingLogs RecurringProcessingLog[] // 定期交易处理日志
+  loanContracts    LoanContract[] // 用户的贷款合约
+  loanPayments     LoanPayment[]  // 用户的贷款还款记录
+
+  @@map("users")
+}
+
+// 用户设置表 - 与用户一对一关系
+model UserSettings {
+  id               String @id @default(cuid())
+  userId           String @unique
+  baseCurrencyId   String? // 本位币ID，可为空（初始设置时）
+  dateFormat       String @default("YYYY-MM-DD")
+  theme            String @default("system") // 主题设置：light, dark, system
+  language         String @default("zh") // 语言设置：zh, en
+  // FIRE 设置
+  fireEnabled      Boolean @default(false) // 是否显示 FIRE 面板
+  fireSWR          Float @default(4.0) // 安全提取率 (Safe Withdrawal Rate)，默认 4.0%
+  // 定期交易同步设置
+  lastRecurringSync DateTime? // 最后一次定期交易同步时间
+  recurringProcessingStatus String @default("idle") // 定期交易处理状态：idle, processing, completed, failed
+  // 未来数据生成设置
+  futureDataDays Int @default(7) // 提前生成未来数据的天数，0表示不生成未来数据，默认7天
+  // 汇率自动更新设置
+  autoUpdateExchangeRates Boolean @default(false) // 是否自动更新汇率
+  lastExchangeRateUpdate DateTime? // 最后一次汇率更新时间
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // 关联关系
+  user             User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  baseCurrency     Currency? @relation(fields: [baseCurrencyId], references: [id])
+
+  @@map("user_settings")
+}
+
+// 币种表 - 支持用户级别的货币隔离
+model Currency {
+  id            String  @id @default(cuid()) // 使用 id 作为主键
+  createdBy     String? // null = 全局货币, 非null = 用户自定义货币
+  code          String  // 例如: USD, EUR, CNY
+  name          String  // 例如: US Dollar, Euro, Chinese Yuan
+  symbol        String  // 例如: $, €, ¥
+  decimalPlaces Int     @default(2) // 货币小数位数（0-10），默认2位
+  isCustom      Boolean @default(false) // 是否为用户自定义货币
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // 关联关系
+  creator       User? @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  userCurrencies UserCurrency[]
+  userSettings  UserSettings[]
+  accounts      Account[]
+  fromExchangeRates ExchangeRate[] @relation("FromCurrency")
+  toExchangeRates   ExchangeRate[] @relation("ToCurrency")
+
+  // 复合唯一索引：用户级别的货币代码唯一性
+  @@unique([createdBy, code], name: "user_currency_code_unique")
+  @@map("currencies")
+}
+
+// 用户货币关联表 - 用户可用的货币列表
+model UserCurrency {
+  id         String @id @default(cuid())
+  userId     String
+  currencyId String
+  isActive   Boolean @default(true) // 是否激活使用
+  createdAt  DateTime @default(now())
+
+  // 关联关系
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currency   Currency @relation(fields: [currencyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, currencyId])
+  @@map("user_currencies")
+}

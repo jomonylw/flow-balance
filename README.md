@@ -1,5 +1,9 @@
 # Flow Balance - 个人财务管理系统
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jomonylw/flow-balance)
+[![CI](https://github.com/jomonylw/flow-balance/workflows/CI/badge.svg)](https://github.com/jomonylw/flow-balance/actions)
+[![Docker Build](https://github.com/jomonylw/flow-balance/workflows/Docker%20Build%20and%20Release/badge.svg)](https://github.com/jomonylw/flow-balance/actions)
+
 ## 📖 项目简介
 
 Flow
@@ -69,14 +73,25 @@ Balance 是一个基于现代 Web 技术栈开发的个人财务管理系统，�
 - **构建工具**：Next.js Turbopack
 - **开发工具**：tsx (TypeScript执行器)
 
+### 部署和运维
+
+- **容器化**：Docker + Docker Compose
+- **CI/CD**：GitHub Actions 自动化流水线
+- **云部署**：Vercel 一键部署
+- **监控**：健康检查 + 性能监控
+- **备份**：自动化数据备份
+- **多数据库**：SQLite / PostgreSQL 支持
+
 ## 🚀 快速开始
 
 ### 环境要求
 
 - Node.js 18.0+
 - pnpm 8.0+
+- SQLite 3 (开发环境) / PostgreSQL 13+ (生产环境)
+- Docker & Docker Compose (可选，用于容器化部署)
 
-### 安装步骤
+### 本地开发
 
 1. **克隆项目**
 
@@ -98,7 +113,7 @@ pnpm install
 cp .env.example .env.local
 
 # 编辑环境变量
-# DATABASE_URL="file:./dev.db"
+# DATABASE_URL="file:./prisma/dev.db"
 # JWT_SECRET="your-jwt-secret"
 ```
 
@@ -123,6 +138,94 @@ pnpm dev
 
 访问 http://localhost:3000 开始使用。
 
+### 🚀 一键部署
+
+#### 快速启动脚本（推荐）
+
+```bash
+# 交互式快速部署
+./scripts/quick-start.sh
+
+# 或使用 Makefile
+make quick-start
+```
+
+#### GitHub 部署（推荐生产环境）
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jomonylw/flow-balance)
+
+```bash
+# 1. Fork 或克隆项目到您的 GitHub
+# 2. 按照分步指南配置 CI/CD
+# 3. 自动构建和发布 Docker 镜像
+```
+
+📚 **详细指南**: [GitHub 设置和 CI/CD 配置指南](docs/GITHUB_SETUP_GUIDE.md)
+
+#### 使用 Makefile 命令
+
+```bash
+# 查看所有可用命令
+make help
+
+# 开发环境
+make dev                # 本地开发
+make docker-dev         # Docker 开发环境
+
+# 生产部署
+make docker-prod        # Docker 生产环境
+make deploy:vercel      # Vercel 部署
+
+# 监控和维护
+make health            # 健康检查
+make monitor           # 启动监控
+make backup            # 数据备份
+```
+
+### Docker 快速部署
+
+#### 使用 SQLite（单机部署）
+
+```bash
+# 1. 克隆项目
+git clone <repository-url>
+cd persional-balance-sheet
+
+# 2. 复制环境变量文件
+cp .env.docker .env
+
+# 3. 编辑环境变量（设置 JWT_SECRET 等）
+nano .env
+
+# 4. 启动服务
+docker-compose up -d
+
+# 5. 查看日志
+docker-compose logs -f app
+```
+
+#### 使用 PostgreSQL（推荐生产环境）
+
+```bash
+# 1. 克隆项目
+git clone <repository-url>
+cd persional-balance-sheet
+
+# 2. 复制并编辑环境变量
+cp .env.docker .env
+nano .env
+
+# 3. 修改数据库配置
+# 取消注释 PostgreSQL 相关配置
+# DATABASE_URL="postgresql://flowbalance:your_secure_password@postgres:5432/flowbalance?schema=public"
+
+# 4. 启动服务（包含 PostgreSQL）
+docker-compose up -d
+
+# 5. 查看服务状态
+docker-compose ps
+```
+
 ### 数据库管理
 
 ```bash
@@ -130,7 +233,11 @@ pnpm dev
 pnpm db:reset
 
 # 查看数据库
-npx prisma studio
+pnpm db:studio
+
+# 切换数据库类型
+node scripts/switch-database.js postgresql  # 切换到 PostgreSQL
+node scripts/switch-database.js sqlite      # 切换到 SQLite
 ```
 
 ## 📋 项目结构
@@ -1317,11 +1424,133 @@ PUT    /api/user/password      # 修改密码
 
 # 🚀 部署与维护
 
-## 1. 部署指南
+## 1. 现代化部署指南
 
-### 1.1 生产环境部署
+### 1.1 Docker 部署（推荐）
 
-#### 1.1.1 环境准备
+#### 1.1.1 快速开始
+
+```bash
+# 使用预构建镜像
+docker run -d \
+  --name flow-balance \
+  -p 3000:3000 \
+  -e DATABASE_URL="file:./data/production.db" \
+  -e JWT_SECRET="your-secure-jwt-secret" \
+  -v flow-balance-data:/app/data \
+  ghcr.io/jomonylw/flow-balance:latest
+```
+
+#### 1.1.2 Docker Compose 部署
+
+**SQLite 版本（单机部署）**
+
+```bash
+# 1. 下载配置文件
+wget https://raw.githubusercontent.com/your-repo/flow-balance/main/docker-compose.yml
+wget https://raw.githubusercontent.com/your-repo/flow-balance/main/.env.docker
+
+# 2. 配置环境变量
+cp .env.docker .env
+nano .env  # 修改 JWT_SECRET 等敏感信息
+
+# 3. 启动服务
+docker-compose up -d
+
+# 4. 查看状态
+docker-compose ps
+docker-compose logs -f app
+```
+
+**PostgreSQL 版本（生产环境推荐）**
+
+```bash
+# 1. 下载配置文件
+wget https://raw.githubusercontent.com/your-repo/flow-balance/main/docker-compose.yml
+wget https://raw.githubusercontent.com/your-repo/flow-balance/main/.env.docker
+
+# 2. 配置环境变量
+cp .env.docker .env
+nano .env
+
+# 修改以下配置：
+# DATABASE_URL="postgresql://flowbalance:your_secure_password@postgres:5432/flowbalance?schema=public"
+# POSTGRES_PASSWORD="your_very_secure_password"
+# JWT_SECRET="your-production-jwt-secret-minimum-32-characters"
+
+# 3. 启动服务
+docker-compose up -d
+
+# 4. 检查服务
+docker-compose ps
+docker-compose logs postgres
+docker-compose logs app
+```
+
+#### 1.1.3 自定义构建
+
+```bash
+# 1. 克隆项目
+git clone <repository-url>
+cd persional-balance-sheet
+
+# 2. 构建镜像
+docker build -t flow-balance .
+
+# 3. 运行容器
+docker run -d \
+  --name flow-balance \
+  -p 3000:3000 \
+  -e DATABASE_URL="file:./data/production.db" \
+  -e JWT_SECRET="your-secure-jwt-secret" \
+  -v $(pwd)/data:/app/data \
+  flow-balance
+```
+
+### 1.2 Vercel 部署
+
+#### 1.2.1 一键部署
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jomonylw/flow-balance)
+
+#### 1.2.2 手动部署
+
+```bash
+# 1. 安装 Vercel CLI
+npm i -g vercel
+
+# 2. 登录 Vercel
+vercel login
+
+# 3. 部署项目
+vercel
+
+# 4. 配置环境变量
+vercel env add DATABASE_URL
+vercel env add JWT_SECRET
+vercel env add NEXTAUTH_SECRET
+
+# 5. 重新部署
+vercel --prod
+```
+
+#### 1.2.3 环境变量配置
+
+在 Vercel 控制台中设置以下环境变量：
+
+```bash
+# 必需变量
+DATABASE_URL="postgresql://username:password@your-postgres-url/flowbalance?sslmode=require"
+JWT_SECRET="your-production-jwt-secret-very-long-and-secure"
+NEXTAUTH_SECRET="your-nextauth-secret-change-this-in-production"
+
+# 可选变量
+NEXT_PUBLIC_APP_URL="https://your-app.vercel.app"
+```
+
+### 1.3 传统服务器部署
+
+#### 1.3.1 环境准备
 
 ```bash
 # 1. 服务器要求
@@ -1337,7 +1566,7 @@ NEXTAUTH_URL="https://your-domain.com"
 NEXTAUTH_SECRET="your-nextauth-secret"
 ```
 
-#### 1.1.2 部署步骤
+#### 1.3.2 部署步骤
 
 ```bash
 # 1. 克隆代码
@@ -1450,7 +1679,125 @@ railway init
 railway up
 ```
 
-## 2. 数据库管理
+## 2. CI/CD 自动化部署
+
+### 2.1 GitHub Actions
+
+项目已配置完整的 CI/CD 流水线，支持自动测试、构建和发布。
+
+#### 2.1.1 自动化流程
+
+```yaml
+# .github/workflows/docker-build.yml
+name: Docker Build and Release
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  quality-check:    # 代码质量检查
+  docker-build:     # Docker 镜像构建
+  security-scan:    # 安全扫描
+  release:          # 自动发布
+```
+
+#### 2.1.2 触发条件
+
+- **推送到 main/develop 分支**：触发构建和测试
+- **创建 Pull Request**：触发代码检查
+- **创建 Tag (v*)**：触发正式发布
+
+#### 2.1.3 发布流程
+
+```bash
+# 1. 创建版本标签
+git tag v1.0.0
+git push origin v1.0.0
+
+# 2. 自动触发以下流程：
+# - 代码质量检查（ESLint, TypeScript, Tests）
+# - Docker 镜像构建（多架构支持）
+# - 安全漏洞扫描
+# - GitHub Release 创建
+# - 镜像推送到 GitHub Container Registry
+```
+
+#### 2.1.4 使用发布的镜像
+
+```bash
+# 拉取最新镜像
+docker pull ghcr.io/jomonylw/flow-balance:latest
+
+# 拉取特定版本
+docker pull ghcr.io/jomonylw/flow-balance:v1.0.0
+
+# 运行容器
+docker run -d \
+  --name flow-balance \
+  -p 3000:3000 \
+  -e DATABASE_URL="file:./data/production.db" \
+  -e JWT_SECRET="your-secure-jwt-secret" \
+  ghcr.io/jomonylw/flow-balance:latest
+```
+
+### 2.2 自动化测试
+
+#### 2.2.1 测试类型
+
+- **单元测试**：组件和函数测试
+- **集成测试**：API 端点测试
+- **类型检查**：TypeScript 类型验证
+- **代码规范**：ESLint 和 Prettier 检查
+
+#### 2.2.2 本地测试
+
+```bash
+# 运行所有测试
+pnpm test
+
+# 运行测试并生成覆盖率报告
+pnpm test:coverage
+
+# 运行类型检查
+pnpm type-check
+
+# 运行代码规范检查
+pnpm lint
+```
+
+### 2.3 环境管理
+
+#### 2.3.1 多环境配置
+
+```bash
+# 开发环境
+NODE_ENV=development
+DATABASE_URL="file:./prisma/dev.db"
+
+# 测试环境
+NODE_ENV=test
+DATABASE_URL="file:./test.db"
+
+# 生产环境
+NODE_ENV=production
+DATABASE_URL="postgresql://user:pass@host:5432/db"
+```
+
+#### 2.3.2 密钥管理
+
+```bash
+# GitHub Secrets 配置
+DOCKER_USERNAME=your-docker-username
+DOCKER_PASSWORD=your-docker-password
+DATABASE_URL=your-production-database-url
+JWT_SECRET=your-production-jwt-secret
+```
+
+## 3. 数据库管理
 
 ### 2.1 数据库迁移
 
@@ -1861,6 +2208,35 @@ pnpm type-check:detailed           # 详细类型检查报告
 - 业务逻辑准确性（特别是财务计算）
 - 测试覆盖率和质量
 - 代码可读性和维护性
+
+## 📚 文档导航
+
+### 🚀 快速开始
+- **[README.md](README.md)** - 项目介绍和基础使用指南
+- **[快速参考](docs/QUICK_REFERENCE.md)** - 常用命令和操作速查表
+
+### 🐳 部署指南
+- **[GitHub 设置指南](docs/GITHUB_SETUP_GUIDE.md)** - 从零开始的 GitHub 仓库设置
+- **[分步部署指南](docs/STEP_BY_STEP_DEPLOYMENT.md)** - 详细的实操部署流程
+- **[完整部署指南](docs/DEPLOYMENT_GUIDE.md)** - 全面的部署文档
+- **[部署总结](DEPLOYMENT_SUMMARY.md)** - 部署方式对比和总结
+
+### ⚙️ CI/CD 和自动化
+- **[CI/CD 配置指南](docs/CICD_CONFIGURATION.md)** - GitHub Actions 流水线详解
+- **[项目状态](PROJECT_STATUS.md)** - 功能完成情况和项目亮点
+
+### 🔧 开发文档
+- **[开发规范](CODE_GUIDE_DOC/DEVELOPMENT_STANDARDS.md)** - 代码规范和最佳实践
+- **[API 文档](docs/API_DOCUMENTATION.md)** - API 接口说明
+- **[数据库设计](docs/DATABASE_DESIGN.md)** - 数据库结构和设计
+
+### 🛠️ 实用工具
+- **脚本工具**:
+  - `scripts/quick-start.sh` - 交互式快速部署
+  - `scripts/monitor.sh` - 应用监控和健康检查
+  - `scripts/backup-data.js` - 数据备份工具
+  - `scripts/release.sh` - 自动化版本发布
+- **Makefile** - 简化的命令集合 (`make help` 查看所有命令)
 
 ## 许可证
 
