@@ -71,8 +71,8 @@ COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY scripts/docker-entrypoint.sh ./scripts/
 COPY healthcheck.js ./
 
-# Install only Prisma CLI for runtime generation
-RUN pnpm add -g prisma @prisma/client
+# Install Prisma CLI globally using npm (more reliable than pnpm global)
+RUN npm install -g prisma @prisma/client
 
 # Create data directory for SQLite
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
