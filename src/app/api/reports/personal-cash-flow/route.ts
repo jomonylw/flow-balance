@@ -63,6 +63,22 @@ export async function GET(request: NextRequest) {
       orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
     })
 
+    // 获取所有收入和支出类别的账户，确保即使没有交易记录的账户也能被包含
+    const allIncomeExpenseAccounts = await prisma.account.findMany({
+      where: {
+        userId: user.id,
+        category: {
+          type: {
+            in: ['INCOME', 'EXPENSE'],
+          },
+        },
+      },
+      include: {
+        category: true,
+        currency: true,
+      },
+    })
+
     // 按类别分组统计（类似资产负债表结构）
     const cashFlowByCategory = {
       income: {
@@ -148,6 +164,68 @@ export async function GET(request: NextRequest) {
       }
     > = {}
 
+    // 首先初始化所有收入和支出账户的结构，确保即使没有交易记录的账户也能显示
+    for (const account of allIncomeExpenseAccounts) {
+      const categoryId = account.category.id
+      const accountType = account.category.type as 'INCOME' | 'EXPENSE'
+      const currencyCode = account.currency?.code || baseCurrency.code
+
+      // 确定是收入还是支出类别
+      const categoryGroup =
+        accountType === 'INCOME'
+          ? cashFlowByCategory.income
+          : cashFlowByCategory.expense
+
+      // 初始化类别
+      if (!categoryGroup.categories[categoryId]) {
+        categoryGroup.categories[categoryId] = {
+          categoryId: categoryId,
+          categoryName: account.category.name,
+          accounts: [],
+          totalByCurrency: {},
+        }
+      }
+
+      // 检查账户是否已存在
+      let accountData = categoryGroup.categories[categoryId].accounts.find(
+        acc => acc.id === account.id
+      )
+      if (!accountData) {
+        accountData = {
+          id: account.id,
+          name: account.name,
+          currency: account.currency || {
+            code: baseCurrency.code,
+            symbol: baseCurrency.symbol,
+            name: baseCurrency.name,
+          },
+          totalAmount: 0,
+          transactionCount: 0,
+          transactions: [],
+        }
+        categoryGroup.categories[categoryId].accounts.push(accountData)
+      }
+
+      // 初始化货币总计
+      if (!currencyTotals[currencyCode]) {
+        currencyTotals[currencyCode] = {
+          currency: account.currency || {
+            code: baseCurrency.code,
+            symbol: baseCurrency.symbol,
+            name: baseCurrency.name,
+          },
+          totalIncome: 0,
+          totalExpense: 0,
+          netCashFlow: 0,
+        }
+      }
+
+      // 初始化类别货币总计
+      if (!categoryGroup.categories[categoryId].totalByCurrency[currencyCode]) {
+        categoryGroup.categories[categoryId].totalByCurrency[currencyCode] = 0
+      }
+    }
+
     // 处理交易数据
     for (const transaction of transactions) {
       const accountId = transaction.account.id
@@ -167,21 +245,23 @@ export async function GET(request: NextRequest) {
           ? cashFlowByCategory.income
           : cashFlowByCategory.expense
 
-      // 初始化类别
-      if (!categoryGroup.categories[categoryId]) {
-        categoryGroup.categories[categoryId] = {
-          categoryId: categoryId,
-          categoryName: transaction.account.category.name,
-          accounts: [],
-          totalByCurrency: {},
-        }
-      }
-
-      // 查找或创建账户
-      let accountData = categoryGroup.categories[categoryId].accounts.find(
+      // 查找账户（应该已经存在，因为我们已经初始化了所有账户）
+      let accountData = categoryGroup.categories[categoryId]?.accounts.find(
         acc => acc.id === accountId
       )
+
+      // 如果账户不存在（理论上不应该发生），创建它
       if (!accountData) {
+        // 初始化类别（如果不存在）
+        if (!categoryGroup.categories[categoryId]) {
+          categoryGroup.categories[categoryId] = {
+            categoryId: categoryId,
+            categoryName: transaction.account.category.name,
+            accounts: [],
+            totalByCurrency: {},
+          }
+        }
+
         accountData = {
           id: transaction.account.id,
           name: transaction.account.name,
@@ -193,7 +273,7 @@ export async function GET(request: NextRequest) {
         categoryGroup.categories[categoryId].accounts.push(accountData)
       }
 
-      // 初始化货币总计
+      // 初始化货币总计（如果不存在）
       if (!currencyTotals[currencyCode]) {
         currencyTotals[currencyCode] = {
           currency: transaction.currency,

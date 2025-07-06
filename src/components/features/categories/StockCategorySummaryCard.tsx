@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import AnimatedNumber from '@/components/ui/data-display/AnimatedNumber'
 import type { SimpleTransaction, SimpleCurrency } from '@/types/core'
 import type { StockSummaryData } from '@/types/components'
 
@@ -39,6 +40,8 @@ export default function StockCategorySummaryCard({
     let lastMonthNetValue = 0
     let yearStartNetValue = 0
     let transactionCount = 0
+    let hasLastMonthData = false
+    let hasYearStartData = false
 
     if (summaryData?.monthlyData && summaryData.monthlyData.length > 0) {
       // 当前月数据（数组第一个元素）
@@ -50,6 +53,8 @@ export default function StockCategorySummaryCard({
           Object.values(child.balances.converted).forEach(amount => {
             currentNetValue += amount as number
           })
+          // 注意：子分类的accountCount表示该子分类下的账户数量，不是交易数量
+          // 我们需要从实际的账户数据中获取交易数量
         })
 
         // 计算直属账户余额 - 汇总所有币种折算成本币的金额
@@ -58,13 +63,19 @@ export default function StockCategorySummaryCard({
           Object.values(account.balances.converted).forEach(amount => {
             currentNetValue += amount as number
           })
+          // 累加直属账户的交易数量
           transactionCount += account.transactionCount || 0
         })
+
+        // 注意：子分类的交易数量暂时无法从API获取，因为MonthlyChildCategorySummary
+        // 只包含accountCount（账户数量），不包含transactionCount（交易数量）
+        // 如果需要完整的交易数量统计，需要修改后端API返回更多信息
       }
 
       // 上月数据（如果存在）
       const lastMonth = summaryData.monthlyData[1]
       if (lastMonth) {
+        hasLastMonthData = true
         // 计算上月子分类余额 - 汇总所有币种折算成本币的金额
         lastMonth.childCategories.forEach(child => {
           Object.values(child.balances.converted).forEach(amount => {
@@ -78,18 +89,16 @@ export default function StockCategorySummaryCard({
             lastMonthNetValue += amount as number
           })
         })
-      } else {
-        // 如果没有上月数据，使用估算值
-        lastMonthNetValue = currentNetValue * 0.95
       }
 
-      // 年初数据（查找1月份数据或使用估算值）
+      // 年初数据（查找1月份数据）
       const currentYear = new Date().getFullYear()
       const yearStartMonth = summaryData.monthlyData.find(month =>
         month.month.startsWith(`${currentYear}-01`)
       )
 
       if (yearStartMonth) {
+        hasYearStartData = true
         // 计算年初子分类余额 - 汇总所有币种折算成本币的金额
         yearStartMonth.childCategories.forEach(child => {
           Object.values(child.balances.converted).forEach(amount => {
@@ -103,9 +112,6 @@ export default function StockCategorySummaryCard({
             yearStartNetValue += amount as number
           })
         })
-      } else {
-        // 如果没有年初数据，使用估算值
-        yearStartNetValue = currentNetValue * 0.85
       }
     } else {
       // 回退到使用分类的交易数据
@@ -123,22 +129,18 @@ export default function StockCategorySummaryCard({
           transactionCount++
         }
       })
-
-      // 使用估算值
-      lastMonthNetValue = currentNetValue * 0.95
-      yearStartNetValue = currentNetValue * 0.85
     }
 
     // 计算变化百分比
     const monthlyChange =
-      lastMonthNetValue !== 0
+      hasLastMonthData && lastMonthNetValue !== 0
         ? ((currentNetValue - lastMonthNetValue) /
             Math.abs(lastMonthNetValue)) *
           100
         : 0
 
     const yearToDateChange =
-      yearStartNetValue !== 0
+      hasYearStartData && yearStartNetValue !== 0
         ? ((currentNetValue - yearStartNetValue) /
             Math.abs(yearStartNetValue)) *
           100
@@ -151,6 +153,8 @@ export default function StockCategorySummaryCard({
       monthlyChange,
       yearToDateChange,
       transactionCount,
+      hasLastMonthData,
+      hasYearStartData,
     }
   }
 
@@ -190,14 +194,25 @@ export default function StockCategorySummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {formatCurrency(
-              Math.abs(stockStats.currentNetValue),
-              baseCurrency?.code || currencyCode
-            )}
+            <AnimatedNumber
+              value={Math.abs(stockStats.currentNetValue)}
+              currency={{
+                code: baseCurrency?.code || currencyCode,
+                symbol: baseCurrency?.symbol || '',
+                name: baseCurrency?.name || '',
+                id: baseCurrency?.id,
+              }}
+              duration={200}
+              enableAnimation={true}
+              formatOptions={{
+                showSymbol: true,
+                // 不设置 precision，让 AnimatedNumber 使用货币的 decimalPlaces
+              }}
+            />
           </div>
-          <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+          {/* <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
             {stockStats.transactionCount} {t('category.transaction.count')}
-          </div>
+          </div> */}
         </div>
 
         {/* 月度变化 */}
@@ -207,13 +222,21 @@ export default function StockCategorySummaryCard({
           </div>
           <div
             className={`text-xl font-semibold ${
-              stockStats.monthlyChange >= 0
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400'
+              stockStats.hasLastMonthData
+                ? stockStats.monthlyChange >= 0
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-red-600 dark:text-red-400'
+                : 'text-gray-400 dark:text-gray-500'
             }`}
           >
-            {stockStats.monthlyChange >= 0 ? '+' : ''}
-            {formatNumber(stockStats.monthlyChange, 1)}%
+            {stockStats.hasLastMonthData ? (
+              <>
+                {stockStats.monthlyChange >= 0 ? '+' : ''}
+                {formatNumber(stockStats.monthlyChange, 1)}%
+              </>
+            ) : (
+              '0.0%'
+            )}
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
             {t('category.last.month')}:{' '}
@@ -231,13 +254,21 @@ export default function StockCategorySummaryCard({
           </div>
           <div
             className={`text-xl font-semibold ${
-              stockStats.yearToDateChange >= 0
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400'
+              stockStats.hasYearStartData
+                ? stockStats.yearToDateChange >= 0
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-red-600 dark:text-red-400'
+                : 'text-gray-400 dark:text-gray-500'
             }`}
           >
-            {stockStats.yearToDateChange >= 0 ? '+' : ''}
-            {formatNumber(stockStats.yearToDateChange, 1)}%
+            {stockStats.hasYearStartData ? (
+              <>
+                {stockStats.yearToDateChange >= 0 ? '+' : ''}
+                {formatNumber(stockStats.yearToDateChange, 1)}%
+              </>
+            ) : (
+              '0.0%'
+            )}
           </div>
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
             {t('category.year.start')}:{' '}
@@ -349,21 +380,46 @@ export default function StockCategorySummaryCard({
                     )
                   })
                 } else {
-                  // 如果没有上月数据，使用估算值
+                  // 如果没有上月数据，显示 0
                   Object.keys(currencyTotals).forEach(currencyCode => {
-                    currencyTotals[currencyCode].lastMonth =
-                      currencyTotals[currencyCode].current * 0.95
+                    currencyTotals[currencyCode].lastMonth = 0
                   })
                 }
 
                 return Object.entries(currencyTotals).map(
                   ([currencyCode, data]) => {
+                    // 检查是否有真实的上月数据（通过检查lastMonth是否存在于原始数据中）
+                    const hasRealLastMonthData = lastMonth !== undefined
                     const changePercent =
-                      data.lastMonth !== 0
+                      hasRealLastMonthData && data.lastMonth !== 0
                         ? ((data.current - data.lastMonth) /
                             Math.abs(data.lastMonth)) *
                           100
                         : 0
+
+                    // 检查是否为非本币
+                    const isBaseCurrency = currencyCode === baseCurrency?.code
+
+                    // 获取折算后的本币金额（从converted数据中）
+                    let convertedCurrentAmount = 0
+
+                    if (!isBaseCurrency && currentMonth) {
+                      // 计算当前月折算金额
+                      currentMonth.childCategories.forEach(child => {
+                        if (child.balances.converted[currencyCode]) {
+                          convertedCurrentAmount += child.balances.converted[
+                            currencyCode
+                          ] as number
+                        }
+                      })
+                      currentMonth.directAccounts.forEach(account => {
+                        if (account.balances.converted[currencyCode]) {
+                          convertedCurrentAmount += account.balances.converted[
+                            currencyCode
+                          ] as number
+                        }
+                      })
+                    }
 
                     return (
                       <div
@@ -382,6 +438,18 @@ export default function StockCategorySummaryCard({
                         >
                           {formatCurrency(Math.abs(data.current), currencyCode)}
                         </div>
+
+                        {/* 非本币显示折算本币金额 */}
+                        {!isBaseCurrency && baseCurrency && (
+                          <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+                            ≈{' '}
+                            {formatCurrency(
+                              Math.abs(convertedCurrentAmount),
+                              baseCurrency.code
+                            )}
+                          </div>
+                        )}
+
                         <div className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
                           {t('category.last.month')}:{' '}
                           {formatCurrency(
@@ -390,13 +458,21 @@ export default function StockCategorySummaryCard({
                           )}
                           <span
                             className={`ml-2 ${
-                              changePercent >= 0
-                                ? 'text-green-600 dark:text-green-400'
-                                : 'text-red-600 dark:text-red-400'
+                              hasRealLastMonthData
+                                ? changePercent >= 0
+                                  ? 'text-green-600 dark:text-green-400'
+                                  : 'text-red-600 dark:text-red-400'
+                                : 'text-gray-400 dark:text-gray-500'
                             }`}
                           >
-                            {changePercent >= 0 ? '+' : ''}
-                            {formatNumber(changePercent, 1)}%
+                            {hasRealLastMonthData ? (
+                              <>
+                                {changePercent >= 0 ? '+' : ''}
+                                {formatNumber(changePercent, 1)}%
+                              </>
+                            ) : (
+                              '0.0%'
+                            )}
                           </span>
                         </div>
                       </div>

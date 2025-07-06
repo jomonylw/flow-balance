@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
+import AnimatedNumber from '@/components/ui/data-display/AnimatedNumber'
 import { TransactionType } from '@/types/core/constants'
 import { ApiEndpoints } from '@/lib/constants/api-endpoints'
 
@@ -30,7 +31,8 @@ export default function FlowAccountSummaryCard({
   currencyCode,
 }: FlowAccountSummaryCardProps) {
   const { t } = useLanguage()
-  const { formatCurrency, formatNumber } = useUserCurrencyFormatter()
+  const { formatCurrency, formatNumber, findCurrencyByCode } =
+    useUserCurrencyFormatter()
   const accountType = account.category.type || 'EXPENSE'
   // 本地状态管理最新的交易数据
   const [transactions, setTransactions] = useState<SimpleTransaction[]>(
@@ -190,6 +192,10 @@ export default function FlowAccountSummaryCard({
     }
   }
   const flowStats = calculateFlowStats()
+
+  // 获取货币信息用于AnimatedNumber
+  const currency = findCurrencyByCode(currencyCode)
+
   return (
     <div className='bg-white dark:bg-gray-800 shadow rounded-lg p-6 relative'>
       {/* 加载指示器 */}
@@ -226,7 +232,21 @@ export default function FlowAccountSummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {formatCurrency(flowStats.thisMonthAmount, currencyCode)}
+            <AnimatedNumber
+              value={flowStats.thisMonthAmount}
+              currency={{
+                code: currencyCode,
+                symbol: currency?.symbol || '',
+                name: currency?.name || '',
+                id: currency?.id,
+              }}
+              duration={200}
+              enableAnimation={true}
+              formatOptions={{
+                showSymbol: true,
+                // 不设置 precision，让 AnimatedNumber 使用货币的 decimalPlaces
+              }}
+            />
           </div>
         </div>
         {/* 上月金额 */}

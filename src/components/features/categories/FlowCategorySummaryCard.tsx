@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import AnimatedNumber from '@/components/ui/data-display/AnimatedNumber'
 import type { SimpleTransaction, SimpleCurrency } from '@/types/core'
 import type { FlowSummaryData } from '@/types/components'
 
@@ -233,15 +234,26 @@ export default function FlowCategorySummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {formatCurrency(
-              Math.abs(flowStats.thisMonthNet),
-              baseCurrency?.code || currencyCode
-            )}
+            <AnimatedNumber
+              value={Math.abs(flowStats.thisMonthNet)}
+              currency={{
+                code: baseCurrency?.code || currencyCode,
+                symbol: baseCurrency?.symbol || '',
+                name: baseCurrency?.name || '',
+                id: baseCurrency?.id,
+              }}
+              duration={200}
+              enableAnimation={true}
+              formatOptions={{
+                showSymbol: true,
+                // 不设置 precision，让 AnimatedNumber 使用货币的 decimalPlaces
+              }}
+            />
           </div>
-          <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+          {/* <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
             {flowStats.thisMonthTransactionCount}{' '}
             {t('category.transaction.count')}
-          </div>
+          </div> */}
         </div>
 
         {/* 今年总流量 */}

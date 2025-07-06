@@ -41,6 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+/docs
+/CODE_GUIDE_DOC
+/scripts
 
 dev.db
 todo.md

@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useDataUpdateListener } from '@/hooks/business/useDataUpdateListener'
 import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
+import AnimatedNumber from '@/components/ui/data-display/AnimatedNumber'
 
 import { calculateAccountBalance } from '@/lib/services/account.service'
 import type {
@@ -42,7 +43,8 @@ export default function StockAccountSummaryCard({
   currencyCode,
 }: StockAccountSummaryCardProps) {
   const { t } = useLanguage()
-  const { formatCurrencyById, formatNumber, findCurrencyByCode } = useUserCurrencyFormatter()
+  const { formatCurrencyById, formatNumber, findCurrencyByCode } =
+    useUserCurrencyFormatter()
   const accountType = account.category.type
 
   // 本地状态管理最新的交易数据和余额
@@ -313,9 +315,21 @@ export default function StockAccountSummaryCard({
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {currencyId
-              ? formatCurrencyById(Math.abs(stockStats.currentBalance), currencyId)
-              : `${Math.abs(stockStats.currentBalance)} ${currencyCode}`}
+            <AnimatedNumber
+              value={Math.abs(stockStats.currentBalance)}
+              currency={{
+                code: currencyCode,
+                symbol: currency?.symbol || '',
+                name: currency?.name || '',
+                id: currencyId,
+              }}
+              duration={200}
+              enableAnimation={true}
+              formatOptions={{
+                showSymbol: true,
+                // 不设置 precision，让 AnimatedNumber 使用货币的 decimalPlaces
+              }}
+            />
           </div>
         </div>
 
@@ -326,7 +340,10 @@ export default function StockAccountSummaryCard({
           </div>
           <div className='text-2xl font-semibold text-gray-600 dark:text-gray-300'>
             {currencyId
-              ? formatCurrencyById(Math.abs(stockStats.lastMonthBalance), currencyId)
+              ? formatCurrencyById(
+                  Math.abs(stockStats.lastMonthBalance),
+                  currencyId
+                )
               : `${Math.abs(stockStats.lastMonthBalance)} ${currencyCode}`}
           </div>
         </div>
@@ -357,7 +374,12 @@ export default function StockAccountSummaryCard({
               ? '+'
               : '-'}
             {currencyId
-              ? formatCurrencyById(Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance), currencyId)
+              ? formatCurrencyById(
+                  Math.abs(
+                    stockStats.currentBalance - stockStats.lastMonthBalance
+                  ),
+                  currencyId
+                )
               : `${Math.abs(stockStats.currentBalance - stockStats.lastMonthBalance)} ${currencyCode}`}
           </div>
         </div>
@@ -380,7 +402,10 @@ export default function StockAccountSummaryCard({
           <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
             {t('account.balance.year.start')}:{' '}
             {currencyId
-              ? formatCurrencyById(Math.abs(stockStats.yearStartBalance), currencyId)
+              ? formatCurrencyById(
+                  Math.abs(stockStats.yearStartBalance),
+                  currencyId
+                )
               : `${Math.abs(stockStats.yearStartBalance)} ${currencyCode}`}
           </div>
         </div>

@@ -245,6 +245,16 @@ export async function getFlowCategorySummary(
           baseCurrency,
           userId
         )
+      } else {
+        // 为没有交易记录的账户创建0金额的月度流量数据
+        const zeroFlows: Record<string, MonthlyBalance> = {}
+        for (const month of allMonths) {
+          zeroFlows[month] = {
+            original: { [account.currency.code]: 0 },
+            converted: { [baseCurrency.code]: 0 },
+          }
+        }
+        accountMonthlyFlows[account.id] = zeroFlows
       }
     })
   )

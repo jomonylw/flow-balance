@@ -154,6 +154,22 @@ html {
     max-height: 100vh;
     border-radius: 0;
   }
+
+  /* 仪表板卡片在移动端的优化 */
+  .dashboard-card {
+    min-width: 0;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* 金额数字在移动端的优化 */
+  .dashboard-amount {
+    font-size: 1.25rem !important; /* 强制使用较小字体 */
+    line-height: 1.4;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
 }
 
 /* 触摸设备优化 */

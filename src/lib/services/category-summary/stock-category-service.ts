@@ -263,6 +263,16 @@ export async function getStockCategorySummary(
             baseCurrency,
             userId
           )
+      } else {
+        // 为没有交易记录的账户创建0金额的月度余额数据
+        const zeroBalances: Record<string, MonthlyBalance> = {}
+        for (const month of allMonths) {
+          zeroBalances[month] = {
+            original: { [account.currency.code]: 0 },
+            converted: { [baseCurrency.code]: 0 },
+          }
+        }
+        accountMonthlyBalances[account.id] = zeroBalances
       }
     })
   )

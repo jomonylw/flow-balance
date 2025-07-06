@@ -411,11 +411,11 @@ export default function DashboardContent({
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
               {/* 总资产 */}
               <div
-                className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`}
+                className={`border rounded-lg p-6 min-w-0 ${resolvedTheme === 'dark' ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`}
               >
                 <div className='flex items-center mb-3'>
                   <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${resolvedTheme === 'dark' ? 'bg-blue-800' : 'bg-blue-100'}`}
+                    className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 flex-shrink-0 ${resolvedTheme === 'dark' ? 'bg-blue-800' : 'bg-blue-100'}`}
                   >
                     <svg
                       className='h-5 w-5 text-blue-600'
@@ -432,12 +432,12 @@ export default function DashboardContent({
                     </svg>
                   </div>
                   <h3
-                    className={`text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}
+                    className={`text-lg font-semibold min-w-0 ${resolvedTheme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}
                   >
                     {t('dashboard.total.assets.card')}
                   </h3>
                 </div>
-                <div>
+                <div className='min-w-0'>
                   <AnimatedNumber
                     value={summaryData.totalAssets?.amount || 0}
                     currency={
@@ -446,6 +446,12 @@ export default function DashboardContent({
                     }
                     className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-blue-100' : 'text-blue-900'}`}
                     duration={200}
+                    responsiveSize={true}
+                    allowWrap={true}
+                    formatOptions={{
+                      compact: true,
+                      compactThreshold: 10000000, // 10M以上使用紧凑格式
+                    }}
                   />
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
@@ -472,11 +478,11 @@ export default function DashboardContent({
 
               {/* 总负债 */}
               <div
-                className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-orange-900/20 border-orange-700' : 'bg-orange-50 border-orange-200'}`}
+                className={`border rounded-lg p-6 min-w-0 ${resolvedTheme === 'dark' ? 'bg-orange-900/20 border-orange-700' : 'bg-orange-50 border-orange-200'}`}
               >
                 <div className='flex items-center mb-3'>
                   <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${resolvedTheme === 'dark' ? 'bg-orange-800' : 'bg-orange-100'}`}
+                    className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 flex-shrink-0 ${resolvedTheme === 'dark' ? 'bg-orange-800' : 'bg-orange-100'}`}
                   >
                     <svg
                       className='h-5 w-5 text-orange-600'
@@ -493,12 +499,12 @@ export default function DashboardContent({
                     </svg>
                   </div>
                   <h3
-                    className={`text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-orange-300' : 'text-orange-700'}`}
+                    className={`text-lg font-semibold min-w-0 ${resolvedTheme === 'dark' ? 'text-orange-300' : 'text-orange-700'}`}
                   >
                     {t('dashboard.total.liabilities.card')}
                   </h3>
                 </div>
-                <div>
+                <div className='min-w-0'>
                   <AnimatedNumber
                     value={summaryData.totalLiabilities?.amount || 0}
                     currency={
@@ -507,6 +513,12 @@ export default function DashboardContent({
                     }
                     className={`text-2xl font-bold ${resolvedTheme === 'dark' ? 'text-orange-100' : 'text-orange-900'}`}
                     duration={200}
+                    responsiveSize={true}
+                    allowWrap={true}
+                    formatOptions={{
+                      compact: true,
+                      compactThreshold: 10000000, // 10M以上使用紧凑格式
+                    }}
                   />
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`}
@@ -533,7 +545,7 @@ export default function DashboardContent({
 
               {/* 净资产 */}
               <div
-                className={`border rounded-lg p-6 ${
+                className={`border rounded-lg p-6 min-w-0 ${
                   summaryData.netWorth.amount >= 0
                     ? resolvedTheme === 'dark'
                       ? 'bg-green-900/20 border-green-700'
@@ -545,7 +557,7 @@ export default function DashboardContent({
               >
                 <div className='flex items-center mb-3'>
                   <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${
+                    className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 flex-shrink-0 ${
                       summaryData.netWorth.amount >= 0
                         ? resolvedTheme === 'dark'
                           ? 'bg-green-800'
@@ -570,7 +582,7 @@ export default function DashboardContent({
                     </svg>
                   </div>
                   <h3
-                    className={`text-lg font-semibold ${
+                    className={`text-lg font-semibold min-w-0 ${
                       summaryData.netWorth.amount >= 0
                         ? resolvedTheme === 'dark'
                           ? 'text-green-300'
@@ -583,7 +595,7 @@ export default function DashboardContent({
                     {t('dashboard.net.worth.card')}
                   </h3>
                 </div>
-                <div>
+                <div className='min-w-0'>
                   <AnimatedNumber
                     value={summaryData.netWorth.amount}
                     currency={summaryData.netWorth.currency}
@@ -598,6 +610,12 @@ export default function DashboardContent({
                           : 'text-red-900'
                     }`}
                     duration={200}
+                    responsiveSize={true}
+                    allowWrap={true}
+                    formatOptions={{
+                      compact: true,
+                      compactThreshold: 10000000, // 10M以上使用紧凑格式
+                    }}
                   />
                   <p
                     className={`text-xs mt-1 ${
@@ -646,11 +664,11 @@ export default function DashboardContent({
 
               {/* 本月现金流 */}
               <div
-                className={`border rounded-lg p-6 ${resolvedTheme === 'dark' ? 'bg-purple-900/20 border-purple-700' : 'bg-purple-50 border-purple-200'}`}
+                className={`border rounded-lg p-6 min-w-0 ${resolvedTheme === 'dark' ? 'bg-purple-900/20 border-purple-700' : 'bg-purple-50 border-purple-200'}`}
               >
                 <div className='flex items-center mb-3'>
                   <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 ${resolvedTheme === 'dark' ? 'bg-purple-800' : 'bg-purple-100'}`}
+                    className={`h-8 w-8 rounded-full flex items-center justify-center mr-3 flex-shrink-0 ${resolvedTheme === 'dark' ? 'bg-purple-800' : 'bg-purple-100'}`}
                   >
                     <svg
                       className='h-5 w-5 text-purple-600'
@@ -667,12 +685,12 @@ export default function DashboardContent({
                     </svg>
                   </div>
                   <h3
-                    className={`text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-purple-300' : 'text-purple-700'}`}
+                    className={`text-lg font-semibold min-w-0 ${resolvedTheme === 'dark' ? 'text-purple-300' : 'text-purple-700'}`}
                   >
                     {t('dashboard.monthly.net.income')}
                   </h3>
                 </div>
-                <div>
+                <div className='min-w-0'>
                   <AnimatedNumber
                     value={summaryData.recentActivity.summaryInBaseCurrency.net}
                     currency={summaryData.recentActivity.baseCurrency}
@@ -687,6 +705,12 @@ export default function DashboardContent({
                           : 'text-red-900'
                     }`}
                     duration={200}
+                    responsiveSize={true}
+                    allowWrap={true}
+                    formatOptions={{
+                      compact: true,
+                      compactThreshold: 10000000, // 10M以上使用紧凑格式
+                    }}
                   />
                   <p
                     className={`text-xs mt-1 ${resolvedTheme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}

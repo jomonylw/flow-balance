@@ -269,147 +269,146 @@ export default function BalanceSheetCard() {
             )}
           </div>
 
-          {/* 分类汇总金额 - 使用特殊样式显示本币汇总 */}
-          {category.totalInBaseCurrency !== undefined &&
-            category.totalInBaseCurrency !== 0 && (
-              <div className='text-right'>
-                <span
-                  className={`inline-block px-2 py-1 rounded text-sm font-bold border ${
-                    category.type === 'ASSET'
-                      ? level === 0
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700'
-                        : 'bg-blue-50/50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50'
-                      : level === 0
-                        ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700'
-                        : 'bg-orange-50/50 dark:bg-orange-900/10 text-orange-600 dark:text-orange-400 border-orange-200/50 dark:border-orange-700/50'
-                  }`}
-                >
-                  {formatCurrencyWithSymbol(
-                    Math.abs(category.totalInBaseCurrency),
-                    baseCurrency.code,
-                    baseCurrency.symbol
-                  )}
-                </span>
-              </div>
-            )}
+          {/* 分类汇总金额 - 只有当分类有金额或账户时才显示本币汇总 */}
+          {(category.totalInBaseCurrency &&
+            Math.abs(category.totalInBaseCurrency) > 0) ||
+          (category.accounts && category.accounts.length > 0) ? (
+            <div className='text-right'>
+              <span
+                className={`inline-block px-2 py-1 rounded text-sm font-bold border ${
+                  category.type === 'ASSET'
+                    ? level === 0
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700'
+                      : 'bg-blue-50/50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400 border-blue-200/50 dark:border-blue-700/50'
+                    : level === 0
+                      ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700'
+                      : 'bg-orange-50/50 dark:bg-orange-900/10 text-orange-600 dark:text-orange-400 border-orange-200/50 dark:border-orange-700/50'
+                }`}
+              >
+                {formatCurrencyWithSymbol(
+                  Math.abs(category.totalInBaseCurrency || 0),
+                  baseCurrency.code,
+                  baseCurrency.symbol
+                )}
+              </span>
+            </div>
+          ) : null}
         </div>
 
-        {/* 如果有直接账户，显示账户详情 */}
-        {category.accounts.length > 0 && (
-          <div
-            style={{ paddingLeft: `${(level + 1) * 16}px` }}
-            className='mt-2'
-          >
-            {/* 按币种分组显示账户 */}
-            {Object.entries(category.totalByCurrency || {}).map(
-              ([currencyCode, total]) => {
-                const currencyAccounts = category.accounts.filter(
-                  account => account.currency?.code === currencyCode
-                )
-                if (currencyAccounts.length === 0) return null
+        {/* 显示账户详情 - 即使没有账户也显示分类 */}
+        <div style={{ paddingLeft: `${(level + 1) * 16}px` }} className='mt-2'>
+          {/* 如果有账户，按币种分组显示账户 */}
+          {category.accounts.length > 0
+            ? Object.entries(category.totalByCurrency || {}).map(
+                ([currencyCode, total]) => {
+                  const currencyAccounts = category.accounts.filter(
+                    account => account.currency?.code === currencyCode
+                  )
+                  if (currencyAccounts.length === 0) return null
 
-                return (
-                  <div key={currencyCode} className='mb-3'>
-                    {/* 币种小计 */}
-                    <div className='flex justify-between items-start mb-2 py-1 px-0 bg-gray-50 dark:bg-gray-800 rounded'>
-                      <span className='text-sm font-medium text-gray-600 dark:text-gray-400 flex-1 min-w-0 pr-2'>
-                        {currencyCode}
-                      </span>
-                      <div className='text-right min-w-0 flex-shrink-0'>
-                        <div
-                          className={`text-sm font-semibold whitespace-nowrap ${
-                            category.type === 'ASSET'
-                              ? 'text-blue-600 dark:text-blue-400'
-                              : 'text-orange-600 dark:text-orange-400'
-                          }`}
-                        >
-                          {formatCurrencyWithCode(total, currencyCode)}
-                        </div>
-                        {currencyCode !== baseCurrency.code && (
-                          <div className='text-xs text-gray-400 whitespace-nowrap'>
-                            ≈{' '}
-                            {formatCurrencyWithSymbol(
-                              currencyAccounts.reduce(
-                                (sum, account) =>
-                                  sum + (account.balanceInBaseCurrency || 0),
-                                0
-                              ),
-                              baseCurrency.code,
-                              baseCurrency.symbol
-                            )}
+                  return (
+                    <div key={currencyCode} className='mb-3'>
+                      {/* 币种小计 */}
+                      <div className='flex justify-between items-start mb-2 py-1 px-0 bg-gray-50 dark:bg-gray-800 rounded'>
+                        <span className='text-sm font-medium text-gray-600 dark:text-gray-400 flex-1 min-w-0 pr-2'>
+                          {currencyCode}
+                        </span>
+                        <div className='text-right min-w-0 flex-shrink-0'>
+                          <div
+                            className={`text-sm font-semibold whitespace-nowrap ${
+                              category.type === 'ASSET'
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : 'text-orange-600 dark:text-orange-400'
+                            }`}
+                          >
+                            {formatCurrencyWithCode(total, currencyCode)}
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 显示该币种下的账户明细 */}
-                    <div className='ml-4 space-y-1'>
-                      {currencyAccounts.map(account => (
-                        <div
-                          key={account.id}
-                          className='flex justify-between items-start text-sm py-1'
-                        >
-                          <div className='flex-1 min-w-0 pr-2 flex items-center'>
-                            {/* 账户颜色指示器 */}
-                            <div
-                              className='w-2 h-2 rounded-full mr-2 flex-shrink-0'
-                              style={{
-                                backgroundColor: (() => {
-                                  const fullAccount = accounts.find(
-                                    acc => acc.id === account.id
-                                  )
-                                  const accountType = fullAccount?.category
-                                    ?.type as AccountType | undefined
-                                  return ColorManager.getAccountColor(
-                                    account.id,
-                                    fullAccount?.color,
-                                    accountType
-                                  )
-                                })(),
-                              }}
-                            />
-                            <Link
-                              href={`/accounts/${account.id}`}
-                              className='text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 hover:underline'
-                            >
-                              {account.name}
-                            </Link>
-                          </div>
-                          <div className='text-right min-w-0 flex-shrink-0'>
-                            <div
-                              className={`whitespace-nowrap ${
-                                category.type === 'ASSET'
-                                  ? 'text-blue-600 dark:text-blue-400'
-                                  : 'text-orange-600 dark:text-orange-400'
-                              }`}
-                            >
+                          {currencyCode !== baseCurrency.code && (
+                            <div className='text-xs text-gray-400 whitespace-nowrap'>
+                              ≈{' '}
                               {formatCurrencyWithSymbol(
-                                account.balance,
-                                account.currency.code,
-                                account.currency.symbol
+                                currencyAccounts.reduce(
+                                  (sum, account) =>
+                                    sum + (account.balanceInBaseCurrency || 0),
+                                  0
+                                ),
+                                baseCurrency.code,
+                                baseCurrency.symbol
                               )}
                             </div>
-                            {account.balanceInBaseCurrency !== undefined &&
-                              account.currency.code !== baseCurrency.code && (
-                                <div className='text-xs text-gray-400 whitespace-nowrap'>
-                                  ≈{' '}
-                                  {formatCurrencyWithSymbol(
-                                    Math.abs(account.balanceInBaseCurrency),
-                                    baseCurrency.code,
-                                    baseCurrency.symbol
-                                  )}
-                                </div>
-                              )}
-                          </div>
+                          )}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* 显示该币种下的账户明细 */}
+                      <div className='ml-4 space-y-1'>
+                        {currencyAccounts.map(account => (
+                          <div
+                            key={account.id}
+                            className='flex justify-between items-start text-sm py-1'
+                          >
+                            <div className='flex-1 min-w-0 pr-2 flex items-center'>
+                              {/* 账户颜色指示器 */}
+                              <div
+                                className='w-2 h-2 rounded-full mr-2 flex-shrink-0'
+                                style={{
+                                  backgroundColor: (() => {
+                                    const fullAccount = accounts.find(
+                                      acc => acc.id === account.id
+                                    )
+                                    const accountType = fullAccount?.category
+                                      ?.type as AccountType | undefined
+                                    return ColorManager.getAccountColor(
+                                      account.id,
+                                      fullAccount?.color,
+                                      accountType
+                                    )
+                                  })(),
+                                }}
+                              />
+                              <Link
+                                href={`/accounts/${account.id}`}
+                                className='text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 hover:underline'
+                              >
+                                {account.name}
+                              </Link>
+                            </div>
+                            <div className='text-right min-w-0 flex-shrink-0'>
+                              <div
+                                className={`whitespace-nowrap ${
+                                  category.type === 'ASSET'
+                                    ? 'text-blue-600 dark:text-blue-400'
+                                    : 'text-orange-600 dark:text-orange-400'
+                                }`}
+                              >
+                                {formatCurrencyWithSymbol(
+                                  account.balance,
+                                  account.currency.code,
+                                  account.currency.symbol
+                                )}
+                              </div>
+                              {account.balanceInBaseCurrency !== undefined &&
+                                account.currency.code !== baseCurrency.code && (
+                                  <div className='text-xs text-gray-400 whitespace-nowrap'>
+                                    ≈{' '}
+                                    {formatCurrencyWithSymbol(
+                                      Math.abs(account.balanceInBaseCurrency),
+                                      baseCurrency.code,
+                                      baseCurrency.symbol
+                                    )}
+                                  </div>
+                                )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )
-              }
-            )}
-          </div>
-        )}
+                  )
+                }
+              )
+            : /* 如果没有账户，不显示任何货币记录 */
+              null}
+        </div>
 
         {/* 递归渲染子分类 */}
         {category.children && category.children.length > 0 && (

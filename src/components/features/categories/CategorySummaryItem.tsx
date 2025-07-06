@@ -47,6 +47,15 @@ export default function CategorySummaryItem({
   const { t } = useLanguage()
   const { formatCurrency } = useUserCurrencyFormatter()
 
+  // Check if this is a subcategory (child category) that should show account count below name
+  // Show account count for categories (not individual accounts) that have accountCount data
+  const isChildCategory =
+    !isSubcategory &&
+    accountCount !== undefined &&
+    accountCount >= 0 &&
+    transactionCount === 0 && // This helps distinguish categories from individual accounts
+    href.includes('/categories/') // Categories have /categories/ in href, accounts have /accounts/
+
   const renderStockContent = () => {
     if (isSubcategory) {
       return (
@@ -73,6 +82,11 @@ export default function CategorySummaryItem({
     const hasBalances = balances.length > 0
 
     if (!hasBalances) {
+      // If this is a child category showing account count below name, don't show it on the right
+      if (isChildCategory) {
+        return null
+      }
+
       return (
         <span className='text-gray-500 dark:text-gray-400'>
           {transactionCount > 0
@@ -83,7 +97,7 @@ export default function CategorySummaryItem({
     }
 
     return (
-      <div className='flex flex-col items-end'>
+      <div className='flex flex-col items-end min-w-0'>
         {balances.map(({ currencyCode, balance, convertedAmount }) => {
           // 查找对应的货币信息
           const currencyInfo = currencies.find(c => c.code === currencyCode)
@@ -92,14 +106,11 @@ export default function CategorySummaryItem({
           return (
             <div
               key={currencyCode}
-              className='flex items-center space-x-2 mb-1'
+              className='grid grid-cols-[1fr_auto] gap-2 items-center min-h-[2.5rem] w-full'
             >
-              <span className='inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'>
-                {currencyCode}
-              </span>
-              <div className='flex flex-col items-end'>
+              <div className='flex flex-col items-end justify-center min-h-[2.5rem] min-w-0'>
                 <span
-                  className={`${
+                  className={`text-sm font-medium truncate ${
                     balance >= 0
                       ? 'text-green-600 dark:text-green-400'
                       : 'text-red-600 dark:text-red-400'
@@ -109,7 +120,7 @@ export default function CategorySummaryItem({
                 </span>
                 {convertedAmount !== undefined &&
                   currencyCode !== baseCurrency?.code && (
-                    <span className='text-xs text-gray-400'>
+                    <span className='text-xs text-gray-400 mt-0.5 truncate'>
                       ≈{' '}
                       {formatCurrency(
                         convertedAmount,
@@ -118,6 +129,9 @@ export default function CategorySummaryItem({
                     </span>
                   )}
               </div>
+              <span className='inline-flex items-center justify-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200 min-w-[2.5rem] h-6 flex-shrink-0'>
+                {currencyCode}
+              </span>
             </div>
           )
         })}
@@ -126,13 +140,22 @@ export default function CategorySummaryItem({
   }
 
   return (
-    <div className='flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg'>
-      <Link
-        href={href}
-        className='font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300'
-      >
-        {name}
-      </Link>
+    <div className='flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg'>
+      <div className='flex flex-col'>
+        <Link
+          href={href}
+          className='font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300'
+        >
+          {name}
+        </Link>
+        {isChildCategory && (
+          <span className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
+            {accountCount === 0
+              ? t('category.no.accounts')
+              : `${accountCount} ${t('category.accounts')}`}
+          </span>
+        )}
+      </div>
       <div className='text-sm text-gray-600 dark:text-gray-400'>
         {renderStockContent()}
       </div>

@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       where: { userId: user.id },
       include: {
         category: true,
+        currency: true, // 添加账户货币信息
         transactions: {
           where: {
             date: {
@@ -53,6 +54,16 @@ export async function GET(request: NextRequest) {
           include: {
             currency: true,
           },
+        },
+      },
+    })
+
+    // 获取所有资产和负债类别，确保即使没有账户的分类也能被包含
+    const allAssetLiabilityCategories = await prisma.category.findMany({
+      where: {
+        userId: user.id,
+        type: {
+          in: ['ASSET', 'LIABILITY'],
         },
       },
     })
@@ -104,6 +115,29 @@ export async function GET(request: NextRequest) {
       equity: {} as Record<string, number>,
     }
 
+    // 首先初始化所有资产和负债分类的结构，确保即使没有账户的分类也能显示
+    allAssetLiabilityCategories.forEach(category => {
+      if (category.type === 'ASSET') {
+        if (!balanceSheet.assets.categories[category.id]) {
+          balanceSheet.assets.categories[category.id] = {
+            categoryName: category.name,
+            accounts: [],
+            totalByCurrency: {},
+            totalInBaseCurrency: 0,
+          }
+        }
+      } else if (category.type === 'LIABILITY') {
+        if (!balanceSheet.liabilities.categories[category.id]) {
+          balanceSheet.liabilities.categories[category.id] = {
+            categoryName: category.name,
+            accounts: [],
+            totalByCurrency: {},
+            totalInBaseCurrency: 0,
+          }
+        }
+      }
+    })
+
     accounts.forEach(account => {
       // 只处理资产和负债类账户（存量账户）
       if (
@@ -148,11 +182,29 @@ export async function GET(request: NextRequest) {
         validateData: true,
       })
 
+      // 如果账户没有余额记录，使用账户的默认货币创建0余额记录
+      const balanceEntries = Object.entries(accountBalances)
+      if (balanceEntries.length === 0 && account.currency) {
+        balanceEntries.push([
+          account.currency.code,
+          {
+            currencyCode: account.currency.code,
+            amount: 0,
+            currency: {
+              code: account.currency.code,
+              symbol: account.currency.symbol,
+              name: account.currency.name,
+            },
+          },
+        ])
+      }
+
       // 将账户按类别分组
-      Object.entries(accountBalances).forEach(([currencyCode, balanceData]) => {
+      balanceEntries.forEach(([currencyCode, balanceData]) => {
         const balance = balanceData.amount
 
-        if (Math.abs(balance) < 0.01) return // 忽略接近零的余额
+        // 移除余额过滤，允许显示0余额的账户
+        // if (Math.abs(balance) < 0.01) return // 忽略接近零的余额
 
         const accountInfo = {
           id: account.id,

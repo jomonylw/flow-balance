@@ -1,0 +1,21 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4F46E5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded rectangle with gradient -->
+  <rect x="2" y="2" width="28" height="28" rx="8" ry="8" fill="url(#gradient)" />
+
+  <!-- Dollar sign icon - simplified for small size -->
+  <g stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Vertical line -->
+    <line x1="16" y1="8" x2="16" y2="24" />
+    <!-- Top curve -->
+    <path d="M12 12c0-1.5 1.5-3 4-3s4 1.5 4 3" />
+    <!-- Bottom curve -->
+    <path d="M12 20c0 1.5 1.5 3 4 3s4-1.5 4-3" />
+  </g>
+</svg>

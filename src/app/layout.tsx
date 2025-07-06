@@ -11,6 +11,10 @@ import LanguageScript from '@/components/LanguageScript'
 export const metadata: Metadata = {
   title: 'Flow Balance - 个人财务管理',
   description: '专业的个人财务管理应用，支持多币种、智能分类和实时统计',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+  },
+  manifest: '/site.webmanifest',
 }
 
 export default function RootLayout({

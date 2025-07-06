@@ -118,6 +118,15 @@ function calculateStockAccountBalance(
     }
   )
 
+  // 如果账户没有任何交易记录，但有默认货币，创建0余额记录
+  if (Object.keys(balances).length === 0 && account.currency) {
+    balances[account.currency.code] = {
+      currencyCode: account.currency.code,
+      amount: 0,
+      currency: account.currency,
+    }
+  }
+
   return balances
 }
 
@@ -142,6 +151,11 @@ export interface ServiceAccount {
     id?: string
     name: string
     type?: AccountType
+  }
+  currency?: {
+    code: string
+    symbol: string
+    name: string
   }
   transactions: ServiceTransaction[]
 }

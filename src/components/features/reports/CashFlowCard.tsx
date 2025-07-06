@@ -287,38 +287,32 @@ export default function CashFlowCard() {
           </div>
 
           {/* 分类汇总金额 - 使用特殊样式显示本币汇总 */}
-          {category.totalInBaseCurrency !== undefined &&
-            category.totalInBaseCurrency !== 0 && (
-              <div className='text-right'>
-                <span
-                  className={`inline-block px-2 py-1 rounded text-sm font-bold border ${
-                    isExpense
-                      ? level === 0
-                        ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700'
-                        : 'bg-red-50/50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border-red-200/50 dark:border-red-700/50'
-                      : level === 0
-                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700'
-                        : 'bg-green-50/50 dark:bg-green-900/10 text-green-600 dark:text-green-400 border-green-200/50 dark:border-green-700/50'
-                  }`}
-                >
-                  {isExpense ? '-' : '+'}
-                  {formatCurrencyWithCode(
-                    Math.abs(category.totalInBaseCurrency),
-                    currentBaseCurrency.code
-                  )}
-                </span>
-              </div>
-            )}
+          <div className='text-right'>
+            <span
+              className={`inline-block px-2 py-1 rounded text-sm font-bold border ${
+                isExpense
+                  ? level === 0
+                    ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700'
+                    : 'bg-red-50/50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border-red-200/50 dark:border-red-700/50'
+                  : level === 0
+                    ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700'
+                    : 'bg-green-50/50 dark:bg-green-900/10 text-green-600 dark:text-green-400 border-green-200/50 dark:border-green-700/50'
+              }`}
+            >
+              {isExpense ? '-' : '+'}
+              {formatCurrencyWithCode(
+                Math.abs(category.totalInBaseCurrency || 0),
+                currentBaseCurrency.code
+              )}
+            </span>
+          </div>
         </div>
 
-        {/* 如果有直接账户，显示账户详情 */}
-        {category.accounts.length > 0 && (
-          <div
-            style={{ paddingLeft: `${(level + 1) * 16}px` }}
-            className='mt-2'
-          >
-            {/* 按币种分组显示账户 */}
-            {Object.entries(category.totalByCurrency || {}).map(
+        {/* 显示账户详情 - 即使没有账户也显示分类 */}
+        <div style={{ paddingLeft: `${(level + 1) * 16}px` }} className='mt-2'>
+          {/* 如果有账户，按币种分组显示账户 */}
+          {category.accounts.length > 0 ? (
+            Object.entries(category.totalByCurrency || {}).map(
               ([currencyCode, total]) => {
                 const currencyAccounts = category.accounts.filter(
                   account => account.currency?.code === currencyCode
@@ -424,9 +418,30 @@ export default function CashFlowCard() {
                   </div>
                 )
               }
-            )}
-          </div>
-        )}
+            )
+          ) : (
+            /* 如果没有账户，显示0金额 */
+            <div className='mb-3'>
+              <div className='flex justify-between items-start mb-2 py-1 px-0 bg-gray-50 dark:bg-gray-800 rounded'>
+                <span className='text-sm font-medium text-gray-600 dark:text-gray-400 flex-1 min-w-0 pr-2'>
+                  {currentBaseCurrency.code}
+                </span>
+                <div className='text-right min-w-0 flex-shrink-0'>
+                  <div
+                    className={`text-sm font-semibold whitespace-nowrap ${
+                      isExpense
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-green-600 dark:text-green-400'
+                    }`}
+                  >
+                    {isExpense ? '-' : '+'}
+                    {formatCurrencyWithCode(0, currentBaseCurrency.code)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* 递归渲染子分类 */}
         {category.children && category.children.length > 0 && (
