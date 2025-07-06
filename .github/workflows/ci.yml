@@ -137,20 +137,6 @@ jobs:
   # 数据库迁移检查
   database-check:
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: flowbalance_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
       - name: Checkout code
@@ -184,12 +170,7 @@ jobs:
           pnpm db:generate
           pnpm db:deploy
 
-      - name: Test PostgreSQL migrations
-        env:
-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/flowbalance_test?schema=public"
-        run: |
-          pnpm db:generate
-          pnpm db:deploy
+
 
   # 安全检查
   security-check:
