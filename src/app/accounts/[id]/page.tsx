@@ -6,6 +6,9 @@ import AccountDetailRouter from '@/components/features/accounts/AccountDetailRou
 import { ConstantsManager } from '@/lib/utils/constants-manager'
 import { convertPrismaAccountType } from '@/types/core/constants'
 
+// 强制动态渲染
+export const dynamic = 'force-dynamic'
+
 interface AccountPageProps {
   params: Promise<{ id: string }>
 }

@@ -13,6 +13,9 @@ import type { SerializedTransactionWithBasic } from '@/types/database'
 import { Decimal } from '@prisma/client/runtime/library'
 import type { AccountType } from '@prisma/client'
 
+// 强制动态渲染
+export const dynamic = 'force-dynamic'
+
 interface CategoryPageProps {
   params: Promise<{ id: string }>
 }

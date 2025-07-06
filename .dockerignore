@@ -124,6 +124,7 @@ docker-compose*
 
 # Scripts (keep only essential ones)
 scripts/
+!scripts/docker-entrypoint.sh
 
 # Test files
 **/*.test.js

@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation'
 import AppLayout from '@/components/features/layout/AppLayout'
 import UserSettingsPage from '@/components/features/settings/UserSettingsPage'
 
+// 强制动态渲染
+export const dynamic = 'force-dynamic'
+
 export default async function SettingsPage() {
   const user = await getCurrentUser()
 

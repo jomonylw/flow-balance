@@ -3,6 +3,9 @@ import { prisma } from '@/lib/database/prisma'
 import DashboardContent from './DashboardContent'
 import { serializeAccounts } from '@/lib/utils/serialization'
 
+// 强制动态渲染
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardView() {
   const user = await getCurrentUser()
   if (!user) return null

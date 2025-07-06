@@ -4,6 +4,9 @@ import { prisma } from '@/lib/database/prisma'
 import AppLayout from '@/components/features/layout/AppLayout'
 import FireJourneyContent from '@/components/features/fire/FireJourneyContent'
 
+// 强制动态渲染
+export const dynamic = 'force-dynamic'
+
 export default async function FirePage() {
   const user = await getCurrentUser()
 

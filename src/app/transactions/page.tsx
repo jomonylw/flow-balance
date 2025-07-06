@@ -4,6 +4,9 @@ import AppLayout from '@/components/features/layout/AppLayout'
 import TransactionListView from '@/components/features/transactions/TransactionListView'
 import { ConstantsManager } from '@/lib/utils/constants-manager'
 
+// 强制动态渲染
+export const dynamic = 'force-dynamic'
+
 export default async function TransactionsPage() {
   const user = await getCurrentUser()
   if (!user) {

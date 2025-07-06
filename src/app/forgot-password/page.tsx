@@ -3,6 +3,9 @@ import { getCurrentUser } from '@/lib/services/auth.service'
 import AuthLayout from '@/components/features/auth/AuthLayout'
 import ForgotPasswordWithKey from '@/components/features/auth/ForgotPasswordWithKey'
 
+// 强制动态渲染
+export const dynamic = 'force-dynamic'
+
 export default async function ForgotPasswordPage() {
   // 如果用户已登录，重定向到 dashboard
   const user = await getCurrentUser()
