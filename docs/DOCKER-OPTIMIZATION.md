@@ -6,10 +6,10 @@
 
 ## 📊 优化前后对比
 
-| 版本 | 镜像大小 | 层数 | 构建时间 | 启动时间 |
-|------|----------|------|----------|----------|
-| 原版 | ~1.2GB | 15+ | ~5min | ~30s |
-| 优化版 | ~300MB | 8-10 | ~3min | ~15s |
+| 版本     | 镜像大小 | 层数     | 构建时间 | 启动时间 |
+| -------- | -------- | -------- | -------- | -------- |
+| 原版     | ~1.2GB   | 15+      | ~5min    | ~30s     |
+| 优化版   | ~300MB   | 8-10     | ~3min    | ~15s     |
 | **节省** | **~75%** | **~40%** | **~40%** | **~50%** |
 
 ## 🛠️ 优化策略
@@ -19,11 +19,12 @@
 ```dockerfile
 # 三阶段构建：deps -> builder -> runner
 FROM node:18-alpine AS deps    # 依赖安装
-FROM node:18-alpine AS builder # 应用构建  
+FROM node:18-alpine AS builder # 应用构建
 FROM node:18-alpine AS runner  # 运行环境
 ```
 
 **优化点**：
+
 - 只在最终镜像中保留运行时必需的文件
 - 移除构建工具和开发依赖
 - 使用 Alpine Linux 减少基础镜像大小
@@ -31,6 +32,7 @@ FROM node:18-alpine AS runner  # 运行环境
 ### 2. 依赖管理优化
 
 **原版问题**：
+
 ```dockerfile
 # 在每个阶段都安装 pnpm
 RUN npm install -g pnpm
@@ -39,6 +41,7 @@ COPY node_modules ./node_modules
 ```
 
 **优化方案**：
+
 ```dockerfile
 # 使用 corepack 管理 pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -51,30 +54,34 @@ RUN pnpm store prune && rm -rf ~/.pnpm-store
 ### 3. Next.js Standalone 模式
 
 **配置优化**：
+
 ```javascript
 // next.config.js
 const nextConfig = {
-  output: 'standalone',  // 生成独立运行包
+  output: 'standalone', // 生成独立运行包
   experimental: {
-    swcMinify: true,     // 启用 SWC 压缩
-    optimizePackageImports: ['@prisma/client', 'echarts']
-  }
+    swcMinify: true, // 启用 SWC 压缩
+    optimizePackageImports: ['@prisma/client', 'echarts'],
+  },
 }
 ```
 
 **效果**：
+
 - 减少 ~60% 的运行时文件大小
 - 移除不必要的 Next.js 依赖
 
 ### 4. Prisma 优化
 
 **原版问题**：
+
 ```dockerfile
 # 复制整个 node_modules
 COPY --from=builder /app/node_modules ./node_modules
 ```
 
 **优化方案**：
+
 ```dockerfile
 # 只复制 Prisma 必需文件
 COPY --from=builder /app/prisma/schema.prisma ./prisma/
@@ -85,11 +92,13 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 ### 5. 系统包优化
 
 **移除不必要的包**：
+
 - `netcat-openbsd` → 使用 Node.js 健康检查
 - `bash` → 使用 `sh`（Alpine 默认）
 - 各种构建工具 → 只在构建阶段使用
 
 **保留必要的包**：
+
 - `dumb-init` → 进程管理
 - `libc6-compat` → Node.js 兼容性
 
@@ -198,6 +207,7 @@ docker inspect flow-balance:optimized
 
 ## 🎉 总结
 
-通过多阶段构建、依赖优化、文件精简等策略，成功将 Flow Balance Docker 镜像大小减少约 **75%**，同时提升了构建和运行性能，增强了安全性。
+通过多阶段构建、依赖优化、文件精简等策略，成功将 Flow Balance Docker 镜像大小减少约
+**75%**，同时提升了构建和运行性能，增强了安全性。
 
 优化版镜像适合生产环境部署，提供了更好的用户体验和更低的资源消耗。

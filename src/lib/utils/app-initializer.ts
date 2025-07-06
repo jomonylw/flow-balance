@@ -36,7 +36,7 @@ export async function checkAppInitialization(): Promise<boolean> {
     // 检查 JWT 密钥是否可用
     const { getJWTSecret } = await import('./jwt-secret-manager')
     await getJWTSecret()
-    
+
     return true
   } catch (error) {
     console.error('App initialization check failed:', error)

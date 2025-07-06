@@ -20,7 +20,12 @@ async function main() {
     { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', decimalPlaces: 2 },
     { code: 'CAD', name: 'Canadian Dollar', symbol: '$', decimalPlaces: 2 },
     { code: 'CHF', name: 'Swiss Franc', symbol: 'Fr.', decimalPlaces: 2 },
-    { code: 'CNY', name: 'Chinese Renminbi Yuan', symbol: '¥', decimalPlaces: 2 },
+    {
+      code: 'CNY',
+      name: 'Chinese Renminbi Yuan',
+      symbol: '¥',
+      decimalPlaces: 2,
+    },
     { code: 'CZK', name: 'Czech Koruna', symbol: 'Kč', decimalPlaces: 2 },
     { code: 'DKK', name: 'Danish Krone', symbol: 'kr.', decimalPlaces: 2 },
     { code: 'EUR', name: 'Euro', symbol: '€', decimalPlaces: 2 },
@@ -36,7 +41,12 @@ async function main() {
     { code: 'MXN', name: 'Mexican Peso', symbol: '$', decimalPlaces: 2 },
     { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM', decimalPlaces: 2 },
     { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr', decimalPlaces: 2 },
-    { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$', decimalPlaces: 2 },
+    {
+      code: 'NZD',
+      name: 'New Zealand Dollar',
+      symbol: 'NZ$',
+      decimalPlaces: 2,
+    },
     { code: 'PHP', name: 'Philippine Peso', symbol: '₱', decimalPlaces: 2 },
     { code: 'PLN', name: 'Polish Złoty', symbol: 'zł', decimalPlaces: 2 },
     { code: 'RON', name: 'Romanian Leu', symbol: 'lei', decimalPlaces: 2 },
@@ -46,7 +56,12 @@ async function main() {
     { code: 'THB', name: 'Thai Baht', symbol: '฿', decimalPlaces: 2 },
     { code: 'TRY', name: 'Turkish Lira', symbol: '₺', decimalPlaces: 2 },
     { code: 'TWD', name: 'Taiwan Dollar', symbol: 'NT$', decimalPlaces: 2 },
-    { code: 'USD', name: 'United States Dollar', symbol: '$', decimalPlaces: 2 },
+    {
+      code: 'USD',
+      name: 'United States Dollar',
+      symbol: '$',
+      decimalPlaces: 2,
+    },
     { code: 'VND', name: 'Vietnamese Dong', symbol: '₫', decimalPlaces: 0 },
     { code: 'ZAR', name: 'South African Rand', symbol: 'R', decimalPlaces: 2 },
   ] as const
@@ -98,27 +113,29 @@ async function main() {
 
   // 验证结果
   const totalCurrencies = await prisma.currency.count({
-    where: { createdBy: null }
+    where: { createdBy: null },
   })
   console.log(`📊 数据库中共有 ${totalCurrencies} 种全局货币`)
 
   // 显示特殊精度的货币
   const specialPrecisionCurrencies = await prisma.currency.findMany({
-    where: { 
+    where: {
       createdBy: null,
-      decimalPlaces: { not: 2 }
+      decimalPlaces: { not: 2 },
     },
     select: {
       code: true,
       symbol: true,
-      decimalPlaces: true
-    }
+      decimalPlaces: true,
+    },
   })
 
   if (specialPrecisionCurrencies.length > 0) {
     console.log('💰 特殊精度货币:')
     specialPrecisionCurrencies.forEach(currency => {
-      console.log(`  ${currency.code}: ${currency.decimalPlaces} 位小数 (${currency.symbol})`)
+      console.log(
+        `  ${currency.code}: ${currency.decimalPlaces} 位小数 (${currency.symbol})`
+      )
     })
   }
 

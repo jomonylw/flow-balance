@@ -62,6 +62,7 @@ environment:
 **症状**：登录后立即提示"会话已过期"
 
 **解决方案**：
+
 1. 检查数据目录挂载：`ls -la ./data`
 2. 重启容器重新生成密钥：`docker-compose restart`
 3. 查看容器日志：`docker logs flow-balance-app`

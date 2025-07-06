@@ -35,9 +35,12 @@ const nextConfig = {
   // 编译器优化
   compiler: {
     // 移除 console.log (生产环境)
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn']
-    } : false,
+    removeConsole:
+      process.env.NODE_ENV === 'production'
+        ? {
+            exclude: ['error', 'warn'],
+          }
+        : false,
   },
 
   // 环境变量
