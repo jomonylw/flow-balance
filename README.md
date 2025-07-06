@@ -113,7 +113,10 @@ pnpm install
 cp .env.example .env.local
 
 # 编辑环境变量
+# 本地开发
 # DATABASE_URL="file:./prisma/dev.db"
+# Docker 部署
+# DATABASE_URL="file:/app/data/flow-balance.db"
 # JWT_SECRET="your-jwt-secret"
 ```
 
