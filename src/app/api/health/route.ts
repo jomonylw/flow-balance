@@ -57,7 +57,7 @@ export async function HEAD(_request: NextRequest) {
       await prisma.$queryRaw`SELECT 1`
     }
     return new NextResponse(null, { status: 200 })
-  } catch (_error) {
+  } catch {
     return new NextResponse(null, { status: 503 })
   }
 }
