@@ -13,9 +13,11 @@ if [ -z "$DATABASE_URL" ]; then
     exit 1
 fi
 
-if [ -z "$JWT_SECRET" ]; then
-    echo "❌ JWT_SECRET environment variable is required"
-    exit 1
+# JWT_SECRET 不再是必需的，会自动生成
+if [ -n "$JWT_SECRET" ]; then
+    echo "🔑 Using provided JWT_SECRET from environment"
+else
+    echo "🔑 JWT_SECRET will be auto-generated during initialization"
 fi
 
 # 检测数据库类型
