@@ -34,7 +34,7 @@ async function readJWTSecretFromFile(): Promise<string | null> {
     const secretPath = getSecretFilePath()
     const secret = await fs.readFile(secretPath, 'utf-8')
     return secret.trim()
-  } catch (error) {
+  } catch {
     // 文件不存在或读取失败
     return null
   }
@@ -47,13 +47,14 @@ async function writeJWTSecretToFile(secret: string): Promise<void> {
   try {
     const secretPath = getSecretFilePath()
     const secretDir = path.dirname(secretPath)
-    
+
     // 确保目录存在
     await fs.mkdir(secretDir, { recursive: true })
-    
+
     // 写入密钥文件
     await fs.writeFile(secretPath, secret, { mode: 0o600 }) // 只有所有者可读写
-    
+
+    // eslint-disable-next-line no-console
     console.log(`✅ JWT secret saved to: ${secretPath}`)
   } catch (error) {
     console.error('❌ Failed to save JWT secret:', error)
@@ -78,14 +79,17 @@ export async function getJWTSecret(): Promise<string> {
   }
 
   // 3. 生成新密钥并保存
+  // eslint-disable-next-line no-console
   console.log('🔑 Generating new JWT secret...')
   const newSecret = generateJWTSecret()
-  
+
   try {
     await writeJWTSecretToFile(newSecret)
     return newSecret
-  } catch (error) {
-    console.warn('⚠️  Failed to save JWT secret to file, using in-memory secret')
+  } catch {
+    console.warn(
+      '⚠️  Failed to save JWT secret to file, using in-memory secret'
+    )
     console.warn('⚠️  This means the secret will change on restart!')
     return newSecret
   }
@@ -99,7 +103,7 @@ export function validateJWTSecret(secret: string): boolean {
   if (secret.length < 32) {
     return false
   }
-  
+
   // 不能是常见的弱密码
   const weakSecrets = [
     'your-super-secret-jwt-key-change-this',
@@ -109,7 +113,7 @@ export function validateJWTSecret(secret: string): boolean {
     'secret',
     '123456',
   ]
-  
+
   return !weakSecrets.some(weak => secret.includes(weak))
 }
 
@@ -120,12 +124,13 @@ export function validateJWTSecret(secret: string): boolean {
 export async function initializeJWTSecret(): Promise<string> {
   try {
     const secret = await getJWTSecret()
-    
+
     // 验证密钥强度
     if (!validateJWTSecret(secret)) {
       console.warn('⚠️  JWT secret appears to be weak, consider regenerating')
     }
-    
+
+    // eslint-disable-next-line no-console
     console.log('✅ JWT secret initialized successfully')
     return secret
   } catch (error) {
