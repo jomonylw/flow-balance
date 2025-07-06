@@ -69,12 +69,20 @@ async function writeJWTSecretToFile(secret: string): Promise<void> {
 export async function getJWTSecret(): Promise<string> {
   // 1. 优先使用环境变量（用于开发和测试）
   if (process.env.JWT_SECRET) {
+    // eslint-disable-next-line no-console
+    console.log('🔑 Using JWT secret from environment variable')
     return process.env.JWT_SECRET
   }
 
   // 2. 尝试从文件读取
+  const secretPath = getSecretFilePath()
+  // eslint-disable-next-line no-console
+  console.log(`🔍 Looking for JWT secret file at: ${secretPath}`)
+
   const existingSecret = await readJWTSecretFromFile()
   if (existingSecret) {
+    // eslint-disable-next-line no-console
+    console.log('🔑 Using JWT secret from file')
     return existingSecret
   }
 
@@ -85,12 +93,15 @@ export async function getJWTSecret(): Promise<string> {
 
   try {
     await writeJWTSecretToFile(newSecret)
+    // eslint-disable-next-line no-console
+    console.log('🔑 JWT secret generated and saved to file')
     return newSecret
-  } catch {
+  } catch (error) {
     console.warn(
       '⚠️  Failed to save JWT secret to file, using in-memory secret'
     )
     console.warn('⚠️  This means the secret will change on restart!')
+    console.warn('⚠️  Error:', error instanceof Error ? error.message : error)
     return newSecret
   }
 }

@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client'
 import { generateRecoveryKey } from '@/lib/utils/recovery-key'
 import { createServerTranslator } from '@/lib/utils/server-i18n'
 import { getJWTSecret } from '@/lib/utils/jwt-secret-manager'
+import { initializeServer } from '@/lib/utils/server-init'
 
 const prisma = new PrismaClient()
 
@@ -15,6 +16,9 @@ export interface JWTPayload {
 
 // JWT 相关函数
 export async function generateToken(payload: JWTPayload): Promise<string> {
+  // 确保服务器已初始化
+  await initializeServer()
+
   const secret = await getJWTSecret()
 
   // 验证payload类型
@@ -32,6 +36,9 @@ export async function generateToken(payload: JWTPayload): Promise<string> {
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
+    // 确保服务器已初始化
+    await initializeServer()
+
     const secret = await getJWTSecret()
     const decoded = jwt.verify(token, secret) as JWTPayload
     return decoded
