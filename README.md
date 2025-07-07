@@ -187,49 +187,125 @@ make backup            # 数据备份
 
 ### Docker 快速部署
 
-#### 使用 SQLite（单机部署）
+> 🎯 **新特性**：Flow Balance 现在支持**动态数据库检测**！同一个 Docker 镜像可以根据 `DATABASE_URL`
+> 自动选择 SQLite 或 PostgreSQL。
+
+#### 🚀 一键启动（推荐）
+
+```bash
+# SQLite 模式（适合个人使用）
+docker run -d \
+  --name flow-balance \
+  -p 3000:3000 \
+  -e DATABASE_URL="file:/app/data/flow-balance.db" \
+  -v flow-balance-data:/app/data \
+  --restart unless-stopped \
+  jomonylw/flow-balance:latest
+
+# PostgreSQL 模式（适合生产环境）
+docker run -d \
+  --name flow-balance \
+  -p 3000:3000 \
+  -e DATABASE_URL="postgresql://user:password@host:5432/dbname" \
+  --restart unless-stopped \
+  jomonylw/flow-balance:latest
+```
+
+#### 📋 使用 Docker Compose
+
+**SQLite 版本（单机部署）**
+
+```bash
+# 1. 创建 docker-compose.yml
+cat > docker-compose.yml << EOF
+version: '3.8'
+services:
+  flow-balance:
+    image: jomonylw/flow-balance:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:/app/data/flow-balance.db
+    volumes:
+      - flow-balance-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  flow-balance-data:
+EOF
+
+# 2. 启动服务
+docker-compose up -d
+```
+
+**PostgreSQL 版本（推荐生产环境）**
+
+```bash
+# 1. 创建 docker-compose.yml
+cat > docker-compose.yml << EOF
+version: '3.8'
+services:
+  flow-balance:
+    image: jomonylw/flow-balance:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://flowbalance:secure_password@postgres:5432/flowbalance
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=flowbalance
+      - POSTGRES_USER=flowbalance
+      - POSTGRES_PASSWORD=secure_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+EOF
+
+# 2. 启动服务
+docker-compose up -d
+```
+
+#### 🛠️ 从源码构建
 
 ```bash
 # 1. 克隆项目
-git clone <repository-url>
-cd persional-balance-sheet
+git clone https://github.com/jomonylw/flow-balance.git
+cd flow-balance
 
-# 2. 复制环境变量文件
-cp .env.docker .env
+# 2. 构建镜像（支持动态数据库检测）
+./scripts/docker-build.sh
 
-# 3. 编辑环境变量（设置 JWT_SECRET 等）
-nano .env
-
-# 4. 启动服务
-docker-compose up -d
-
-# 5. 查看日志
-docker-compose logs -f app
+# 3. 启动容器
+docker run -d \
+  --name flow-balance \
+  -p 3000:3000 \
+  -e DATABASE_URL="file:/app/data/flow-balance.db" \
+  -v flow-balance-data:/app/data \
+  flow-balance:latest
 ```
 
-#### 使用 PostgreSQL（推荐生产环境）
-
-```bash
-# 1. 克隆项目
-git clone <repository-url>
-cd persional-balance-sheet
-
-# 2. 复制并编辑环境变量
-cp .env.docker .env
-nano .env
-
-# 3. 修改数据库配置
-# 取消注释 PostgreSQL 相关配置
-# DATABASE_URL="postgresql://flowbalance:your_secure_password@postgres:5432/flowbalance?schema=public"
-
-# 4. 启动服务（包含 PostgreSQL）
-docker-compose up -d
-
-# 5. 查看服务状态
-docker-compose ps
-```
+📖 **详细文档**：[动态数据库使用指南](DYNAMIC_DATABASE_USAGE.md)
 
 ### 数据库管理
+
+#### 🎯 动态数据库支持
+
+Flow Balance 支持运行时自动检测数据库类型：
+
+| DATABASE_URL 格式         | 自动选择   | 适用场景           |
+| ------------------------- | ---------- | ------------------ |
+| `file:/path/to/db.sqlite` | SQLite     | 个人使用、开发环境 |
+| `postgresql://...`        | PostgreSQL | 生产环境、多用户   |
+
+#### 📋 管理命令
 
 ```bash
 # 重置数据库
@@ -238,9 +314,12 @@ pnpm db:reset
 # 查看数据库
 pnpm db:studio
 
-# 切换数据库类型
+# 手动切换数据库类型（开发环境）
 node scripts/switch-database.js postgresql  # 切换到 PostgreSQL
 node scripts/switch-database.js sqlite      # 切换到 SQLite
+
+# 测试动态检测功能
+./scripts/test-dynamic-db.sh
 ```
 
 ## 📋 项目结构

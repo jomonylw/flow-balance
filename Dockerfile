@@ -16,7 +16,7 @@ COPY prisma ./prisma/
 # Install dependencies
 RUN pnpm install --frozen-lockfile --production=false
 
-# Generate Prisma client
+# Generate Prisma client (默认使用 SQLite schema)
 RUN pnpm db:generate
 
 # Stage 2: Builder
@@ -37,7 +37,7 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Generate Prisma client (ensure it exists and is up to date)
+# Generate Prisma client (默认使用 SQLite，运行时会根据 DATABASE_URL 动态切换)
 RUN pnpm db:generate
 
 # Verify Prisma client location for debugging

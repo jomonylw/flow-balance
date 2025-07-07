@@ -53,15 +53,56 @@ make docker-run
 git clone https://github.com/jomonylw/flow-balance.git
 cd flow-balance
 
-# 2. 构建镜像
+# 2. 构建镜像（支持动态数据库检测）
+./scripts/docker-build.sh
+
+# 或使用传统方式构建
 docker build -t flow-balance:latest .
 
-# 3. 启动容器
+# 3. 启动容器（SQLite）
 docker run -d \
   --name flow-balance \
   -p 3000:3000 \
   -v flow-balance-data:/app/data \
+  -e DATABASE_URL="file:/app/data/flow-balance.db" \
   --restart unless-stopped \
+  flow-balance:latest
+
+# 或启动容器（PostgreSQL）
+docker run -d \
+  --name flow-balance \
+  -p 3000:3000 \
+  -e DATABASE_URL="postgresql://user:password@host:5432/dbname" \
+  --restart unless-stopped \
+  flow-balance:latest
+```
+
+## 🎯 动态数据库检测
+
+Flow Balance 支持在**运行时**自动检测数据库类型，无需在构建时指定：
+
+### 支持的数据库格式
+
+| 数据库类型     | DATABASE_URL 格式                     | 自动行为                     |
+| -------------- | ------------------------------------- | ---------------------------- |
+| **SQLite**     | `file:/app/data/flow-balance.db`      | 自动切换到 SQLite schema     |
+| **PostgreSQL** | `postgresql://user:pass@host:5432/db` | 自动切换到 PostgreSQL schema |
+| **PostgreSQL** | `postgres://user:pass@host:5432/db`   | 自动切换到 PostgreSQL schema |
+
+### 动态切换示例
+
+```bash
+# 同一个镜像，不同的数据库配置
+
+# 使用 SQLite
+docker run -d -p 3000:3000 \
+  -e DATABASE_URL="file:/app/data/flow-balance.db" \
+  -v flow-balance-data:/app/data \
+  flow-balance:latest
+
+# 使用 PostgreSQL
+docker run -d -p 3000:3000 \
+  -e DATABASE_URL="postgresql://user:password@postgres:5432/flowbalance" \
   flow-balance:latest
 ```
 
@@ -82,7 +123,9 @@ docker run -d \
    - 默认绑定到 `0.0.0.0:3000`
 
 3. **数据库**：
-   - 默认使用 SQLite，数据存储在 `/app/data`
+   - 🎯 **动态检测**：根据 `DATABASE_URL` 自动选择数据库类型
+   - `file:/path/to/db.sqlite` → 自动使用 SQLite
+   - `postgresql://...` → 自动使用 PostgreSQL
    - 自动创建数据库和表结构
    - 自动导入基础种子数据（货币信息等）
 

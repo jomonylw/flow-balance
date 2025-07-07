@@ -20,14 +20,41 @@ else
     echo "🔑 JWT_SECRET will be auto-generated during initialization"
 fi
 
-# 检测数据库类型
+# 检测数据库类型并动态切换 schema
 if [[ "$DATABASE_URL" == postgresql://* ]] || [[ "$DATABASE_URL" == postgres://* ]]; then
     echo "📊 Detected PostgreSQL database"
     DB_TYPE="postgresql"
+
+    # 动态切换到 PostgreSQL schema
+    if [ -f "prisma/schema.postgresql.prisma" ]; then
+        echo "🔄 Switching to PostgreSQL schema..."
+        cp prisma/schema.postgresql.prisma prisma/schema.prisma
+        echo "✅ PostgreSQL schema activated"
+    else
+        echo "❌ PostgreSQL schema file not found: prisma/schema.postgresql.prisma"
+        exit 1
+    fi
+
 elif [[ "$DATABASE_URL" == file:* ]]; then
     echo "📊 Detected SQLite database"
     DB_TYPE="sqlite"
-    
+
+    # 检查当前 schema 是否为 SQLite
+    current_provider=$(grep 'provider.*=' prisma/schema.prisma | grep -o '"[^"]*"' | tr -d '"')
+    if [ "$current_provider" != "sqlite" ]; then
+        echo "🔄 Current schema provider is '$current_provider', switching to SQLite..."
+        # 重新生成 SQLite schema（从 PostgreSQL schema 转换）
+        if [ -f "prisma/schema.postgresql.prisma" ]; then
+            # 复制 PostgreSQL schema 并修改 provider
+            sed 's/provider = "postgresql"/provider = "sqlite"/' prisma/schema.postgresql.prisma > prisma/schema.prisma
+            echo "✅ SQLite schema activated"
+        else
+            echo "⚠️  PostgreSQL schema not found, keeping current schema"
+        fi
+    else
+        echo "✅ SQLite schema already active"
+    fi
+
     # 创建 SQLite 数据库目录
     DB_PATH=$(echo "$DATABASE_URL" | sed 's/file://')
     DB_DIR=$(dirname "$DB_PATH")
@@ -35,6 +62,9 @@ elif [[ "$DATABASE_URL" == file:* ]]; then
     echo "📁 Created database directory: $DB_DIR"
 else
     echo "❌ Unsupported database URL format: $DATABASE_URL"
+    echo "   Supported formats:"
+    echo "   - SQLite: file:/path/to/database.db"
+    echo "   - PostgreSQL: postgresql://user:password@host:port/database"
     exit 1
 fi
 
@@ -67,6 +97,15 @@ if [ "$DB_TYPE" = "postgresql" ]; then
     fi
 fi
 
+# 重新生成 Prisma 客户端（确保与当前 schema 匹配）
+echo "🔄 Regenerating Prisma client for $DB_TYPE..."
+if command -v prisma >/dev/null 2>&1; then
+    prisma generate
+else
+    pnpm db:generate
+fi
+echo "✅ Prisma client regenerated for $DB_TYPE"
+
 # 运行数据库迁移
 echo "🔄 Running database migrations..."
 if ! pnpm db:deploy; then
@@ -74,15 +113,6 @@ if ! pnpm db:deploy; then
     exit 1
 fi
 echo "✅ Database migrations completed"
-
-# 生成 Prisma 客户端（运行时生成确保与环境匹配）
-echo "🔄 Generating Prisma client..."
-if command -v prisma >/dev/null 2>&1; then
-    prisma generate
-else
-    pnpm db:generate
-fi
-echo "✅ Prisma client generated"
 
 # 智能配置和初始化应用
 echo "🔑 Initializing application with smart configuration..."
