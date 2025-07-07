@@ -108,11 +108,25 @@ echo "✅ Prisma client regenerated for $DB_TYPE"
 
 # 运行数据库迁移
 echo "🔄 Running database migrations..."
-if ! pnpm db:deploy; then
-    echo "❌ Database migration failed"
+if [ "$DB_TYPE" = "postgresql" ]; then
+    # PostgreSQL: 使用 db push 而不是 migrate deploy，因为现有迁移是为 SQLite 创建的
+    echo "🔄 Using db push for PostgreSQL (bypassing SQLite migrations)..."
+    if ! npx prisma db push; then
+        echo "❌ Database push failed"
+        exit 1
+    fi
+    echo "✅ Database schema pushed to PostgreSQL"
+elif [ "$DB_TYPE" = "sqlite" ]; then
+    # SQLite: 使用正常的迁移流程
+    if ! pnpm db:deploy; then
+        echo "❌ Database migration failed"
+        exit 1
+    fi
+    echo "✅ Database migrations completed"
+else
+    echo "❌ Unknown database type: $DB_TYPE"
     exit 1
 fi
-echo "✅ Database migrations completed"
 
 # 智能配置和初始化应用
 echo "🔑 Initializing application with smart configuration..."
