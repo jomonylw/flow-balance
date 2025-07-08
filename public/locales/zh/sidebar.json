@@ -13,5 +13,7 @@
   "sidebar.switch.to.tree": "切换到树状视图",
   "sidebar.no.categories": "暂无分类",
   "sidebar.no.categories.hint": "点击下方按钮添加顶级分类",
-  "sidebar.add.category": "添加分类"
+  "sidebar.add.category": "添加分类",
+  "sidebar.mobile.close.menu": "关闭菜单",
+  "sidebar.resize.handle.title": "拖拽调整侧边栏宽度"
 }

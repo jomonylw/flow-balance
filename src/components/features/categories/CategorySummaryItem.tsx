@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Currency } from '@/types/business/transaction'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
+import { CategorySummaryItemSkeleton } from '@/components/ui/data-display/page-skeletons'
 
 interface BalanceInfo {
   currencyCode: string
@@ -29,6 +30,9 @@ interface CategorySummaryItemProps {
   // For subcategories without balances
   isSubcategory?: boolean
   subcategoryLabel?: string
+
+  // Loading state
+  loading?: boolean
 }
 
 export default function CategorySummaryItem({
@@ -36,16 +40,22 @@ export default function CategorySummaryItem({
   href,
   balances = [],
   baseCurrency,
-  currencies = [],
+  currencies: _currencies = [],
   accountCount = 0,
   simpleBalance,
   currencySymbol: _currencySymbol = '$',
   transactionCount = 0,
   isSubcategory = false,
   subcategoryLabel,
+  loading = false,
 }: CategorySummaryItemProps) {
   const { t } = useLanguage()
   const { formatCurrency } = useUserCurrencyFormatter()
+
+  // 如果正在加载，显示骨架屏
+  if (loading) {
+    return <CategorySummaryItemSkeleton />
+  }
 
   // Check if this is a subcategory (child category) that should show account count below name
   // Show account count for categories (not individual accounts) that have accountCount data
@@ -100,8 +110,8 @@ export default function CategorySummaryItem({
       <div className='flex flex-col items-end min-w-0'>
         {balances.map(({ currencyCode, balance, convertedAmount }) => {
           // 查找对应的货币信息
-          const currencyInfo = currencies.find(c => c.code === currencyCode)
-          const _originalSymbol = currencyInfo?.symbol || currencyCode
+          // const currencyInfo = currencies.find(c => c.code === currencyCode)
+          // const originalSymbol = currencyInfo?.symbol || currencyCode
 
           return (
             <div

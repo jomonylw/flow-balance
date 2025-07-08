@@ -6,7 +6,7 @@ import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useIsMobile } from '@/hooks/ui/useResponsive'
-import * as echarts from 'echarts'
+import echarts, { safeEChartsInit } from '@/lib/utils/echarts-config'
 import type { SimpleCurrency, FireParams } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
 
@@ -32,17 +32,27 @@ export default function JourneyVisualization({
 
     // 初始化图表或在主题变化时重新初始化
     if (!chartInstance.current || chartInstance.current.isDisposed()) {
-      chartInstance.current = echarts.init(
+      chartInstance.current = safeEChartsInit(
         chartRef.current,
         resolvedTheme === 'dark' ? 'dark' : null
       )
+
+      if (!chartInstance.current) {
+        console.error('Failed to initialize ECharts instance')
+        return
+      }
     } else {
       // 主题变化时重新初始化图表
       chartInstance.current.dispose()
-      chartInstance.current = echarts.init(
+      chartInstance.current = safeEChartsInit(
         chartRef.current,
         resolvedTheme === 'dark' ? 'dark' : null
       )
+
+      if (!chartInstance.current) {
+        console.error('Failed to re-initialize ECharts instance')
+        return
+      }
     }
 
     // 计算数据

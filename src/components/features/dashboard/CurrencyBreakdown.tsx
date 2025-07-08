@@ -24,6 +24,12 @@ export default function CurrencyBreakdown({
 
   // 如果没有分货币数据或只有一种货币，不显示组件
   const currencyEntries = Object.entries(byCurrency || {})
+    // 按本币汇总金额从大到小排序
+    .sort(
+      ([, a], [, b]) =>
+        Math.abs(b.convertedAmount) - Math.abs(a.convertedAmount)
+    )
+
   if (currencyEntries.length <= 1) {
     return null
   }

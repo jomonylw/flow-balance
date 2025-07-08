@@ -733,8 +733,36 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
         // 触发同步
         await triggerSyncAPI(force)
 
-        // 延迟刷新状态（给后台处理时间）
-        setTimeout(refreshSyncStatus, 2000)
+        // 开始轮询状态更新（更频繁的轮询）
+        const pollInterval = setInterval(async () => {
+          try {
+            const syncStatus = await fetchSyncStatus()
+            setUserData(prev => ({
+              ...prev,
+              syncStatus,
+              lastUpdated: new Date(),
+            }))
+
+            // 如果同步完成或失败，停止轮询
+            if (
+              syncStatus.status === 'completed' ||
+              syncStatus.status === 'failed'
+            ) {
+              clearInterval(pollInterval)
+            }
+          } catch (error) {
+            console.error('Failed to poll sync status:', error)
+            clearInterval(pollInterval)
+          }
+        }, 1000) // 每秒轮询一次
+
+        // 设置最大轮询时间（5分钟后强制停止）
+        setTimeout(
+          () => {
+            clearInterval(pollInterval)
+          },
+          5 * 60 * 1000
+        )
       } catch (error) {
         console.error('Failed to trigger sync:', error)
         setUserData(prev => ({

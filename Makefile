@@ -1,7 +1,7 @@
 # Flow Balance - Makefile
 # 简化常用开发和部署操作
 
-.PHONY: help install dev build start test lint clean docker-build docker-run deploy-dev deploy-prod
+.PHONY: help install dev build start test lint clean docker-build docker-run docker-compose-build deploy-dev deploy-prod
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -98,12 +98,16 @@ db-postgresql: ## 切换到 PostgreSQL 数据库
 # Docker 操作
 docker-build: ## 构建 Docker 镜像
 	@echo "🐳 构建 Docker 镜像..."
-	docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+	./scripts/docker-build.sh
 	@echo "✅ Docker 镜像构建完成"
 
 docker-run: ## 运行 Docker 容器（简单模式，自动配置）
 	@echo "🐳 运行 Docker 容器（简单模式）..."
 	./scripts/docker-run-simple.sh
+
+docker-compose-build: ## 使用 Docker Compose 构建
+	@echo "🐳 使用 Docker Compose 构建..."
+	./scripts/docker-compose-build.sh
 
 docker-run-manual: ## 运行 Docker 容器（手动配置）
 	@echo "🐳 运行 Docker 容器（手动配置）..."

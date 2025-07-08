@@ -2,7 +2,7 @@
 
 import type { TimeRange } from '@/types/core'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import * as echarts from 'echarts'
+import echarts, { safeEChartsInit } from '@/lib/utils/echarts-config'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
@@ -104,10 +104,15 @@ export default function NetWorthChart({
 
     // 初始化图表
     if (!chartInstance.current) {
-      chartInstance.current = echarts.init(
+      chartInstance.current = safeEChartsInit(
         chartRef.current,
         resolvedTheme === 'dark' ? 'dark' : null
       )
+
+      if (!chartInstance.current) {
+        console.error('Failed to initialize ECharts instance')
+        return
+      }
     }
 
     // 检查是否有柱状图系列

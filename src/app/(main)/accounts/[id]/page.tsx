@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
-import AppLayout from '@/components/features/layout/AppLayout'
 import AccountDetailRouter from '@/components/features/accounts/AccountDetailRouter'
 import { ConstantsManager } from '@/lib/utils/constants-manager'
 import { convertPrismaAccountType } from '@/types/core/constants'
@@ -150,44 +149,42 @@ export default async function AccountPage({ params }: AccountPageProps) {
   }
 
   return (
-    <AppLayout>
-      <AccountDetailRouter
-        account={serializedAccount}
-        categories={categories.map(category => ({
-          ...category,
-          parentId: category.parentId || undefined, // 转换 null 为 undefined
-          type: convertPrismaAccountType(category.type),
-        }))}
-        currencies={currencies.map(currency => ({
-          ...currency,
-          isActive: true, // 默认为 true，因为 Prisma Currency 模型没有 isActive 字段
-        }))}
-        tags={tags.map(tag => ({
-          ...tag,
-          color: tag.color || undefined,
-        }))}
-        user={{
-          ...user,
-          settings: userSettings
-            ? {
-                id: userSettings.id,
-                userId: userSettings.userId,
-                baseCurrencyId: userSettings.baseCurrencyId || '',
-                language: ConstantsManager.convertPrismaLanguage(
-                  userSettings.language
-                ),
-                theme: ConstantsManager.convertPrismaTheme(userSettings.theme),
-                baseCurrency: userSettings.baseCurrency || undefined,
-                createdAt: userSettings.createdAt,
-                updatedAt: userSettings.updatedAt,
-                fireSWR: userSettings.fireSWR,
-                futureDataDays: userSettings.futureDataDays,
-                autoUpdateExchangeRates: userSettings.autoUpdateExchangeRates,
-                lastExchangeRateUpdate: userSettings.lastExchangeRateUpdate,
-              }
-            : undefined,
-        }}
-      />
-    </AppLayout>
+    <AccountDetailRouter
+      account={serializedAccount}
+      categories={categories.map(category => ({
+        ...category,
+        parentId: category.parentId || undefined, // 转换 null 为 undefined
+        type: convertPrismaAccountType(category.type),
+      }))}
+      currencies={currencies.map(currency => ({
+        ...currency,
+        isActive: true, // 默认为 true，因为 Prisma Currency 模型没有 isActive 字段
+      }))}
+      tags={tags.map(tag => ({
+        ...tag,
+        color: tag.color || undefined,
+      }))}
+      user={{
+        ...user,
+        settings: userSettings
+          ? {
+              id: userSettings.id,
+              userId: userSettings.userId,
+              baseCurrencyId: userSettings.baseCurrencyId || '',
+              language: ConstantsManager.convertPrismaLanguage(
+                userSettings.language
+              ),
+              theme: ConstantsManager.convertPrismaTheme(userSettings.theme),
+              baseCurrency: userSettings.baseCurrency || undefined,
+              createdAt: userSettings.createdAt,
+              updatedAt: userSettings.updatedAt,
+              fireSWR: userSettings.fireSWR,
+              futureDataDays: userSettings.futureDataDays,
+              autoUpdateExchangeRates: userSettings.autoUpdateExchangeRates,
+              lastExchangeRateUpdate: userSettings.lastExchangeRateUpdate,
+            }
+          : undefined,
+      }}
+    />
   )
 }

@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
-import AppLayout from '@/components/features/layout/AppLayout'
 import FireJourneyContent from '@/components/features/fire/FireJourneyContent'
 
 // 强制动态渲染
@@ -30,9 +29,5 @@ export default async function FirePage() {
     redirect('/settings?tab=preferences&highlight=fire')
   }
 
-  return (
-    <AppLayout>
-      <FireJourneyContent user={user} userSettings={userSettings} />
-    </AppLayout>
-  )
+  return <FireJourneyContent user={user} userSettings={userSettings} />
 }

@@ -13,5 +13,7 @@
   "sidebar.switch.to.tree": "Switch to Tree View",
   "sidebar.no.categories": "No Categories",
   "sidebar.no.categories.hint": "Click the button below to add a top-level category",
-  "sidebar.add.category": "Add Category"
+  "sidebar.add.category": "Add Category",
+  "sidebar.mobile.close.menu": "Close Menu",
+  "sidebar.resize.handle.title": "Drag to resize sidebar"
 }

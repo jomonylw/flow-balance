@@ -781,7 +781,7 @@ export async function calculateTotalBalanceWithConversion(
   userId: string,
   accounts: ServiceAccount[],
   baseCurrency: { code: string; symbol: string; name: string },
-  options: CalculationOptions = {}
+  options: CalculationOptions & { includeAllUserCurrencies?: boolean } = {}
 ): Promise<{
   totalInBaseCurrency: number
   totalsByOriginalCurrency: Record<string, ServiceAccountBalance>
@@ -792,6 +792,32 @@ export async function calculateTotalBalanceWithConversion(
   const totalsByOriginalCurrency: Record<string, ServiceAccountBalance> = {}
   const conversionDetails: ConversionResult[] = []
   let hasConversionErrors = false
+
+  // 如果需要包含所有账户币种，先初始化所有账户使用的币种为0余额
+  if (options.includeAllUserCurrencies) {
+    // 获取所有账户使用的币种（去重）
+    const accountCurrencies = new Map<string, any>()
+    accounts.forEach(account => {
+      if (account.currency) {
+        accountCurrencies.set(account.currency.code, account.currency)
+      }
+    })
+
+    // 初始化所有账户币种为0余额
+    accountCurrencies.forEach((currency, currencyCode) => {
+      if (!totalsByOriginalCurrency[currencyCode]) {
+        totalsByOriginalCurrency[currencyCode] = {
+          currencyCode,
+          amount: 0,
+          currency: {
+            code: currency.code,
+            symbol: currency.symbol,
+            name: currency.name,
+          },
+        }
+      }
+    })
+  }
 
   // 计算所有账户的原始余额
   const allAmountsToConvert: Array<{ amount: number; currency: string }> = []

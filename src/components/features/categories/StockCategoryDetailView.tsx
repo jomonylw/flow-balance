@@ -49,6 +49,7 @@ export default function StockCategoryDetailView({
   const { accounts, categories } = useUserData()
   const { formatInputDate } = useUserDateFormatter()
   const [summaryData, setSummaryData] = useState<StockSummaryData | null>(null)
+  const [isLoadingSummary, setIsLoadingSummary] = useState(true)
   const [monthlyData, setMonthlyData] = useState<MonthlyData | null>(null)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] =
     useState(false)
@@ -113,6 +114,7 @@ export default function StockCategoryDetailView({
   // 获取分类汇总数据
   useEffect(() => {
     const fetchSummaryData = async () => {
+      setIsLoadingSummary(true)
       try {
         const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
 
@@ -134,6 +136,8 @@ export default function StockCategoryDetailView({
         }
       } catch (error) {
         console.error('Error fetching summary data:', error)
+      } finally {
+        setIsLoadingSummary(false)
       }
     }
 
@@ -368,6 +372,7 @@ export default function StockCategoryDetailView({
 
     // 重新获取汇总数据和交易记录
     const fetchSummaryData = async () => {
+      setIsLoadingSummary(true)
       try {
         const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
         if (summaryRes.ok) {
@@ -386,6 +391,8 @@ export default function StockCategoryDetailView({
         }
       } catch (error) {
         console.error('Error fetching summary data:', error)
+      } finally {
+        setIsLoadingSummary(false)
       }
     }
 
@@ -486,6 +493,7 @@ export default function StockCategoryDetailView({
             summaryData={summaryData}
             baseCurrency={baseCurrency}
             currencies={currencies}
+            loading={isLoadingSummary}
           />
         )}
       </div>

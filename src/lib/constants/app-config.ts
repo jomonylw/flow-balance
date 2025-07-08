@@ -146,6 +146,20 @@ export const SECURITY = {
   API_RATE_LIMIT: 100,
 } as const
 
+/** API 超时配置 */
+export const API_TIMEOUTS = {
+  /** 外部汇率 API 超时时间（毫秒） */
+  EXCHANGE_RATE_API_TIMEOUT: 20 * 1000, // 20秒
+  /** 数据库查询超时时间（毫秒） */
+  DATABASE_QUERY_TIMEOUT: 15 * 1000, // 15秒
+  /** 内部 API 调用超时时间（毫秒） */
+  INTERNAL_API_TIMEOUT: 10 * 1000, // 10秒
+  /** 文件上传超时时间（毫秒） */
+  FILE_UPLOAD_TIMEOUT: 30 * 1000, // 30秒
+  /** 数据导出超时时间（毫秒） */
+  DATA_EXPORT_TIMEOUT: 5 * 60 * 1000, // 5分钟
+} as const
+
 /** 通知配置 */
 export const NOTIFICATION = {
   /** 默认显示时间（毫秒） */

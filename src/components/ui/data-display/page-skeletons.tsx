@@ -1007,3 +1007,124 @@ export function SettingsTabLoadingSkeleton() {
     </div>
   )
 }
+
+/**
+ * 流量类分类摘要卡片骨架屏
+ */
+export function FlowCategorySummaryCardSkeleton() {
+  return (
+    <div className='bg-white dark:bg-gray-800 shadow rounded-lg p-6'>
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+        {/* 本月总流量 */}
+        <div className='text-center'>
+          <Skeleton height='0.875rem' width='60%' className='mx-auto mb-1' />
+          <Skeleton height='2rem' width='80%' className='mx-auto' />
+        </div>
+
+        {/* 本年总流量 */}
+        <div className='text-center'>
+          <Skeleton height='0.875rem' width='60%' className='mx-auto mb-1' />
+          <Skeleton height='2rem' width='80%' className='mx-auto' />
+          <Skeleton height='0.75rem' width='50%' className='mx-auto mt-1' />
+        </div>
+
+        {/* 去年总流量 */}
+        <div className='text-center'>
+          <Skeleton height='0.875rem' width='60%' className='mx-auto mb-1' />
+          <Skeleton height='2rem' width='80%' className='mx-auto' />
+          <Skeleton height='0.75rem' width='50%' className='mx-auto mt-1' />
+        </div>
+      </div>
+
+      {/* 币种分布 */}
+      <div className='mt-6 pt-6 border-t border-gray-200 dark:border-gray-700'>
+        <Skeleton height='0.875rem' width='30%' className='mb-3' />
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div
+              key={i}
+              className='text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg'
+            >
+              <Skeleton
+                height='0.875rem'
+                width='60%'
+                className='mx-auto mb-1'
+              />
+              <Skeleton height='1.125rem' width='70%' className='mx-auto' />
+              <Skeleton height='0.75rem' width='50%' className='mx-auto mt-1' />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 存量类分类摘要卡片骨架屏
+ */
+export function StockCategorySummaryCardSkeleton() {
+  return (
+    <div className='bg-white dark:bg-gray-800 shadow rounded-lg p-6'>
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+        {/* 当前净值 */}
+        <div className='text-center'>
+          <Skeleton height='0.875rem' width='60%' className='mx-auto mb-1' />
+          <Skeleton height='2rem' width='80%' className='mx-auto' />
+        </div>
+
+        {/* 上月净值 */}
+        <div className='text-center'>
+          <Skeleton height='0.875rem' width='60%' className='mx-auto mb-1' />
+          <Skeleton height='2rem' width='80%' className='mx-auto' />
+          <Skeleton height='0.75rem' width='50%' className='mx-auto mt-1' />
+        </div>
+
+        {/* 年初净值 */}
+        <div className='text-center'>
+          <Skeleton height='0.875rem' width='60%' className='mx-auto mb-1' />
+          <Skeleton height='2rem' width='80%' className='mx-auto' />
+          <Skeleton height='0.75rem' width='50%' className='mx-auto mt-1' />
+        </div>
+      </div>
+
+      {/* 币种分布 */}
+      <div className='mt-6 pt-6 border-t border-gray-200 dark:border-gray-700'>
+        <Skeleton height='0.875rem' width='30%' className='mb-3' />
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div
+              key={i}
+              className='text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg'
+            >
+              <Skeleton
+                height='0.875rem'
+                width='60%'
+                className='mx-auto mb-1'
+              />
+              <Skeleton height='1.125rem' width='70%' className='mx-auto' />
+              <Skeleton height='0.75rem' width='50%' className='mx-auto mt-1' />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 分类摘要项骨架屏
+ */
+export function CategorySummaryItemSkeleton() {
+  return (
+    <div className='flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg'>
+      <div className='flex flex-col'>
+        <Skeleton height='1rem' width='120px' className='mb-1' />
+        <Skeleton height='0.75rem' width='80px' />
+      </div>
+      <div className='text-sm'>
+        <Skeleton height='0.875rem' width='60px' />
+      </div>
+    </div>
+  )
+}

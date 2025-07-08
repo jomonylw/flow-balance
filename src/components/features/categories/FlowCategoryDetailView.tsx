@@ -58,6 +58,7 @@ export default function FlowCategoryDetailView({
     null
   )
   const [summaryData, setSummaryData] = useState<FlowSummaryData | null>(null)
+  const [isLoadingSummary, setIsLoadingSummary] = useState(true)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingTransactionId, setDeletingTransactionId] = useState<
     string | null
@@ -189,6 +190,7 @@ export default function FlowCategoryDetailView({
   // 获取分类汇总数据
   useEffect(() => {
     const fetchSummaryData = async () => {
+      setIsLoadingSummary(true)
       try {
         const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
 
@@ -206,6 +208,8 @@ export default function FlowCategoryDetailView({
         }
       } catch (error) {
         console.error('Error fetching summary data:', error)
+      } finally {
+        setIsLoadingSummary(false)
       }
     }
 
@@ -411,6 +415,7 @@ export default function FlowCategoryDetailView({
   const handleTransactionSuccess = () => {
     // 重新获取汇总数据
     const fetchSummaryData = async () => {
+      setIsLoadingSummary(true)
       try {
         const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
 
@@ -428,6 +433,8 @@ export default function FlowCategoryDetailView({
         }
       } catch (error) {
         console.error('Error fetching summary data:', error)
+      } finally {
+        setIsLoadingSummary(false)
       }
     }
 
@@ -540,6 +547,7 @@ export default function FlowCategoryDetailView({
             currencyCode={currencyCode}
             summaryData={summaryData}
             baseCurrency={baseCurrency}
+            loading={isLoadingSummary}
           />
         )}
       </div>

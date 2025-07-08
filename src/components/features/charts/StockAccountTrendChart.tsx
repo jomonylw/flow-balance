@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
-import * as echarts from 'echarts'
+import echarts, { safeEChartsInit } from '@/lib/utils/echarts-config'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
@@ -54,10 +54,16 @@ export default function StockAccountTrendChart({
       return
     }
 
-    const chart = echarts.init(
+    const chart = safeEChartsInit(
       chartRef.current,
       resolvedTheme === 'dark' ? 'dark' : null
     )
+
+    if (!chart) {
+      console.error('Failed to initialize ECharts instance')
+      return
+    }
+
     chartInstance.current = chart
 
     const handleResize = () => {

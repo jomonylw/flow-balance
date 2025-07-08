@@ -117,5 +117,20 @@
   "account.currency.required": "Please select account currency",
   "account.name.already.exists": "This account name already exists",
   "account.create.success": "Account created successfully",
-  "account.create.failed": "Failed to create account"
+  "account.create.failed": "Failed to create account",
+  "account.delete.success": "Deleted successfully",
+  "account.delete.success.message": "Account \"{{name}}\" has been deleted",
+  "account.delete.failed": "Delete failed",
+  "account.delete.network.error": "Network error, please try again later",
+  "account.clear.success": "Cleared successfully",
+  "account.clear.default.message": "Balance history has been cleared",
+  "account.clear.failed": "Clear failed",
+  "account.clear.network.error": "Network error, please try again later",
+  "account.move.failed": "Move failed",
+  "account.move.unknown.error": "Unknown error",
+  "account.move.network.error": "Network error, please try again later",
+  "account.more.actions": "More actions",
+  "account.balance.related.data.message": "This account has balance adjustment records. Please clear related data before deletion.",
+  "account.clear.balance.and.delete": "Clear balance history and delete",
+  "account.move.to.category": "Move account to another category"
 }

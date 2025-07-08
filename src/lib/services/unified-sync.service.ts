@@ -57,42 +57,128 @@ export class UnifiedSyncService {
     const errorMessages: string[] = []
 
     try {
-      // 1. 处理到期的PENDING交易（转为COMPLETED）
-      const _processedDue =
-        await FutureDataGenerationService.processDueTransactions(userId)
+      // 初始化阶段状态
+      const initialStages = {
+        recurringTransactions: { stage: 'pending' as const },
+        loanContracts: { stage: 'pending' as const },
+        exchangeRates: { stage: 'pending' as const },
+      }
 
-      // 2. 清理过期的未来交易
-      const _cleanedExpired =
-        await FutureDataGenerationService.cleanupExpiredFutureTransactions(
-          userId
+      await SyncStatusService.updateProcessingLog(log.id, {
+        stageDetails: JSON.stringify(initialStages),
+        currentStage: 'recurringTransactions',
+      })
+
+      // 1. 处理定期交易
+      await SyncStatusService.updateSyncStage(log.id, 'recurringTransactions', {
+        stage: 'processing',
+        startTime: new Date(),
+      })
+
+      try {
+        // 处理到期的PENDING交易（转为COMPLETED）
+        const _processedDue =
+          await FutureDataGenerationService.processDueTransactions(userId)
+
+        // 清理过期的未来交易
+        const _cleanedExpired =
+          await FutureDataGenerationService.cleanupExpiredFutureTransactions(
+            userId
+          )
+
+        // 生成定期交易记录（包含历史遗漏检查和未来生成）
+        const recurringResult =
+          await FutureDataGenerationService.generateFutureRecurringTransactions(
+            userId
+          )
+        processedRecurring += recurringResult.generated
+        if (recurringResult.errors.length > 0) {
+          errorMessages.push(...recurringResult.errors)
+        }
+
+        await SyncStatusService.updateSyncStage(
+          log.id,
+          'recurringTransactions',
+          {
+            stage: 'completed',
+            processed: processedRecurring,
+            errors: recurringResult.errors,
+            endTime: new Date(),
+          }
         )
+      } catch (error) {
+        await SyncStatusService.updateSyncStage(
+          log.id,
+          'recurringTransactions',
+          {
+            stage: 'failed',
+            errors: [
+              error instanceof Error ? error.message : '定期交易处理失败',
+            ],
+            endTime: new Date(),
+          }
+        )
+        throw error
+      }
+
+      // 2. 处理贷款合约
+      await SyncStatusService.updateSyncStage(log.id, 'loanContracts', {
+        stage: 'processing',
+        startTime: new Date(),
+      })
+
+      try {
+        const loanResult =
+          await LoanContractService.processLoanPaymentsBySchedule(userId)
+        processedLoans += loanResult.processed
+        if (loanResult.errors.length > 0) {
+          errorMessages.push(...loanResult.errors)
+        }
+
+        await SyncStatusService.updateSyncStage(log.id, 'loanContracts', {
+          stage: 'completed',
+          processed: processedLoans,
+          errors: loanResult.errors,
+          endTime: new Date(),
+        })
+      } catch (error) {
+        await SyncStatusService.updateSyncStage(log.id, 'loanContracts', {
+          stage: 'failed',
+          errors: [error instanceof Error ? error.message : '贷款合约处理失败'],
+          endTime: new Date(),
+        })
+        throw error
+      }
 
       // 3. 处理汇率自动更新
-      const exchangeRateResult = await this.processExchangeRateUpdate(userId)
-      processedExchangeRates += exchangeRateResult.processed
-      if (exchangeRateResult.errors.length > 0) {
-        errorMessages.push(...exchangeRateResult.errors)
+      await SyncStatusService.updateSyncStage(log.id, 'exchangeRates', {
+        stage: 'processing',
+        startTime: new Date(),
+      })
+
+      try {
+        const exchangeRateResult = await this.processExchangeRateUpdate(userId)
+        processedExchangeRates += exchangeRateResult.processed
+        if (exchangeRateResult.errors.length > 0) {
+          errorMessages.push(...exchangeRateResult.errors)
+        }
+
+        await SyncStatusService.updateSyncStage(log.id, 'exchangeRates', {
+          stage: 'completed',
+          processed: processedExchangeRates,
+          errors: exchangeRateResult.errors,
+          endTime: new Date(),
+        })
+      } catch (error) {
+        await SyncStatusService.updateSyncStage(log.id, 'exchangeRates', {
+          stage: 'failed',
+          errors: [error instanceof Error ? error.message : '汇率更新处理失败'],
+          endTime: new Date(),
+        })
+        throw error
       }
 
-      // 4. 生成定期交易记录（包含历史遗漏检查和未来生成）
-      const recurringResult =
-        await FutureDataGenerationService.generateFutureRecurringTransactions(
-          userId
-        )
-      processedRecurring += recurringResult.generated
-      if (recurringResult.errors.length > 0) {
-        errorMessages.push(...recurringResult.errors)
-      }
-
-      // 5. 处理贷款还款记录（包含历史遗漏检查和未来生成）
-      const loanResult =
-        await LoanContractService.processLoanPaymentsBySchedule(userId)
-      processedLoans += loanResult.processed
-      if (loanResult.errors.length > 0) {
-        errorMessages.push(...loanResult.errors)
-      }
-
-      // 8. 更新完成状态
+      // 更新完成状态
       await SyncStatusService.updateSyncStatus(userId, 'completed', new Date())
 
       await SyncStatusService.updateProcessingLog(log.id, {
@@ -101,7 +187,7 @@ export class UnifiedSyncService {
         processedRecurring,
         processedLoans,
         processedExchangeRates,
-        failedCount: 0, // 现在统一同步不会有失败的项目，错误会记录在errorMessage中
+        failedCount: 0,
         errorMessage:
           errorMessages.length > 0 ? errorMessages.join('; ') : undefined,
       })

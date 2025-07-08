@@ -3,6 +3,7 @@
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import AnimatedNumber from '@/components/ui/data-display/AnimatedNumber'
+import { StockCategorySummaryCardSkeleton } from '@/components/ui/data-display/page-skeletons'
 import type { SimpleTransaction, SimpleCurrency } from '@/types/core'
 import type { StockSummaryData } from '@/types/components'
 
@@ -20,6 +21,7 @@ interface StockCategorySummaryCardProps {
   summaryData?: StockSummaryData | null
   baseCurrency?: SimpleCurrency
   currencies?: SimpleCurrency[]
+  loading?: boolean
 }
 
 export default function StockCategorySummaryCard({
@@ -28,10 +30,16 @@ export default function StockCategorySummaryCard({
   summaryData,
   baseCurrency,
   currencies = [],
+  loading = false,
 }: StockCategorySummaryCardProps) {
   const { t } = useLanguage()
   const { formatCurrency, formatNumber } = useUserCurrencyFormatter()
   // const accountType = category.type
+
+  // 如果正在加载，显示骨架屏
+  if (loading) {
+    return <StockCategorySummaryCardSkeleton />
+  }
 
   // 存量类分类统计（资产/负债）
   const calculateStockStats = () => {

@@ -28,8 +28,8 @@ const nextConfig = {
 
   // 实验性功能 - 减少包大小
   experimental: {
-    // 优化包导入（移除与 serverExternalPackages 冲突的包）
-    optimizePackageImports: ['echarts', 'lucide-react'],
+    // 优化包导入（移除echarts以避免渲染器导入问题）
+    optimizePackageImports: ['lucide-react'],
   },
 
   // 编译器优化

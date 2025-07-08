@@ -4,7 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
-import { SyncStatus } from '@/types/core'
+import { SyncStatus, SyncStageStatus } from '@/types/core'
 
 const prisma = new PrismaClient()
 
@@ -109,6 +109,19 @@ export class SyncStatusService {
     const futurePendingCount = 0
     const _latestFutureTransaction = null
 
+    // 解析阶段详细信息
+    let stages: SyncStatus['stages'] | undefined
+    let currentStage: SyncStatus['currentStage'] | undefined
+
+    if (latestLog?.stageDetails) {
+      try {
+        stages = JSON.parse(latestLog.stageDetails)
+        currentStage = latestLog.currentStage as SyncStatus['currentStage']
+      } catch (error) {
+        console.error('Failed to parse stage details:', error)
+      }
+    }
+
     return {
       status:
         (userSettings?.recurringProcessingStatus as
@@ -124,6 +137,8 @@ export class SyncStatusService {
       errorMessage: latestLog?.errorMessage || undefined,
       futureDataGenerated: futurePendingCount > 0,
       futureDataUntil: undefined,
+      stages,
+      currentStage,
     }
   }
 
@@ -178,11 +193,53 @@ export class SyncStatusService {
       processedExchangeRates?: number
       failedCount?: number
       errorMessage?: string
+      stageDetails?: string
+      currentStage?: string
     }
   ) {
     return await prisma.recurringProcessingLog.update({
       where: { id: logId },
       data,
+    })
+  }
+
+  /**
+   * 更新同步阶段状态
+   */
+  static async updateSyncStage(
+    logId: string,
+    stageName: 'recurringTransactions' | 'loanContracts' | 'exchangeRates',
+    stageStatus: SyncStageStatus
+  ) {
+    // 获取当前日志
+    const currentLog = await prisma.recurringProcessingLog.findUnique({
+      where: { id: logId },
+    })
+
+    if (!currentLog) {
+      throw new Error('Processing log not found')
+    }
+
+    // 解析现有的阶段详情
+    let stages: Record<string, SyncStageStatus> = {}
+    if (currentLog.stageDetails) {
+      try {
+        stages = JSON.parse(currentLog.stageDetails)
+      } catch (error) {
+        console.error('Failed to parse existing stage details:', error)
+      }
+    }
+
+    // 更新指定阶段的状态
+    stages[stageName] = stageStatus
+
+    // 更新数据库
+    return await prisma.recurringProcessingLog.update({
+      where: { id: logId },
+      data: {
+        stageDetails: JSON.stringify(stages),
+        currentStage: stageName,
+      },
     })
   }
 

@@ -39,6 +39,7 @@ export async function GET() {
       where: { userId: user.id },
       include: {
         category: true,
+        currency: true,
         transactions: {
           include: {
             currency: true,
@@ -62,6 +63,13 @@ export async function GET() {
             name: 'Unknown',
             type: undefined,
           },
+      currency: account.currency
+        ? {
+            code: account.currency.code,
+            symbol: account.currency.symbol,
+            name: account.currency.name,
+          }
+        : undefined,
       transactions: account.transactions.map(t => ({
         id: t.id,
         type: t.type as TransactionType,
@@ -320,14 +328,14 @@ export async function GET() {
       user.id,
       assetAccountsForTotal,
       baseCurrency,
-      { asOfDate: now }
+      { asOfDate: now, includeAllUserCurrencies: true }
     )
 
     const totalLiabilitiesResult = await calculateTotalBalanceWithConversion(
       user.id,
       liabilityAccountsForTotal,
       baseCurrency,
-      { asOfDate: now }
+      { asOfDate: now, includeAllUserCurrencies: true }
     )
 
     // 验证账户类型设置
@@ -390,36 +398,50 @@ export async function GET() {
       }
     > = {}
 
-    // 统计每个币种的资产账户数量
+    // 统计每个币种的资产账户数量（包括余额为0的账户）
     const assetAccountCountByCurrency: Record<string, number> = {}
     assetAccountsForTotal.forEach(account => {
-      const accountBalances = calculateAccountBalance(account, {
-        asOfDate: now,
-      })
-      Object.keys(accountBalances).forEach(currencyCode => {
+      // 直接使用账户的币种，不管是否有余额
+      const currencyCode = account.currency?.code
+      if (currencyCode) {
         assetAccountCountByCurrency[currencyCode] =
           (assetAccountCountByCurrency[currencyCode] || 0) + 1
-      })
+      }
     })
 
     // 填充资产的 byCurrency 数据
-    Object.entries(totalAssetsResult.totalsByOriginalCurrency).forEach(
-      ([currencyCode, balance]) => {
+    const assetsCurrencyEntries = Object.entries(
+      totalAssetsResult.totalsByOriginalCurrency
+    )
+      .map(([currencyCode, balance]) => {
         // 查找对应的转换详情
         const conversionDetail = totalAssetsResult.conversionDetails.find(
           detail => detail.fromCurrency === currencyCode
         )
 
-        assetsByCurrency[currencyCode] = {
-          originalAmount: balance.amount,
-          convertedAmount: conversionDetail?.convertedAmount || balance.amount,
-          currency: balance.currency,
-          exchangeRate: conversionDetail?.exchangeRate || 1,
-          accountCount: assetAccountCountByCurrency[currencyCode] || 0,
-          success: conversionDetail?.success ?? true,
+        return {
+          currencyCode,
+          data: {
+            originalAmount: balance.amount,
+            convertedAmount:
+              conversionDetail?.convertedAmount || balance.amount,
+            currency: balance.currency,
+            exchangeRate: conversionDetail?.exchangeRate || 1,
+            accountCount: assetAccountCountByCurrency[currencyCode] || 0,
+            success: conversionDetail?.success ?? true,
+          },
         }
-      }
-    )
+      })
+      // 按本币汇总金额从大到小排序
+      .sort(
+        (a, b) =>
+          Math.abs(b.data.convertedAmount) - Math.abs(a.data.convertedAmount)
+      )
+
+    // 按排序后的顺序填充数据
+    assetsCurrencyEntries.forEach(({ currencyCode, data }) => {
+      assetsByCurrency[currencyCode] = data
+    })
 
     // 构建负债的 byCurrency 信息
     const liabilitiesByCurrency: Record<
@@ -434,36 +456,50 @@ export async function GET() {
       }
     > = {}
 
-    // 统计每个币种的负债账户数量
+    // 统计每个币种的负债账户数量（包括余额为0的账户）
     const liabilityAccountCountByCurrency: Record<string, number> = {}
     liabilityAccountsForTotal.forEach(account => {
-      const accountBalances = calculateAccountBalance(account, {
-        asOfDate: now,
-      })
-      Object.keys(accountBalances).forEach(currencyCode => {
+      // 直接使用账户的币种，不管是否有余额
+      const currencyCode = account.currency?.code
+      if (currencyCode) {
         liabilityAccountCountByCurrency[currencyCode] =
           (liabilityAccountCountByCurrency[currencyCode] || 0) + 1
-      })
+      }
     })
 
     // 填充负债的 byCurrency 数据
-    Object.entries(totalLiabilitiesResult.totalsByOriginalCurrency).forEach(
-      ([currencyCode, balance]) => {
+    const liabilitiesCurrencyEntries = Object.entries(
+      totalLiabilitiesResult.totalsByOriginalCurrency
+    )
+      .map(([currencyCode, balance]) => {
         // 查找对应的转换详情
         const conversionDetail = totalLiabilitiesResult.conversionDetails.find(
           detail => detail.fromCurrency === currencyCode
         )
 
-        liabilitiesByCurrency[currencyCode] = {
-          originalAmount: balance.amount,
-          convertedAmount: conversionDetail?.convertedAmount || balance.amount,
-          currency: balance.currency,
-          exchangeRate: conversionDetail?.exchangeRate || 1,
-          accountCount: liabilityAccountCountByCurrency[currencyCode] || 0,
-          success: conversionDetail?.success ?? true,
+        return {
+          currencyCode,
+          data: {
+            originalAmount: balance.amount,
+            convertedAmount:
+              conversionDetail?.convertedAmount || balance.amount,
+            currency: balance.currency,
+            exchangeRate: conversionDetail?.exchangeRate || 1,
+            accountCount: liabilityAccountCountByCurrency[currencyCode] || 0,
+            success: conversionDetail?.success ?? true,
+          },
         }
-      }
-    )
+      })
+      // 按本币汇总金额从大到小排序
+      .sort(
+        (a, b) =>
+          Math.abs(b.data.convertedAmount) - Math.abs(a.data.convertedAmount)
+      )
+
+    // 按排序后的顺序填充数据
+    liabilitiesCurrencyEntries.forEach(({ currencyCode, data }) => {
+      liabilitiesByCurrency[currencyCode] = data
+    })
 
     return successResponse({
       netWorth: {

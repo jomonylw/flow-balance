@@ -426,7 +426,7 @@ export default function NavigationSidebar({
           <div
             className='absolute top-0 right-0 w-3 h-full cursor-col-resize group z-10'
             onMouseDown={startDragging}
-            title='拖拽调整侧边栏宽度'
+            title={t('sidebar.resize.handle.title')}
           >
             {/* hover时的右边缘高亮 - 覆盖整个右侧边缘 */}
             <div className='absolute right-0 top-0 w-1 h-full bg-blue-400 dark:bg-blue-500 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm'></div>

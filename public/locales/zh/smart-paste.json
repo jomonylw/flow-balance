@@ -105,5 +105,6 @@
   "smart.paste.error.invalid.amount": "无效的金额格式",
   "smart.paste.error.required.field": "{{field}} 是必填项",
 
-  "smart.paste.balance.update.description": "余额更新 - {{accountName}}"
+  "smart.paste.balance.update.description": "余额更新 - {{accountName}}",
+  "smart.paste.validation.passed": "✅ 数据验证通过"
 }

@@ -11,6 +11,8 @@ services:
       # 构建参数
       args:
         - NODE_ENV=production
+        - BUILD_DATE=${BUILD_DATE}
+        - GIT_COMMIT=${GIT_COMMIT}
     container_name: flow-balance-optimized
     restart: unless-stopped
     ports:

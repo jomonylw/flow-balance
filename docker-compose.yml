@@ -9,6 +9,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        BUILD_DATE: ${BUILD_DATE}
+        GIT_COMMIT: ${GIT_COMMIT}
     ports:
       - '3000:3000'
     environment:

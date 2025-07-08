@@ -197,7 +197,10 @@ export default function AccountTreeItem({
         // 从Context中移除账户
         removeAccount(account.id)
         setShowDeleteConfirm(false)
-        showSuccess('删除成功', `账户"${account.name}"已删除`)
+        showSuccess(
+          t('account.delete.success'),
+          t('account.delete.success.message', { name: account.name })
+        )
 
         // 发布账户删除事件
         await publishAccountDelete(account.id, account.categoryId, {
@@ -217,12 +220,13 @@ export default function AccountTreeItem({
         })
 
         // 正确获取错误信息：API返回的是 error.error 而不是 error.message
-        const errorMessage = error.error || error.message || '未知错误'
-        showError('删除失败', errorMessage)
+        const errorMessage =
+          error.error || error.message || t('account.move.unknown.error')
+        showError(t('account.delete.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Error deleting account:', error)
-      showError('删除失败', '网络错误，请稍后重试')
+      showError(t('account.delete.failed'), t('account.delete.network.error'))
     }
   }
 
@@ -237,7 +241,10 @@ export default function AccountTreeItem({
 
       if (response.ok) {
         const result = await response.json()
-        showSuccess('清空成功', result.message || '余额历史已清空')
+        showSuccess(
+          t('account.clear.success'),
+          result.message || t('account.clear.default.message')
+        )
 
         // 清空成功后，直接删除账户
         await handleDelete()
@@ -250,12 +257,15 @@ export default function AccountTreeItem({
         })
 
         // 正确获取错误信息：API返回的是 error.error 而不是 error.message
-        const errorMessage = error.error || error.message || '清空余额历史失败'
-        showError('清空失败', errorMessage)
+        const errorMessage =
+          error.error ||
+          error.message ||
+          t('account.balance.history.clear.failed')
+        showError(t('account.clear.failed'), errorMessage)
       }
     } catch (error) {
       console.error('Error clearing balance history:', error)
-      showError('清空失败', '网络错误，请稍后重试')
+      showError(t('account.clear.failed'), t('account.clear.network.error'))
     }
   }
 
@@ -282,11 +292,14 @@ export default function AccountTreeItem({
         onDataChange?.({ type: 'account' })
       } else {
         const error = await response.json()
-        showError('移动失败', error.message || '未知错误')
+        showError(
+          t('account.move.failed'),
+          error.message || t('account.move.unknown.error')
+        )
       }
     } catch (error) {
       console.error('Error moving account:', error)
-      showError('移动失败', '网络错误，请稍后重试')
+      showError(t('account.move.failed'), t('account.move.network.error'))
     }
   }
 
@@ -426,7 +439,7 @@ export default function AccountTreeItem({
           }}
           onContextMenu={handleContextMenu}
           className='mr-3 p-2 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:shadow-md'
-          title='更多操作'
+          title={t('account.more.actions')}
         >
           <svg
             className='h-4 w-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-200'
@@ -465,15 +478,15 @@ export default function AccountTreeItem({
           account.category?.type === 'ASSET' ||
           account.category?.type === 'LIABILITY'
         }
-        relatedDataMessage='该账户存在余额调整记录，需要先清空相关数据才能删除。'
+        relatedDataMessage={t('account.balance.related.data.message')}
         onClearRelatedData={handleClearBalanceHistory}
-        clearDataLabel='清空余额历史并删除'
+        clearDataLabel={t('account.clear.balance.and.delete')}
       />
 
       {/* 分类选择器 */}
       <CategorySelector
         isOpen={showCategorySelector}
-        title='移动账户到其他分类'
+        title={t('account.move.to.category')}
         currentCategoryId={account.categoryId}
         filterByAccountType={account.category.type}
         onSelect={handleMoveToCategory}

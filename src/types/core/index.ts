@@ -992,6 +992,15 @@ export interface LoanPaymentSchedule {
 // 同步状态相关类型
 // ============================================================================
 
+/** 同步阶段状态 */
+export interface SyncStageStatus {
+  stage: 'pending' | 'processing' | 'completed' | 'failed'
+  processed?: number
+  errors?: string[]
+  startTime?: Date
+  endTime?: Date
+}
+
 /** 同步状态 */
 export interface SyncStatus {
   status: 'idle' | 'processing' | 'completed' | 'failed'
@@ -1003,6 +1012,14 @@ export interface SyncStatus {
   errorMessage?: string
   futureDataGenerated?: boolean
   futureDataUntil?: Date
+
+  // 新增：分阶段状态
+  stages?: {
+    recurringTransactions: SyncStageStatus
+    loanContracts: SyncStageStatus
+    exchangeRates: SyncStageStatus
+  }
+  currentStage?: 'recurringTransactions' | 'loanContracts' | 'exchangeRates'
 }
 
 /** 定期交易处理日志 */
@@ -1019,6 +1036,10 @@ export interface RecurringProcessingLog {
   errorMessage?: string
   createdAt: Date
   updatedAt: Date
+
+  // 新增：分阶段详细信息
+  stageDetails?: string // JSON 字符串，存储各阶段的详细状态
+  currentStage?: string // 当前处理阶段
 }
 
 // ============================================================================

@@ -1,8 +1,12 @@
 # Flow Balance - Personal Finance Management System
 # Multi-stage Docker build for production deployment
 
+# Define build platform arguments
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+
 # Stage 1: Dependencies
-FROM node:18-alpine AS deps
+FROM --platform=$BUILDPLATFORM node:18-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -20,8 +24,13 @@ RUN pnpm install --frozen-lockfile --production=false
 RUN pnpm db:generate
 
 # Stage 2: Builder
-FROM node:18-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:18-alpine AS builder
 WORKDIR /app
+
+# Accept build arguments for version information
+ARG BUILD_DATE
+ARG GIT_COMMIT
+ARG APP_VERSION
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -36,6 +45,10 @@ COPY . .
 # Set environment variables for build
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# Pass build arguments as environment variables for Next.js build
+ENV NEXT_PUBLIC_BUILD_DATE=${BUILD_DATE}
+ENV NEXT_PUBLIC_GIT_COMMIT=${GIT_COMMIT}
+ENV NEXT_PUBLIC_APP_VERSION=${APP_VERSION}
 
 # Generate Prisma client (默认使用 SQLite，运行时会根据 DATABASE_URL 动态切换)
 RUN pnpm db:generate
@@ -49,8 +62,13 @@ RUN echo "Prisma client locations:" && \
 RUN pnpm build
 
 # Stage 3: Runner
-FROM node:18-alpine AS runner
+FROM --platform=$TARGETPLATFORM node:18-alpine AS runner
 WORKDIR /app
+
+# Accept build arguments for version information
+ARG BUILD_DATE
+ARG GIT_COMMIT
+ARG APP_VERSION
 
 # Install pnpm and necessary packages
 RUN npm install -g pnpm
@@ -97,6 +115,10 @@ ENV HOSTNAME="0.0.0.0"
 ENV DOCKER_CONTAINER=true
 # 设置默认的数据库 URL（如果用户没有提供）
 ENV DATABASE_URL="file:/app/data/flow-balance.db"
+# Set version information from build arguments
+ENV NEXT_PUBLIC_BUILD_DATE=${BUILD_DATE}
+ENV NEXT_PUBLIC_GIT_COMMIT=${GIT_COMMIT}
+ENV NEXT_PUBLIC_APP_VERSION=${APP_VERSION}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \

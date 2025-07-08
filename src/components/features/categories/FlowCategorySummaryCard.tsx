@@ -3,6 +3,7 @@
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import AnimatedNumber from '@/components/ui/data-display/AnimatedNumber'
+import { FlowCategorySummaryCardSkeleton } from '@/components/ui/data-display/page-skeletons'
 import type { SimpleTransaction, SimpleCurrency } from '@/types/core'
 import type { FlowSummaryData } from '@/types/components'
 
@@ -19,6 +20,7 @@ interface FlowCategorySummaryCardProps {
   currencyCode: string
   summaryData?: FlowSummaryData | null
   baseCurrency?: SimpleCurrency
+  loading?: boolean
 }
 
 export default function FlowCategorySummaryCard({
@@ -26,10 +28,16 @@ export default function FlowCategorySummaryCard({
   currencyCode,
   summaryData,
   baseCurrency,
+  loading = false,
 }: FlowCategorySummaryCardProps) {
   const { t } = useLanguage()
   const { formatCurrency, getCurrencySymbol } = useUserCurrencyFormatter()
   // const accountType = category.type
+
+  // 如果正在加载，显示骨架屏
+  if (loading) {
+    return <FlowCategorySummaryCardSkeleton />
+  }
 
   // 流量类分类统计（基于月度数据）
   const calculateFlowStats = () => {

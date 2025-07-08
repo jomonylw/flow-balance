@@ -4,10 +4,12 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ApiEndpoints, VALIDATION } from '@/lib/constants'
+import { useLanguage } from '@/contexts/providers/LanguageContext'
 import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 
 export default function ResetPasswordForm() {
+  const { t } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
@@ -143,7 +145,7 @@ export default function ResetPasswordForm() {
             type='password'
             name='password'
             label='新密码'
-            placeholder='请输入新密码'
+            placeholder={t('auth.new.password.placeholder')}
             value={formData.password}
             onChange={handleInputChange}
             minLength={VALIDATION.PASSWORD_MIN_LENGTH}
@@ -155,7 +157,7 @@ export default function ResetPasswordForm() {
             type='password'
             name='confirmPassword'
             label='确认新密码'
-            placeholder='请再次输入新密码'
+            placeholder={t('auth.confirm.new.password.placeholder')}
             value={formData.confirmPassword}
             onChange={handleInputChange}
             minLength={VALIDATION.PASSWORD_MIN_LENGTH}

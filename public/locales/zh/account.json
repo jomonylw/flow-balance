@@ -117,5 +117,20 @@
   "account.currency.required": "请选择账户货币",
   "account.name.already.exists": "该账户名称已存在",
   "account.create.success": "账户创建成功",
-  "account.create.failed": "创建账户失败"
+  "account.create.failed": "创建账户失败",
+  "account.delete.success": "删除成功",
+  "account.delete.success.message": "账户\"{{name}}\"已删除",
+  "account.delete.failed": "删除失败",
+  "account.delete.network.error": "网络错误，请稍后重试",
+  "account.clear.success": "清空成功",
+  "account.clear.default.message": "余额历史已清空",
+  "account.clear.failed": "清空失败",
+  "account.clear.network.error": "网络错误，请稍后重试",
+  "account.move.failed": "移动失败",
+  "account.move.unknown.error": "未知错误",
+  "account.move.network.error": "网络错误，请稍后重试",
+  "account.more.actions": "更多操作",
+  "account.balance.related.data.message": "该账户存在余额调整记录，需要先清空相关数据才能删除。",
+  "account.clear.balance.and.delete": "清空余额历史并删除",
+  "account.move.to.category": "移动账户到其他分类"
 }

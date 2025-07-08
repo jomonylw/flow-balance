@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import * as echarts from 'echarts'
+import echarts, { safeEChartsInit } from '@/lib/utils/echarts-config'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
@@ -118,10 +118,15 @@ export default function StockMonthlySummaryChart({
 
     // 初始化图表
     if (!chartInstance.current) {
-      chartInstance.current = echarts.init(
+      chartInstance.current = safeEChartsInit(
         chartRef.current,
         resolvedTheme === 'dark' ? 'dark' : null
       )
+
+      if (!chartInstance.current) {
+        console.error('Failed to initialize ECharts instance')
+        return
+      }
     }
 
     // 响应式处理
@@ -585,10 +590,15 @@ export default function StockMonthlySummaryChart({
 
     try {
       if (!pieChartInstance.current) {
-        pieChartInstance.current = echarts.init(
+        pieChartInstance.current = safeEChartsInit(
           pieChartRef.current,
           resolvedTheme === 'dark' ? 'dark' : null
         )
+
+        if (!pieChartInstance.current) {
+          console.error('Failed to initialize pie chart ECharts instance')
+          return
+        }
       }
 
       renderPieChart(pieChartInstance.current)

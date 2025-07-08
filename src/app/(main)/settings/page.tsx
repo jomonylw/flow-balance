@@ -1,7 +1,6 @@
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
 import { redirect } from 'next/navigation'
-import AppLayout from '@/components/features/layout/AppLayout'
 import UserSettingsPage from '@/components/features/settings/UserSettingsPage'
 
 // 强制动态渲染
@@ -26,12 +25,10 @@ export default async function SettingsPage() {
   })
 
   return (
-    <AppLayout>
-      <UserSettingsPage
-        user={user}
-        userSettings={userSettings}
-        currencies={currencies}
-      />
-    </AppLayout>
+    <UserSettingsPage
+      user={user}
+      userSettings={userSettings}
+      currencies={currencies}
+    />
   )
 }

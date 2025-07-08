@@ -164,6 +164,29 @@ export default function SmartPasteCell({
               showSymbol: true,
             })
           }
+        } else if (typeof value === 'string' && !isNaN(parseFloat(value))) {
+          // 如果值是字符串但可以转换为数字，先转换再格式化
+          const numValue = parseFloat(value)
+          if (_rowData) {
+            const formatInfo = getCurrencyFormatInfo(
+              numValue,
+              column,
+              _rowData,
+              columns
+            )
+
+            if (formatInfo.shouldFormat) {
+              return formatCurrency(numValue, formatInfo.currencyCode, {
+                precision: formatInfo.decimalPlaces,
+                showSymbol: true,
+              })
+            }
+          }
+          // 如果没有格式化信息，使用默认格式化
+          return formatCurrency(numValue, 'CNY', {
+            precision: 2,
+            showSymbol: true,
+          })
         }
         return String(value)
 
@@ -833,7 +856,7 @@ export default function SmartPasteCell({
           {validationStatus === 'valid' && (
             <div
               className='w-2 h-2 bg-green-500 rounded-full opacity-90 cursor-help shadow-sm'
-              title='✅ 数据验证通过'
+              title={t('smart.paste.validation.passed')}
             ></div>
           )}
           {validationStatus === 'invalid' && errors.length > 0 && (

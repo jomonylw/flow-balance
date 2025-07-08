@@ -116,7 +116,13 @@ export default function SmartPasteModal({
               value = transaction.date ? new Date(transaction.date) : null
               break
             case 'amount':
-              value = transaction.amount || 0
+              // 确保金额是数字类型
+              const amount = transaction.amount
+              if (typeof amount === 'string') {
+                value = parseFloat(amount) || 0
+              } else {
+                value = amount || 0
+              }
               break
             case 'description':
               value = transaction.description || ''
@@ -134,9 +140,28 @@ export default function SmartPasteModal({
               value = column.defaultValue || null
           }
 
+          // 根据数据类型生成正确的displayValue
+          let displayValue: string
+          if (column.dataType === 'currency' && typeof value === 'number') {
+            // 对于货币类型，保持数字格式，让SmartPasteCell处理格式化
+            displayValue = value.toString()
+          } else if (column.dataType === 'date' && value instanceof Date) {
+            // 对于日期类型，使用ISO格式
+            displayValue = value.toISOString().split('T')[0]
+          } else if (column.dataType === 'tags' && Array.isArray(value)) {
+            // 对于标签类型，将ID数组转换为名称字符串
+            const tagNames = value.map((tagId: string) => {
+              const tag = tags?.find(t => t.id === tagId)
+              return tag ? tag.name : tagId
+            })
+            displayValue = tagNames.join(', ')
+          } else {
+            displayValue = String(value || '')
+          }
+
           rowData.cells[column.key] = {
             value,
-            displayValue: String(value || ''),
+            displayValue,
             dataType: column.dataType,
             isRequired: column.isRequired,
             isReadOnly: column.isReadOnly,
@@ -148,7 +173,7 @@ export default function SmartPasteModal({
         return rowData
       })
     },
-    [accountType, currentAccount]
+    [accountType, currentAccount, showAccountColumn, t, tags]
   )
 
   // 当模态框关闭时清空数据
@@ -194,6 +219,8 @@ export default function SmartPasteModal({
     gridData.length,
     editingTransactions,
     convertTransactionsToGridData,
+    showAccountColumn,
+    t,
   ])
 
   // 当选择的账户改变时，重置当前账户
@@ -278,7 +305,7 @@ export default function SmartPasteModal({
       autoSave: false,
       autoSaveInterval: 30000,
     }
-  }, [currentAccount, accountType])
+  }, [currentAccount, accountType, showAccountColumn, t])
 
   // 处理数据提交
   const handleSubmit = useCallback(
@@ -671,6 +698,10 @@ export default function SmartPasteModal({
       showError,
       onSuccess,
       onClose,
+      accounts,
+      editingTransactions,
+      showAccountColumn,
+      t,
     ]
   )
 

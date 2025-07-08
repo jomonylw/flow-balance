@@ -36,11 +36,19 @@ if [ ! -f "$DOCKERFILE" ]; then
     exit 1
 fi
 
+# 构建信息
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
 # 构建镜像
 echo -e "${YELLOW}🔨 Building Docker image...${NC}"
+echo -e "${BLUE}📅 Build Date: $BUILD_DATE${NC}"
+echo -e "${BLUE}🔗 Git Commit: $GIT_COMMIT${NC}"
 docker build \
     --file "$DOCKERFILE" \
     --tag "$IMAGE_NAME:$TAG" \
+    --build-arg BUILD_DATE="$BUILD_DATE" \
+    --build-arg GIT_COMMIT="$GIT_COMMIT" \
     --progress=plain \
     .
 

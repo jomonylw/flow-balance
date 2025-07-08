@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
-import AppLayout from '@/components/features/layout/AppLayout'
 import CategoryDetailView from '@/components/features/categories/CategoryDetailView'
 import {
   TransactionType,
@@ -382,71 +381,69 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   }
 
   return (
-    <AppLayout>
-      <CategoryDetailView
-        category={serializedCategory}
-        accounts={accounts.map(account => ({
-          ...account,
-          createdAt: account.createdAt.toISOString(),
-          updatedAt: account.updatedAt.toISOString(),
-          description: account.description || undefined,
-          color: account.color || undefined,
-          category: account.category
-            ? serializeCategory(account.category)
-            : serializeCategory({
-                id: 'unknown',
-                name: 'Unknown',
-                type: 'ASSET',
-                order: 0,
-                userId: user.id,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                parentId: undefined,
-              }),
-          currency: currencies.find(c => c.id === account.currencyId) || {
-            id: 'default-usd',
-            code: 'USD',
-            name: 'US Dollar',
-            symbol: '$',
-            decimalPlaces: 2,
-            isCustom: false,
-            createdBy: null,
-          },
-          transactions: [],
-        }))}
-        categories={categories.map(cat => serializeCategory(cat))}
-        currencies={currencies.map(currency => ({
-          ...currency,
-          isActive: true, // 默认为 true
-        }))}
-        tags={tags.map(tag => ({
-          ...tag,
-          color: tag.color || undefined,
-        }))}
-        user={{
-          ...user,
-          settings: userSettings
-            ? {
-                id: userSettings.id,
-                userId: userSettings.userId,
-                baseCurrencyId: userSettings.baseCurrencyId,
-                language: ConstantsManager.convertPrismaLanguage(
-                  userSettings.language
-                ),
-                theme: ConstantsManager.convertPrismaTheme(userSettings.theme),
-                baseCurrency: userSettings.baseCurrency || undefined,
-                createdAt: userSettings.createdAt,
-                updatedAt: userSettings.updatedAt,
-                fireSWR: userSettings.fireSWR,
-                futureDataDays: userSettings.futureDataDays,
-                autoUpdateExchangeRates:
-                  (userSettings as any).autoUpdateExchangeRates || false,
-                lastExchangeRateUpdate:
-                  (userSettings as any).lastExchangeRateUpdate || null,
-              }
-            : undefined,
-        }}
-      />
-    </AppLayout>
+    <CategoryDetailView
+      category={serializedCategory}
+      accounts={accounts.map(account => ({
+        ...account,
+        createdAt: account.createdAt.toISOString(),
+        updatedAt: account.updatedAt.toISOString(),
+        description: account.description || undefined,
+        color: account.color || undefined,
+        category: account.category
+          ? serializeCategory(account.category)
+          : serializeCategory({
+              id: 'unknown',
+              name: 'Unknown',
+              type: 'ASSET',
+              order: 0,
+              userId: user.id,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              parentId: undefined,
+            }),
+        currency: currencies.find(c => c.id === account.currencyId) || {
+          id: 'default-usd',
+          code: 'USD',
+          name: 'US Dollar',
+          symbol: '$',
+          decimalPlaces: 2,
+          isCustom: false,
+          createdBy: null,
+        },
+        transactions: [],
+      }))}
+      categories={categories.map(cat => serializeCategory(cat))}
+      currencies={currencies.map(currency => ({
+        ...currency,
+        isActive: true, // 默认为 true
+      }))}
+      tags={tags.map(tag => ({
+        ...tag,
+        color: tag.color || undefined,
+      }))}
+      user={{
+        ...user,
+        settings: userSettings
+          ? {
+              id: userSettings.id,
+              userId: userSettings.userId,
+              baseCurrencyId: userSettings.baseCurrencyId,
+              language: ConstantsManager.convertPrismaLanguage(
+                userSettings.language
+              ),
+              theme: ConstantsManager.convertPrismaTheme(userSettings.theme),
+              baseCurrency: userSettings.baseCurrency || undefined,
+              createdAt: userSettings.createdAt,
+              updatedAt: userSettings.updatedAt,
+              fireSWR: userSettings.fireSWR,
+              futureDataDays: userSettings.futureDataDays,
+              autoUpdateExchangeRates:
+                (userSettings as any).autoUpdateExchangeRates || false,
+              lastExchangeRateUpdate:
+                (userSettings as any).lastExchangeRateUpdate || null,
+            }
+          : undefined,
+      }}
+    />
   )
 }

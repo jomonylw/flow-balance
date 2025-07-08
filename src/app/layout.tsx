@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/contexts/providers/ThemeContext'
 import { AuthProvider } from '@/contexts/providers/AuthContext'
 import ThemeScript from '@/components/ThemeScript'
 import LanguageScript from '@/components/LanguageScript'
+import EChartsInitializer from '@/components/EChartsInitializer'
 
 export const metadata: Metadata = {
   title: 'Flow Balance - 个人财务管理',
@@ -29,6 +30,7 @@ export default function RootLayout({
         <LanguageScript />
       </head>
       <body className='antialiased'>
+        <EChartsInitializer />
         <ThemeProvider>
           <LanguageProvider>
             <ToastProvider>

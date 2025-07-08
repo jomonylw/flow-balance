@@ -40,7 +40,16 @@
     "health": "curl -f http://localhost:3000/api/health",
     "backup": "node scripts/backup-data.js",
     "deploy:vercel": "vercel --prod",
-    "deploy:docker": "docker-compose up -d --build"
+    "deploy:docker": "docker-compose up -d --build",
+    "version:show": "./scripts/version-manager.sh current",
+    "version:bump:patch": "./scripts/version-manager.sh bump patch",
+    "version:bump:minor": "./scripts/version-manager.sh bump minor",
+    "version:bump:major": "./scripts/version-manager.sh bump major",
+    "version:tag": "./scripts/version-manager.sh tag",
+    "version:docker-tags": "./scripts/version-manager.sh docker-tags",
+    "release:patch": "./scripts/version-manager.sh release patch",
+    "release:minor": "./scripts/version-manager.sh release minor",
+    "release:major": "./scripts/version-manager.sh release major"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

@@ -71,10 +71,12 @@ done
 FULL_IMAGE_NAME="${IMAGE_NAME}:${TAG}"
 BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+APP_VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "unknown")
 
 echo "🐳 Flow Balance Docker Build"
 echo "================================"
 echo "🏷️  Image Name:   $FULL_IMAGE_NAME"
+echo "📦 App Version:   $APP_VERSION"
 echo "📅 Build Date:   $BUILD_DATE"
 echo "🔗 Git Commit:   $GIT_COMMIT"
 echo "📊 Database:     Dynamic (SQLite/PostgreSQL)"

@@ -241,14 +241,22 @@ if [ "$DB_TYPE" = "sqlite" ]; then
     fi
 fi
 
+# 获取版本信息
+APP_VERSION="${NEXT_PUBLIC_APP_VERSION:-$(node -p "require('./package.json').version" 2>/dev/null || echo "unknown")}"
+BUILD_DATE="${NEXT_PUBLIC_BUILD_DATE:-unknown}"
+GIT_COMMIT="${NEXT_PUBLIC_GIT_COMMIT:-unknown}"
+
 # 显示启动信息
 echo ""
 echo "🎉 Flow Balance is ready!"
 echo "📊 Database: $DB_TYPE"
 echo "🌐 Port: ${PORT:-3000}"
 echo "🔧 Environment: ${NODE_ENV:-development}"
-echo "📅 Build Date: ${NEXT_PUBLIC_BUILD_DATE:-unknown}"
-echo "🏷️  Version: ${NEXT_PUBLIC_APP_VERSION:-unknown}"
+echo "📅 Build Date: $BUILD_DATE"
+echo "🏷️  Version: $APP_VERSION"
+if [ "$GIT_COMMIT" != "unknown" ]; then
+    echo "🔗 Git Commit: $GIT_COMMIT"
+fi
 echo ""
 
 # 启动应用

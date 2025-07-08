@@ -6,6 +6,11 @@
 import { prisma } from '@/lib/database/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
 import { generateAutoExchangeRates } from './exchange-rate-auto-generation.service'
+import { API_TIMEOUTS } from '@/lib/constants/app-config'
+import {
+  fetchJsonWithTimeout,
+  categorizeApiError,
+} from '@/lib/utils/fetch-with-timeout'
 
 interface FrankfurterResponse {
   amount: number
@@ -129,68 +134,57 @@ export class ExchangeRateAutoUpdateService {
 
       let frankfurterData: FrankfurterResponse
       try {
-        const response = await fetch(frankfurterUrl)
-
-        if (!response.ok) {
-          // 处理不同类型的HTTP错误
-          if (response.status === 404) {
-            // 检查响应内容是否包含"not found"消息
-            try {
-              const errorData = await response.json()
-              if (
-                errorData.message &&
-                errorData.message.includes('not found')
-              ) {
-                return {
-                  success: false,
-                  message: `本位币 ${baseCurrencyCode} 不支持自动汇率更新，请检查货币代码是否正确或手动输入汇率`,
-                  errorCode: 'CURRENCY_NOT_SUPPORTED',
-                  errorParams: { currencyCode: baseCurrencyCode },
-                }
-              }
-            } catch {
-              // 如果无法解析响应，使用默认的404错误信息
-            }
-
-            return {
-              success: false,
-              message: `本位币 ${baseCurrencyCode} 不支持自动汇率更新，请检查货币代码是否正确或手动输入汇率`,
-              errorCode: 'CURRENCY_NOT_SUPPORTED',
-              errorParams: { currencyCode: baseCurrencyCode },
-            }
-          } else if (response.status >= 500) {
-            return {
-              success: false,
-              message: '汇率服务暂时不可用，请稍后重试',
-              errorCode: 'SERVICE_UNAVAILABLE',
-            }
-          } else {
-            return {
-              success: false,
-              message: `获取汇率数据失败（错误代码：${response.status}），请稍后重试`,
-              errorCode: 'API_ERROR',
-              errorParams: { statusCode: response.status },
-            }
+        // 使用带超时的 fetch 工具函数
+        frankfurterData = await fetchJsonWithTimeout<FrankfurterResponse>(
+          frankfurterUrl,
+          {
+            timeout: API_TIMEOUTS.EXCHANGE_RATE_API_TIMEOUT,
+            method: 'GET',
           }
-        }
-
-        frankfurterData = await response.json()
+        )
       } catch (error) {
         console.error('Failed to fetch exchange rates from Frankfurter:', error)
 
-        // 区分网络错误和其他错误
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-          return {
-            success: false,
-            message: '网络连接失败，请检查网络连接后重试',
-            errorCode: 'NETWORK_CONNECTION_FAILED',
+        // 使用统一的错误分类工具
+        const errorInfo = categorizeApiError(error)
+
+        // 处理特定的 HTTP 错误（如果是 HTTP 错误）
+        if (
+          error instanceof Error &&
+          error.message.includes('HTTP error! status:')
+        ) {
+          const statusMatch = error.message.match(/status: (\d+)/)
+          if (statusMatch) {
+            const status = parseInt(statusMatch[1])
+
+            if (status === 404) {
+              return {
+                success: false,
+                message: `本位币 ${baseCurrencyCode} 不支持自动汇率更新，请检查货币代码是否正确或手动输入汇率`,
+                errorCode: 'CURRENCY_NOT_SUPPORTED',
+                errorParams: { currencyCode: baseCurrencyCode },
+              }
+            } else if (status === 429) {
+              return {
+                success: false,
+                message: '汇率API请求过于频繁，请稍后重试',
+                errorCode: 'RATE_LIMIT_EXCEEDED',
+              }
+            } else if (status >= 500) {
+              return {
+                success: false,
+                message: '汇率服务暂时不可用，请稍后重试',
+                errorCode: 'SERVICE_UNAVAILABLE',
+              }
+            }
           }
         }
 
+        // 返回分类后的错误信息
         return {
           success: false,
-          message: '获取汇率数据失败，请稍后重试',
-          errorCode: 'API_FETCH_FAILED',
+          message: errorInfo.message,
+          errorCode: errorInfo.code,
         }
       }
 

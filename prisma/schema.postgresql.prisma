@@ -353,6 +353,8 @@ model RecurringProcessingLog {
   processedExchangeRates Int  @default(0) // 处理的汇率数量
   failedCount       Int       @default(0)
   errorMessage      String?
+  stageDetails      String?   // JSON 字符串，存储各阶段的详细状态
+  currentStage      String?   // 当前处理阶段
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

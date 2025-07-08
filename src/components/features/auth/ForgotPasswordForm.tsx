@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ApiEndpoints } from '@/lib/constants'
+import { useLanguage } from '@/contexts/providers/LanguageContext'
 import InputField from '@/components/ui/forms/InputField'
 import AuthButton from '@/components/ui/forms/AuthButton'
 
 export default function ForgotPasswordForm() {
+  const { t } = useLanguage()
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -22,12 +24,12 @@ export default function ForgotPasswordForm() {
 
   const validateForm = () => {
     if (!email) {
-      setError('请输入邮箱')
+      setError(t('auth.email.required'))
       return false
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('邮箱格式不正确')
+      setError(t('auth.email.format.invalid'))
       return false
     }
 
@@ -58,16 +60,15 @@ export default function ForgotPasswordForm() {
 
       if (response.ok) {
         setSuccessMessage(
-          data.data.message ||
-            '如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱。'
+          data.data.message || t('auth.password.reset.email.sent')
         )
         setEmail('')
       } else {
-        setError(data.error || '发送重置链接失败')
+        setError(data.error || t('auth.unknown.error'))
       }
     } catch (error) {
       console.error('Forgot password error:', error)
-      setError('网络错误，请稍后重试')
+      setError(t('error.network'))
     } finally {
       setIsLoading(false)
     }
@@ -90,8 +91,8 @@ export default function ForgotPasswordForm() {
       <InputField
         type='email'
         name='email'
-        label='邮箱'
-        placeholder='请输入您的注册邮箱'
+        label={t('auth.forgot.password.email.label')}
+        placeholder={t('auth.forgot.password.email.placeholder')}
         value={email}
         onChange={handleChange}
         error={error}
@@ -101,7 +102,7 @@ export default function ForgotPasswordForm() {
 
       <AuthButton
         type='submit'
-        label='发送重置链接'
+        label={t('auth.forgot.password.submit')}
         isLoading={isLoading}
         disabled={isLoading || !!successMessage}
       />
@@ -111,7 +112,7 @@ export default function ForgotPasswordForm() {
           href='/login'
           className='text-sm text-blue-600 hover:text-blue-500'
         >
-          返回登录
+          {t('auth.back.to.login')}
         </Link>
       </div>
     </form>

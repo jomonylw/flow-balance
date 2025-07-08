@@ -105,5 +105,6 @@
   "smart.paste.error.invalid.amount": "Invalid amount format",
   "smart.paste.error.required.field": "{{field}} is required",
 
-  "smart.paste.balance.update.description": "Balance Update - {{accountName}}"
+  "smart.paste.balance.update.description": "Balance Update - {{accountName}}",
+  "smart.paste.validation.passed": "✅ Data validation passed"
 }
