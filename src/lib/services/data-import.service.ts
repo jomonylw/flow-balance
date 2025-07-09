@@ -375,22 +375,17 @@ export class DataImportService {
 
         // 12. 导入交易（最后导入，因为可能依赖其他数据）
         if (data.transactions?.length > 0) {
-          // 向后兼容：如果使用旧版本的 transactions 选择，则导入所有交易
-          const useOldTransactionSelection =
-            options.selectedDataTypes?.transactions !== undefined &&
-            options.selectedDataTypes?.manualTransactions === undefined &&
-            options.selectedDataTypes?.recurringTransactionRecords ===
-              undefined &&
-            options.selectedDataTypes?.loanTransactionRecords === undefined
+          // 检查是否有任何交易类型被选择
+          const hasAnyTransactionTypeSelected =
+            options.selectedDataTypes?.manualTransactions !== false ||
+            options.selectedDataTypes?.recurringTransactionRecords !== false ||
+            options.selectedDataTypes?.loanTransactionRecords !== false
 
           let filteredTransactions: typeof data.transactions
 
-          if (useOldTransactionSelection) {
-            // 使用旧版本逻辑：要么全部导入，要么全部不导入
-            filteredTransactions =
-              options.selectedDataTypes?.transactions !== false
-                ? data.transactions
-                : []
+          if (!hasAnyTransactionTypeSelected) {
+            // 如果没有选择任何交易类型，则不导入任何交易
+            filteredTransactions = []
           } else {
             // 使用新版本逻辑：根据选择过滤交易类型
             filteredTransactions = data.transactions.filter(transaction => {

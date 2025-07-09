@@ -253,7 +253,7 @@ export async function GET(request: NextRequest) {
         date: transaction.date.toISOString(),
         accountId: transaction.accountId,
         accountName: transaction.account.name,
-        categoryId: transaction.account.categoryId,
+        categoryId: transaction.account.category.id,
         categoryName: transaction.account.category.name,
         currencyId: transaction.currencyId,
         currencyCode: transaction.currency.code,
