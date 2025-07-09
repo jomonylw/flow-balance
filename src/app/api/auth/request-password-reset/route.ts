@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // 这样可以防止邮箱枚举攻击
     if (!user) {
       return successResponse({
-        message: '如果该邮箱存在，我们已发送重置链接到您的邮箱',
+        message: t('auth.password.reset.email.sent'),
       })
     }
 

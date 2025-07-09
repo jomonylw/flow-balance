@@ -23,14 +23,34 @@ const userLanguageCache = new Map<string, UserLanguageCache>()
  * 加载翻译文件
  */
 function loadTranslations(locale: string): Record<string, string> {
-  if (translationCache[locale]) {
+  // 在开发环境中不使用缓存，确保翻译文件更新能被立即加载
+  if (process.env.NODE_ENV === 'production' && translationCache[locale]) {
     return translationCache[locale]
   }
 
   const translations: Record<string, string> = {}
 
   // 需要加载的翻译文件列表
-  const translationFiles = ['common', 'loan', 'auth', 'dashboard']
+  const translationFiles = [
+    'common',
+    'loan',
+    'auth',
+    'dashboard',
+    'data',
+    'error',
+    'settings',
+    'account',
+    'transaction',
+    'currency',
+    'exchange-rate',
+    'category',
+    'tag',
+    'recurring',
+    'balance-update',
+    'success',
+    'confirm',
+    'validation',
+  ]
 
   for (const fileName of translationFiles) {
     try {
@@ -73,7 +93,12 @@ export function serverT(
 
   if (params) {
     Object.entries(params).forEach(([paramKey, value]) => {
-      text = text.replace(`{${paramKey}}`, String(value))
+      // Support both {key} and {{key}} formats
+      text = text.replace(
+        new RegExp(`\\{\\{${paramKey}\\}\\}`, 'g'),
+        String(value)
+      )
+      text = text.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(value))
     })
   }
 

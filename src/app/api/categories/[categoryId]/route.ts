@@ -109,7 +109,7 @@ export async function PUT(
       // 检查是否会形成循环引用
       const isDescendant = await checkIfDescendant(categoryId, parentId)
       if (isDescendant) {
-        return errorResponse('不能将分类移动到其子分类下', 400)
+        return errorResponse(t('category.cannot.move.to.descendant'), 400)
       }
 
       // 获取当前分类的根分类类型
@@ -118,7 +118,7 @@ export async function PUT(
 
       // 验证只能在同类型分类范围内移动
       if (currentRootCategory?.type !== targetRootCategory?.type) {
-        return errorResponse('子分类只能在同类型的分类范围内移动', 400)
+        return errorResponse(t('category.cannot.move.different.type'), 400)
       }
     }
 

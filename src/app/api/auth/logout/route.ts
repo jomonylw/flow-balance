@@ -1,16 +1,18 @@
 import { clearAuthCookie } from '@/lib/services/auth.service'
 import { successResponse, errorResponse } from '@/lib/api/response'
-import { getCommonError } from '@/lib/constants/api-messages'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
 
 export async function POST() {
   try {
     await clearAuthCookie()
 
+    const t = createServerTranslator()
     return successResponse({
-      message: 'Logout successful',
+      message: t('auth.logout.success'),
     })
   } catch (error) {
     console.error('Logout API error:', error)
-    return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
+    const t = createServerTranslator()
+    return errorResponse(t('auth.logout.failed'), 500)
   }
 }

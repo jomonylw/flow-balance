@@ -1,5 +1,6 @@
-import { TransactionsAppLayoutSkeleton } from '@/components/ui/data-display/page-skeletons'
+import { TransactionListSkeleton } from '@/components/ui/data-display/page-skeletons'
 
 export default function TransactionsLoading() {
-  return <TransactionsAppLayoutSkeleton />
+  // 由于使用共享布局，只需要显示主内容区域的骨架屏
+  return <TransactionListSkeleton />
 }

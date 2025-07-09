@@ -6,6 +6,7 @@ import {
   validationErrorResponse,
 } from '@/lib/api/response'
 import bcrypt from 'bcryptjs'
+import { createServerTranslator } from '@/lib/utils/server-i18n'
 
 /**
  * 使用恢复密钥重置密码
@@ -15,15 +16,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { verificationToken, newPassword } = body
+    const t = createServerTranslator()
 
     // 验证必填字段
     if (!verificationToken || !newPassword) {
-      return validationErrorResponse('验证令牌和新密码不能为空')
+      return validationErrorResponse(t('auth.token.password.required'))
     }
 
     // 验证密码强度
     if (newPassword.length < 6) {
-      return validationErrorResponse('密码长度至少为6位')
+      return validationErrorResponse(t('auth.password.min.length'))
     }
 
     // 查找有效的验证令牌
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return errorResponse('验证令牌无效或已过期', 400)
+      return errorResponse(t('auth.token.invalid.expired'), 400)
     }
 
     // 哈希新密码
@@ -54,10 +56,11 @@ export async function POST(request: NextRequest) {
     })
 
     return successResponse({
-      message: '密码重置成功，请使用新密码登录',
+      message: t('auth.password.reset.success'),
     })
   } catch (error) {
     console.error('Reset password with key error:', error)
-    return errorResponse('服务器内部错误', 500)
+    const t = createServerTranslator()
+    return errorResponse(t('common.server.error'), 500)
   }
 }

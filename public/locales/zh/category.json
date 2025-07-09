@@ -184,5 +184,8 @@
   "category.update.failed": "更新分类失败",
   "category.has.children.cannot.delete": "该分类存在子分类，无法删除",
   "category.has.accounts.cannot.delete": "该分类存在账户，无法删除",
-  "category.delete.failed": "删除分类失败"
+  "category.delete.failed": "删除分类失败",
+  "category.cannot.move.to.descendant": "不能将分类移动到其子分类下",
+  "category.cannot.move.different.type": "子分类只能在同类型的分类范围内移动",
+  "category.delete.success": "分类删除成功"
 }

@@ -5,7 +5,12 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useToast } from '@/contexts/providers/ToastContext'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
-import type { ExportedData, ImportValidationResult } from '@/types/data-import'
+import DataImportSelector from './DataImportSelector'
+import type {
+  ExportedData,
+  ImportValidationResult,
+  ImportDataTypeSelection,
+} from '@/types/data-import'
 
 export default function DataManagementSection() {
   const { t } = useLanguage()
@@ -30,6 +35,21 @@ export default function DataManagementSection() {
     batchSize: 100,
     enableProgressTracking: true,
   })
+  const [selectedDataTypes, setSelectedDataTypes] =
+    useState<ImportDataTypeSelection>({
+      categories: true,
+      accounts: true,
+      manualTransactions: true,
+      recurringTransactionRecords: true,
+      loanTransactionRecords: true,
+      tags: true,
+      currencies: true,
+      exchangeRates: true,
+      transactionTemplates: true,
+      recurringTransactions: true,
+      loanContracts: true,
+      loanPayments: true,
+    })
 
   // 进度跟踪相关状态
   const [importSessionId, setImportSessionId] = useState<string | null>(null)
@@ -184,7 +204,10 @@ export default function DataManagementSection() {
         },
         body: JSON.stringify({
           data: importData,
-          options: importOptions,
+          options: {
+            ...importOptions,
+            selectedDataTypes,
+          },
         }),
       })
 
@@ -243,7 +266,10 @@ export default function DataManagementSection() {
         },
         body: JSON.stringify({
           data: importData,
-          options: importOptions,
+          options: {
+            ...importOptions,
+            selectedDataTypes,
+          },
           sessionId,
         }),
       })
@@ -591,39 +617,13 @@ export default function DataManagementSection() {
                 </div>
               </div>
 
-              {/* 统计信息 */}
+              {/* 数据选择器 */}
               {validationResult.dataInfo?.statistics && (
-                <div className='bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3'>
-                  <h5 className='text-sm font-medium text-blue-900 dark:text-blue-200 mb-2'>
-                    {t('data.import.statistics')}
-                  </h5>
-                  <div className='grid grid-cols-2 gap-2 text-sm text-blue-700 dark:text-blue-300'>
-                    <div>
-                      {t('data.import.statistics.categories')}:{' '}
-                      {validationResult.dataInfo.statistics.totalCategories}
-                    </div>
-                    <div>
-                      {t('data.import.statistics.accounts')}:{' '}
-                      {validationResult.dataInfo.statistics.totalAccounts}
-                    </div>
-                    <div>
-                      {t('data.import.statistics.transactions')}:{' '}
-                      {validationResult.dataInfo.statistics.totalTransactions}
-                    </div>
-                    <div>
-                      {t('data.import.statistics.tags')}:{' '}
-                      {validationResult.dataInfo.statistics.totalTags}
-                    </div>
-                    <div>
-                      {t('data.import.statistics.currencies')}:{' '}
-                      {validationResult.dataInfo.statistics.totalUserCurrencies}
-                    </div>
-                    <div>
-                      {t('data.import.statistics.rates')}:{' '}
-                      {validationResult.dataInfo.statistics.totalExchangeRates}
-                    </div>
-                  </div>
-                </div>
+                <DataImportSelector
+                  statistics={validationResult.dataInfo.statistics}
+                  selection={selectedDataTypes}
+                  onChange={setSelectedDataTypes}
+                />
               )}
 
               {/* 错误信息 */}

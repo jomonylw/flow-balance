@@ -212,7 +212,10 @@ export class DataImportService {
         }
 
         // 2. 导入自定义货币
-        if (data.customCurrencies?.length > 0) {
+        if (
+          data.customCurrencies?.length > 0 &&
+          options.selectedDataTypes?.currencies !== false
+        ) {
           await this.importCustomCurrencies(
             tx,
             userId,
@@ -223,7 +226,10 @@ export class DataImportService {
         }
 
         // 3. 导入用户货币关联
-        if (data.userCurrencies?.length > 0) {
+        if (
+          data.userCurrencies?.length > 0 &&
+          options.selectedDataTypes?.currencies !== false
+        ) {
           await this.importUserCurrencies(
             tx,
             userId,
@@ -234,7 +240,10 @@ export class DataImportService {
         }
 
         // 4. 导入汇率数据
-        if (data.exchangeRates?.length > 0) {
+        if (
+          data.exchangeRates?.length > 0 &&
+          options.selectedDataTypes?.exchangeRates !== false
+        ) {
           await this.importExchangeRates(
             tx,
             userId,
@@ -246,7 +255,10 @@ export class DataImportService {
         }
 
         // 5. 导入分类
-        if (data.categories?.length > 0) {
+        if (
+          data.categories?.length > 0 &&
+          options.selectedDataTypes?.categories !== false
+        ) {
           await this.importCategories(
             tx,
             userId,
@@ -258,7 +270,10 @@ export class DataImportService {
         }
 
         // 6. 导入标签
-        if (data.tags?.length > 0) {
+        if (
+          data.tags?.length > 0 &&
+          options.selectedDataTypes?.tags !== false
+        ) {
           await this.importTags(
             tx,
             userId,
@@ -270,7 +285,10 @@ export class DataImportService {
         }
 
         // 7. 导入账户
-        if (data.accounts?.length > 0) {
+        if (
+          data.accounts?.length > 0 &&
+          options.selectedDataTypes?.accounts !== false
+        ) {
           await this.importAccounts(
             tx,
             userId,
@@ -284,7 +302,10 @@ export class DataImportService {
         }
 
         // 8. 导入交易模板
-        if (data.transactionTemplates?.length > 0) {
+        if (
+          data.transactionTemplates?.length > 0 &&
+          options.selectedDataTypes?.transactionTemplates !== false
+        ) {
           await this.importTransactionTemplates(
             tx,
             userId,
@@ -300,7 +321,10 @@ export class DataImportService {
         }
 
         // 9. 导入定期交易
-        if (data.recurringTransactions?.length > 0) {
+        if (
+          data.recurringTransactions?.length > 0 &&
+          options.selectedDataTypes?.recurringTransactions !== false
+        ) {
           await this.importRecurringTransactions(
             tx,
             userId,
@@ -315,7 +339,10 @@ export class DataImportService {
         }
 
         // 10. 导入贷款合约
-        if (data.loanContracts?.length > 0) {
+        if (
+          data.loanContracts?.length > 0 &&
+          options.selectedDataTypes?.loanContracts !== false
+        ) {
           await this.importLoanContracts(
             tx,
             userId,
@@ -330,7 +357,10 @@ export class DataImportService {
         }
 
         // 11. 导入贷款还款记录
-        if (data.loanPayments?.length > 0) {
+        if (
+          data.loanPayments?.length > 0 &&
+          options.selectedDataTypes?.loanPayments !== false
+        ) {
           await this.importLoanPayments(
             tx,
             userId,
@@ -345,21 +375,67 @@ export class DataImportService {
 
         // 12. 导入交易（最后导入，因为可能依赖其他数据）
         if (data.transactions?.length > 0) {
-          await this.importTransactions(
-            tx,
-            userId,
-            data.transactions,
-            idMappings.accounts,
-            idMappings.categories,
-            idMappings.currencies,
-            idMappings.tags,
-            idMappings.recurringTransactions,
-            idMappings.loanContracts,
-            idMappings.loanPayments,
-            idMappings.transactions,
-            result,
-            options
-          )
+          // 向后兼容：如果使用旧版本的 transactions 选择，则导入所有交易
+          const useOldTransactionSelection =
+            options.selectedDataTypes?.transactions !== undefined &&
+            options.selectedDataTypes?.manualTransactions === undefined &&
+            options.selectedDataTypes?.recurringTransactionRecords ===
+              undefined &&
+            options.selectedDataTypes?.loanTransactionRecords === undefined
+
+          let filteredTransactions: typeof data.transactions
+
+          if (useOldTransactionSelection) {
+            // 使用旧版本逻辑：要么全部导入，要么全部不导入
+            filteredTransactions =
+              options.selectedDataTypes?.transactions !== false
+                ? data.transactions
+                : []
+          } else {
+            // 使用新版本逻辑：根据选择过滤交易类型
+            filteredTransactions = data.transactions.filter(transaction => {
+              // 手动交易
+              if (
+                !transaction.recurringTransactionId &&
+                !transaction.loanContractId &&
+                !transaction.loanPaymentId
+              ) {
+                return options.selectedDataTypes?.manualTransactions !== false
+              }
+              // 定期交易记录
+              if (transaction.recurringTransactionId) {
+                return (
+                  options.selectedDataTypes?.recurringTransactionRecords !==
+                  false
+                )
+              }
+              // 贷款相关交易
+              if (transaction.loanContractId || transaction.loanPaymentId) {
+                return (
+                  options.selectedDataTypes?.loanTransactionRecords !== false
+                )
+              }
+              return false
+            })
+          }
+
+          if (filteredTransactions.length > 0) {
+            await this.importTransactions(
+              tx,
+              userId,
+              filteredTransactions,
+              idMappings.accounts,
+              idMappings.categories,
+              idMappings.currencies,
+              idMappings.tags,
+              idMappings.recurringTransactions,
+              idMappings.loanContracts,
+              idMappings.loanPayments,
+              idMappings.transactions,
+              result,
+              options
+            )
+          }
         }
 
         // 13. 后处理：更新贷款还款记录中的交易ID
@@ -757,43 +833,65 @@ export class DataImportService {
       try {
         let categoryName = category.name
 
-        // 检查重复名称
-        if (!options.overwriteExisting) {
-          const existing = await tx.category.findFirst({
-            where: { userId, name: categoryName },
-          })
-
-          if (existing) {
-            if (options.skipDuplicates) {
-              idMapping[category.id] = existing.id
-              result.statistics.skipped++
-              continue
-            } else {
-              // 自动重命名
-              let counter = 1
-              let newName = `${categoryName} (${counter})`
-              while (
-                await tx.category.findFirst({
-                  where: { userId, name: newName },
-                })
-              ) {
-                counter++
-                newName = `${categoryName} (${counter})`
-              }
-              categoryName = newName
-              result.warnings.push(
-                `分类 "${category.name}" 已存在，重命名为 "${categoryName}"`
-              )
-            }
-          }
-        }
-
         // 处理父级分类ID
         let parentId: string | undefined
         if (category.parentId && idMapping[category.parentId]) {
           parentId = idMapping[category.parentId]
         }
 
+        // 检查是否存在同名分类（考虑父分类）
+        const existing = await tx.category.findFirst({
+          where: {
+            userId,
+            name: categoryName,
+            parentId: parentId || null,
+          },
+        })
+
+        if (existing) {
+          if (options.overwriteExisting) {
+            // 覆盖现有分类
+            const updatedCategory = await tx.category.update({
+              where: { id: existing.id },
+              data: {
+                type: category.type,
+                order: category.order,
+              },
+            })
+            idMapping[category.id] = updatedCategory.id
+            result.statistics.processed++
+            result.statistics.updated++
+            result.warnings.push(`分类 "${category.name}" 已存在，已覆盖更新`)
+            continue
+          } else if (options.skipDuplicates) {
+            // 跳过重复分类
+            idMapping[category.id] = existing.id
+            result.statistics.skipped++
+            continue
+          } else {
+            // 自动重命名
+            let counter = 1
+            let newName = `${categoryName} (${counter})`
+            while (
+              await tx.category.findFirst({
+                where: {
+                  userId,
+                  name: newName,
+                  parentId: parentId || null,
+                },
+              })
+            ) {
+              counter++
+              newName = `${categoryName} (${counter})`
+            }
+            categoryName = newName
+            result.warnings.push(
+              `分类 "${category.name}" 已存在，重命名为 "${categoryName}"`
+            )
+          }
+        }
+
+        // 创建新分类
         const newCategory = await tx.category.create({
           data: {
             userId,
@@ -808,9 +906,13 @@ export class DataImportService {
         result.statistics.processed++
         result.statistics.created++
       } catch (error) {
-        result.errors.push(
-          `导入分类 ${category.name} 失败: ${error instanceof Error ? error.message : '未知错误'}`
+        // 处理数据库约束错误
+        const errorMessage = this.handleDatabaseError(
+          error,
+          '分类',
+          category.name
         )
+        result.errors.push(errorMessage)
         result.statistics.failed++
       }
     }
@@ -831,35 +933,48 @@ export class DataImportService {
       try {
         let tagName = tag.name
 
-        // 检查重复名称
-        if (!options.overwriteExisting) {
-          const existing = await tx.tag.findFirst({
-            where: { userId, name: tagName },
-          })
+        // 检查是否存在同名标签
+        const existing = await tx.tag.findFirst({
+          where: { userId, name: tagName },
+        })
 
-          if (existing) {
-            if (options.skipDuplicates) {
-              idMapping[tag.id] = existing.id
-              result.statistics.skipped++
-              continue
-            } else {
-              // 自动重命名
-              let counter = 1
-              let newName = `${tagName} (${counter})`
-              while (
-                await tx.tag.findFirst({ where: { userId, name: newName } })
-              ) {
-                counter++
-                newName = `${tagName} (${counter})`
-              }
-              tagName = newName
-              result.warnings.push(
-                `标签 "${tag.name}" 已存在，重命名为 "${tagName}"`
-              )
+        if (existing) {
+          if (options.overwriteExisting) {
+            // 覆盖现有标签
+            const updatedTag = await tx.tag.update({
+              where: { id: existing.id },
+              data: {
+                color: tag.color,
+              },
+            })
+            idMapping[tag.id] = updatedTag.id
+            result.statistics.processed++
+            result.statistics.updated++
+            result.warnings.push(`标签 "${tag.name}" 已存在，已覆盖更新`)
+            continue
+          } else if (options.skipDuplicates) {
+            // 跳过重复标签
+            idMapping[tag.id] = existing.id
+            result.statistics.skipped++
+            continue
+          } else {
+            // 自动重命名
+            let counter = 1
+            let newName = `${tagName} (${counter})`
+            while (
+              await tx.tag.findFirst({ where: { userId, name: newName } })
+            ) {
+              counter++
+              newName = `${tagName} (${counter})`
             }
+            tagName = newName
+            result.warnings.push(
+              `标签 "${tag.name}" 已存在，重命名为 "${tagName}"`
+            )
           }
         }
 
+        // 创建新标签
         const newTag = await tx.tag.create({
           data: {
             userId,
@@ -872,9 +987,9 @@ export class DataImportService {
         result.statistics.processed++
         result.statistics.created++
       } catch (error) {
-        result.errors.push(
-          `导入标签 ${tag.name} 失败: ${error instanceof Error ? error.message : '未知错误'}`
-        )
+        // 处理数据库约束错误
+        const errorMessage = this.handleDatabaseError(error, '标签', tag.name)
+        result.errors.push(errorMessage)
         result.statistics.failed++
       }
     }
@@ -925,35 +1040,51 @@ export class DataImportService {
 
         let accountName = account.name
 
-        // 检查重复名称
-        if (!options.overwriteExisting) {
-          const existing = await tx.account.findFirst({
-            where: { userId, name: accountName },
-          })
+        // 检查是否存在同名账户
+        const existing = await tx.account.findFirst({
+          where: { userId, name: accountName },
+        })
 
-          if (existing) {
-            if (options.skipDuplicates) {
-              accountIdMapping[account.id] = existing.id
-              result.statistics.skipped++
-              continue
-            } else {
-              // 自动重命名
-              let counter = 1
-              let newName = `${accountName} (${counter})`
-              while (
-                await tx.account.findFirst({ where: { userId, name: newName } })
-              ) {
-                counter++
-                newName = `${accountName} (${counter})`
-              }
-              accountName = newName
-              result.warnings.push(
-                `账户 "${account.name}" 已存在，重命名为 "${accountName}"`
-              )
+        if (existing) {
+          if (options.overwriteExisting) {
+            // 覆盖现有账户
+            const updatedAccount = await tx.account.update({
+              where: { id: existing.id },
+              data: {
+                description: account.description,
+                color: account.color,
+                categoryId,
+                currencyId,
+              },
+            })
+            accountIdMapping[account.id] = updatedAccount.id
+            result.statistics.processed++
+            result.statistics.updated++
+            result.warnings.push(`账户 "${account.name}" 已存在，已覆盖更新`)
+            continue
+          } else if (options.skipDuplicates) {
+            // 跳过重复账户
+            accountIdMapping[account.id] = existing.id
+            result.statistics.skipped++
+            continue
+          } else {
+            // 自动重命名
+            let counter = 1
+            let newName = `${accountName} (${counter})`
+            while (
+              await tx.account.findFirst({ where: { userId, name: newName } })
+            ) {
+              counter++
+              newName = `${accountName} (${counter})`
             }
+            accountName = newName
+            result.warnings.push(
+              `账户 "${account.name}" 已存在，重命名为 "${accountName}"`
+            )
           }
         }
 
+        // 创建新账户
         const newAccount = await tx.account.create({
           data: {
             userId,
@@ -969,9 +1100,13 @@ export class DataImportService {
         result.statistics.processed++
         result.statistics.created++
       } catch (error) {
-        result.errors.push(
-          `导入账户 ${account.name} 失败: ${error instanceof Error ? error.message : '未知错误'}`
+        // 处理数据库约束错误
+        const errorMessage = this.handleDatabaseError(
+          error,
+          '账户',
+          account.name
         )
+        result.errors.push(errorMessage)
         result.statistics.failed++
       }
     }
@@ -1030,34 +1165,59 @@ export class DataImportService {
 
         let templateName = template.name
 
-        // 检查重复名称
-        if (!options.overwriteExisting) {
-          const existing = await tx.transactionTemplate.findFirst({
-            where: { userId, name: templateName },
-          })
+        // 检查是否存在同名交易模板
+        const existing = await tx.transactionTemplate.findFirst({
+          where: { userId, name: templateName },
+        })
 
-          if (existing) {
-            if (options.skipDuplicates) {
-              templateIdMapping[template.id] = existing.id
-              result.statistics.skipped++
-              continue
-            } else {
-              // 自动重命名
-              let counter = 1
-              let newName = `${templateName} (${counter})`
-              while (
-                await tx.transactionTemplate.findFirst({
-                  where: { userId, name: newName },
-                })
-              ) {
-                counter++
-                newName = `${templateName} (${counter})`
-              }
-              templateName = newName
-              result.warnings.push(
-                `交易模板 "${template.name}" 已存在，重命名为 "${templateName}"`
-              )
+        if (existing) {
+          if (options.overwriteExisting) {
+            // 映射标签ID
+            const newTagIds =
+              template.tagIds
+                ?.map((oldId: string) => tagIdMapping[oldId])
+                .filter(Boolean) || []
+
+            // 覆盖现有交易模板
+            const updatedTemplate = await tx.transactionTemplate.update({
+              where: { id: existing.id },
+              data: {
+                type: template.type,
+                description: template.description,
+                notes: template.notes,
+                accountId,
+                currencyId,
+                tagIds: newTagIds,
+              },
+            })
+            templateIdMapping[template.id] = updatedTemplate.id
+            result.statistics.processed++
+            result.statistics.updated++
+            result.warnings.push(
+              `交易模板 "${template.name}" 已存在，已覆盖更新`
+            )
+            continue
+          } else if (options.skipDuplicates) {
+            // 跳过重复交易模板
+            templateIdMapping[template.id] = existing.id
+            result.statistics.skipped++
+            continue
+          } else {
+            // 自动重命名
+            let counter = 1
+            let newName = `${templateName} (${counter})`
+            while (
+              await tx.transactionTemplate.findFirst({
+                where: { userId, name: newName },
+              })
+            ) {
+              counter++
+              newName = `${templateName} (${counter})`
             }
+            templateName = newName
+            result.warnings.push(
+              `交易模板 "${template.name}" 已存在，重命名为 "${templateName}"`
+            )
           }
         }
 
@@ -1067,6 +1227,7 @@ export class DataImportService {
             ?.map((oldId: string) => tagIdMapping[oldId])
             .filter(Boolean) || []
 
+        // 创建新交易模板
         const newTemplate = await tx.transactionTemplate.create({
           data: {
             userId,
@@ -1075,7 +1236,6 @@ export class DataImportService {
             description: template.description,
             notes: template.notes,
             accountId,
-            categoryId,
             currencyId,
             tagIds: newTagIds,
           },
@@ -1085,9 +1245,13 @@ export class DataImportService {
         result.statistics.processed++
         result.statistics.created++
       } catch (error) {
-        result.errors.push(
-          `导入交易模板 ${template.name} 失败: ${error instanceof Error ? error.message : '未知错误'}`
+        // 处理数据库约束错误
+        const errorMessage = this.handleDatabaseError(
+          error,
+          '交易模板',
+          template.name
         )
+        result.errors.push(errorMessage)
         result.statistics.failed++
       }
     }
@@ -1454,5 +1618,42 @@ export class DataImportService {
         }
       }
     }
+  }
+
+  /**
+   * 处理数据库错误，转换为用户友好的错误信息
+   */
+  private static handleDatabaseError(
+    error: any,
+    entityType: string,
+    entityName: string
+  ): string {
+    if (error instanceof Error) {
+      // 处理唯一约束冲突
+      if (
+        error.message.includes('UNIQUE constraint failed') ||
+        error.message.includes('unique constraint') ||
+        error.message.includes('duplicate key')
+      ) {
+        return `${entityType} "${entityName}" 已存在，无法创建重复记录`
+      }
+
+      // 处理外键约束
+      if (
+        error.message.includes('FOREIGN KEY constraint failed') ||
+        error.message.includes('foreign key constraint')
+      ) {
+        return `${entityType} "${entityName}" 引用的关联数据不存在`
+      }
+
+      // 处理其他数据库错误
+      if (error.message.includes('NOT NULL constraint failed')) {
+        return `${entityType} "${entityName}" 缺少必需的字段`
+      }
+
+      return `导入${entityType} "${entityName}" 失败: ${error.message}`
+    }
+
+    return `导入${entityType} "${entityName}" 失败: 未知错误`
   }
 }

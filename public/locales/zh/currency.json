@@ -52,5 +52,18 @@
   "currency.invalid.currency": "无效的货币",
   "currency.decimal.places.invalid": "小数位数必须在 0-10 之间",
   "currency.not.found": "指定的货币不存在",
-  "currency.permission.denied": "您没有权限使用此货币，请先在货币管理中添加"
+  "currency.permission.denied": "您没有权限使用此货币，请先在货币管理中添加",
+  "currency.get.failed": "获取货币列表失败",
+  "currency.custom.fields.required": "货币代码、名称和符号都不能为空",
+  "currency.custom.decimal.places.invalid": "小数位数必须是0-10之间的整数",
+  "currency.custom.code.format.invalid": "货币代码必须是3-10个大写字母或数字",
+  "currency.custom.code.already.exists": "您已创建过该货币代码",
+  "currency.custom.code.already.selected": "您已选择了货币代码为 {{code}} 的其他货币，同一货币代码只能选择一次",
+  "currency.custom.get.failed": "获取自定义货币失败",
+  "currency.custom.cannot.delete.base": "不能删除本位币，请先更改本位币设置",
+  "currency.custom.has.transactions": "该货币有 {{count}} 条交易记录，不能删除",
+  "currency.custom.has.exchange.rates": "该货币有 {{count}} 条汇率设置，不能删除",
+  "currency.custom.delete.failed": "删除自定义货币失败",
+  "currency.custom.name.symbol.required": "名称和符号都不能为空",
+  "currency.custom.update.success": "自定义货币更新成功"
 }

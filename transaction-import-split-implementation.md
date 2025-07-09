@@ -1,0 +1,256 @@
+# 💳 交易记录拆分导入功能实现
+
+## 🎯 **功能概述**
+
+根据用户需求，将原来的单一"交易记录"选项拆分为三个独立的选项：
+
+1. **手动交易** - 用户直接创建的交易记录
+2. **定期交易记录** - 由定期交易规则自动生成的交易记录
+3. **贷款相关交易** - 贷款发放、还款等相关的交易记录
+
+## 🔧 **技术实现**
+
+### **1. 类型定义扩展**
+
+#### **ImportDataTypeSelection 接口**
+
+```typescript
+export interface ImportDataTypeSelection {
+  categories?: boolean
+  accounts?: boolean
+  manualTransactions?: boolean // 🆕 手动交易
+  recurringTransactionRecords?: boolean // 🆕 定期交易记录
+  loanTransactionRecords?: boolean // 🆕 贷款相关交易
+  tags?: boolean
+  currencies?: boolean
+  exchangeRates?: boolean
+  transactionTemplates?: boolean
+  recurringTransactions?: boolean
+  loanContracts?: boolean
+  loanPayments?: boolean
+}
+```
+
+#### **ExportStatistics 接口**
+
+```typescript
+export interface ExportStatistics {
+  // 原有字段...
+  totalTransactions: number // 总交易数
+  totalManualTransactions: number // 🆕 手动交易数
+  totalRecurringTransactionRecords: number // 🆕 定期交易记录数
+  totalLoanTransactionRecords: number // 🆕 贷款相关交易数
+  // 其他字段...
+}
+```
+
+### **2. 数据统计计算**
+
+在数据导出服务中，根据交易的关联字段进行分类统计：
+
+```typescript
+// src/app/api/user/data/export/route.ts
+statistics: {
+  totalTransactions: transactions.length,
+  totalManualTransactions: transactions.filter(t =>
+    !t.recurringTransactionId && !t.loanContractId && !t.loanPaymentId
+  ).length,
+  totalRecurringTransactionRecords: transactions.filter(t =>
+    t.recurringTransactionId
+  ).length,
+  totalLoanTransactionRecords: transactions.filter(t =>
+    t.loanContractId || t.loanPaymentId
+  ).length,
+  // 其他统计...
+}
+```
+
+### **3. 交易分类逻辑**
+
+基于数据库字段进行分类：
+
+| 交易类型         | 判断条件                                                                               | 说明         |
+| ---------------- | -------------------------------------------------------------------------------------- | ------------ |
+| **手动交易**     | `recurringTransactionId = null` AND `loanContractId = null` AND `loanPaymentId = null` | 用户直接创建 |
+| **定期交易记录** | `recurringTransactionId != null`                                                       | 定期交易生成 |
+| **贷款相关交易** | `loanContractId != null` OR `loanPaymentId != null`                                    | 贷款相关     |
+
+### **4. 选择性导入逻辑**
+
+在数据导入服务中，根据用户选择过滤交易：
+
+```typescript
+// src/lib/services/data-import.service.ts
+const filteredTransactions = data.transactions.filter(transaction => {
+  // 手动交易
+  if (
+    !transaction.recurringTransactionId &&
+    !transaction.loanContractId &&
+    !transaction.loanPaymentId
+  ) {
+    return options.selectedDataTypes?.manualTransactions !== false
+  }
+  // 定期交易记录
+  if (transaction.recurringTransactionId) {
+    return options.selectedDataTypes?.recurringTransactionRecords !== false
+  }
+  // 贷款相关交易
+  if (transaction.loanContractId || transaction.loanPaymentId) {
+    return options.selectedDataTypes?.loanTransactionRecords !== false
+  }
+  return false
+})
+```
+
+## 🎨 **UI界面设计**
+
+### **显示效果**
+
+```
+☑ 手动交易                    450
+    依赖于: accounts, tags
+    用户直接创建的交易记录
+
+☑ 定期交易记录                150
+    依赖于: recurringTransactions
+    由定期交易规则自动生成的交易记录
+
+☑ 贷款相关交易                 52
+    依赖于: loanContracts
+    贷款发放、还款等相关的交易记录
+```
+
+### **依赖关系**
+
+- **手动交易**: 依赖账户和标签
+- **定期交易记录**: 依赖定期交易设置
+- **贷款相关交易**: 依赖贷款合约
+
+## 🌍 **国际化支持**
+
+### **中文翻译**
+
+```json
+{
+  "data.import.statistics.transactions.manual": "手动交易",
+  "data.import.statistics.transactions.recurring": "定期交易记录",
+  "data.import.statistics.transactions.loan": "贷款相关交易",
+  "data.import.selector.transactions.manual.desc": "用户直接创建的交易记录",
+  "data.import.selector.transactions.recurring.desc": "由定期交易规则自动生成的交易记录",
+  "data.import.selector.transactions.loan.desc": "贷款发放、还款等相关的交易记录"
+}
+```
+
+### **英文翻译**
+
+```json
+{
+  "data.import.statistics.transactions.manual": "Manual Transactions",
+  "data.import.statistics.transactions.recurring": "Recurring Transaction Records",
+  "data.import.statistics.transactions.loan": "Loan-related Transactions",
+  "data.import.selector.transactions.manual.desc": "Transaction records created directly by users",
+  "data.import.selector.transactions.recurring.desc": "Transaction records automatically generated by recurring transaction rules",
+  "data.import.selector.transactions.loan.desc": "Transaction records related to loan disbursements, repayments, etc."
+}
+```
+
+## 📊 **数据示例**
+
+### **导入前统计显示**
+
+```
+数据统计:
+分类: 11        账户: 23        手动交易: 450
+标签: 4         货币: 6         定期交易记录: 150
+汇率: 31        交易模板: 0     贷款相关交易: 52
+定期交易: 2     贷款合约: 2     还款记录: 396
+```
+
+### **用户选择示例**
+
+用户可以选择性导入：
+
+- ✅ 手动交易 (450条)
+- ❌ 定期交易记录 (150条) - 不导入
+- ✅ 贷款相关交易 (52条)
+
+最终只导入 502 条交易记录。
+
+## 🔄 **向后兼容性**
+
+### **旧数据处理**
+
+- 如果导入的数据文件没有细分统计，系统会：
+  1. 使用 `totalTransactions` 作为手动交易数量
+  2. 将定期交易记录和贷款相关交易数量设为 0
+  3. 默认选择导入所有交易
+
+### **API兼容性**
+
+- 保留原有的 `totalTransactions` 字段
+- 新增的细分字段为可选字段
+- 导入逻辑向后兼容旧版本的选择配置
+
+## ✅ **功能验证**
+
+### **测试场景**
+
+1. **完整导入测试**
+
+   - 选择所有交易类型
+   - 验证导入数量正确
+
+2. **选择性导入测试**
+
+   - 只选择手动交易
+   - 验证只导入手动交易记录
+
+3. **依赖关系测试**
+
+   - 取消选择定期交易设置
+   - 验证定期交易记录自动取消选择
+
+4. **统计准确性测试**
+   - 验证各类型交易统计数量正确
+   - 验证总数等于各分类之和
+
+### **预期效果**
+
+1. **用户体验提升**
+
+   - 精确控制导入内容
+   - 清晰的数据分类展示
+   - 智能的依赖关系处理
+
+2. **数据完整性**
+
+   - 准确的交易分类
+   - 正确的依赖关系验证
+   - 可靠的导入过滤逻辑
+
+3. **系统稳定性**
+   - 向后兼容旧数据
+   - 错误处理机制完善
+   - 性能影响最小
+
+## 🚀 **部署清单**
+
+### **文件修改列表**
+
+- ✅ `src/types/data-import.ts` - 类型定义扩展
+- ✅ `src/app/api/user/data/export/route.ts` - 统计计算
+- ✅ `src/lib/services/data-import.service.ts` - 导入逻辑
+- ✅ `src/components/features/settings/DataImportSelector.tsx` - UI组件
+- ✅ `src/components/features/settings/DataManagementSection.tsx` - 默认选择
+- ✅ `public/locales/zh/data.json` - 中文翻译
+- ✅ `public/locales/en/data.json` - 英文翻译
+
+### **验证步骤**
+
+1. 导出数据文件，检查统计信息
+2. 导入数据时验证选择界面
+3. 测试选择性导入功能
+4. 验证依赖关系处理
+5. 检查国际化显示
+
+这个实现完全满足了用户的需求，提供了精确的交易类型控制，同时保持了良好的用户体验和系统稳定性。

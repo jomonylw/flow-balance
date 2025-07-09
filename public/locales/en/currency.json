@@ -52,5 +52,18 @@
   "currency.invalid.currency": "Invalid currency",
   "currency.decimal.places.invalid": "Decimal places must be between 0-10",
   "currency.not.found": "Specified currency does not exist",
-  "currency.permission.denied": "You do not have permission to use this currency, please add it in currency management first"
+  "currency.permission.denied": "You do not have permission to use this currency, please add it in currency management first",
+  "currency.get.failed": "Failed to get currency list",
+  "currency.custom.fields.required": "Currency code, name and symbol are all required",
+  "currency.custom.decimal.places.invalid": "Decimal places must be an integer between 0-10",
+  "currency.custom.code.format.invalid": "Currency code must be 3-10 uppercase letters or numbers",
+  "currency.custom.code.already.exists": "You have already created this currency code",
+  "currency.custom.code.already.selected": "You have already selected another currency with code {{code}}, each currency code can only be selected once",
+  "currency.custom.get.failed": "Failed to get custom currencies",
+  "currency.custom.cannot.delete.base": "Cannot delete base currency, please change base currency settings first",
+  "currency.custom.has.transactions": "This currency has {{count}} transaction records and cannot be deleted",
+  "currency.custom.has.exchange.rates": "This currency has {{count}} exchange rate settings and cannot be deleted",
+  "currency.custom.delete.failed": "Failed to delete custom currency",
+  "currency.custom.name.symbol.required": "Name and symbol are both required",
+  "currency.custom.update.success": "Custom currency updated successfully"
 }

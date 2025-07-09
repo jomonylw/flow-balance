@@ -67,15 +67,53 @@ export async function GET(request: NextRequest) {
       // 交易
       prisma.transaction.findMany({
         where: { userId: user.id },
-        include: {
+        select: {
+          id: true,
+          userId: true,
+          accountId: true,
+          currencyId: true,
+          type: true,
+          amount: true,
+          description: true,
+          notes: true,
+          date: true,
+          recurringTransactionId: true,
+          loanContractId: true,
+          loanPaymentId: true,
+          createdAt: true,
+          updatedAt: true,
           account: {
-            include: {
-              category: true,
+            select: {
+              id: true,
+              name: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  type: true,
+                },
+              },
             },
           },
-          currency: true,
+          currency: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              symbol: true,
+              decimalPlaces: true,
+            },
+          },
           tags: {
-            include: { tag: true },
+            select: {
+              tag: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                },
+              },
+            },
           },
         },
         orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
@@ -360,6 +398,16 @@ export async function GET(request: NextRequest) {
         totalCategories: categories.length,
         totalAccounts: accounts.length,
         totalTransactions: transactions.length,
+        totalManualTransactions: transactions.filter(
+          t =>
+            !t.recurringTransactionId && !t.loanContractId && !t.loanPaymentId
+        ).length,
+        totalRecurringTransactionRecords: transactions.filter(
+          t => t.recurringTransactionId
+        ).length,
+        totalLoanTransactionRecords: transactions.filter(
+          t => t.loanContractId || t.loanPaymentId
+        ).length,
         totalTags: tags.length,
         totalUserCurrencies: userCurrencies.length,
         totalCustomCurrencies: customCurrencies.length,

@@ -225,6 +225,9 @@ export interface ExportStatistics {
   totalCategories: number
   totalAccounts: number
   totalTransactions: number
+  totalManualTransactions?: number
+  totalRecurringTransactionRecords?: number
+  totalLoanTransactionRecords?: number
   totalTags: number
   totalUserCurrencies: number
   totalCustomCurrencies: number
@@ -272,6 +275,37 @@ export interface ImportOptions {
   batchSize?: number
   enableProgressTracking?: boolean
   onProgress?: (progress: ImportProgress) => void
+  // 🆕 选择性导入选项
+  selectedDataTypes?: ImportDataTypeSelection
+}
+
+/** 数据类型选择配置 */
+export interface ImportDataTypeSelection {
+  categories?: boolean
+  accounts?: boolean
+  manualTransactions?: boolean
+  recurringTransactionRecords?: boolean
+  loanTransactionRecords?: boolean
+  tags?: boolean
+  currencies?: boolean
+  exchangeRates?: boolean
+  transactionTemplates?: boolean
+  recurringTransactions?: boolean
+  loanContracts?: boolean
+  loanPayments?: boolean
+}
+
+/** 数据类型信息 */
+export interface DataTypeInfo {
+  key: keyof ImportDataTypeSelection
+  name: string
+  icon: string
+  count: number
+  enabled: boolean
+  required?: boolean
+  dependsOn?: Array<keyof ImportDataTypeSelection>
+  description?: string
+  color: string
 }
 
 /** 导入结果 */

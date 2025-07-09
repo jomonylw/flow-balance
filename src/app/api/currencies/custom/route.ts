@@ -1,30 +1,32 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
-import { getCommonError, getCurrencyError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/api/response'
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 /**
  * 创建自定义货币
  */
 export async function POST(request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
 
     const body = await request.json()
     const { code, name, symbol, decimalPlaces } = body
+    const t = await getUserTranslator(user.id)
 
     // 验证输入
     if (!code || !name || !symbol) {
-      return validationErrorResponse('货币代码、名称和符号都不能为空')
+      return validationErrorResponse(t('currency.custom.fields.required'))
     }
 
     // 验证小数位数
@@ -35,12 +37,14 @@ export async function POST(request: NextRequest) {
       decimalPlacesValue < 0 ||
       decimalPlacesValue > 10
     ) {
-      return validationErrorResponse('小数位数必须是0-10之间的整数')
+      return validationErrorResponse(
+        t('currency.custom.decimal.places.invalid')
+      )
     }
 
     // 验证货币代码格式（3-10个字符，只允许字母和数字）
     if (!/^[A-Z0-9]{3,10}$/.test(code)) {
-      return validationErrorResponse('货币代码必须是3-10个大写字母或数字')
+      return validationErrorResponse(t('currency.custom.code.format.invalid'))
     }
 
     // 检查用户是否已创建相同代码的货币
@@ -54,7 +58,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingCurrency) {
-      return validationErrorResponse('您已创建过该货币代码')
+      return validationErrorResponse(t('currency.custom.code.already.exists'))
     }
 
     // 检查用户是否已经选择了相同货币代码的其他货币
@@ -73,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     if (existingCurrenciesWithSameCode.length > 0) {
       return validationErrorResponse(
-        `您已选择了货币代码为 ${code.toUpperCase()} 的其他货币，同一货币代码只能选择一次`
+        t('currency.custom.code.already.selected', { code: code.toUpperCase() })
       )
     }
 
@@ -106,11 +110,12 @@ export async function POST(request: NextRequest) {
 
     return successResponse({
       currency,
-      message: '自定义货币创建成功',
+      message: t('currency.custom.create.success'),
     })
   } catch (error) {
-    console.error('创建自定义货币失败:', error)
-    return errorResponse(getCurrencyError('CREATE_FAILED'), 500)
+    console.error('Create custom currency error:', error)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('currency.custom.create.failed'), 500)
   }
 }
 
@@ -118,8 +123,9 @@ export async function POST(request: NextRequest) {
  * 获取用户的自定义货币列表
  */
 export async function GET(_request: NextRequest) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -135,7 +141,8 @@ export async function GET(_request: NextRequest) {
       currencies: customCurrencies,
     })
   } catch (error) {
-    console.error('获取自定义货币失败:', error)
-    return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
+    console.error('Get custom currencies error:', error)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('currency.custom.get.failed'), 500)
   }
 }

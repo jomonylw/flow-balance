@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/prisma'
-import { getCurrencyError } from '@/lib/constants/api-messages'
 import {
   successResponse,
   errorResponse,
@@ -9,6 +8,7 @@ import {
   validationErrorResponse,
 } from '@/lib/api/response'
 import type { CurrencyCodeRouteParams } from '@/types/api'
+import { getUserTranslator } from '@/lib/utils/server-i18n'
 
 /**
  * 删除自定义货币
@@ -17,13 +17,15 @@ export async function DELETE(
   request: NextRequest,
   { params }: CurrencyCodeRouteParams
 ) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
 
     const { currencyCode } = await params
+    const t = await getUserTranslator(user.id)
 
     // 检查货币是否存在且为用户创建的自定义货币
     const currency = await prisma.currency.findFirst({
@@ -34,7 +36,7 @@ export async function DELETE(
     })
 
     if (!currency) {
-      return validationErrorResponse(getCurrencyError('NOT_FOUND'))
+      return validationErrorResponse(t('currency.not.found'))
     }
 
     // 检查是否是本位币
@@ -43,7 +45,7 @@ export async function DELETE(
     })
 
     if (userSettings?.baseCurrencyId === currency.id) {
-      return validationErrorResponse('不能删除本位币，请先更改本位币设置')
+      return validationErrorResponse(t('currency.custom.cannot.delete.base'))
     }
 
     // 检查是否有相关的交易记录
@@ -56,7 +58,7 @@ export async function DELETE(
 
     if (transactionCount > 0) {
       return validationErrorResponse(
-        `该货币有 ${transactionCount} 条交易记录，不能删除`
+        t('currency.custom.has.transactions', { count: transactionCount })
       )
     }
 
@@ -70,7 +72,7 @@ export async function DELETE(
 
     if (exchangeRateCount > 0) {
       return validationErrorResponse(
-        `该货币有 ${exchangeRateCount} 条汇率设置，不能删除`
+        t('currency.custom.has.exchange.rates', { count: exchangeRateCount })
       )
     }
 
@@ -90,10 +92,11 @@ export async function DELETE(
       })
     })
 
-    return successResponse({ message: '自定义货币删除成功' })
+    return successResponse({ message: t('currency.custom.delete.success') })
   } catch (error) {
-    console.error('删除自定义货币失败:', error)
-    return errorResponse(getCurrencyError('DELETE_FAILED'), 500)
+    console.error('Delete custom currency error:', error)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('currency.custom.delete.failed'), 500)
   }
 }
 
@@ -104,8 +107,9 @@ export async function PUT(
   request: NextRequest,
   { params }: CurrencyCodeRouteParams
 ) {
+  let user: any = null
   try {
-    const user = await getCurrentUser()
+    user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
@@ -113,10 +117,11 @@ export async function PUT(
     const { currencyCode } = await params
     const body = await request.json()
     const { name, symbol, decimalPlaces } = body
+    const t = await getUserTranslator(user.id)
 
     // 验证输入
     if (!name || !symbol) {
-      return validationErrorResponse('名称和符号都不能为空')
+      return validationErrorResponse(t('currency.custom.name.symbol.required'))
     }
 
     // 验证小数位数（如果提供）
@@ -128,7 +133,9 @@ export async function PUT(
         decimalPlacesValue < 0 ||
         decimalPlacesValue > 10
       ) {
-        return validationErrorResponse('小数位数必须是0-10之间的整数')
+        return validationErrorResponse(
+          t('currency.custom.decimal.places.invalid')
+        )
       }
     }
 
@@ -141,7 +148,7 @@ export async function PUT(
     })
 
     if (!currency) {
-      return validationErrorResponse(getCurrencyError('NOT_FOUND'))
+      return validationErrorResponse(t('currency.not.found'))
     }
 
     // 更新自定义货币
@@ -158,10 +165,11 @@ export async function PUT(
 
     return successResponse({
       currency: updatedCurrency,
-      message: '自定义货币更新成功',
+      message: t('currency.custom.update.success'),
     })
   } catch (error) {
-    console.error('更新自定义货币失败:', error)
-    return errorResponse(getCurrencyError('UPDATE_FAILED'), 500)
+    console.error('Update custom currency error:', error)
+    const t = await getUserTranslator(user?.id || '')
+    return errorResponse(t('currency.custom.update.failed'), 500)
   }
 }

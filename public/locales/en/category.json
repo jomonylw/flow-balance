@@ -184,5 +184,8 @@
   "category.update.failed": "Failed to update category",
   "category.has.children.cannot.delete": "This category has subcategories and cannot be deleted",
   "category.has.accounts.cannot.delete": "This category has accounts and cannot be deleted",
-  "category.delete.failed": "Failed to delete category"
+  "category.delete.failed": "Failed to delete category",
+  "category.cannot.move.to.descendant": "Cannot move category to its subcategory",
+  "category.cannot.move.different.type": "Subcategories can only be moved within the same account type",
+  "category.delete.success": "Category deleted successfully"
 }

@@ -30,6 +30,7 @@
   "common.submitting": "Submitting...",
   "common.reset": "Reset",
   "common.clear": "Clear",
+  "common.records": "records",
   "common.clear.all": "Clear All Filters",
   "common.clear.filter": "Clear Filter",
   "common.confirm.clear": "Confirm Clear",

@@ -55,7 +55,7 @@ export async function GET(_request: NextRequest) {
       currencies: currenciesWithStatus,
     })
   } catch (error) {
-    console.error('获取货币列表失败:', error)
+    console.error('Get currencies error:', error)
     const t = await getUserTranslator(user?.id || '')
     return errorResponse(t('currency.get.failed'), 500)
   }
