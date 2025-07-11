@@ -2,7 +2,7 @@
   "name": "flow-balance",
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "pnpm build",
+  "buildCommand": "pnpm db:generate && pnpm build",
   "devCommand": "pnpm dev",
   "installCommand": "pnpm install",
   "outputDirectory": ".next",
@@ -20,7 +20,8 @@
   "build": {
     "env": {
       "NODE_ENV": "production",
-      "NEXT_TELEMETRY_DISABLED": "1"
+      "NEXT_TELEMETRY_DISABLED": "1",
+      "DATABASE_URL": "@database_url"
     }
   },
   "headers": [
