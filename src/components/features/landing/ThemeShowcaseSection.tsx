@@ -200,7 +200,10 @@ export default function ThemeShowcaseSection() {
                   <div className='pt-8'>
                     <img
                       src={currentComparison.leftImage}
-                      alt={t(currentComparison.leftLabel)}
+                      alt={t(
+                        currentComparison.leftLabel ||
+                          'landing.comparison.i18n.chinese'
+                      )}
                       className='w-full h-auto'
                       loading='lazy'
                     />
@@ -208,7 +211,11 @@ export default function ThemeShowcaseSection() {
                 </div>
                 <div className='text-center mt-4'>
                   <span className='inline-block px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-medium'>
-                    🇨🇳 {t(currentComparison.leftLabel)}
+                    🇨🇳{' '}
+                    {t(
+                      currentComparison.leftLabel ||
+                        'landing.comparison.i18n.chinese'
+                    )}
                   </span>
                 </div>
               </div>
@@ -226,7 +233,10 @@ export default function ThemeShowcaseSection() {
                   <div className='pt-8'>
                     <img
                       src={currentComparison.rightImage}
-                      alt={t(currentComparison.rightLabel)}
+                      alt={t(
+                        currentComparison.rightLabel ||
+                          'landing.comparison.i18n.english'
+                      )}
                       className='w-full h-auto'
                       loading='lazy'
                     />
@@ -234,7 +244,11 @@ export default function ThemeShowcaseSection() {
                 </div>
                 <div className='text-center mt-4'>
                   <span className='inline-block px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium'>
-                    🇺🇸 {t(currentComparison.rightLabel)}
+                    🇺🇸{' '}
+                    {t(
+                      currentComparison.rightLabel ||
+                        'landing.comparison.i18n.english'
+                    )}
                   </span>
                 </div>
               </div>
