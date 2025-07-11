@@ -7,7 +7,6 @@
   "installCommand": "pnpm install",
   "outputDirectory": ".next",
   "public": false,
-  "regions": ["hkg1", "sin1", "sfo1"],
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30
