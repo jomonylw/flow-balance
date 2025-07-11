@@ -1,4 +1,10 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# 运行类型检查
+echo "🔍 Running type check..."
+pnpm type-check
+
+# 运行 lint-staged
+echo "🧹 Running lint-staged..."
 npx lint-staged

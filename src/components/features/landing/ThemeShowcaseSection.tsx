@@ -201,7 +201,7 @@ export default function ThemeShowcaseSection() {
                     <img
                       src={currentComparison.leftImage}
                       alt={t(
-                        currentComparison.leftLabel ||
+                        (currentComparison as any).leftLabel ||
                           'landing.comparison.i18n.chinese'
                       )}
                       className='w-full h-auto'
@@ -213,7 +213,7 @@ export default function ThemeShowcaseSection() {
                   <span className='inline-block px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-medium'>
                     🇨🇳{' '}
                     {t(
-                      currentComparison.leftLabel ||
+                      (currentComparison as any).leftLabel ||
                         'landing.comparison.i18n.chinese'
                     )}
                   </span>
@@ -234,7 +234,7 @@ export default function ThemeShowcaseSection() {
                     <img
                       src={currentComparison.rightImage}
                       alt={t(
-                        currentComparison.rightLabel ||
+                        (currentComparison as any).rightLabel ||
                           'landing.comparison.i18n.english'
                       )}
                       className='w-full h-auto'
@@ -246,7 +246,7 @@ export default function ThemeShowcaseSection() {
                   <span className='inline-block px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium'>
                     🇺🇸{' '}
                     {t(
-                      currentComparison.rightLabel ||
+                      (currentComparison as any).rightLabel ||
                         'landing.comparison.i18n.english'
                     )}
                   </span>
