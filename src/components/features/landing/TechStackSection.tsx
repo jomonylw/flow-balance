@@ -95,13 +95,36 @@ export default function TechStackSection() {
   return (
     <section
       ref={ref}
-      className='py-20 bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800'
+      className='relative py-20 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden'
     >
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+      {/* 背景装饰 */}
+      <div className='absolute inset-0'>
+        <div className='absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-blue-400/10 to-transparent rounded-full blur-3xl'></div>
+        <div className='absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-r from-indigo-400/10 to-transparent rounded-full blur-2xl'></div>
+        {/* 代码风格的背景图案 */}
+        <div className='absolute inset-0 opacity-5'>
+          <div className='absolute top-1/4 left-1/4 text-6xl font-mono text-blue-500 transform rotate-12'>
+            {'{ }'}
+          </div>
+          <div className='absolute top-1/2 right-1/4 text-4xl font-mono text-indigo-500 transform -rotate-12'>
+            {'</>'}
+          </div>
+          <div className='absolute bottom-1/4 left-1/3 text-5xl font-mono text-purple-500 transform rotate-45'>
+            {'[]'}
+          </div>
+        </div>
+      </div>
+
+      <div className='relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         {/* Section Header */}
         <div
           className={`text-center mb-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         >
+          <div className='inline-block mb-4'>
+            <span className='px-4 py-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-sm font-medium border border-indigo-200/50 dark:border-indigo-500/30'>
+              🚀 现代化技术栈
+            </span>
+          </div>
           <h2 className='text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent mb-6'>
             {t('landing.tech.title')}
           </h2>

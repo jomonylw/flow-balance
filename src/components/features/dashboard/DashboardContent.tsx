@@ -20,6 +20,7 @@ import {
 } from '@/lib/utils/validation'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
+import { useAuth } from '@/contexts/providers/AuthContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useAllDataListener } from '@/hooks/business/useDataUpdateListener'
 import { AccountType, TransactionType } from '@/types/core/constants'
@@ -39,6 +40,7 @@ export default function DashboardContent({
 }: DashboardContentProps) {
   const { t } = useLanguage()
   const { resolvedTheme } = useTheme()
+  const { isAuthenticated } = useAuth()
   const { formatCurrencyById, findCurrencyByCode } = useUserCurrencyFormatter()
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [isBalanceUpdateModalOpen, setIsBalanceUpdateModalOpen] =
@@ -65,7 +67,7 @@ export default function DashboardContent({
   // 监听所有数据更新事件
   useAllDataListener(async () => {
     // 只有在用户已认证时才重新获取仪表板数据
-    if (user) {
+    if (user && isAuthenticated) {
       await handleTransactionSuccess()
     }
   })
@@ -98,6 +100,11 @@ export default function DashboardContent({
   }
 
   const handleTransactionSuccess = async () => {
+    // 只有在用户已认证时才重新获取数据
+    if (!user || !isAuthenticated) {
+      return
+    }
+
     // 重新获取数据，但不重载页面
     try {
       // 重新获取概览数据
@@ -121,7 +128,7 @@ export default function DashboardContent({
   // 获取财务概览数据
   useEffect(() => {
     // 只有在用户已认证时才获取数据
-    if (!user) return
+    if (!user || !isAuthenticated) return
 
     const fetchSummaryData = async () => {
       try {
@@ -141,7 +148,7 @@ export default function DashboardContent({
     }
 
     fetchSummaryData()
-  }, [user])
+  }, [user, isAuthenticated])
 
   // 获取图表数据 - 初始加载时获取所有数据
   const fetchInitialChartData = useCallback(async () => {
@@ -180,10 +187,10 @@ export default function DashboardContent({
   // 初始加载图表数据
   useEffect(() => {
     // 只有在用户已认证时才获取数据
-    if (user) {
+    if (user && isAuthenticated) {
       fetchInitialChartData()
     }
-  }, [fetchInitialChartData, user])
+  }, [fetchInitialChartData, user, isAuthenticated])
 
   // 处理净资产图表时间范围变化
   const handleNetWorthTimeRangeChange = useCallback(

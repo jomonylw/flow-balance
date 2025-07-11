@@ -37,6 +37,7 @@
   "dashboard.chart.data.fetch.failed": "Failed to fetch chart data",
   "dashboard.network.error.charts": "Network error, unable to fetch chart data",
   "dashboard.no.chart.data": "No chart data available",
+  "dashboard.no.summary.data": "No summary data available",
   "dashboard.add.transactions.first": "Please add some transaction records first",
   "dashboard.monthly.net.income": "Net Income",
   "dashboard.assets.minus.liabilities": "Assets - Liabilities",

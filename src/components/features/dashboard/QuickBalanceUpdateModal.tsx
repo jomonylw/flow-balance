@@ -145,9 +145,7 @@ export default function QuickBalanceUpdateModal({
     } else if (isNaN(parseFloat(formData.newBalance))) {
       newErrors.newBalance = t('balance.update.valid.number')
     }
-    if (!formData.currencyCode) {
-      newErrors.currencyCode = t('balance.update.select.currency')
-    }
+
     if (!formData.updateDate) {
       newErrors.updateDate = t('balance.update.select.date')
     }
@@ -208,13 +206,7 @@ export default function QuickBalanceUpdateModal({
 
   const accountOptions = stockAccounts.map(account => ({
     value: account.id,
-    label: `${account.name} (${account.category.name})`,
-  }))
-
-  const currencyOptions = currencies.map(currency => ({
-    value: currency.code,
-    label: `${currency.code} - ${currency.name}`,
-    id: currency.id, // 添加唯一标识符
+    label: `${account.name} (${account.category.name}) - ${account.currencyCode}`,
   }))
 
   const getModalTitle = () => {
@@ -279,57 +271,56 @@ export default function QuickBalanceUpdateModal({
                   : 'bg-orange-50 border-orange-200'
             }`}
           >
-            <div className='flex items-center'>
-              <div
-                className={`w-3 h-3 rounded-full mr-3 ${
-                  selectedAccount.category.type === 'ASSET'
-                    ? 'bg-blue-500'
-                    : 'bg-orange-500'
-                }`}
-              ></div>
-              <div>
-                <p
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center'>
+                <div
+                  className={`w-3 h-3 rounded-full mr-3 ${
+                    selectedAccount.category.type === 'ASSET'
+                      ? 'bg-blue-500'
+                      : 'bg-orange-500'
+                  }`}
+                ></div>
+                <div>
+                  <p
+                    className={`font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
+                  >
+                    {t('balance.update.selected.account')}:{' '}
+                    {selectedAccount.name}
+                  </p>
+                  <p
+                    className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+                  >
+                    {t('balance.update.category')}:{' '}
+                    {selectedAccount.category.name}
+                  </p>
+                  <p
+                    className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+                  >
+                    {t('balance.update.current.balance')}:{' '}
+                    {formatCurrency(currentBalance, formData.currencyCode)}
+                  </p>
+                </div>
+              </div>
+              <div className='text-right'>
+                <div
+                  className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                >
+                  {t('common.currency')}
+                </div>
+                <div
                   className={`font-medium ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
                 >
-                  {selectedAccount.category.type === 'ASSET'
-                    ? t('balance.update.asset.account')
-                    : t('balance.update.liability.account')}{' '}
-                  • {t('balance.update.stock.data')}
-                </p>
-                <p
-                  className={`text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
-                >
-                  {t('balance.update.current.balance')}:{' '}
-                  {formatCurrency(currentBalance, formData.currencyCode)}
-                </p>
+                  {
+                    currencies.find(c => c.code === formData.currencyCode)
+                      ?.symbol
+                  }{' '}
+                  {currencies.find(c => c.code === formData.currencyCode)?.name}
+                </div>
               </div>
             </div>
           </div>
         )}
-        <div>
-          <SelectField
-            name='currencyCode'
-            label={t('balance.update.currency')}
-            value={formData.currencyCode}
-            onChange={handleChange}
-            options={currencyOptions}
-            error={errors.currencyCode}
-            required
-            disabled={!!selectedAccount}
-          />
-          {selectedAccount && (
-            <p
-              className={`mt-1 text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
-            >
-              {t('balance.update.currency.locked', {
-                currencyName:
-                  currencies.find(c => c.code === selectedAccount.currencyCode)
-                    ?.name || '',
-                currencyCode: selectedAccount.currencyCode,
-              })}
-            </p>
-          )}
-        </div>
+
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
           <InputField
             name='newBalance'

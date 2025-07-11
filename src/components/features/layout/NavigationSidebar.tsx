@@ -14,10 +14,7 @@ import TranslationLoader from '@/components/ui/data-display/TranslationLoader'
 import { SidebarSkeleton } from '@/components/ui/data-display/page-skeletons'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { publishCategoryCreate } from '@/lib/services/data-update.service'
-import {
-  useSidebarWidth,
-  useSidebarScrollPosition,
-} from '@/hooks/ui/useSidebarWidth'
+import { useSidebarWidth } from '@/hooks/ui/useSidebarWidth'
 import {
   useStableComponentKey,
   useSmoothTransition,
@@ -70,19 +67,6 @@ export default function NavigationSidebar({
   // 侧边栏宽度管理
   const { width, isDragging, startDragging, stopDragging, handleDrag } =
     useSidebarWidth()
-
-  // 侧边栏滚动位置保持
-  const { scrollContainerRef, handleScroll, restoreScrollPosition } =
-    useSidebarScrollPosition()
-
-  // 路由变化时恢复滚动位置
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      restoreScrollPosition()
-    }, 100) // 延迟恢复，确保内容已渲染
-
-    return () => clearTimeout(timer)
-  }, [restoreScrollPosition])
 
   // 稳定的组件key，防止路由变化时重新挂载
   const stableKey = useStableComponentKey('navigation-sidebar')
@@ -154,16 +138,6 @@ export default function NavigationSidebar({
 
     return () => clearInterval(interval)
   }, [searchQuery]) // 当搜索查询改变时重新检查
-
-  // 恢复滚动位置
-  useEffect(() => {
-    // 延迟恢复滚动位置，确保内容已渲染
-    const timer = setTimeout(() => {
-      restoreScrollPosition()
-    }, 100)
-
-    return () => clearTimeout(timer)
-  }, [restoreScrollPosition])
 
   // 保留此函数用于未来可能的手动刷新功能
   // const handleDataRefresh = useCallback((options?: {
@@ -268,11 +242,7 @@ export default function NavigationSidebar({
         </div>
 
         {/* 侧边栏内容 */}
-        <div
-          ref={scrollContainerRef}
-          className='flex-1 overflow-y-auto overflow-x-visible sidebar-container'
-          onScroll={handleScroll}
-        >
+        <div className='flex-1 overflow-y-auto overflow-x-visible sidebar-container'>
           <div className='p-4 space-y-4'>
             {/* Dashboard 链接 */}
             <SidebarDashboardLink onNavigate={onNavigate} />

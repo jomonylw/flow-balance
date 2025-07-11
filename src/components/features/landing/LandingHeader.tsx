@@ -36,11 +36,11 @@ export default function LandingHeader({
 
           {/* Desktop Navigation */}
           <div className='hidden md:flex items-center space-x-6'>
-            {/* Theme Toggle */}
-            <ThemeToggle />
-
             {/* Language Toggle */}
             <LanguageToggle />
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
             {/* Login Button */}
             <button

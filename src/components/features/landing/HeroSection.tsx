@@ -12,13 +12,27 @@ export default function HeroSection({ onLogin, onSignup }: HeroSectionProps) {
 
   return (
     <section className='relative py-20 sm:py-32 overflow-hidden'>
-      {/* Background Decoration */}
+      {/* Enhanced Background Decoration */}
       <div className='absolute inset-0'>
+        {/* 主要装饰元素 */}
         <div className='absolute top-0 left-1/2 transform -translate-x-1/2 w-96 h-96 bg-gradient-to-r from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl animate-pulse'></div>
         <div
           className='absolute bottom-0 right-1/4 w-64 h-64 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse'
           style={{ animationDelay: '1s' }}
         ></div>
+
+        {/* 额外的浮动元素 */}
+        <div
+          className='absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-r from-green-400/15 to-emerald-400/15 rounded-full blur-2xl animate-bounce'
+          style={{ animationDelay: '2s', animationDuration: '3s' }}
+        ></div>
+        <div
+          className='absolute top-3/4 right-1/3 w-48 h-48 bg-gradient-to-r from-orange-400/15 to-red-400/15 rounded-full blur-2xl animate-pulse'
+          style={{ animationDelay: '0.5s' }}
+        ></div>
+
+        {/* 网格背景 */}
+        <div className='absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:50px_50px] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)]'></div>
       </div>
 
       <div className='relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
@@ -38,19 +52,25 @@ export default function HeroSection({ onLogin, onSignup }: HeroSectionProps) {
             {t('landing.hero.description')}
           </p>
 
-          {/* CTA Buttons */}
+          {/* Enhanced CTA Buttons */}
           <div className='flex flex-col sm:flex-row gap-4 justify-center items-center mb-16'>
             <button
               onClick={onSignup}
-              className='w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl'
+              className='group relative w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-2xl hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl overflow-hidden'
             >
-              {t('landing.hero.cta.primary')}
+              <span className='relative z-10 flex items-center justify-center gap-2'>
+                ✨ {t('landing.hero.cta.primary')}
+              </span>
+              {/* 按钮光效 */}
+              <div className='absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300'></div>
             </button>
             <button
               onClick={onLogin}
-              className='w-full sm:w-auto px-8 py-4 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 font-semibold rounded-2xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 backdrop-blur-sm'
+              className='group relative w-full sm:w-auto px-8 py-4 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 font-semibold rounded-2xl border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 backdrop-blur-sm hover:border-blue-300 dark:hover:border-blue-500'
             >
-              {t('landing.hero.cta.secondary')}
+              <span className='flex items-center justify-center gap-2'>
+                🔑 {t('landing.hero.cta.secondary')}
+              </span>
             </button>
           </div>
 

@@ -179,7 +179,8 @@ export default function TransactionFilters({
               <option value=''>{t('account.all')}</option>
               {flowAccounts.map(account => (
                 <option key={account.id} value={account.id}>
-                  {account.name} ({account.category.name})
+                  {account.name} ({account.category.name}) -{' '}
+                  {account.currencyCode}
                 </option>
               ))}
             </select>

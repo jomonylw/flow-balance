@@ -19,65 +19,30 @@
 - 操作效率：频繁的状态重置影响操作流畅性
 - 视觉体验：页面抖动和闪烁
 
-## 解决方案
+## 最终解决方案
 
-### 1. 滚动位置保持
+### 使用 Next.js 路由组实现侧边栏分离
 
-#### 新增Hook: `useSidebarScrollPosition`
+通过使用 Next.js 的路由组 `(main)`，我们成功实现了侧边栏与页面内容的分离：
 
-```typescript
-// src/hooks/useSidebarWidth.ts (扩展)
-export function useSidebarScrollPosition() {
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const saveTimeoutRef = useRef<NodeJS.Timeout>()
+1. **侧边栏布局分离**：侧边栏在 `src/app/(main)/layout.tsx` 中定义，不会随路由变化重新挂载
+2. **自然的滚动位置保持**：由于侧边栏组件不重新挂载，滚动位置自然保持
+3. **组件状态保持**：展开/折叠状态、搜索状态等都自然保持
 
-  // 防抖保存滚动位置
-  const saveScrollPosition = useCallback((scrollTop: number) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current)
-    }
+### 移除滚动条记忆功能
 
-    saveTimeoutRef.current = setTimeout(() => {
-      try {
-        localStorage.setItem(SIDEBAR_SCROLL_KEY, scrollTop.toString())
-      } catch (error) {
-        console.error('Error saving scroll position:', error)
-      }
-    }, 100) // 100ms防抖
-  }, [])
+由于侧边栏已经分离，之前实现的滚动条记忆功能已不再需要：
 
-  // 恢复滚动位置
-  const restoreScrollPosition = useCallback(() => {
-    if (!scrollContainerRef.current) return
+- ✅ 移除了 `useSidebarScrollPosition` Hook
+- ✅ 移除了相关的 localStorage 存储逻辑
+- ✅ 简化了 NavigationSidebar 组件
+- ✅ 保留了组件稳定性和平滑过渡功能
 
-    try {
-      const savedScrollTop = localStorage.getItem(SIDEBAR_SCROLL_KEY)
-      if (savedScrollTop) {
-        const scrollTop = parseInt(savedScrollTop, 10)
-        if (!isNaN(scrollTop)) {
-          requestAnimationFrame(() => {
-            if (scrollContainerRef.current) {
-              scrollContainerRef.current.scrollTop = scrollTop
-            }
-          })
-        }
-      }
-    } catch (error) {
-      console.error('Error restoring scroll position:', error)
-    }
-  }, [])
+## 保留的优化功能
 
-  return {
-    scrollContainerRef,
-    handleScroll,
-    restoreScrollPosition,
-  }
-}
-```
+### 1. 组件稳定性保证
 
-### 2. 组件稳定性保证
-
-#### 新增Hook: `useSidebarState`
+#### Hook: `useStableComponentKey`
 
 ```typescript
 // src/hooks/useSidebarState.ts
@@ -85,10 +50,17 @@ export function useStableComponentKey(baseKey: string = 'sidebar') {
   // 使用固定的key，避免路由变化时组件重新挂载
   return `${baseKey}-stable`
 }
+```
 
+### 2. 平滑过渡效果
+
+#### Hook: `useSmoothTransition`
+
+```typescript
+// src/hooks/useSidebarState.ts
 export function useSmoothTransition() {
   const pathname = usePathname()
-  const transitionRef = useRef<HTMLDivElement>(null)
+  const transitionRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (transitionRef.current) {
@@ -104,110 +76,71 @@ export function useSmoothTransition() {
 
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [pathname])
 
   return { transitionRef }
 }
 ```
 
-### 3. 路由状态保持
+### 3. 路由组布局
 
-#### 新增Hook: `useRoutePreservation`
+#### 主布局 (`src/app/(main)/layout.tsx`)
 
 ```typescript
-// src/hooks/useRoutePreservation.ts
-export function useRoutePreservation() {
-  const pathname = usePathname()
-  const preservationStateRef = useRef<Map<string, any>>(new Map())
-
-  // 保存状态到内存
-  const preserveState = useCallback((key: string, state: any) => {
-    preservationStateRef.current.set(key, state)
-  }, [])
-
-  // 获取保存的状态
-  const getPreservedState = useCallback((key: string) => {
-    return preservationStateRef.current.get(key)
-  }, [])
-
-  return {
-    currentPath: pathname,
-    preserveState,
-    getPreservedState,
+export default async function MainLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser()
+  if (!user) {
+    redirect('/login')
   }
+
+  const userSettings = await prisma.userSettings.findUnique({
+    where: { userId: user.id },
+    include: { baseCurrency: true },
+  })
+
+  const userWithSettings = { ...user, settings: userSettings }
+
+  return <AppLayoutClient user={userWithSettings}>{children}</AppLayoutClient>
 }
 ```
 
-### 4. 组件更新
-
-#### NavigationSidebar组件优化
+#### AppLayoutClient组件
 
 ```typescript
-// src/components/layout/NavigationSidebar.tsx
-export default function NavigationSidebar({ isMobile = false, onNavigate }: NavigationSidebarProps) {
-  // 侧边栏滚动位置保持
-  const {
-    scrollContainerRef,
-    handleScroll,
-    restoreScrollPosition
-  } = useSidebarScrollPosition()
-
-  // 稳定的组件key，防止路由变化时重新挂载
-  const stableKey = useStableComponentKey('navigation-sidebar')
-
-  // 平滑过渡效果
-  const { transitionRef } = useSmoothTransition()
-
-  // 恢复滚动位置
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      restoreScrollPosition()
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [restoreScrollPosition])
+// src/components/features/layout/AppLayoutClient.tsx
+export default function AppLayoutClient({ children, user }: AppLayoutClientProps) {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   return (
-    <TranslationLoader key={stableKey}>
-      <div
-        ref={(el) => {
-          sidebarRef.current = el
-          if (transitionRef) {
-            transitionRef.current = el
-          }
-        }}
-        className="... transition-opacity duration-150 ease-in-out"
-      >
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-visible"
-          onScroll={handleScroll}
-        >
-          {/* 侧边栏内容 */}
+    <div className='h-screen flex flex-col bg-gray-50 dark:bg-gray-900'>
+      <TopUserStatusBar user={user} onMenuClick={toggleMobileSidebar} showMenuButton={isMobile} />
+
+      <div className='flex-1 flex overflow-hidden'>
+        {/* 桌面端左侧导航栏 - 使用稳定的key */}
+        <div className={`${isMobile ? 'hidden' : 'block'} flex-shrink-0`}>
+          <NavigationSidebar key='desktop-sidebar-stable' />
         </div>
+
+        {/* 右侧主内容 */}
+        <main className='flex-1 overflow-y-auto bg-white dark:bg-gray-800'>
+          <div className='min-h-full'>{children}</div>
+        </main>
       </div>
-    </TranslationLoader>
+    </div>
   )
 }
-```
-
-#### AppLayoutClient组件优化
-
-```typescript
-// src/components/layout/AppLayoutClient.tsx
-<div className={`${isMobile ? 'hidden' : 'block'} flex-shrink-0`}>
-  <NavigationSidebar key="desktop-sidebar-stable" />
-</div>
-```
 
 ## 技术特性
 
 ### ✅ 已实现功能
 
-1. **滚动位置保持**
+1. **侧边栏分离**
 
-   - 使用 localStorage 保存滚动位置
-   - 防抖机制避免频繁保存
-   - 路由变化后自动恢复位置
+   - 使用 Next.js 路由组 `(main)` 实现侧边栏与页面内容分离
+   - 侧边栏在路由变化时不重新挂载
+   - 自然保持滚动位置和组件状态
 
 2. **组件稳定性**
 
@@ -221,20 +154,17 @@ export default function NavigationSidebar({ isMobile = false, onNavigate }: Navi
 
 4. **状态持久化**
    - 展开状态保存在 localStorage
-   - 滚动位置保存在 localStorage
+   - 视图模式保存在 localStorage
+   - 侧边栏宽度保存在 localStorage
 
 ### 🔧 技术实现细节
 
-1. **防抖机制**：滚动位置保存使用100ms防抖，避免频繁写入localStorage
-2. **错误处理**：所有localStorage操作都有try-catch保护
-3. **性能优化**：使用requestAnimationFrame确保DOM渲染完成后再恢复滚动位置
+1. **路由组架构**：使用 `(main)` 路由组确保侧边栏布局稳定
+2. **组件稳定性**：使用 `useStableComponentKey` 提供稳定的组件 key
+3. **平滑过渡**：使用 `useSmoothTransition` 提供路由变化时的视觉过渡
 4. **兼容性**：支持服务端渲染，客户端激活时正确恢复状态
 
 ## 测试验证
-
-### 测试页面
-
-创建了专门的测试页面 `/test-sidebar` 用于验证优化效果。
 
 ### 测试步骤
 
@@ -246,9 +176,10 @@ export default function NavigationSidebar({ isMobile = false, onNavigate }: Navi
 ### 预期结果
 
 - ✅ 侧边栏展开状态保持
-- ✅ 滚动位置保持
+- ✅ 滚动位置自然保持（无需额外代码）
 - ✅ 无明显抖动或闪烁
 - ✅ 组件不重新挂载
+- ✅ 视图模式和宽度设置保持
 
 ## 性能影响
 
@@ -257,20 +188,21 @@ export default function NavigationSidebar({ isMobile = false, onNavigate }: Navi
 - 减少了不必要的组件重新挂载
 - 提升了用户体验的流畅性
 - 减少了DOM操作和重绘
+- 简化了代码复杂度（移除了滚动位置记忆逻辑）
 
 ### 资源消耗
 
-- localStorage存储：约100字节（展开状态 + 滚动位置）
-- 内存消耗：增加了几个ref和状态管理
-- 计算开销：防抖机制的轻微开销
+- localStorage存储：约50字节（展开状态 + 视图模式 + 侧边栏宽度）
+- 内存消耗：减少了滚动位置相关的ref和状态管理
+- 计算开销：移除了防抖机制，减少了计算开销
 
 ## 后续优化建议
 
-1. **缓存策略优化**：考虑使用IndexedDB替代localStorage存储更复杂的状态
-2. **性能监控**：添加路由变化性能监控
-3. **用户偏好**：允许用户选择是否启用状态保持功能
-4. **移动端优化**：针对移动端的特殊处理
+1. **性能监控**：添加路由变化性能监控
+2. **用户偏好**：允许用户选择是否启用状态保持功能
+3. **移动端优化**：针对移动端的特殊处理
 
 ## 总结
 
-通过实现滚动位置保持、组件稳定性保证和平滑过渡效果，成功解决了侧边栏在路由变化时的状态重置问题。用户现在可以在不同页面间切换时保持侧边栏的状态，大大提升了使用体验。
+通过使用 Next.js 路由组实现侧边栏分离，成功解决了侧边栏在路由变化时的状态重置问题。这种方案比之前的滚动位置记忆功能更加简洁和高效，用户现在可以在不同页面间切换时自然保持侧边栏的所有状态，大大提升了使用体验。
+```

@@ -815,8 +815,8 @@ export default function SmartPasteModal({
               )}
               {availableAccounts.map(account => (
                 <option key={account.id} value={account.id}>
-                  {account.name} [{account.currency?.symbol || '¥'}{' '}
-                  {account.currency?.code}]
+                  {account.name} ({account.category?.name || ''}) -{' '}
+                  {account.currency?.code || ''}
                 </option>
               ))}
             </select>

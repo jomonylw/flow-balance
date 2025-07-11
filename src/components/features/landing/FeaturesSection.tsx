@@ -161,12 +161,26 @@ export default function FeaturesSection() {
   ]
 
   return (
-    <section ref={ref} className='py-20 bg-white/50 dark:bg-gray-800/50'>
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+    <section
+      ref={ref}
+      className='relative py-20 bg-white/50 dark:bg-gray-800/50 overflow-hidden'
+    >
+      {/* 背景装饰 */}
+      <div className='absolute inset-0'>
+        <div className='absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-blue-400/10 to-indigo-400/10 rounded-full blur-3xl'></div>
+        <div className='absolute bottom-1/4 right-1/4 w-48 h-48 bg-gradient-to-r from-purple-400/10 to-pink-400/10 rounded-full blur-2xl'></div>
+      </div>
+
+      <div className='relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         {/* Section Header */}
         <div
           className={`text-center mb-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         >
+          <div className='inline-block mb-4'>
+            <span className='px-4 py-2 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 dark:text-blue-400 rounded-full text-sm font-medium border border-blue-200/50 dark:border-blue-500/30'>
+              ✨ 核心功能特性
+            </span>
+          </div>
           <h2 className='text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent mb-6'>
             {t('landing.features.title')}
           </h2>
@@ -180,25 +194,34 @@ export default function FeaturesSection() {
           {features.map((feature, index) => (
             <div
               key={index}
-              className={`group p-8 bg-white/80 dark:bg-gray-800/80 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 transition-all duration-300 hover:-translate-y-2 ${
+              className={`group relative p-8 bg-white/80 dark:bg-gray-800/80 rounded-3xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 transition-all duration-500 hover:-translate-y-3 hover:border-blue-300/50 dark:hover:border-blue-500/50 ${
                 isVisible
                   ? 'opacity-100 translate-y-0'
                   : 'opacity-0 translate-y-8'
               }`}
               style={{
-                transitionDelay: isVisible ? `${index * 100}ms` : '0ms',
-                transitionDuration: '600ms',
+                transitionDelay: isVisible ? `${index * 150}ms` : '0ms',
+                transitionDuration: '700ms',
               }}
             >
+              {/* 悬浮时的背景光效 */}
+              <div
+                className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-3xl transition-opacity duration-500`}
+              ></div>
+
               {/* Icon */}
               <div
-                className={`w-16 h-16 bg-gradient-to-r ${feature.gradient} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}
+                className={`relative w-16 h-16 bg-gradient-to-r ${feature.gradient} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg`}
               >
                 {feature.icon}
+                {/* 图标光环效果 */}
+                <div
+                  className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} rounded-2xl blur-lg opacity-0 group-hover:opacity-30 transition-opacity duration-300`}
+                ></div>
               </div>
 
               {/* Title */}
-              <h3 className='text-xl font-bold text-gray-900 dark:text-gray-100 mb-4'>
+              <h3 className='text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300'>
                 {t(feature.titleKey)}
               </h3>
 
@@ -208,28 +231,43 @@ export default function FeaturesSection() {
               </p>
 
               {/* Highlights */}
-              <ul className='space-y-2'>
+              <ul className='space-y-3'>
                 {feature.highlights.map((highlightKey, highlightIndex) => (
-                  <li key={highlightIndex} className='flex items-start'>
-                    <svg
-                      className='w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M5 13l4 4L19 7'
-                      />
-                    </svg>
-                    <span className='text-sm text-gray-600 dark:text-gray-400'>
+                  <li
+                    key={highlightIndex}
+                    className='flex items-start group/item'
+                    style={{
+                      animationDelay: `${index * 150 + highlightIndex * 100}ms`,
+                    }}
+                  >
+                    <div className='relative'>
+                      <svg
+                        className='w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0 group-hover/item:scale-110 transition-transform duration-200'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M5 13l4 4L19 7'
+                        />
+                      </svg>
+                      {/* 勾选图标的光环效果 */}
+                      <div className='absolute inset-0 bg-green-500/20 rounded-full blur-sm opacity-0 group-hover/item:opacity-100 transition-opacity duration-200'></div>
+                    </div>
+                    <span className='text-sm text-gray-600 dark:text-gray-400 group-hover/item:text-gray-800 dark:group-hover/item:text-gray-200 transition-colors duration-200'>
                       {t(highlightKey)}
                     </span>
                   </li>
                 ))}
               </ul>
+
+              {/* 卡片序号 */}
+              <div className='absolute top-4 right-4 w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-all duration-300'>
+                {index + 1}
+              </div>
             </div>
           ))}
         </div>

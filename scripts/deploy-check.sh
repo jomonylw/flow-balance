@@ -141,8 +141,8 @@ check_environment() {
         print_check ".env 文件存在"
         
         # 检查必需的环境变量
-        required_vars=("DATABASE_URL" "JWT_SECRET")
-        
+        required_vars=("DATABASE_URL")
+
         for var in "${required_vars[@]}"; do
             if grep -q "^${var}=" .env; then
                 value=$(grep "^${var}=" .env | cut -d'=' -f2- | tr -d '"')
@@ -155,15 +155,17 @@ check_environment() {
                 print_fail "$var 缺失"
             fi
         done
-        
-        # 检查 JWT_SECRET 长度
+
+        # 检查可选的 JWT_SECRET
         if grep -q "^JWT_SECRET=" .env; then
             jwt_secret=$(grep "^JWT_SECRET=" .env | cut -d'=' -f2- | tr -d '"')
             if [ ${#jwt_secret} -ge 32 ]; then
-                print_check "JWT_SECRET 长度足够 (${#jwt_secret} 字符)"
+                print_check "JWT_SECRET 已配置 (${#jwt_secret} 字符)"
             else
-                print_fail "JWT_SECRET 太短 (${#jwt_secret} 字符)，建议至少 32 字符"
+                print_warning "JWT_SECRET 较短 (${#jwt_secret} 字符)，建议至少 32 字符"
             fi
+        else
+            print_info "JWT_SECRET 未配置，将自动生成"
         fi
         
     else

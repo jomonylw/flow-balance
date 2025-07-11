@@ -2,30 +2,42 @@
 
 import { useState } from 'react'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
+import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useScrollAnimation } from '@/hooks/useScrollAnimation'
-import PlaceholderImage from './PlaceholderImage'
 
 export default function ThemeShowcaseSection() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const { resolvedTheme } = useTheme()
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 })
   const [activeComparison, setActiveComparison] = useState('theme')
+  const [activeThemeDemo, setActiveThemeDemo] = useState<'light' | 'dark'>(
+    'light'
+  )
+
+  // 为主题对比生成特定的图片路径
+  const getThemeComparisonImagePath = (themeType: 'light' | 'dark') => {
+    return `/images/screenshots/theme-${themeType}-${resolvedTheme}-${language}.png`
+  }
 
   const comparisons = [
     {
       id: 'theme',
       titleKey: 'landing.comparison.theme.title',
       descriptionKey: 'landing.comparison.theme.description',
-      leftImage: '/images/screenshots/theme-light.png',
-      rightImage: '/images/screenshots/theme-dark.png',
-      leftLabel: 'landing.comparison.theme.light',
-      rightLabel: 'landing.comparison.theme.dark',
+      // 主题展示使用单一切换模式
+      singleImage: getThemeComparisonImagePath(activeThemeDemo),
+      themeOptions: [
+        { key: 'light' as const, labelKey: 'landing.comparison.theme.light' },
+        { key: 'dark' as const, labelKey: 'landing.comparison.theme.dark' },
+      ],
     },
     {
       id: 'i18n',
       titleKey: 'landing.comparison.i18n.title',
       descriptionKey: 'landing.comparison.i18n.description',
-      leftImage: '/images/screenshots/interface-zh.png',
-      rightImage: '/images/screenshots/interface-en.png',
+      // 国际化展示保持左右对比模式
+      leftImage: `/images/screenshots/interface-zh-${resolvedTheme}.png`,
+      rightImage: `/images/screenshots/interface-en-${resolvedTheme}.png`,
       leftLabel: 'landing.comparison.i18n.chinese',
       rightLabel: 'landing.comparison.i18n.english',
     },
@@ -84,59 +96,150 @@ export default function ThemeShowcaseSection() {
 
         {/* Comparison Images */}
         <div
-          className={`grid grid-cols-1 lg:grid-cols-2 gap-8 transition-all duration-1000 delay-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+          className={`transition-all duration-1000 delay-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         >
-          {/* Left Image */}
-          <div className='relative group'>
-            <div className='relative bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50 transform group-hover:scale-105 transition-transform duration-300'>
-              <div className='absolute top-0 left-0 right-0 h-8 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center px-4'>
-                <div className='flex space-x-2'>
-                  <div className='w-3 h-3 bg-red-400 rounded-full'></div>
-                  <div className='w-3 h-3 bg-yellow-400 rounded-full'></div>
-                  <div className='w-3 h-3 bg-green-400 rounded-full'></div>
+          {/* 主题展示 - 单一切换模式 */}
+          {activeComparison === 'theme' && (
+            <div className='max-w-4xl mx-auto'>
+              {/* 主题切换按钮 */}
+              <div className='flex justify-center mb-8'>
+                <div className='bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-2 border border-gray-200/50 dark:border-gray-700/50'>
+                  {currentComparison.themeOptions?.map(option => (
+                    <button
+                      key={option.key}
+                      onClick={() => setActiveThemeDemo(option.key)}
+                      className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                        activeThemeDemo === option.key
+                          ? option.key === 'light'
+                            ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg'
+                            : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {option.key === 'light' ? '☀️' : '🌙'}{' '}
+                      {t(option.labelKey)}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className='pt-8'>
-                <PlaceholderImage
-                  width={600}
-                  height={400}
-                  text={t(currentComparison.leftLabel)}
-                  className='w-full h-auto'
-                />
-              </div>
-            </div>
-            <div className='text-center mt-4'>
-              <span className='inline-block px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium'>
-                {t(currentComparison.leftLabel)}
-              </span>
-            </div>
-          </div>
 
-          {/* Right Image */}
-          <div className='relative group'>
-            <div className='relative bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50 transform group-hover:scale-105 transition-transform duration-300'>
-              <div className='absolute top-0 left-0 right-0 h-8 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center px-4'>
-                <div className='flex space-x-2'>
-                  <div className='w-3 h-3 bg-red-400 rounded-full'></div>
-                  <div className='w-3 h-3 bg-yellow-400 rounded-full'></div>
-                  <div className='w-3 h-3 bg-green-400 rounded-full'></div>
+              {/* 主题展示图片 */}
+              <div className='relative group'>
+                <div className='relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50 transform group-hover:scale-[1.02] transition-all duration-500'>
+                  {/* 浏览器标题栏 */}
+                  <div className='absolute top-0 left-0 right-0 h-10 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center px-4 border-b border-gray-200/50 dark:border-gray-600/50'>
+                    <div className='flex space-x-2'>
+                      <div className='w-3 h-3 bg-red-400 rounded-full'></div>
+                      <div className='w-3 h-3 bg-yellow-400 rounded-full'></div>
+                      <div className='w-3 h-3 bg-green-400 rounded-full'></div>
+                    </div>
+                    <div className='flex-1 text-center'>
+                      <div className='text-xs text-gray-500 dark:text-gray-400 font-mono'>
+                        Flow Balance -{' '}
+                        {t(`landing.comparison.theme.${activeThemeDemo}`)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 图片容器 */}
+                  <div className='pt-10 relative overflow-hidden'>
+                    <img
+                      src={currentComparison.singleImage}
+                      alt={`${t(currentComparison.titleKey)} - ${t(`landing.comparison.theme.${activeThemeDemo}`)}`}
+                      className='w-full h-auto transition-all duration-500'
+                      loading='lazy'
+                    />
+
+                    {/* 主题指示器 */}
+                    <div className='absolute top-4 right-4'>
+                      <div
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          activeThemeDemo === 'light'
+                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                            : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                        }`}
+                      >
+                        {activeThemeDemo === 'light' ? '☀️ Light' : '🌙 Dark'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 装饰性元素 */}
+                <div
+                  className={`absolute -top-6 -right-6 w-32 h-32 rounded-full blur-2xl transition-all duration-500 ${
+                    activeThemeDemo === 'light'
+                      ? 'bg-gradient-to-r from-yellow-400/20 to-orange-400/20'
+                      : 'bg-gradient-to-r from-indigo-400/20 to-purple-400/20'
+                  }`}
+                ></div>
+                <div
+                  className={`absolute -bottom-6 -left-6 w-24 h-24 rounded-full blur-xl transition-all duration-500 ${
+                    activeThemeDemo === 'light'
+                      ? 'bg-gradient-to-r from-orange-400/20 to-red-400/20'
+                      : 'bg-gradient-to-r from-purple-400/20 to-pink-400/20'
+                  }`}
+                ></div>
+              </div>
+            </div>
+          )}
+
+          {/* 国际化展示 - 保持左右对比模式 */}
+          {activeComparison === 'i18n' && (
+            <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+              {/* 中文界面 */}
+              <div className='relative group'>
+                <div className='relative bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50 transform group-hover:scale-105 transition-transform duration-300'>
+                  <div className='absolute top-0 left-0 right-0 h-8 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center px-4'>
+                    <div className='flex space-x-2'>
+                      <div className='w-3 h-3 bg-red-400 rounded-full'></div>
+                      <div className='w-3 h-3 bg-yellow-400 rounded-full'></div>
+                      <div className='w-3 h-3 bg-green-400 rounded-full'></div>
+                    </div>
+                  </div>
+                  <div className='pt-8'>
+                    <img
+                      src={currentComparison.leftImage}
+                      alt={t(currentComparison.leftLabel)}
+                      className='w-full h-auto'
+                      loading='lazy'
+                    />
+                  </div>
+                </div>
+                <div className='text-center mt-4'>
+                  <span className='inline-block px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-medium'>
+                    🇨🇳 {t(currentComparison.leftLabel)}
+                  </span>
                 </div>
               </div>
-              <div className='pt-8'>
-                <PlaceholderImage
-                  width={600}
-                  height={400}
-                  text={t(currentComparison.rightLabel)}
-                  className='w-full h-auto'
-                />
+
+              {/* 英文界面 */}
+              <div className='relative group'>
+                <div className='relative bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50 transform group-hover:scale-105 transition-transform duration-300'>
+                  <div className='absolute top-0 left-0 right-0 h-8 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center px-4'>
+                    <div className='flex space-x-2'>
+                      <div className='w-3 h-3 bg-red-400 rounded-full'></div>
+                      <div className='w-3 h-3 bg-yellow-400 rounded-full'></div>
+                      <div className='w-3 h-3 bg-green-400 rounded-full'></div>
+                    </div>
+                  </div>
+                  <div className='pt-8'>
+                    <img
+                      src={currentComparison.rightImage}
+                      alt={t(currentComparison.rightLabel)}
+                      className='w-full h-auto'
+                      loading='lazy'
+                    />
+                  </div>
+                </div>
+                <div className='text-center mt-4'>
+                  <span className='inline-block px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium'>
+                    🇺🇸 {t(currentComparison.rightLabel)}
+                  </span>
+                </div>
               </div>
             </div>
-            <div className='text-center mt-4'>
-              <span className='inline-block px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl font-medium'>
-                {t(currentComparison.rightLabel)}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Additional Features */}

@@ -13,16 +13,7 @@
       "maxDuration": 30
     }
   },
-  "crons": [
-    {
-      "path": "/api/cron/exchange-rates",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/recurring-transactions",
-      "schedule": "0 1 * * *"
-    }
-  ],
+
   "env": {
     "NODE_ENV": "production",
     "NEXT_TELEMETRY_DISABLED": "1"
@@ -82,16 +73,6 @@
       "source": "/health",
       "destination": "/api/health",
       "permanent": false
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/sitemap.xml",
-      "destination": "/api/sitemap"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "/api/robots"
     }
   ]
 }

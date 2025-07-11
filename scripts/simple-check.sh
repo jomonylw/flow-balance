@@ -86,11 +86,11 @@ if [ -f ".env" ]; then
     else
         print_fail "DATABASE_URL 缺失"
     fi
-    
+
     if grep -q "JWT_SECRET" .env; then
         print_check "JWT_SECRET 已配置"
     else
-        print_fail "JWT_SECRET 缺失"
+        print_check "JWT_SECRET 未配置，将自动生成"
     fi
 else
     print_warning ".env 文件不存在，将使用默认配置"

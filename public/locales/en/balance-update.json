@@ -49,5 +49,7 @@
   "balance.update.date": "Update Date",
   "balance.update.notes.optional": "Notes (Optional)",
   "balance.update.notes.placeholder": "Add note information...",
-  "balance.update.default.notes": "Balance Update"
+  "balance.update.default.notes": "Balance Update",
+  "balance.update.selected.account": "Selected Account",
+  "balance.update.category": "Category"
 }

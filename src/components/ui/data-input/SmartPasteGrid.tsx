@@ -96,7 +96,7 @@ export default function SmartPasteGrid({
             ...column,
             options: availableAccounts?.map(account => ({
               value: account.id,
-              label: account.name,
+              label: `${account.name} (${account.category?.name || ''}) - ${account.currency?.code || ''}`,
               data: account,
               // 添加货币信息用于显示
               currencyCode: account.currency?.code,

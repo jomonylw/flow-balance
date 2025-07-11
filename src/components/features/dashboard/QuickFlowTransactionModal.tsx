@@ -634,7 +634,7 @@ export default function QuickFlowTransactionModal({
   // 账户选项
   const accountOptions = filteredAccounts.map(account => ({
     value: account.id,
-    label: `${account.name} (${account.category.name})`,
+    label: `${account.name} (${account.category.name}) - ${account.currencyCode}`,
   }))
 
   return (
