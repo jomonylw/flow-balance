@@ -10,13 +10,11 @@
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30,
-      "memory": 1024,
-      "regions": ["iad1"]
+      "memory": 1024
     },
     "src/app/**/page.tsx": {
       "maxDuration": 30,
-      "memory": 1024,
-      "regions": ["iad1"]
+      "memory": 1024
     }
   },
 
