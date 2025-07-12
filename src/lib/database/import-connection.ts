@@ -32,7 +32,7 @@ export function createImportPrismaClient(): PrismaClient {
     const url = new URL(databaseUrl)
 
     // 为导入操作设置专门的连接参数
-    url.searchParams.set('connection_limit', '1') // 单个连接，避免连接池竞争
+    url.searchParams.set('connection_limit', '3') // 允许3个连接，支持事务内的并发查询
     url.searchParams.set('pool_timeout', '30') // 连接池超时30秒
     url.searchParams.set('connect_timeout', '30') // 连接超时30秒
     url.searchParams.set('statement_timeout', '300000') // 语句超时5分钟
