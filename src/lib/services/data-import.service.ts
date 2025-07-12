@@ -473,8 +473,8 @@ export class DataImportService {
             }
           },
           {
-            maxWait: 60000, // 最大等待时间 1 分钟
-            timeout: 300000, // 事务超时时间 5 分钟，支持长时间导入操作
+            maxWait: 30000, // 最大等待时间 30 秒
+            timeout: 120000, // 事务超时时间 2 分钟，适合 serverless 环境
           }
         )
       )
