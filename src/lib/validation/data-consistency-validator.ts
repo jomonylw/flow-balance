@@ -3,7 +3,6 @@
  * 提供跨功能模块的数据一致性检查和关联数据完整性验证
  */
 
-import { PrismaClient } from '@prisma/client'
 import {
   AccountType,
   TransactionType,
@@ -11,8 +10,9 @@ import {
   convertPrismaAccountType,
 } from '@/types/core/constants'
 import type { ValidationResult } from '@/types/core'
+import { prisma } from '@/lib/database/connection-manager'
 
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 // ============================================================================
 // 数据一致性验证器类

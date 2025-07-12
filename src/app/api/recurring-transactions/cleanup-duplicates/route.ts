@@ -5,10 +5,10 @@
 
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/database/connection-manager'
 
 // import { getUserTranslator } from '@/lib/utils/server-i18n'
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 export async function POST() {
   try {

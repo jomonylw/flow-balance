@@ -4,12 +4,13 @@
  */
 
 import { z } from 'zod'
-import { PrismaClient } from '@prisma/client'
+
 import { TransactionType, AccountType } from '@/types/core/constants'
 import { ConstantsManager } from '@/lib/utils/constants-manager'
 import type { ValidationResult } from '@/types/core'
+import { prisma } from '@/lib/database/connection-manager'
 
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 // ============================================================================
 // 定期交易验证 Schema

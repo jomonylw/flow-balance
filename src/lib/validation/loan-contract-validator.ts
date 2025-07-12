@@ -4,13 +4,14 @@
  */
 
 import { z } from 'zod'
-import { PrismaClient } from '@prisma/client'
+
 import { RepaymentType, AccountType } from '@/types/core/constants'
 import type { ValidationResult } from '@/types/core'
 import { LoanCalculationService } from '@/lib/services/loan-calculation.service'
 import { createServerTranslator } from '@/lib/utils/server-i18n'
+import { prisma } from '@/lib/database/connection-manager'
 
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 const t = createServerTranslator()
 
 // ============================================================================

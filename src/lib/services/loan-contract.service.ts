@@ -3,7 +3,6 @@
  * 处理贷款合约的创建、更新、还款处理等操作
  */
 
-import { PrismaClient } from '@prisma/client'
 import {
   LoanContractFormData,
   RepaymentType,
@@ -12,6 +11,7 @@ import {
 import { LoanCalculationService } from './loan-calculation.service'
 import { calculateLoanPaymentDateForPeriod } from '@/lib/utils/format'
 import { DuplicateCheckService, CheckType } from './duplicate-check.service'
+import { prisma } from '@/lib/database/connection-manager'
 import {
   createServerTranslator,
   getUserTranslator,
@@ -138,7 +138,7 @@ interface WhereClause {
   status?: string
 }
 
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 export class LoanContractService {
   /**

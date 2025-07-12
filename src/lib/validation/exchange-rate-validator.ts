@@ -4,12 +4,13 @@
  */
 
 import { z } from 'zod'
-import { PrismaClient } from '@prisma/client'
+
 import { Decimal } from '@prisma/client/runtime/library'
 import type { ValidationResult } from '@/types/core'
 import { ConstantsManager } from '@/lib/utils/constants-manager'
+import { prisma } from '@/lib/database/connection-manager'
 
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 // ============================================================================
 // 汇率验证 Schema

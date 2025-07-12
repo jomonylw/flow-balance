@@ -1,13 +1,11 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/database/connection-manager'
 import { generateRecoveryKey } from '@/lib/utils/recovery-key'
 import { createServerTranslator } from '@/lib/utils/server-i18n'
 import { getJWTSecret } from '@/lib/utils/jwt-secret-manager'
 import { initializeServer } from '@/lib/utils/server-init'
-
-const prisma = new PrismaClient()
 
 export interface JWTPayload {
   userId: string

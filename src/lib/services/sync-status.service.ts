@@ -3,10 +3,10 @@
  * 管理定期交易和贷款合约的同步状态
  */
 
-import { PrismaClient } from '@prisma/client'
 import { SyncStatus, SyncStageStatus } from '@/types/core'
+import { prisma } from '@/lib/database/connection-manager'
 
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 // 未来数据生成配置
 const FUTURE_GENERATION_CONFIG = {

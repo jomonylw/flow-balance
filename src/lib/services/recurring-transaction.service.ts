@@ -3,12 +3,12 @@
  * 处理定期交易的创建、更新、执行等操作
  */
 
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/database/connection-manager'
 import {
   /* RecurrenceFrequency, */ RecurringTransactionFormData,
 } from '@/types/core'
 
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 export class RecurringTransactionService {
   /**

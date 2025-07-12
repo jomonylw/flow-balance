@@ -3,10 +3,10 @@
  * 分析数据删除操作对系统其他部分的影响，提供删除前的风险评估
  */
 
-import { PrismaClient } from '@prisma/client'
 import type { ValidationResult } from '@/types/core'
+import { prisma } from '@/lib/database/connection-manager'
 
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 // ============================================================================
 // 删除影响分析结果接口

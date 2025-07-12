@@ -3,12 +3,12 @@
  * 负责生成未来7天的定期交易和贷款还款数据
  */
 
-import { PrismaClient } from '@prisma/client'
 import { RecurringTransactionService } from './recurring-transaction.service'
 import { DuplicateCheckService, CheckType } from './duplicate-check.service'
+import { prisma } from '@/lib/database/connection-manager'
 
 // import { getUserTranslator } from '@/lib/utils/server-i18n'
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 // 未来数据生成配置
 const FUTURE_GENERATION_CONFIG = {

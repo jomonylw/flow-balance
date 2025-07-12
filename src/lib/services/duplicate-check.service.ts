@@ -3,10 +3,10 @@
  * 为定期交易和贷款合约提供一致的重复检查逻辑
  */
 
-import { PrismaClient } from '@prisma/client'
 import type { PrismaTransaction } from '@/types/core'
+import { prisma } from '@/lib/database/connection-manager'
 
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 // 检查类型枚举
 export enum CheckType {

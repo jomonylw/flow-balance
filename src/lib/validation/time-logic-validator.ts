@@ -3,11 +3,11 @@
  * 提供时间敏感的业务逻辑验证，包括日期计算、时间序列验证等
  */
 
-import { PrismaClient } from '@prisma/client'
 import type { ValidationResult } from '@/types/core'
 import { calculateLoanPaymentDateForPeriod } from '@/lib/utils/format'
+import { prisma } from '@/lib/database/connection-manager'
 
-const prisma = new PrismaClient()
+// Using shared prisma instance from connection-manager
 
 // ============================================================================
 // 时间逻辑验证器类
