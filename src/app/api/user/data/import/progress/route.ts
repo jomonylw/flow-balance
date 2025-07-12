@@ -127,7 +127,7 @@ function cleanupExpiredUserCache(): void {
 
 /**
  * 获取导入进度
- * 优化版本：避免在导入过程中进行数据库查询，防止连接冲突
+ * 完全避免数据库查询版本：只依赖内存缓存和进度存储
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -142,49 +142,36 @@ export async function GET(request: NextRequest) {
     cleanupExpiredUserCache()
 
     // 首先尝试从缓存获取用户信息
-    let cachedUser = getCachedUserForSession(sessionId)
+    const cachedUser = getCachedUserForSession(sessionId)
 
-    // 如果缓存中没有用户信息，尝试获取当前用户（但要小心连接冲突）
+    // 如果缓存中没有用户信息，直接从进度存储中查找
     if (!cachedUser) {
-      try {
-        const user = await getCurrentUser()
-        if (!user) {
-          return unauthorizedResponse()
+      console.warn(
+        `No cached user for session ${sessionId}, searching in progress store`
+      )
+
+      // 尝试从所有进度记录中找到匹配的会话
+      for (const [key, progress] of progressStore.entries()) {
+        if (key.endsWith(`_${sessionId}`)) {
+          console.warn(
+            `Found progress for session ${sessionId} without user verification`
+          )
+          // 找到了进度记录，直接返回
+          return successResponse(progress)
         }
-
-        // 缓存用户信息
-        cacheUserForSession(sessionId, user)
-        cachedUser = getCachedUserForSession(sessionId)
-      } catch (dbError) {
-        // 如果数据库查询失败（可能是连接被占用），尝试从进度存储中推断用户ID
-        console.warn(
-          'Database query failed during progress check, trying to find progress without user verification:',
-          dbError
-        )
-
-        // 尝试从所有进度记录中找到匹配的会话
-        for (const [key, progress] of progressStore.entries()) {
-          if (key.endsWith(`_${sessionId}`)) {
-            // 找到了进度记录，直接返回
-            return successResponse(progress)
-          }
-        }
-
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              'Import session not found or database connection unavailable',
-          },
-          { status: 404 }
-        )
       }
+
+      // 如果没有找到进度记录，说明会话不存在或已过期
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Import session not found',
+        },
+        { status: 404 }
+      )
     }
 
-    if (!cachedUser) {
-      return unauthorizedResponse()
-    }
-
+    // 如果有缓存的用户信息，使用标准的查找方式
     const progress = progressStore.get(`${cachedUser.id}_${sessionId}`)
 
     if (!progress) {
@@ -424,34 +411,61 @@ export async function DELETE(request: NextRequest) {
 
   try {
     // 尝试从缓存获取用户信息
-    let cachedUser = getCachedUserForSession(sessionId)
+    const cachedUser = getCachedUserForSession(sessionId)
 
+    // 如果缓存中没有用户信息，尝试从进度存储中查找并取消
     if (!cachedUser) {
-      // 如果缓存中没有，尝试获取当前用户
-      try {
-        const user = await getCurrentUser()
-        if (!user) {
-          return unauthorizedResponse()
+      console.warn(
+        `No cached user for session ${sessionId}, searching for progress to cancel`
+      )
+
+      // 尝试从所有进度记录中找到匹配的会话并取消
+      for (const [key, progress] of progressStore.entries()) {
+        if (key.endsWith(`_${sessionId}`)) {
+          // 找到了进度记录，检查是否可以取消
+          if (
+            progress.stage === 'validating' ||
+            progress.stage === 'importing'
+          ) {
+            const t = createLightweightTranslator('zh') // 默认使用中文
+
+            progressStore.set(key, {
+              ...progress,
+              stage: 'cancelled',
+              message: t('data.import.cancelled'),
+            })
+
+            // 5秒后清理进度数据
+            setTimeout(() => {
+              progressStore.delete(key)
+            }, 5000)
+
+            return successResponse({
+              message: t('data.import.cancel.success'),
+            })
+          } else {
+            return NextResponse.json(
+              {
+                success: false,
+                error: 'Cannot cancel completed or failed import',
+              },
+              { status: 400 }
+            )
+          }
         }
-        cacheUserForSession(sessionId, user)
-        cachedUser = getCachedUserForSession(sessionId)
-      } catch (dbError) {
-        // 如果数据库查询失败，尝试从进度存储中推断
-        console.warn('Database query failed during cancel request:', dbError)
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Unable to verify user session',
-          },
-          { status: 401 }
-        )
       }
+
+      // 如果没有找到进度记录
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Import session not found',
+        },
+        { status: 404 }
+      )
     }
 
-    if (!cachedUser) {
-      return unauthorizedResponse()
-    }
-
+    // 如果有缓存的用户信息，使用标准的查找方式
     const progressKey = `${cachedUser.id}_${sessionId}`
     const progress = progressStore.get(progressKey)
 
