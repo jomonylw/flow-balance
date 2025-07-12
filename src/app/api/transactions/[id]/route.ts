@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { getPrismaClient } from '@/lib/database/connection-manager'
 import { getTransactionError } from '@/lib/constants/api-messages'
 import {
   successResponse,
@@ -23,7 +23,9 @@ export async function GET(
       return unauthorizedResponse()
     }
 
-    const transaction = await prisma.transaction.findFirst({
+    const transaction = await (
+      await getPrismaClient()
+    ).transaction.findFirst({
       where: {
         id: id,
         userId: user.id,
@@ -85,7 +87,9 @@ export async function PUT(
     }
 
     // 验证交易是否存在且属于当前用户
-    const existingTransaction = await prisma.transaction.findFirst({
+    const existingTransaction = await (
+      await getPrismaClient()
+    ).transaction.findFirst({
       where: {
         id: id,
         userId: user.id,
@@ -134,7 +138,9 @@ export async function PUT(
     }
 
     // 验证账户是否属于当前用户
-    const account = await prisma.account.findFirst({
+    const account = await (
+      await getPrismaClient()
+    ).account.findFirst({
       where: { id: accountId, userId: user.id },
       include: {
         category: true,
@@ -155,7 +161,9 @@ export async function PUT(
     }
 
     // 验证币种
-    const currencyCheck = await prisma.currency.findFirst({
+    const currencyCheck = await (
+      await getPrismaClient()
+    ).currency.findFirst({
       where: {
         code: currencyCode,
         OR: [{ createdBy: user.id }, { createdBy: null }],
@@ -209,7 +217,9 @@ export async function PUT(
     }
 
     // 验证并获取货币ID
-    const currency = await prisma.currency.findFirst({
+    const currency = await (
+      await getPrismaClient()
+    ).currency.findFirst({
       where: {
         code: currencyCode,
         OR: [
@@ -225,7 +235,9 @@ export async function PUT(
     }
 
     // 更新交易
-    const transaction = await prisma.transaction.update({
+    const transaction = await (
+      await getPrismaClient()
+    ).transaction.update({
       where: { id: id },
       data: {
         accountId,
@@ -298,7 +310,9 @@ export async function DELETE(
     console.log(`[DELETE TRANSACTION] 用户ID: ${user.id}`)
 
     // 验证交易是否存在且属于当前用户，并获取完整的关联数据
-    const existingTransaction = await prisma.transaction.findFirst({
+    const existingTransaction = await (
+      await getPrismaClient()
+    ).transaction.findFirst({
       where: {
         id: id,
         userId: user.id,
@@ -331,7 +345,9 @@ export async function DELETE(
 
     // 删除交易
     console.log('[DELETE TRANSACTION] 开始删除交易...')
-    await prisma.transaction.delete({
+    await (
+      await getPrismaClient()
+    ).transaction.delete({
       where: { id: id },
     })
 

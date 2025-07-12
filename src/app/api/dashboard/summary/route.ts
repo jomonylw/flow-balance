@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { getPrismaClient } from '@/lib/database/connection-manager'
 import {
   successResponse,
   errorResponse,
@@ -23,7 +23,9 @@ export async function GET() {
     }
 
     // 获取用户设置以确定本位币
-    const userSettings = await prisma.userSettings.findUnique({
+    const userSettings = await (
+      await getPrismaClient()
+    ).userSettings.findUnique({
       where: { userId: user.id },
       include: { baseCurrency: true },
     })
@@ -35,7 +37,9 @@ export async function GET() {
     }
 
     // 获取账户余额汇总
-    const accounts = await prisma.account.findMany({
+    const accounts = await (
+      await getPrismaClient()
+    ).account.findMany({
       where: { userId: user.id },
       include: {
         category: true,
@@ -181,7 +185,9 @@ export async function GET() {
     }
 
     // 获取最早的交易记录以计算记账天数
-    const earliestTransaction = await prisma.transaction.findFirst({
+    const earliestTransaction = await (
+      await getPrismaClient()
+    ).transaction.findFirst({
       where: { userId: user.id },
       orderBy: { date: 'asc' },
       select: { date: true },
@@ -198,7 +204,9 @@ export async function GET() {
     }
 
     // 获取最近的交易
-    const recentTransactions = await prisma.transaction.findMany({
+    const recentTransactions = await (
+      await getPrismaClient()
+    ).transaction.findMany({
       where: {
         userId: user.id,
         date: {
@@ -221,7 +229,9 @@ export async function GET() {
     const { startDate: thirtyDaysAgo, endDate: nowEndOfDay } =
       getDaysAgoDateRange(30)
 
-    const recentActivity = await prisma.transaction.findMany({
+    const recentActivity = await (
+      await getPrismaClient()
+    ).transaction.findMany({
       where: {
         userId: user.id,
         date: {
@@ -536,10 +546,14 @@ export async function GET() {
       recentTransactions: recentTransactions.slice(0, 5),
       stats: {
         totalAccounts: accounts.length,
-        totalTransactions: await prisma.transaction.count({
+        totalTransactions: await (
+          await getPrismaClient()
+        ).transaction.count({
           where: { userId: user.id },
         }),
-        totalCategories: await prisma.category.count({
+        totalCategories: await (
+          await getPrismaClient()
+        ).category.count({
           where: { userId: user.id },
         }),
         accountingDays,

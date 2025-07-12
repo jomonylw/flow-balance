@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { getPrismaClient } from '@/lib/database/connection-manager'
 import { getAccountError } from '@/lib/constants/api-messages'
 import {
   successResponse,
@@ -21,7 +21,9 @@ export async function PUT(
     }
 
     // 验证账户是否存在且属于当前用户
-    const existingAccount = await prisma.account.findFirst({
+    const existingAccount = await (
+      await getPrismaClient()
+    ).account.findFirst({
       where: {
         id: accountId,
         userId: user.id,
@@ -62,13 +64,13 @@ export async function PUT(
     // 如果要更改分类，验证新分类是否属于当前用户
     if (categoryId && categoryId !== existingAccount.categoryId) {
       const [currentCategory, newCategory] = await Promise.all([
-        prisma.category.findFirst({
+        (await getPrismaClient()).category.findFirst({
           where: {
             id: existingAccount.categoryId,
             userId: user.id,
           },
         }),
-        prisma.category.findFirst({
+        (await getPrismaClient()).category.findFirst({
           where: {
             id: categoryId,
             userId: user.id,
@@ -165,7 +167,9 @@ export async function PUT(
       }
 
       // 验证货币是否存在且用户有权使用
-      const currency = await prisma.currency.findFirst({
+      const currency = await (
+        await getPrismaClient()
+      ).currency.findFirst({
         where: {
           id: currencyId,
           OR: [
@@ -180,7 +184,9 @@ export async function PUT(
       }
 
       // 验证用户是否有权使用此货币
-      const userCurrency = await prisma.userCurrency.findFirst({
+      const userCurrency = await (
+        await getPrismaClient()
+      ).userCurrency.findFirst({
         where: {
           userId: user.id,
           currencyId: currency.id,
@@ -195,7 +201,9 @@ export async function PUT(
 
     // 只有当传递了 name 时才检查重复名称
     if (name !== undefined) {
-      const duplicateAccount = await prisma.account.findFirst({
+      const duplicateAccount = await (
+        await getPrismaClient()
+      ).account.findFirst({
         where: {
           userId: user.id,
           name,
@@ -236,7 +244,9 @@ export async function PUT(
       updateData.color = color || null
     }
 
-    const updatedAccount = await prisma.account.update({
+    const updatedAccount = await (
+      await getPrismaClient()
+    ).account.update({
       where: { id: accountId },
       data: updateData,
       include: {
@@ -269,7 +279,9 @@ export async function DELETE(
     console.log(`[DELETE ACCOUNT] 用户ID: ${user.id}`)
 
     // 验证账户是否存在且属于当前用户
-    const existingAccount = await prisma.account.findFirst({
+    const existingAccount = await (
+      await getPrismaClient()
+    ).account.findFirst({
       where: {
         id: accountId,
         userId: user.id,
@@ -302,23 +314,23 @@ export async function DELETE(
       paymentLoanContractCount,
     ] = await Promise.all([
       // 检查交易记录
-      prisma.transaction.count({
+      (await getPrismaClient()).transaction.count({
         where: { accountId: accountId },
       }),
       // 检查交易模板
-      prisma.transactionTemplate.count({
+      (await getPrismaClient()).transactionTemplate.count({
         where: { accountId: accountId },
       }),
       // 检查定期交易
-      prisma.recurringTransaction.count({
+      (await getPrismaClient()).recurringTransaction.count({
         where: { accountId: accountId },
       }),
       // 检查贷款合约（作为贷款账户）
-      prisma.loanContract.count({
+      (await getPrismaClient()).loanContract.count({
         where: { accountId: accountId },
       }),
       // 检查贷款合约（作为还款账户）
-      prisma.loanContract.count({
+      (await getPrismaClient()).loanContract.count({
         where: { paymentAccountId: accountId },
       }),
     ])
@@ -335,7 +347,9 @@ export async function DELETE(
 
     if (transactionCount > 0) {
       // 获取账户类型以提供更详细的错误信息
-      const account = await prisma.account.findUnique({
+      const account = await (
+        await getPrismaClient()
+      ).account.findUnique({
         where: { id: accountId },
         include: { category: true },
       })
@@ -346,7 +360,9 @@ export async function DELETE(
 
       if (isStockAccount) {
         // 检查是否只有余额调整交易
-        const balanceAdjustmentCount = await prisma.transaction.count({
+        const balanceAdjustmentCount = await (
+          await getPrismaClient()
+        ).transaction.count({
           where: {
             accountId: accountId,
             type: 'BALANCE',
@@ -395,7 +411,9 @@ export async function DELETE(
 
     // 使用事务删除账户，确保数据一致性
     console.log('[DELETE ACCOUNT] 开始删除账户...')
-    await prisma.$transaction(async tx => {
+    await (
+      await getPrismaClient()
+    ).$transaction(async tx => {
       // 删除账户（由于设置了级联删除，相关的定期交易和贷款合约会自动删除）
       await tx.account.delete({
         where: { id: accountId },

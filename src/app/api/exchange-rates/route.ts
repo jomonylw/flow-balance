@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { getPrismaClient } from '@/lib/database/connection-manager'
 import {
   successResponse,
   errorResponse,
@@ -27,6 +27,8 @@ export async function GET(request: NextRequest) {
     const toCurrency = searchParams.get('toCurrency')
 
     const whereClause: Prisma.ExchangeRateWhereInput = { userId: user.id }
+
+    const prisma = await getPrismaClient()
 
     // 如果指定了货币对，则过滤（需要先查找货币ID）
     if (fromCurrency) {
@@ -127,6 +129,8 @@ export async function POST(request: NextRequest) {
     if (rateValue > 1000000) {
       return validationErrorResponse(t('exchange.rate.value.too.large'))
     }
+
+    const prisma = await getPrismaClient()
 
     // 验证货币代码（优先查找用户自定义货币）
     const fromCurrencyExists = await prisma.currency.findFirst({
@@ -282,6 +286,7 @@ export async function PUT(request: NextRequest) {
       return validationErrorResponse('汇率数据格式不正确')
     }
 
+    const prisma = await getPrismaClient()
     const results = []
     const errors = []
 

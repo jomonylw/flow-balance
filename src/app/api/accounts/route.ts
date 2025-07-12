@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { getPrismaClient } from '@/lib/database/connection-manager'
 import {
   successResponse,
   errorResponse,
@@ -16,7 +16,9 @@ export async function GET() {
       return unauthorizedResponse()
     }
 
-    const accounts = await prisma.account.findMany({
+    const accounts = await (
+      await getPrismaClient()
+    ).account.findMany({
       where: {
         userId: user.id,
       },
@@ -63,7 +65,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证分类是否属于当前用户
-    const category = await prisma.category.findFirst({
+    const category = await (
+      await getPrismaClient()
+    ).category.findFirst({
       where: {
         id: categoryId,
         userId: user.id,
@@ -75,7 +79,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证货币是否存在且用户有权使用
-    const currency = await prisma.currency.findFirst({
+    const currency = await (
+      await getPrismaClient()
+    ).currency.findFirst({
       where: {
         id: currencyId,
         OR: [
@@ -90,7 +96,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证用户是否有权使用此货币
-    const userCurrency = await prisma.userCurrency.findFirst({
+    const userCurrency = await (
+      await getPrismaClient()
+    ).userCurrency.findFirst({
       where: {
         userId: user.id,
         currencyId: currency.id,
@@ -103,7 +111,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查同一用户下是否已存在同名账户
-    const existingAccount = await prisma.account.findFirst({
+    const existingAccount = await (
+      await getPrismaClient()
+    ).account.findFirst({
       where: {
         userId: user.id,
         name,
@@ -114,7 +124,9 @@ export async function POST(request: NextRequest) {
       return errorResponse(t('account.name.already.exists'), 400)
     }
 
-    const account = await prisma.account.create({
+    const account = await (
+      await getPrismaClient()
+    ).account.create({
       data: {
         userId: user.id,
         categoryId,

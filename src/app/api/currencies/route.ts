@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { getPrismaClient } from '@/lib/database/connection-manager'
 // import { getCommonError } from '@/lib/constants/api-messages'
 import {
   successResponse,
@@ -21,6 +21,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // 获取所有货币（包括全局货币和用户的自定义货币）
+    const prisma = await getPrismaClient()
     const currencies = await prisma.currency.findMany({
       where: {
         OR: [

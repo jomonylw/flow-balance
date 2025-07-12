@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { getPrismaClient } from '@/lib/database/connection-manager'
 import { getTransactionError } from '@/lib/constants/api-messages'
 import {
   successResponse,
@@ -13,7 +13,9 @@ import { TransactionType, Prisma } from '@prisma/client'
 
 // 辅助函数：递归获取所有后代分类的ID
 async function getDescendantCategoryIds(categoryId: string): Promise<string[]> {
-  const children = await prisma.category.findMany({
+  const children = await (
+    await getPrismaClient()
+  ).category.findMany({
     where: { parentId: categoryId },
     select: { id: true },
   })
@@ -147,7 +149,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [transactions, total] = await Promise.all([
-      prisma.transaction.findMany({
+      (await getPrismaClient()).transaction.findMany({
         where,
         include: {
           account: {
@@ -166,7 +168,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.transaction.count({ where }),
+      (await getPrismaClient()).transaction.count({ where }),
     ])
 
     // 格式化交易数据，移除标签颜色信息
@@ -247,7 +249,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证账户是否属于当前用户
-    const account = await prisma.account.findFirst({
+    const account = await (
+      await getPrismaClient()
+    ).account.findFirst({
       where: { id: accountId, userId: user.id },
       include: {
         category: true,
@@ -323,7 +327,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证币种（优先查找用户自定义货币）
-    const currency = await prisma.currency.findFirst({
+    const currency = await (
+      await getPrismaClient()
+    ).currency.findFirst({
       where: {
         code: currencyCode,
         OR: [
@@ -339,7 +345,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建交易
-    const transaction = await prisma.transaction.create({
+    const transaction = await (
+      await getPrismaClient()
+    ).transaction.create({
       data: {
         userId: user.id,
         accountId,

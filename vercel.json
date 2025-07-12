@@ -9,18 +9,27 @@
   "public": false,
   "functions": {
     "src/app/api/**/*.ts": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 1024,
+      "regions": ["iad1"]
+    },
+    "src/app/**/page.tsx": {
+      "maxDuration": 30,
+      "memory": 1024,
+      "regions": ["iad1"]
     }
   },
 
   "env": {
     "NODE_ENV": "production",
-    "NEXT_TELEMETRY_DISABLED": "1"
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "PRISMA_CLIENT_ENGINE_TYPE": "binary"
   },
   "build": {
     "env": {
       "NODE_ENV": "production",
-      "NEXT_TELEMETRY_DISABLED": "1"
+      "NEXT_TELEMETRY_DISABLED": "1",
+      "PRISMA_CLIENT_ENGINE_TYPE": "binary"
     }
   },
   "headers": [
