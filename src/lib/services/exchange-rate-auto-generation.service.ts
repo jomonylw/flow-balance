@@ -3,7 +3,7 @@
  * 提供反向汇率和传递汇率的自动生成功能
  */
 
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import { Decimal } from '@prisma/client/runtime/library'
 import { createServerTranslator } from '@/lib/utils/server-i18n'
 

@@ -3,7 +3,7 @@
  * 提供数据导入导出过程中的完整性验证和修复功能
  */
 
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import type { ExportedData } from '@/types/data-import'
 
 export interface IntegrityCheckResult {

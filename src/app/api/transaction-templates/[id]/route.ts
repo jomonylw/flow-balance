@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import { z } from 'zod'
 import { TransactionType } from '@/types/core/constants'
 

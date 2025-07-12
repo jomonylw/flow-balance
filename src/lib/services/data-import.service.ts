@@ -3,7 +3,7 @@
  * 处理用户数据的完整导入，确保数据完整性和一致性
  */
 
-import { prisma } from '@/lib/database/connection-manager'
+import { prisma, withRetry } from '@/lib/database/connection-manager'
 import { Decimal } from '@prisma/client/runtime/library'
 import type {
   ExportedData,
@@ -65,12 +65,14 @@ export class DataImportService {
 
       // 检查系统中是否存在这些货币
       for (const currencyCode of requiredCurrencies) {
-        const existingCurrency = await prisma.currency.findFirst({
-          where: {
-            code: currencyCode,
-            createdBy: null, // 全局货币
-          },
-        })
+        const existingCurrency = await withRetry(() =>
+          prisma.currency.findFirst({
+            where: {
+              code: currencyCode,
+              createdBy: null, // 全局货币
+            },
+          })
+        )
 
         if (!existingCurrency) {
           // 检查是否在自定义货币中
@@ -178,305 +180,317 @@ export class DataImportService {
       }
 
       // 使用标准的 Prisma 事务确保数据一致性，配置长时间运行的导入操作
-      await prisma.$transaction(
-        async tx => {
-          // 创建ID映射表
-          const idMappings: {
-            categories: IdMapping
-            accounts: IdMapping
-            tags: IdMapping
-            currencies: IdMapping
-            transactionTemplates: IdMapping
-            recurringTransactions: IdMapping
-            loanContracts: IdMapping
-            loanPayments: IdMapping
-            transactions: IdMapping
-            exchangeRates: IdMapping
-          } = {
-            categories: {},
-            accounts: {},
-            tags: {},
-            currencies: {},
-            transactionTemplates: {},
-            recurringTransactions: {},
-            loanContracts: {},
-            loanPayments: {},
-            transactions: {},
-            exchangeRates: {},
-          }
-
-          const loanPaymentsToUpdate: any[] = []
-
-          // 1. 导入用户设置
-          if (data.userSettings) {
-            await this.importUserSettings(tx, userId, data.userSettings, result)
-          }
-
-          // 2. 导入自定义货币
-          if (
-            data.customCurrencies?.length > 0 &&
-            options.selectedDataTypes?.currencies !== false
-          ) {
-            await this.importCustomCurrencies(
-              tx,
-              userId,
-              data.customCurrencies,
-              idMappings.currencies,
-              result
-            )
-          }
-
-          // 3. 导入用户货币关联
-          if (
-            data.userCurrencies?.length > 0 &&
-            options.selectedDataTypes?.currencies !== false
-          ) {
-            await this.importUserCurrencies(
-              tx,
-              userId,
-              data.userCurrencies,
-              idMappings.currencies,
-              result
-            )
-          }
-
-          // 4. 导入汇率数据
-          if (
-            data.exchangeRates?.length > 0 &&
-            options.selectedDataTypes?.exchangeRates !== false
-          ) {
-            await this.importExchangeRates(
-              tx,
-              userId,
-              data.exchangeRates,
-              idMappings.currencies,
-              idMappings.exchangeRates,
-              result
-            )
-          }
-
-          // 5. 导入分类
-          if (
-            data.categories?.length > 0 &&
-            options.selectedDataTypes?.categories !== false
-          ) {
-            await this.importCategories(
-              tx,
-              userId,
-              data.categories,
-              idMappings.categories,
-              result,
-              options
-            )
-          }
-
-          // 6. 导入标签
-          if (
-            data.tags?.length > 0 &&
-            options.selectedDataTypes?.tags !== false
-          ) {
-            await this.importTags(
-              tx,
-              userId,
-              data.tags,
-              idMappings.tags,
-              result,
-              options
-            )
-          }
-
-          // 7. 导入账户
-          if (
-            data.accounts?.length > 0 &&
-            options.selectedDataTypes?.accounts !== false
-          ) {
-            await this.importAccounts(
-              tx,
-              userId,
-              data.accounts,
-              idMappings.categories,
-              idMappings.currencies,
-              idMappings.accounts,
-              result,
-              options
-            )
-          }
-
-          // 8. 导入交易模板
-          if (
-            data.transactionTemplates?.length > 0 &&
-            options.selectedDataTypes?.transactionTemplates !== false
-          ) {
-            await this.importTransactionTemplates(
-              tx,
-              userId,
-              data.transactionTemplates,
-              idMappings.accounts,
-              idMappings.categories,
-              idMappings.currencies,
-              idMappings.tags,
-              idMappings.transactionTemplates,
-              result,
-              options
-            )
-          }
-
-          // 9. 导入定期交易
-          if (
-            data.recurringTransactions?.length > 0 &&
-            options.selectedDataTypes?.recurringTransactions !== false
-          ) {
-            await this.importRecurringTransactions(
-              tx,
-              userId,
-              data.recurringTransactions,
-              idMappings.accounts,
-              idMappings.currencies,
-              idMappings.tags,
-              idMappings.recurringTransactions,
-              result,
-              options
-            )
-          }
-
-          // 10. 导入贷款合约
-          if (
-            data.loanContracts?.length > 0 &&
-            options.selectedDataTypes?.loanContracts !== false
-          ) {
-            await this.importLoanContracts(
-              tx,
-              userId,
-              data.loanContracts,
-              idMappings.accounts,
-              idMappings.currencies,
-              idMappings.tags,
-              idMappings.loanContracts,
-              result,
-              options
-            )
-          }
-
-          // 11. 导入贷款还款记录
-          if (
-            data.loanPayments?.length > 0 &&
-            options.selectedDataTypes?.loanPayments !== false
-          ) {
-            await this.importLoanPayments(
-              tx,
-              userId,
-              data.loanPayments,
-              idMappings.loanContracts,
-              idMappings.loanPayments,
-              loanPaymentsToUpdate,
-              result,
-              options
-            )
-          }
-
-          // 12. 导入交易（最后导入，因为可能依赖其他数据）
-          if (data.transactions?.length > 0) {
-            // 检查是否有任何交易类型被选择
-            const hasAnyTransactionTypeSelected =
-              options.selectedDataTypes?.manualTransactions !== false ||
-              options.selectedDataTypes?.recurringTransactionRecords !==
-                false ||
-              options.selectedDataTypes?.loanTransactionRecords !== false
-
-            let filteredTransactions: typeof data.transactions
-
-            if (!hasAnyTransactionTypeSelected) {
-              // 如果没有选择任何交易类型，则不导入任何交易
-              filteredTransactions = []
-            } else {
-              // 使用新版本逻辑：根据选择过滤交易类型
-              filteredTransactions = data.transactions.filter(transaction => {
-                // 手动交易
-                if (
-                  !transaction.recurringTransactionId &&
-                  !transaction.loanContractId &&
-                  !transaction.loanPaymentId
-                ) {
-                  return options.selectedDataTypes?.manualTransactions !== false
-                }
-                // 定期交易记录
-                if (transaction.recurringTransactionId) {
-                  return (
-                    options.selectedDataTypes?.recurringTransactionRecords !==
-                    false
-                  )
-                }
-                // 贷款相关交易
-                if (transaction.loanContractId || transaction.loanPaymentId) {
-                  return (
-                    options.selectedDataTypes?.loanTransactionRecords !== false
-                  )
-                }
-                return false
-              })
+      await withRetry(() =>
+        prisma.$transaction(
+          async tx => {
+            // 创建ID映射表
+            const idMappings: {
+              categories: IdMapping
+              accounts: IdMapping
+              tags: IdMapping
+              currencies: IdMapping
+              transactionTemplates: IdMapping
+              recurringTransactions: IdMapping
+              loanContracts: IdMapping
+              loanPayments: IdMapping
+              transactions: IdMapping
+              exchangeRates: IdMapping
+            } = {
+              categories: {},
+              accounts: {},
+              tags: {},
+              currencies: {},
+              transactionTemplates: {},
+              recurringTransactions: {},
+              loanContracts: {},
+              loanPayments: {},
+              transactions: {},
+              exchangeRates: {},
             }
 
-            if (filteredTransactions.length > 0) {
-              await this.importTransactions(
+            const loanPaymentsToUpdate: any[] = []
+
+            // 1. 导入用户设置
+            if (data.userSettings) {
+              await this.importUserSettings(
                 tx,
                 userId,
-                filteredTransactions,
-                idMappings.accounts,
-                idMappings.categories,
+                data.userSettings,
+                result
+              )
+            }
+
+            // 2. 导入自定义货币
+            if (
+              data.customCurrencies?.length > 0 &&
+              options.selectedDataTypes?.currencies !== false
+            ) {
+              await this.importCustomCurrencies(
+                tx,
+                userId,
+                data.customCurrencies,
                 idMappings.currencies,
-                idMappings.tags,
-                idMappings.recurringTransactions,
-                idMappings.loanContracts,
-                idMappings.loanPayments,
-                idMappings.transactions,
+                result
+              )
+            }
+
+            // 3. 导入用户货币关联
+            if (
+              data.userCurrencies?.length > 0 &&
+              options.selectedDataTypes?.currencies !== false
+            ) {
+              await this.importUserCurrencies(
+                tx,
+                userId,
+                data.userCurrencies,
+                idMappings.currencies,
+                result
+              )
+            }
+
+            // 4. 导入汇率数据
+            if (
+              data.exchangeRates?.length > 0 &&
+              options.selectedDataTypes?.exchangeRates !== false
+            ) {
+              await this.importExchangeRates(
+                tx,
+                userId,
+                data.exchangeRates,
+                idMappings.currencies,
+                idMappings.exchangeRates,
+                result
+              )
+            }
+
+            // 5. 导入分类
+            if (
+              data.categories?.length > 0 &&
+              options.selectedDataTypes?.categories !== false
+            ) {
+              await this.importCategories(
+                tx,
+                userId,
+                data.categories,
+                idMappings.categories,
                 result,
                 options
               )
             }
-          }
 
-          // 13. 后处理：更新贷款还款记录中的交易ID
-          if (loanPaymentsToUpdate.length > 0) {
-            for (const paymentToUpdate of loanPaymentsToUpdate) {
-              const newPrincipalTxId =
-                paymentToUpdate.oldPrincipalTxId &&
-                idMappings.transactions[paymentToUpdate.oldPrincipalTxId]
-              const newInterestTxId =
-                paymentToUpdate.oldInterestTxId &&
-                idMappings.transactions[paymentToUpdate.oldInterestTxId]
-              const newBalanceTxId =
-                paymentToUpdate.oldBalanceTxId &&
-                idMappings.transactions[paymentToUpdate.oldBalanceTxId]
+            // 6. 导入标签
+            if (
+              data.tags?.length > 0 &&
+              options.selectedDataTypes?.tags !== false
+            ) {
+              await this.importTags(
+                tx,
+                userId,
+                data.tags,
+                idMappings.tags,
+                result,
+                options
+              )
+            }
 
-              if (newPrincipalTxId || newInterestTxId || newBalanceTxId) {
-                await tx.loanPayment.update({
-                  where: { id: paymentToUpdate.newPaymentId },
-                  data: {
-                    principalTransactionId: newPrincipalTxId,
-                    interestTransactionId: newInterestTxId,
-                    balanceTransactionId: newBalanceTxId,
-                  },
+            // 7. 导入账户
+            if (
+              data.accounts?.length > 0 &&
+              options.selectedDataTypes?.accounts !== false
+            ) {
+              await this.importAccounts(
+                tx,
+                userId,
+                data.accounts,
+                idMappings.categories,
+                idMappings.currencies,
+                idMappings.accounts,
+                result,
+                options
+              )
+            }
+
+            // 8. 导入交易模板
+            if (
+              data.transactionTemplates?.length > 0 &&
+              options.selectedDataTypes?.transactionTemplates !== false
+            ) {
+              await this.importTransactionTemplates(
+                tx,
+                userId,
+                data.transactionTemplates,
+                idMappings.accounts,
+                idMappings.categories,
+                idMappings.currencies,
+                idMappings.tags,
+                idMappings.transactionTemplates,
+                result,
+                options
+              )
+            }
+
+            // 9. 导入定期交易
+            if (
+              data.recurringTransactions?.length > 0 &&
+              options.selectedDataTypes?.recurringTransactions !== false
+            ) {
+              await this.importRecurringTransactions(
+                tx,
+                userId,
+                data.recurringTransactions,
+                idMappings.accounts,
+                idMappings.currencies,
+                idMappings.tags,
+                idMappings.recurringTransactions,
+                result,
+                options
+              )
+            }
+
+            // 10. 导入贷款合约
+            if (
+              data.loanContracts?.length > 0 &&
+              options.selectedDataTypes?.loanContracts !== false
+            ) {
+              await this.importLoanContracts(
+                tx,
+                userId,
+                data.loanContracts,
+                idMappings.accounts,
+                idMappings.currencies,
+                idMappings.tags,
+                idMappings.loanContracts,
+                result,
+                options
+              )
+            }
+
+            // 11. 导入贷款还款记录
+            if (
+              data.loanPayments?.length > 0 &&
+              options.selectedDataTypes?.loanPayments !== false
+            ) {
+              await this.importLoanPayments(
+                tx,
+                userId,
+                data.loanPayments,
+                idMappings.loanContracts,
+                idMappings.loanPayments,
+                loanPaymentsToUpdate,
+                result,
+                options
+              )
+            }
+
+            // 12. 导入交易（最后导入，因为可能依赖其他数据）
+            if (data.transactions?.length > 0) {
+              // 检查是否有任何交易类型被选择
+              const hasAnyTransactionTypeSelected =
+                options.selectedDataTypes?.manualTransactions !== false ||
+                options.selectedDataTypes?.recurringTransactionRecords !==
+                  false ||
+                options.selectedDataTypes?.loanTransactionRecords !== false
+
+              let filteredTransactions: typeof data.transactions
+
+              if (!hasAnyTransactionTypeSelected) {
+                // 如果没有选择任何交易类型，则不导入任何交易
+                filteredTransactions = []
+              } else {
+                // 使用新版本逻辑：根据选择过滤交易类型
+                filteredTransactions = data.transactions.filter(transaction => {
+                  // 手动交易
+                  if (
+                    !transaction.recurringTransactionId &&
+                    !transaction.loanContractId &&
+                    !transaction.loanPaymentId
+                  ) {
+                    return (
+                      options.selectedDataTypes?.manualTransactions !== false
+                    )
+                  }
+                  // 定期交易记录
+                  if (transaction.recurringTransactionId) {
+                    return (
+                      options.selectedDataTypes?.recurringTransactionRecords !==
+                      false
+                    )
+                  }
+                  // 贷款相关交易
+                  if (transaction.loanContractId || transaction.loanPaymentId) {
+                    return (
+                      options.selectedDataTypes?.loanTransactionRecords !==
+                      false
+                    )
+                  }
+                  return false
                 })
               }
+
+              if (filteredTransactions.length > 0) {
+                await this.importTransactions(
+                  tx,
+                  userId,
+                  filteredTransactions,
+                  idMappings.accounts,
+                  idMappings.categories,
+                  idMappings.currencies,
+                  idMappings.tags,
+                  idMappings.recurringTransactions,
+                  idMappings.loanContracts,
+                  idMappings.loanPayments,
+                  idMappings.transactions,
+                  result,
+                  options
+                )
+              }
             }
+
+            // 13. 后处理：更新贷款还款记录中的交易ID
+            if (loanPaymentsToUpdate.length > 0) {
+              for (const paymentToUpdate of loanPaymentsToUpdate) {
+                const newPrincipalTxId =
+                  paymentToUpdate.oldPrincipalTxId &&
+                  idMappings.transactions[paymentToUpdate.oldPrincipalTxId]
+                const newInterestTxId =
+                  paymentToUpdate.oldInterestTxId &&
+                  idMappings.transactions[paymentToUpdate.oldInterestTxId]
+                const newBalanceTxId =
+                  paymentToUpdate.oldBalanceTxId &&
+                  idMappings.transactions[paymentToUpdate.oldBalanceTxId]
+
+                if (newPrincipalTxId || newInterestTxId || newBalanceTxId) {
+                  await tx.loanPayment.update({
+                    where: { id: paymentToUpdate.newPaymentId },
+                    data: {
+                      principalTransactionId: newPrincipalTxId,
+                      interestTransactionId: newInterestTxId,
+                      balanceTransactionId: newBalanceTxId,
+                    },
+                  })
+                }
+              }
+            }
+          },
+          {
+            maxWait: 60000, // 最大等待时间 1 分钟
+            timeout: 300000, // 事务超时时间 5 分钟，支持长时间导入操作
           }
-        },
-        {
-          maxWait: 60000, // 最大等待时间 1 分钟
-          timeout: 300000, // 事务超时时间 5 分钟，支持长时间导入操作
-        }
+        )
       )
 
       // 如果导入了汇率数据，需要重新生成自动汇率
       if (data.exchangeRates?.length > 0) {
         try {
           // 删除所有自动生成的汇率
-          await prisma.exchangeRate.deleteMany({
-            where: {
-              userId,
-              type: 'AUTO',
-            },
-          })
+          await withRetry(() =>
+            prisma.exchangeRate.deleteMany({
+              where: {
+                userId,
+                type: 'AUTO',
+              },
+            })
+          )
 
           // 重新生成所有自动汇率
           const { generateAutoExchangeRates } = await import(

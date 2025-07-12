@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import {
   successResponse,
   errorResponse,

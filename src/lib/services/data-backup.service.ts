@@ -3,7 +3,7 @@
  * 提供自动备份、增量备份、备份恢复等功能
  */
 
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import { BACKUP } from '@/lib/constants/app-config'
 import type { ExportedData } from '@/types/data-import'
 

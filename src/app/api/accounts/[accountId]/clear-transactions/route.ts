@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import { getAccountError } from '@/lib/constants/api-messages'
 import {
   successResponse,

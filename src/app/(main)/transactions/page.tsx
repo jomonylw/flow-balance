@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import TransactionListView from '@/components/features/transactions/TransactionListView'
 import { ConstantsManager } from '@/lib/utils/constants-manager'
 

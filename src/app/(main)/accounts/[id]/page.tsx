@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import AccountDetailRouter from '@/components/features/accounts/AccountDetailRouter'
 import { ConstantsManager } from '@/lib/utils/constants-manager'
 import { convertPrismaAccountType } from '@/types/core/constants'

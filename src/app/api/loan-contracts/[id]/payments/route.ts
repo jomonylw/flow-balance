@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import { PAGINATION } from '@/lib/constants/app-config'
 
 // import { getUserTranslator } from '@/lib/utils/server-i18n'

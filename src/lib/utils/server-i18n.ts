@@ -5,7 +5,7 @@
 
 import fs from 'fs'
 import path from 'path'
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import { CACHE } from '@/lib/constants/app-config'
 
 // 缓存翻译数据

@@ -3,7 +3,7 @@
  * 基于货币的小数位数配置进行精确格式化
  */
 
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 
 // import { getUserTranslator } from '@/lib/utils/server-i18n'
 export interface CurrencyFormatConfig {

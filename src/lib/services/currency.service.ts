@@ -3,7 +3,7 @@
  * 提供统一的汇率查询和货币转换功能
  */
 
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 
 // 服务层专用的汇率数据类型（effectiveDate 为 Date 类型）
 export interface ServiceExchangeRateData {

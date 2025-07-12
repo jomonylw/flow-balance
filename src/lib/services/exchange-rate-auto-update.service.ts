@@ -3,7 +3,7 @@
  * 集成到统一同步服务中，支持24小时限制的自动更新
  */
 
-import { prisma } from '@/lib/database/prisma'
+import { prisma } from '@/lib/database/connection-manager'
 import { Decimal } from '@prisma/client/runtime/library'
 import { generateAutoExchangeRates } from './exchange-rate-auto-generation.service'
 import { API_TIMEOUTS } from '@/lib/constants/app-config'
