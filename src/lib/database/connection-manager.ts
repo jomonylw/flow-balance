@@ -12,11 +12,19 @@ const globalForPrisma = global as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    // Configure for serverless environment
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
     // In production, only log errors to keep logs clean
     log:
       process.env.NODE_ENV === 'production'
         ? ['error']
         : ['query', 'info', 'warn', 'error'],
+    // Optimize for serverless
+    errorFormat: 'minimal',
   })
 
 // In non-production environments, assign the created instance to the global variable
