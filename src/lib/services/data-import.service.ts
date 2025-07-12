@@ -3,7 +3,7 @@
  * 处理用户数据的完整导入，确保数据完整性和一致性
  */
 
-import { prisma, withRetry } from '@/lib/database/connection-manager'
+import { withRetry } from '@/lib/database/connection-manager'
 import { executeImportTransaction } from '@/lib/database/import-connection'
 import { Decimal } from '@prisma/client/runtime/library'
 import type {
@@ -96,9 +96,147 @@ export class DataImportService {
     )
   }
   /**
-   * 验证导入数据的完整性和格式
+   * 验证导入数据的完整性和格式（轻量级版本，不进行数据库查询）
+   * 用于前端验证和独立验证场景，避免在 Vercel 环境中的连接冲突
    */
   static async validateImportData(
+    data: ExportedData
+  ): Promise<ImportValidationResult> {
+    const errors: string[] = []
+    const warnings: string[] = []
+    const missingCurrencies: string[] = []
+    const duplicateNames: string[] = []
+
+    try {
+      // 验证基本结构
+      if (!data.exportInfo || !data.user) {
+        errors.push('data.import.format.invalid.missing.basic.info')
+        return {
+          isValid: false,
+          errors,
+          warnings,
+          missingCurrencies,
+          duplicateNames,
+        }
+      }
+
+      // 验证版本兼容性
+      const version = data.exportInfo.version
+      if (!version || !['1.0', '2.0'].includes(version)) {
+        warnings.push(
+          `数据版本 ${version} 可能不完全兼容，建议使用最新版本导出的数据`
+        )
+      }
+
+      // 检查必需的货币（不进行数据库查询，只检查数据完整性）
+      const requiredCurrencies = new Set<string>()
+
+      // 从账户中收集货币
+      data.accounts?.forEach(account => {
+        if (account.currencyCode) {
+          requiredCurrencies.add(account.currencyCode)
+        }
+      })
+
+      // 从交易中收集货币
+      data.transactions?.forEach(transaction => {
+        if (transaction.currencyCode) {
+          requiredCurrencies.add(transaction.currencyCode)
+        }
+      })
+
+      // 检查是否在自定义货币中定义了所需的货币
+      for (const currencyCode of requiredCurrencies) {
+        const customCurrency = data.customCurrencies?.find(
+          c => c.code === currencyCode
+        )
+
+        // 如果不在自定义货币中，假设是系统货币，添加到警告中
+        if (!customCurrency) {
+          // 常见的系统货币代码
+          const commonCurrencies = [
+            'USD',
+            'EUR',
+            'GBP',
+            'JPY',
+            'CNY',
+            'HKD',
+            'SGD',
+            'AUD',
+            'CAD',
+          ]
+          if (!commonCurrencies.includes(currencyCode)) {
+            missingCurrencies.push(currencyCode)
+          }
+        }
+      }
+
+      // 检查重复的分类名称
+      const categoryNames = new Set<string>()
+      data.categories?.forEach(category => {
+        if (categoryNames.has(category.name)) {
+          duplicateNames.push(`分类: ${category.name}`)
+        }
+        categoryNames.add(category.name)
+      })
+
+      // 检查重复的账户名称
+      const accountNames = new Set<string>()
+      data.accounts?.forEach(account => {
+        if (accountNames.has(account.name)) {
+          duplicateNames.push(`账户: ${account.name}`)
+        }
+        accountNames.add(account.name)
+      })
+
+      // 检查重复的标签名称
+      const tagNames = new Set<string>()
+      data.tags?.forEach(tag => {
+        if (tagNames.has(tag.name)) {
+          duplicateNames.push(`标签: ${tag.name}`)
+        }
+        tagNames.add(tag.name)
+      })
+
+      if (missingCurrencies.length > 0) {
+        warnings.push(
+          `以下货币在系统中不存在，将尝试创建: ${missingCurrencies.join(', ')}`
+        )
+      }
+
+      if (duplicateNames.length > 0) {
+        warnings.push(
+          `发现重复名称，导入时将自动重命名: ${duplicateNames.join(', ')}`
+        )
+      }
+
+      return {
+        isValid: errors.length === 0,
+        errors,
+        warnings,
+        missingCurrencies,
+        duplicateNames,
+      }
+    } catch (error) {
+      errors.push(
+        `验证过程中发生错误: ${error instanceof Error ? error.message : '未知错误'}`
+      )
+      return {
+        isValid: false,
+        errors,
+        warnings,
+        missingCurrencies,
+        duplicateNames,
+      }
+    }
+  }
+
+  /**
+   * 在事务内验证导入数据的完整性和格式
+   * 避免在 Vercel 环境中的连接冲突
+   */
+  static async validateImportDataInTransaction(
+    tx: any,
     data: ExportedData
   ): Promise<ImportValidationResult> {
     const errors: string[] = []
@@ -144,16 +282,14 @@ export class DataImportService {
         }
       })
 
-      // 检查系统中是否存在这些货币
+      // 检查系统中是否存在这些货币（使用事务连接）
       for (const currencyCode of requiredCurrencies) {
-        const existingCurrency = await withRetry(() =>
-          prisma.currency.findFirst({
-            where: {
-              code: currencyCode,
-              createdBy: null, // 全局货币
-            },
-          })
-        )
+        const existingCurrency = await tx.currency.findFirst({
+          where: {
+            code: currencyCode,
+            createdBy: null, // 全局货币
+          },
+        })
 
         if (!existingCurrency) {
           // 检查是否在自定义货币中
@@ -249,20 +385,24 @@ export class DataImportService {
     }
 
     try {
-      // 首先验证数据
-      if (options.validateData !== false) {
-        const validation = await this.validateImportData(data)
-        if (!validation.isValid) {
-          result.errors = validation.errors
-          result.message = '数据验证失败'
-          return result
-        }
-        result.warnings = validation.warnings
-      }
-
       // 使用专用的导入事务确保数据一致性，针对大量数据导入进行优化
+      // 将验证也移到事务内部，避免在 Vercel 环境中的连接冲突
       await withRetry(() =>
         executeImportTransaction(async tx => {
+          // 在事务内部进行数据验证，避免连接冲突
+          if (options.validateData !== false) {
+            const validation = await this.validateImportDataInTransaction(
+              tx,
+              data
+            )
+            if (!validation.isValid) {
+              result.errors = validation.errors
+              result.message = '数据验证失败'
+              // 抛出错误以回滚事务
+              throw new Error('数据验证失败: ' + validation.errors.join(', '))
+            }
+            result.warnings = validation.warnings
+          }
           // 创建ID映射表
           const idMappings: {
             categories: IdMapping
@@ -543,22 +683,29 @@ export class DataImportService {
               }
             }
           }
+
+          // 如果导入了汇率数据，在事务内删除自动生成的汇率
+          // 避免在 Vercel 环境中的连接冲突
+          if (data.exchangeRates?.length > 0) {
+            try {
+              await tx.exchangeRate.deleteMany({
+                where: {
+                  userId,
+                  type: 'AUTO',
+                },
+              })
+              console.log('已在事务内删除自动生成的汇率，准备重新生成')
+            } catch (error) {
+              console.warn('删除自动汇率失败:', error)
+              result.warnings.push('删除自动汇率失败，可能影响汇率重新生成')
+            }
+          }
         })
       )
 
       // 如果导入了汇率数据，需要重新生成自动汇率
       if (data.exchangeRates?.length > 0) {
         try {
-          // 删除所有自动生成的汇率
-          await withRetry(() =>
-            prisma.exchangeRate.deleteMany({
-              where: {
-                userId,
-                type: 'AUTO',
-              },
-            })
-          )
-
           // 重新生成所有自动汇率
           const { generateAutoExchangeRates } = await import(
             './exchange-rate-auto-generation.service'
