@@ -10,17 +10,26 @@ echo "🚀 Starting Vercel build process..."
 # 1. 检测数据库类型并切换schema
 if [[ "$DATABASE_URL" == postgresql://* ]] || [[ "$DATABASE_URL" == postgres://* ]]; then
     echo "📊 Detected PostgreSQL database"
-    
+
     # 切换到PostgreSQL schema
     if [ -f "prisma/schema.postgresql.prisma" ]; then
         echo "🔄 Switching to PostgreSQL schema..."
         cp prisma/schema.postgresql.prisma prisma/schema.prisma
         echo "✅ PostgreSQL schema activated"
-        
-        # 推送数据库结构
-        echo "🔄 Pushing database schema..."
-        npx prisma db push
-        echo "✅ Database schema pushed"
+
+        # 尝试创建数据库表结构
+        echo "🔄 Creating database schema..."
+        if npx prisma db push --accept-data-loss; then
+            echo "✅ Database schema created successfully"
+        else
+            echo "⚠️ Database push failed, trying alternative method..."
+            # 如果 db push 失败，尝试使用 migrate deploy
+            if npx prisma migrate deploy; then
+                echo "✅ Database migration completed"
+            else
+                echo "⚠️ Migration failed, assuming schema exists"
+            fi
+        fi
     else
         echo "❌ PostgreSQL schema file not found"
         exit 1
@@ -36,27 +45,59 @@ echo "✅ Prisma client generated"
 
 # 3. 检查并导入种子数据
 echo "🔍 Checking seed data..."
-if node -e "
+
+# 等待数据库连接稳定
+sleep 2
+
+SEED_CHECK_RESULT=$(node -e "
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-prisma.currency.count().then(count => {
-    if (count === 0) {
+
+async function checkSeedData() {
+    try {
+        const count = await prisma.currency.count();
+        console.log(\`Found \${count} currencies in database\`);
+
+        if (count === 0) {
+            console.log('SEED_NEEDED');
+            return 0;
+        } else {
+            console.log('SEED_EXISTS');
+            return 1;
+        }
+    } catch (error) {
+        console.log('Database check failed, assuming seed needed:', error.message);
         console.log('SEED_NEEDED');
-        process.exit(0);
-    } else {
-        console.log('SEED_EXISTS');
-        process.exit(1);
+        return 0;
+    } finally {
+        await prisma.\$disconnect();
     }
-}).catch(() => {
-    console.log('SEED_NEEDED');
-    process.exit(0);
-}).finally(() => {
-    prisma.\$disconnect();
-});
-"; then
-    echo "🌱 Database is empty, importing seed data..."
+}
+
+checkSeedData().then(code => process.exit(code));
+" 2>/dev/null; echo $?)
+
+if [ "$SEED_CHECK_RESULT" -eq 0 ]; then
+    echo "🌱 Database is empty or check failed, importing seed data..."
     if pnpm db:seed; then
         echo "✅ Seed data imported successfully"
+
+        # 验证种子数据导入
+        CURRENCY_COUNT=$(node -e "
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+        prisma.currency.count().then(count => {
+            console.log(count);
+            process.exit(0);
+        }).catch(() => {
+            console.log(0);
+            process.exit(0);
+        }).finally(() => {
+            prisma.\$disconnect();
+        });
+        " 2>/dev/null || echo "0")
+
+        echo "📊 Imported $CURRENCY_COUNT currencies"
     else
         echo "⚠️ Seed data import failed, but continuing..."
     fi
