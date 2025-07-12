@@ -11,6 +11,7 @@ import type { SimpleCurrency, CategoryType } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
 import type { FlowMonthlyData } from '@/types/components'
 import { CHART } from '@/lib/constants/app-config'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 
 interface LocalFlowAccount {
   id: string
@@ -19,6 +20,9 @@ interface LocalFlowAccount {
   type?: string
 }
 
+// 本地类型定义（用于这个组件的特定需求）
+type FlowTimeRange = 'last12months' | 'all'
+
 interface FlowMonthlySummaryChartProps {
   monthlyData: FlowMonthlyData
   baseCurrency: SimpleCurrency
@@ -26,6 +30,8 @@ interface FlowMonthlySummaryChartProps {
   height?: number
   accounts?: LocalFlowAccount[]
   showPieChart?: boolean
+  onTimeRangeChange?: (timeRange: FlowTimeRange) => void // 新增时间范围变更回调
+  loading?: boolean // 新增外部loading状态
 }
 
 export default function FlowMonthlySummaryChart({
@@ -35,6 +41,8 @@ export default function FlowMonthlySummaryChart({
   height = CHART.DEFAULT_HEIGHT,
   accounts = [],
   showPieChart = false,
+  onTimeRangeChange,
+  loading = false,
 }: FlowMonthlySummaryChartProps) {
   const { t, isLoading } = useLanguage()
   const { formatCurrency } = useUserCurrencyFormatter()
@@ -48,13 +56,38 @@ export default function FlowMonthlySummaryChart({
 
   // 状态管理：当前选中的月份（用于饼状图显示）
   const [selectedMonth, setSelectedMonth] = useState<string>('')
+  const [timeRange, setTimeRange] = useState<FlowTimeRange>('last12months')
 
-  // 获取最新月份
+  // 根据时间范围过滤数据
+  const getFilteredData = useCallback(() => {
+    if (!monthlyData) return {}
+
+    const allMonths = Object.keys(monthlyData).sort()
+    let filteredMonths: string[]
+
+    if (timeRange === 'last12months') {
+      // 获取最近12个月的数据
+      filteredMonths = allMonths.slice(-12)
+    } else {
+      // 全部数据
+      filteredMonths = allMonths
+    }
+
+    const filteredData: FlowMonthlyData = {}
+    filteredMonths.forEach(month => {
+      filteredData[month] = monthlyData[month]
+    })
+
+    return filteredData
+  }, [monthlyData, timeRange])
+
+  // 获取最新月份（基于过滤后的数据）
   const getLatestMonth = useCallback(() => {
-    if (!monthlyData || Object.keys(monthlyData).length === 0) return ''
-    const months = Object.keys(monthlyData).sort()
+    const filteredData = getFilteredData()
+    if (!filteredData || Object.keys(filteredData).length === 0) return ''
+    const months = Object.keys(filteredData).sort()
     return months[months.length - 1]
-  }, [monthlyData])
+  }, [getFilteredData])
 
   // 初始化选中月份为最新月份
   useEffect(() => {
@@ -96,7 +129,8 @@ export default function FlowMonthlySummaryChart({
         return
       }
 
-      if (!monthlyData || Object.keys(monthlyData).length === 0) {
+      const filteredData = getFilteredData()
+      if (!filteredData || Object.keys(filteredData).length === 0) {
         try {
           chart.clear()
         } catch (error) {
@@ -105,7 +139,7 @@ export default function FlowMonthlySummaryChart({
         return
       }
 
-      const months = Object.keys(monthlyData).sort()
+      const months = Object.keys(filteredData).sort()
       const formattedMonths = months.map(month => {
         const date = new Date(month + '-01')
         return formatChartDate(date, 'month')
@@ -119,7 +153,7 @@ export default function FlowMonthlySummaryChart({
       // 获取所有子分类/账户名称
       const allCategories = new Set<string>()
       months.forEach(month => {
-        const monthData = monthlyData[month]
+        const monthData = filteredData[month]
         const currencyData = monthData[baseCurrency.code]
         if (currencyData?.categories) {
           Object.keys(currencyData.categories).forEach(categoryName => {
@@ -159,7 +193,7 @@ export default function FlowMonthlySummaryChart({
       // 为每个子分类/账户准备柱状图数据
       const barSeries = categoryNames.map((categoryName, index) => {
         const data = months.map(month => {
-          const monthData = monthlyData[month]
+          const monthData = filteredData[month]
           const currencyData = monthData[baseCurrency.code]
           if (currencyData?.categories) {
             const category = currencyData.categories[categoryName]
@@ -184,7 +218,7 @@ export default function FlowMonthlySummaryChart({
 
       // 准备总流量线图数据
       const totalFlowData = months.map(month => {
-        const monthData = monthlyData[month]
+        const monthData = filteredData[month]
         const currencyData = monthData[baseCurrency.code]
         if (currencyData) {
           return isIncomeCategory ? currencyData.income : currencyData.expense
@@ -364,7 +398,7 @@ export default function FlowMonthlySummaryChart({
             }
 
             if (monthIndex >= 0) {
-              const clickedMonth = Object.keys(monthlyData).sort()[monthIndex]
+              const clickedMonth = Object.keys(filteredData).sort()[monthIndex]
               if (clickedMonth) {
                 setSelectedMonth(clickedMonth)
               }
@@ -393,7 +427,7 @@ export default function FlowMonthlySummaryChart({
                   // 确保索引在有效范围内
                   if (monthIndex >= 0 && monthIndex < monthCount) {
                     const clickedMonth =
-                      Object.keys(monthlyData).sort()[monthIndex]
+                      Object.keys(filteredData).sort()[monthIndex]
                     if (clickedMonth) {
                       setSelectedMonth(clickedMonth)
                     }
@@ -410,6 +444,7 @@ export default function FlowMonthlySummaryChart({
     },
     [
       monthlyData,
+      timeRange,
       baseCurrency,
       resolvedTheme,
       t,
@@ -417,6 +452,7 @@ export default function FlowMonthlySummaryChart({
       accounts,
       formatChartDate,
       formatCurrency,
+      getFilteredData,
     ]
   )
 
@@ -680,7 +716,12 @@ export default function FlowMonthlySummaryChart({
           className='flex items-center justify-center'
           style={{ height: `${height}px` }}
         >
-          <div className='text-gray-500'>{t('chart.loading')}</div>
+          <LoadingSpinner
+            size='lg'
+            showText
+            text={t('chart.loading')}
+            color={resolvedTheme === 'dark' ? 'white' : 'primary'}
+          />
         </div>
       </div>
     )
@@ -690,29 +731,95 @@ export default function FlowMonthlySummaryChart({
     <div
       className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
     >
+      {/* 时间范围选择器 */}
+      <div className='flex justify-end mb-4'>
+        <div className='flex space-x-2'>
+          <button
+            onClick={() => {
+              setTimeRange('last12months')
+              onTimeRangeChange?.('last12months')
+            }}
+            className={`px-3 py-1 text-sm rounded ${
+              timeRange === 'last12months'
+                ? resolvedTheme === 'dark'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-blue-500 text-white'
+                : resolvedTheme === 'dark'
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            {t('time.last.12.months')}
+          </button>
+          <button
+            onClick={() => {
+              setTimeRange('all')
+              onTimeRangeChange?.('all')
+            }}
+            className={`px-3 py-1 text-sm rounded ${
+              timeRange === 'all'
+                ? resolvedTheme === 'dark'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-blue-500 text-white'
+                : resolvedTheme === 'dark'
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            {t('time.all')}
+          </button>
+        </div>
+      </div>
+
       {/* 柱状图 */}
       <div
-        key={`bar-${resolvedTheme}-${isLoading}`}
-        ref={chartRef}
+        className='relative'
         style={{
           width: '100%',
           height: showPieChart
             ? `${Math.floor(height * 0.6)}px`
             : `${height}px`,
         }}
-      />
+      >
+        <div
+          key={`bar-${resolvedTheme}-${isLoading}`}
+          ref={chartRef}
+          style={{
+            width: '100%',
+            height: '100%',
+          }}
+        />
+        {loading && (
+          <div className='absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 z-10'>
+            <LoadingSpinner />
+          </div>
+        )}
+      </div>
 
       {/* 饼状图 */}
       {showPieChart && (
         <div
-          key={`pie-${resolvedTheme}-${isLoading}-${selectedMonth}`}
-          ref={pieChartRef}
+          className='relative'
           style={{
             width: '100%',
             height: `${Math.floor(height * 0.4)}px`,
             marginTop: '16px',
           }}
-        />
+        >
+          <div
+            key={`pie-${resolvedTheme}-${isLoading}-${selectedMonth}`}
+            ref={pieChartRef}
+            style={{
+              width: '100%',
+              height: '100%',
+            }}
+          />
+          {loading && (
+            <div className='absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 z-10'>
+              <LoadingSpinner />
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

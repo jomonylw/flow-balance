@@ -65,27 +65,11 @@ export default function CashFlowChart({
     [onTimeRangeChange]
   )
 
-  // 根据时间范围过滤数据
+  // 直接使用API返回的数据，不再进行前端过滤
   const getFilteredData = useCallback(() => {
-    if (!data || !data.xAxis || !data.series) return data
-
-    if (currentTimeRange === 'last12months') {
-      // 获取最近12个月的数据
-      const filteredXAxis = data.xAxis.slice(-12)
-      const filteredSeries = data.series.map(series => ({
-        ...series,
-        data: series.data.slice(-12),
-      }))
-
-      return {
-        xAxis: filteredXAxis,
-        series: filteredSeries,
-      }
-    }
-
-    // 返回全部数据
+    // API已经根据时间范围返回了对应的数据，直接使用即可
     return data
-  }, [data, currentTimeRange])
+  }, [data])
 
   // 辅助函数：智能格式化货币
   const formatCurrencyAmount = (amount: number) => {

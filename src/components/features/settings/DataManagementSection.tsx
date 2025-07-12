@@ -6,6 +6,7 @@ import { useToast } from '@/contexts/providers/ToastContext'
 import ConfirmationModal from '@/components/ui/feedback/ConfirmationModal'
 import { LoadingSpinnerSVG } from '@/components/ui/feedback/LoadingSpinner'
 import DataImportSelector from './DataImportSelector'
+import ImportProgressModal from './ImportProgressModal'
 import type {
   ExportedData,
   ImportValidationResult,
@@ -60,7 +61,7 @@ export default function DataManagementSection() {
     percentage: number
     message: string
   } | null>(null)
-  const [_showProgressModal, setShowProgressModal] = useState(false)
+  const [showProgressModal, setShowProgressModal] = useState(false)
 
   // 删除相关状态
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -294,6 +295,9 @@ export default function DataManagementSection() {
   }
 
   const startProgressPolling = (sessionId: string) => {
+    let pollTimeoutId: NodeJS.Timeout | null = null
+    let completionTime: number | null = null // 记录完成时间
+
     const pollInterval = setInterval(async () => {
       try {
         const response = await fetch(
@@ -306,28 +310,64 @@ export default function DataManagementSection() {
 
           // 检查是否完成
           if (result.data.stage === 'completed') {
-            clearInterval(pollInterval)
-            showSuccess(t('data.import.success'), result.data.message)
-            setShowProgressModal(false)
-            setImportData(null)
-            setValidationResult(null)
-            setImportProgress(null)
-            setImportSessionId(null)
+            if (!completionTime) {
+              completionTime = Date.now()
+              showSuccess(t('data.import.success'), result.data.message)
+              setImportData(null)
+              setValidationResult(null)
+            }
+
+            // 完成后继续轮询30秒，然后自动关闭
+            if (Date.now() - completionTime > 30000) {
+              clearInterval(pollInterval)
+              if (pollTimeoutId) clearTimeout(pollTimeoutId)
+              setShowProgressModal(false)
+              setImportProgress(null)
+              setImportSessionId(null)
+            }
           } else if (result.data.stage === 'failed') {
-            clearInterval(pollInterval)
-            showError(t('data.import.failed'), result.data.message)
-            setShowProgressModal(false)
-            setImportProgress(null)
-            setImportSessionId(null)
+            if (!completionTime) {
+              completionTime = Date.now()
+              showError(t('data.import.failed'), result.data.message)
+            }
+
+            // 失败后继续轮询30秒，然后自动关闭
+            if (Date.now() - completionTime > 30000) {
+              clearInterval(pollInterval)
+              if (pollTimeoutId) clearTimeout(pollTimeoutId)
+              setShowProgressModal(false)
+              setImportProgress(null)
+              setImportSessionId(null)
+            }
           } else if (result.data.stage === 'cancelled') {
             clearInterval(pollInterval)
+            if (pollTimeoutId) clearTimeout(pollTimeoutId)
             showWarning(t('data.import.cancelled'), result.data.message)
             setShowProgressModal(false)
             setImportProgress(null)
             setImportSessionId(null)
           }
         } else {
+          // 检查是否是 session not found 错误（404）
+          if (response.status === 404) {
+            // 如果是404错误，说明后端已经清理了进度数据
+            // 检查当前进度状态，如果已经完成，则静默处理
+            if (
+              importProgress?.stage === 'completed' ||
+              importProgress?.stage === 'failed'
+            ) {
+              clearInterval(pollInterval)
+              if (pollTimeoutId) clearTimeout(pollTimeoutId)
+              // 已完成或失败的导入，静默关闭弹窗
+              setShowProgressModal(false)
+              setImportProgress(null)
+              setImportSessionId(null)
+              return
+            }
+          }
+
           clearInterval(pollInterval)
+          if (pollTimeoutId) clearTimeout(pollTimeoutId)
           showError(
             t('data.import.progress.failed'),
             result.error || t('error.unknown')
@@ -339,6 +379,20 @@ export default function DataManagementSection() {
       } catch (error) {
         console.error('Poll progress error:', error)
         clearInterval(pollInterval)
+        if (pollTimeoutId) clearTimeout(pollTimeoutId)
+
+        // 检查当前进度状态，如果已经完成，则不显示网络错误
+        if (
+          importProgress?.stage === 'completed' ||
+          importProgress?.stage === 'failed'
+        ) {
+          // 静默关闭弹窗
+          setShowProgressModal(false)
+          setImportProgress(null)
+          setImportSessionId(null)
+          return
+        }
+
         showError(t('data.import.progress.failed'), t('error.network'))
         setShowProgressModal(false)
         setImportProgress(null)
@@ -347,7 +401,7 @@ export default function DataManagementSection() {
     }, 1000) // 每秒轮询一次
 
     // 设置超时，避免无限轮询
-    setTimeout(() => {
+    pollTimeoutId = setTimeout(() => {
       clearInterval(pollInterval)
       if (
         importProgress?.stage !== 'completed' &&
@@ -361,7 +415,7 @@ export default function DataManagementSection() {
     }, 300000) // 5分钟超时
   }
 
-  const _handleCancelImport = async () => {
+  const handleCancelImport = async () => {
     if (!importSessionId) return
 
     try {
@@ -386,6 +440,14 @@ export default function DataManagementSection() {
     }
 
     setShowProgressModal(false)
+    setImportProgress(null)
+    setImportSessionId(null)
+  }
+
+  const handleProgressComplete = () => {
+    setShowProgressModal(false)
+    setImportData(null)
+    setValidationResult(null)
     setImportProgress(null)
     setImportSessionId(null)
   }
@@ -754,6 +816,15 @@ export default function DataManagementSection() {
           )}
         </div>
       </ConfirmationModal>
+
+      {/* 导入进度 Modal */}
+      <ImportProgressModal
+        isOpen={showProgressModal}
+        progress={importProgress}
+        sessionId={importSessionId}
+        onCancel={handleCancelImport}
+        onComplete={handleProgressComplete}
+      />
     </div>
   )
 }

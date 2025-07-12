@@ -150,66 +150,82 @@ export default function DashboardContent({
   }, [user, isAuthenticated])
 
   // 获取净资产图表数据
-  const fetchNetWorthChartData = useCallback(async () => {
-    try {
-      setIsLoadingNetWorth(true)
-      setChartError(null)
+  const fetchNetWorthChartData = useCallback(
+    async (timeRange: TimeRange = 'last12months') => {
+      try {
+        setIsLoadingNetWorth(true)
+        setChartError(null)
 
-      // 获取净资产图表数据
-      const response = await fetch('/api/dashboard/charts/net-worth?months=all')
-      if (response.ok) {
-        const data = await response.json()
-        setChartData(prevData => ({
-          ...prevData,
-          netWorthChart: data.data.netWorthChart,
-          currency: data.data.currency,
-          currencyConversion: data.data.currencyConversion,
-        }))
-      } else {
-        const errorData = await response.json()
-        setChartError(errorData.error || t('dashboard.chart.data.fetch.failed'))
+        // 根据时间范围构建API参数
+        const monthsParam = timeRange === 'all' ? 'all' : '12'
+        const response = await fetch(
+          `/api/dashboard/charts/net-worth?months=${monthsParam}`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          setChartData(prevData => ({
+            ...prevData,
+            netWorthChart: data.data.netWorthChart,
+            currency: data.data.currency,
+            currencyConversion: data.data.currencyConversion,
+          }))
+        } else {
+          const errorData = await response.json()
+          setChartError(
+            errorData.error || t('dashboard.chart.data.fetch.failed')
+          )
+        }
+      } catch (error) {
+        console.error('Error fetching net worth chart data:', error)
+        setChartError(t('dashboard.network.error.charts'))
+      } finally {
+        setIsLoadingNetWorth(false)
       }
-    } catch (error) {
-      console.error('Error fetching net worth chart data:', error)
-      setChartError(t('dashboard.network.error.charts'))
-    } finally {
-      setIsLoadingNetWorth(false)
-    }
-  }, [t])
+    },
+    [t]
+  )
 
   // 获取现金流图表数据
-  const fetchCashFlowChartData = useCallback(async () => {
-    try {
-      setIsLoadingCashFlow(true)
-      setChartError(null)
+  const fetchCashFlowChartData = useCallback(
+    async (timeRange: TimeRange = 'last12months') => {
+      try {
+        setIsLoadingCashFlow(true)
+        setChartError(null)
 
-      // 获取现金流图表数据
-      const response = await fetch('/api/dashboard/charts/cash-flow?months=all')
-      if (response.ok) {
-        const data = await response.json()
-        setChartData(prevData => ({
-          ...prevData,
-          cashFlowChart: data.data.cashFlowChart,
-          currency: data.data.currency,
-          currencyConversion: data.data.currencyConversion,
-        }))
-      } else {
-        const errorData = await response.json()
-        setChartError(errorData.error || t('dashboard.chart.data.fetch.failed'))
+        // 根据时间范围构建API参数
+        const monthsParam = timeRange === 'all' ? 'all' : '12'
+        const response = await fetch(
+          `/api/dashboard/charts/cash-flow?months=${monthsParam}`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          setChartData(prevData => ({
+            ...prevData,
+            cashFlowChart: data.data.cashFlowChart,
+            currency: data.data.currency,
+            currencyConversion: data.data.currencyConversion,
+          }))
+        } else {
+          const errorData = await response.json()
+          setChartError(
+            errorData.error || t('dashboard.chart.data.fetch.failed')
+          )
+        }
+      } catch (error) {
+        console.error('Error fetching cash flow chart data:', error)
+        setChartError(t('dashboard.network.error.charts'))
+      } finally {
+        setIsLoadingCashFlow(false)
       }
-    } catch (error) {
-      console.error('Error fetching cash flow chart data:', error)
-      setChartError(t('dashboard.network.error.charts'))
-    } finally {
-      setIsLoadingCashFlow(false)
-    }
-  }, [t])
+    },
+    [t]
+  )
 
-  // 初始化图表数据 - 并行加载两个图表，各自独立显示
+  // 初始化图表数据 - 并行加载两个图表，各自独立显示，默认加载近12个月数据
   const fetchInitialChartData = useCallback(async () => {
-    // 立即开始并行加载，每个图表根据自己的状态独立显示
-    fetchNetWorthChartData()
-    fetchCashFlowChartData()
+    // 立即开始并行加载，每个图表根据自己的状态独立显示，默认加载近12个月数据
+    fetchNetWorthChartData('last12months')
+    fetchCashFlowChartData('last12months')
   }, [fetchNetWorthChartData, fetchCashFlowChartData])
 
   // 初始加载图表数据
@@ -224,28 +240,20 @@ export default function DashboardContent({
   const handleNetWorthTimeRangeChange = useCallback(
     async (newTimeRange: TimeRange) => {
       setNetWorthTimeRange(newTimeRange)
-      setIsLoadingNetWorth(true)
-
-      // 模拟加载延迟，让用户看到加载状态
-      setTimeout(() => {
-        setIsLoadingNetWorth(false)
-      }, 300)
+      // 重新请求对应时间范围的数据
+      await fetchNetWorthChartData(newTimeRange)
     },
-    []
+    [fetchNetWorthChartData]
   )
 
   // 处理现金流图表时间范围变化
   const handleCashFlowTimeRangeChange = useCallback(
     async (newTimeRange: TimeRange) => {
       setCashFlowTimeRange(newTimeRange)
-      setIsLoadingCashFlow(true)
-
-      // 模拟加载延迟，让用户看到加载状态
-      setTimeout(() => {
-        setIsLoadingCashFlow(false)
-      }, 300)
+      // 重新请求对应时间范围的数据
+      await fetchCashFlowChartData(newTimeRange)
     },
-    []
+    [fetchCashFlowChartData]
   )
 
   // 验证账户数据

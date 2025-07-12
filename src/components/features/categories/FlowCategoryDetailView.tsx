@@ -21,9 +21,6 @@ import type { CategoryTransaction } from '@/types/core'
 import type { FlowMonthlyData, FlowSummaryData } from '@/types/components'
 import { convertPrismaAccountType, AccountType } from '@/types/core/constants'
 
-// 使用统一的 TimeRange 类型，但限制为此组件支持的值
-type LocalTimeRange = 'lastYear' | 'all'
-
 // 简化的编辑交易数据类型，适配 FlowTransactionModal
 // 与 FlowTransactionModal 内部的 Transaction 接口保持一致
 interface EditingTransactionData {
@@ -72,7 +69,6 @@ export default function FlowCategoryDetailView({
   })
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
   const [chartData, setChartData] = useState<FlowMonthlyData | null>(null)
-  const [timeRange, setTimeRange] = useState<LocalTimeRange>('lastYear')
 
   // 过滤出属于当前分类的账户（包括子分类的账户）
   const categoryAccounts = accounts.filter(account => {
@@ -188,11 +184,14 @@ export default function FlowCategoryDetailView({
   )
 
   // 获取分类汇总数据
-  useEffect(() => {
-    const fetchSummaryData = async () => {
+  const fetchSummaryData = useCallback(
+    async (timeRange: string = 'lastYear') => {
       setIsLoadingSummary(true)
       try {
-        const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
+        const params = new URLSearchParams({ timeRange })
+        const summaryRes = await fetch(
+          `/api/categories/${category.id}/summary?${params}`
+        )
 
         if (summaryRes.ok) {
           const summaryResult = await summaryRes.json()
@@ -211,10 +210,13 @@ export default function FlowCategoryDetailView({
       } finally {
         setIsLoadingSummary(false)
       }
-    }
+    },
+    [category.id, user.settings?.baseCurrency?.code, transformDataForChart]
+  )
 
-    fetchSummaryData()
-  }, [category.id, user.settings?.baseCurrency?.code, transformDataForChart])
+  useEffect(() => {
+    fetchSummaryData('lastYear') // 默认加载去年至今的数据
+  }, [fetchSummaryData])
 
   // 获取交易记录
   const loadTransactions = useCallback(
@@ -414,56 +416,9 @@ export default function FlowCategoryDetailView({
 
   const handleTransactionSuccess = () => {
     // 重新获取汇总数据
-    const fetchSummaryData = async () => {
-      setIsLoadingSummary(true)
-      try {
-        const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
-
-        if (summaryRes.ok) {
-          const summaryResult = await summaryRes.json()
-          setSummaryData(summaryResult.data)
-
-          // 更新图表数据
-          const baseCurrencyCode = user.settings?.baseCurrency?.code || 'CNY'
-          const transformedData = transformDataForChart(
-            summaryResult.data,
-            baseCurrencyCode
-          )
-          setChartData(transformedData)
-        }
-      } catch (error) {
-        console.error('Error fetching summary data:', error)
-      } finally {
-        setIsLoadingSummary(false)
-      }
-    }
-
-    fetchSummaryData()
+    fetchSummaryData('lastYear') // 使用默认时间范围
     loadTransactions(pagination.currentPage)
   }
-
-  // 根据时间范围过滤图表数据
-  const getFilteredChartData = useCallback(() => {
-    if (!chartData) return {}
-
-    const allMonths = Object.keys(chartData).sort()
-    let filteredMonths: string[]
-
-    if (timeRange === 'lastYear') {
-      // 获取最近12个月的数据
-      filteredMonths = allMonths.slice(-12)
-    } else {
-      // 全部数据
-      filteredMonths = allMonths
-    }
-
-    const filteredData: FlowMonthlyData = {}
-    filteredMonths.forEach(month => {
-      filteredData[month] = chartData[month]
-    })
-
-    return filteredData
-  }, [chartData, timeRange])
 
   const baseCurrency = user.settings?.baseCurrency || {
     id: 'default-usd',
@@ -689,55 +644,30 @@ export default function FlowCategoryDetailView({
           )
           if (!baseCurrencyForChart) return null
 
-          const filteredData = getFilteredChartData()
-
           return (
             <div className='mb-8'>
-              <div className='bg-white dark:bg-gray-800 shadow rounded-lg p-6'>
-                <div className='flex justify-between items-center mb-4'>
-                  <h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
-                    {`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
-                  </h2>
-
-                  {/* 时间范围选择器 */}
-                  <div className='flex space-x-2'>
-                    <button
-                      onClick={() => setTimeRange('lastYear')}
-                      className={`px-3 py-1 text-sm rounded ${
-                        timeRange === 'lastYear'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {t('time.last.12.months')}
-                    </button>
-                    <button
-                      onClick={() => setTimeRange('all')}
-                      className={`px-3 py-1 text-sm rounded ${
-                        timeRange === 'all'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {t('time.all')}
-                    </button>
-                  </div>
-                </div>
-
-                <FlowMonthlySummaryChart
-                  monthlyData={filteredData}
-                  baseCurrency={baseCurrencyForChart}
-                  title={`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
-                  height={600}
-                  showPieChart={true}
-                  accounts={categoryAccounts.map(account => ({
-                    id: account.id,
-                    name: account.name,
-                    color: account.color,
-                    type: account.category?.type,
-                  }))}
-                />
-              </div>
+              <FlowMonthlySummaryChart
+                monthlyData={chartData}
+                baseCurrency={baseCurrencyForChart}
+                title={`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
+                height={600}
+                showPieChart={true}
+                loading={isLoadingSummary}
+                accounts={categoryAccounts.map(account => ({
+                  id: account.id,
+                  name: account.name,
+                  color: account.color,
+                  type: account.category?.type,
+                }))}
+                onTimeRangeChange={(timeRange: 'last12months' | 'all') => {
+                  // 当用户点击"全部"按钮时，重新获取全部数据
+                  if (timeRange === 'all') {
+                    fetchSummaryData('all')
+                  } else {
+                    fetchSummaryData('lastYear')
+                  }
+                }}
+              />
             </div>
           )
         })()}

@@ -21,6 +21,16 @@ export async function GET(
       return unauthorizedResponse()
     }
 
+    // 获取查询参数
+    const { searchParams } = new URL(request.url)
+    const timeRange = searchParams.get('timeRange') || 'lastYear' // 默认为去年至今
+
+    // 验证时间范围参数
+    const validTimeRanges = ['lastYear', 'all']
+    if (!validTimeRanges.includes(timeRange)) {
+      return errorResponse('无效的时间范围参数', 400)
+    }
+
     // 验证分类是否属于当前用户并获取分类类型
     const category = await prisma.category.findFirst({
       where: {
@@ -41,9 +51,13 @@ export async function GET(
     // 根据分类类型调用对应的服务
     let summaryData
     if (category.type === 'ASSET' || category.type === 'LIABILITY') {
-      summaryData = await getStockCategorySummary(categoryId, user.id)
+      summaryData = await getStockCategorySummary(
+        categoryId,
+        user.id,
+        timeRange
+      )
     } else if (category.type === 'INCOME' || category.type === 'EXPENSE') {
-      summaryData = await getFlowCategorySummary(categoryId, user.id)
+      summaryData = await getFlowCategorySummary(categoryId, user.id, timeRange)
     } else {
       return errorResponse('分类类型未设置或无效', 400)
     }

@@ -169,11 +169,13 @@ async function calculateMonthlyHistoricalBalances(
  * 获取存量类分类的月度历史汇总数据
  * @param categoryId 分类ID
  * @param userId 用户ID
+ * @param timeRange 时间范围，'lastYear' 表示去年1月1日至今，'all' 表示全部数据
  * @returns 按月倒序排列的报告数组
  */
 export async function getStockCategorySummary(
   categoryId: string,
-  userId: string
+  userId: string,
+  timeRange: string = 'lastYear'
 ): Promise<MonthlyReport[]> {
   // 1. 获取分类和本位币信息
   // prisma instance is already available
@@ -202,7 +204,17 @@ export async function getStockCategorySummary(
     name: '人民币',
   }
 
-  // 2. 获取所有相关账户及其交易
+  // 2. 计算时间范围
+  let dateFilter: { gte?: Date } | undefined = undefined
+  if (timeRange === 'lastYear') {
+    // 去年1月1日至今
+    const lastYear = new Date().getFullYear() - 1
+    const startDate = new Date(lastYear, 0, 1) // 去年1月1日
+    dateFilter = { gte: startDate }
+  }
+  // timeRange === 'all' 时不添加日期过滤
+
+  // 3. 获取所有相关账户及其交易
   const allCategoryIds = await getAllCategoryIds(prisma, categoryId)
   const allAccounts = await prisma.account.findMany({
     where: {
@@ -212,23 +224,34 @@ export async function getStockCategorySummary(
     include: {
       currency: true,
       transactions: {
-        where: { type: TransactionType.BALANCE },
+        where: {
+          type: TransactionType.BALANCE,
+          ...(dateFilter && { date: dateFilter }),
+        },
         include: { currency: true },
         orderBy: { date: 'asc' },
       },
     },
   })
 
-  // 3. 确定全局月份范围
+  // 4. 确定全局月份范围
   let firstTransactionDate = new Date()
-  allAccounts.forEach(account => {
-    if (account.transactions.length > 0) {
-      const accountFirstDate = new Date(account.transactions[0].date)
-      if (accountFirstDate < firstTransactionDate) {
-        firstTransactionDate = accountFirstDate
+
+  // 根据时间范围设置起始日期
+  if (timeRange === 'lastYear') {
+    const lastYear = new Date().getFullYear() - 1
+    firstTransactionDate = new Date(lastYear, 0, 1) // 去年1月1日
+  } else {
+    // timeRange === 'all' 时，查找最早的交易日期
+    allAccounts.forEach(account => {
+      if (account.transactions.length > 0) {
+        const accountFirstDate = new Date(account.transactions[0].date)
+        if (accountFirstDate < firstTransactionDate) {
+          firstTransactionDate = accountFirstDate
+        }
       }
-    }
-  })
+    })
+  }
 
   const allMonths: string[] = []
   const now = new Date()

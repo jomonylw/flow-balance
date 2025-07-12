@@ -2675,7 +2675,6 @@ export class LoanContractService {
 
     await prisma.transactionTag.createMany({
       data: transactionTags,
-      skipDuplicates: true,
     })
   }
 }

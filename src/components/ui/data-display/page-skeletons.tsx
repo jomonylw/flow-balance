@@ -125,6 +125,68 @@ export function AccountDetailSkeleton() {
 }
 
 /**
+ * 分类详情页骨架屏
+ */
+export function CategoryDetailSkeleton() {
+  return (
+    <div className='p-6 space-y-6'>
+      {/* 面包屑导航 */}
+      <div className='flex items-center space-x-2'>
+        <Skeleton height='1rem' width='60px' />
+        <span className='text-gray-500 dark:text-gray-400'>/</span>
+        <Skeleton height='1rem' width='80px' />
+        <span className='text-gray-500 dark:text-gray-400'>/</span>
+        <Skeleton height='1rem' width='100px' />
+      </div>
+
+      {/* 分类信息卡片 */}
+      <SkeletonCard hasHeader={true} contentLines={3} hasFooter={false} />
+
+      {/* 子分类和账户概览 */}
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+        {/* 子分类 */}
+        <div className='bg-white dark:bg-gray-800 rounded-lg shadow p-6'>
+          <Skeleton height='1.5rem' width='40%' className='mb-4' />
+          <div className='space-y-3'>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className='flex items-center justify-between'>
+                <Skeleton height='1rem' width='60%' />
+                <Skeleton height='1rem' width='20%' />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 账户列表 */}
+        <div className='bg-white dark:bg-gray-800 rounded-lg shadow p-6'>
+          <Skeleton height='1.5rem' width='40%' className='mb-4' />
+          <div className='space-y-3'>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className='flex items-center justify-between'>
+                <Skeleton height='1rem' width='70%' />
+                <Skeleton height='1rem' width='25%' />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 分类趋势图表 */}
+      <SkeletonChart height={350} hasTitle={true} hasLegend={true} />
+
+      {/* 交易列表 */}
+      <div className='bg-white dark:bg-gray-800 rounded-lg shadow'>
+        <div className='p-6 border-b border-gray-200 dark:border-gray-700'>
+          <Skeleton height='1.5rem' width='30%' className='mb-2' />
+          <Skeleton height='1rem' width='50%' />
+        </div>
+        <SkeletonTable rows={10} columns={6} className='shadow-none' />
+      </div>
+    </div>
+  )
+}
+
+/**
  * 交易列表页骨架屏
  */
 export function TransactionListSkeleton() {

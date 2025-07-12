@@ -138,11 +138,13 @@ async function calculateMonthlyHistoricalFlows(
  * 获取流量类分类的月度历史汇总数据
  * @param categoryId 分类ID
  * @param userId 用户ID
+ * @param timeRange 时间范围，'lastYear' 表示去年1月1日至今，'all' 表示全部数据
  * @returns 按月倒序排列的报告数组
  */
 export async function getFlowCategorySummary(
   categoryId: string,
-  userId: string
+  userId: string,
+  timeRange: string = 'lastYear'
 ): Promise<MonthlyReport[]> {
   // 1. 获取分类和本位币信息
   // prisma instance is already available
@@ -171,7 +173,17 @@ export async function getFlowCategorySummary(
     name: '人民币',
   }
 
-  // 2. 获取所有相关账户及其交易
+  // 2. 计算时间范围
+  let dateFilter: { gte?: Date } | undefined = undefined
+  if (timeRange === 'lastYear') {
+    // 去年1月1日至今
+    const lastYear = new Date().getFullYear() - 1
+    const startDate = new Date(lastYear, 0, 1) // 去年1月1日
+    dateFilter = { gte: startDate }
+  }
+  // timeRange === 'all' 时不添加日期过滤
+
+  // 3. 获取所有相关账户及其交易
   const allCategoryIds = await getAllCategoryIds(prisma, categoryId)
   const allAccounts = await prisma.account.findMany({
     where: {
@@ -181,44 +193,58 @@ export async function getFlowCategorySummary(
     include: {
       currency: true,
       transactions: {
-        where: { type: { in: ['INCOME', 'EXPENSE'] } },
+        where: {
+          type: { in: ['INCOME', 'EXPENSE'] },
+          ...(dateFilter && { date: dateFilter }),
+        },
         include: { currency: true },
         orderBy: { date: 'asc' },
       },
     },
   })
 
-  // 3. 确定全局月份范围
+  // 4. 确定全局月份范围
   const allMonths: string[] = []
   const now = new Date()
+  let firstTransactionDate: Date
 
-  // 找到最早的交易日期
-  const transactionDates: Date[] = []
-  allAccounts.forEach(account => {
-    if (account.transactions.length > 0) {
-      transactionDates.push(new Date(account.transactions[0].date))
-    }
-  })
-
-  if (transactionDates.length > 0) {
-    // 找到最早的日期
-    const firstTransactionDate = new Date(
-      Math.min(...transactionDates.map(d => d.getTime()))
-    )
-    const startDate = new Date(
-      firstTransactionDate.getFullYear(),
-      firstTransactionDate.getMonth(),
-      1
-    )
-
-    while (startDate <= now) {
-      allMonths.push(
-        `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`
-      )
-      startDate.setMonth(startDate.getMonth() + 1)
-    }
+  // 根据时间范围设置起始日期
+  if (timeRange === 'lastYear') {
+    const lastYear = new Date().getFullYear() - 1
+    firstTransactionDate = new Date(lastYear, 0, 1) // 去年1月1日
   } else {
-    // 如果没有交易，至少包含当前月份
+    // timeRange === 'all' 时，查找最早的交易日期
+    const transactionDates: Date[] = []
+    allAccounts.forEach(account => {
+      if (account.transactions.length > 0) {
+        transactionDates.push(new Date(account.transactions[0].date))
+      }
+    })
+
+    if (transactionDates.length > 0) {
+      firstTransactionDate = new Date(
+        Math.min(...transactionDates.map(d => d.getTime()))
+      )
+    } else {
+      firstTransactionDate = now // 如果没有交易，使用当前日期
+    }
+  }
+
+  const startDate = new Date(
+    firstTransactionDate.getFullYear(),
+    firstTransactionDate.getMonth(),
+    1
+  )
+
+  while (startDate <= now) {
+    allMonths.push(
+      `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`
+    )
+    startDate.setMonth(startDate.getMonth() + 1)
+  }
+
+  if (allMonths.length === 0) {
+    // 如果没有月份，至少包含当前月份
     const month = now.getMonth() + 1
     allMonths.push(`${now.getFullYear()}-${month < 10 ? '0' + month : month}`)
   }

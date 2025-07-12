@@ -5,13 +5,7 @@
 
 import { fetchWithTimeout, categorizeApiError } from './fetch-with-timeout'
 import { API_TIMEOUTS } from '@/lib/constants/app-config'
-
-export interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  error?: string
-  message?: string
-}
+import type { ApiResponse } from '@/types/api'
 
 export interface ApiClientOptions {
   timeout?: number
@@ -164,7 +158,7 @@ export class ApiClient {
   /**
    * 错误处理
    */
-  private handleError(error: unknown): ApiResponse {
+  private handleError<T = any>(error: unknown): ApiResponse<T> {
     const errorInfo = categorizeApiError(error)
 
     // 特殊处理认证错误

@@ -1,12 +1,13 @@
 import { prisma } from '@/lib/database/connection-manager'
 import { AccountType, TransactionType } from '@/types/core/constants'
+import type { Currency } from '@/types/core'
 import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import { subMonths, endOfMonth, startOfMonth } from 'date-fns'
 import { BUSINESS_LIMITS } from '@/lib/constants/app-config'
 
-// 类型定义
-type AccountWithTransactions = {
+// Dashboard service 专用类型定义
+type DashboardAccountWithTransactions = {
   id: string
   name: string
   category: {
@@ -29,10 +30,15 @@ type AccountWithTransactions = {
   }>
 }
 
-type Currency = {
+// Dashboard service 专用货币类型（匹配 getUserBaseCurrency 的返回值）
+type DashboardCurrency = {
   code: string
   symbol: string
   name: string
+  id?: string
+  decimalPlaces?: number
+  isCustom?: boolean
+  createdBy?: string | null
 }
 
 /**
@@ -122,8 +128,8 @@ export async function getUserAccountsForCalculation(userId: string) {
 export async function calculateMonthlyNetWorthData(
   userId: string,
   targetDate: Date,
-  accounts: AccountWithTransactions[],
-  baseCurrency: Currency
+  accounts: DashboardAccountWithTransactions[],
+  baseCurrency: DashboardCurrency
 ): Promise<{
   netWorth: number
   totalAssets: number
@@ -178,8 +184,8 @@ export async function calculateMonthlyNetWorthData(
 export async function calculateMonthlyCashFlowData(
   userId: string,
   targetDate: Date,
-  accounts: AccountWithTransactions[],
-  baseCurrency: Currency
+  accounts: DashboardAccountWithTransactions[],
+  baseCurrency: DashboardCurrency
 ): Promise<{
   monthlyIncome: number
   monthlyExpense: number

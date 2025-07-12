@@ -112,11 +112,14 @@ export default function StockCategoryDetailView({
   )
 
   // 获取分类汇总数据
-  useEffect(() => {
-    const fetchSummaryData = async () => {
+  const fetchSummaryData = useCallback(
+    async (timeRange: string = 'lastYear') => {
       setIsLoadingSummary(true)
       try {
-        const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
+        const params = new URLSearchParams({ timeRange })
+        const summaryRes = await fetch(
+          `/api/categories/${category.id}/summary?${params}`
+        )
 
         if (summaryRes.ok) {
           const summaryResult = await summaryRes.json()
@@ -139,10 +142,13 @@ export default function StockCategoryDetailView({
       } finally {
         setIsLoadingSummary(false)
       }
-    }
+    },
+    [category.id, user.settings?.baseCurrency?.code]
+  )
 
-    fetchSummaryData()
-  }, [category.id, user.settings?.baseCurrency?.code])
+  useEffect(() => {
+    fetchSummaryData('lastYear') // 默认加载去年至今的数据
+  }, [fetchSummaryData])
 
   // 根据新的 API 数据格式生成图表所需的数据
   const generateChartData = (
@@ -371,32 +377,7 @@ export default function StockCategoryDetailView({
     if (!isAuthenticated) return
 
     // 重新获取汇总数据和交易记录
-    const fetchSummaryData = async () => {
-      setIsLoadingSummary(true)
-      try {
-        const summaryRes = await fetch(`/api/categories/${category.id}/summary`)
-        if (summaryRes.ok) {
-          const summaryResult = await summaryRes.json()
-          setSummaryData({
-            monthlyData: summaryResult.data,
-          })
-          const chartData = generateChartData(
-            summaryResult.data,
-            user.settings?.baseCurrency?.code || 'CNY'
-          )
-          setMonthlyData({
-            monthlyData: chartData,
-            baseCurrency: user.settings?.baseCurrency?.code || 'CNY',
-          })
-        }
-      } catch (error) {
-        console.error('Error fetching summary data:', error)
-      } finally {
-        setIsLoadingSummary(false)
-      }
-    }
-
-    fetchSummaryData()
+    fetchSummaryData('lastYear') // 使用默认时间范围
     loadTransactions(pagination.currentPage)
   }
 
@@ -635,12 +616,21 @@ export default function StockCategoryDetailView({
                 title={`${category.name} - ${t('category.monthly.balance.summary')}`}
                 height={600}
                 showPieChart={true}
+                loading={isLoadingSummary}
                 accounts={categoryAccounts.map(account => ({
                   id: account.id,
                   name: account.name,
                   color: account.color,
                   type: account.category?.type,
                 }))}
+                onTimeRangeChange={(timeRange: 'last12months' | 'all') => {
+                  // 当用户点击"全部"按钮时，重新获取全部数据
+                  if (timeRange === 'all') {
+                    fetchSummaryData('all')
+                  } else {
+                    fetchSummaryData('lastYear')
+                  }
+                }}
               />
             </div>
           )

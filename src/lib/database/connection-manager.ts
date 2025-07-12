@@ -6,7 +6,25 @@ const globalForPrisma = global as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Function to build optimized connection URL for Vercel serverless
+// Function to detect deployment environment
+function isVercelEnvironment(): boolean {
+  return !!(
+    process.env.VERCEL ||
+    process.env.VERCEL_ENV ||
+    process.env.VERCEL_URL ||
+    process.env.NEXT_RUNTIME === 'edge'
+  )
+}
+
+// Function to detect Docker environment
+function isDockerEnvironment(): boolean {
+  return !!(
+    process.env.DOCKER_CONTAINER === 'true' ||
+    process.env.HOSTNAME === '0.0.0.0'
+  )
+}
+
+// Function to build optimized connection URL based on environment
 function buildConnectionUrl(): string {
   let connectionUrl = process.env.DATABASE_URL || ''
 
@@ -15,6 +33,8 @@ function buildConnectionUrl(): string {
     connectionUrl.includes('postgres://')
   ) {
     const url = new URL(connectionUrl)
+    const isVercel = isVercelEnvironment()
+    const isDocker = isDockerEnvironment()
 
     // Remove any existing connection parameters to avoid conflicts
     url.searchParams.delete('connection_limit')
@@ -22,15 +42,33 @@ function buildConnectionUrl(): string {
     url.searchParams.delete('connect_timeout')
     url.searchParams.delete('statement_timeout')
 
-    // Add strict serverless-optimized parameters
-    url.searchParams.set('pgbouncer', 'true')
-    url.searchParams.set('connection_limit', '1') // Only 1 connection per serverless instance
-    url.searchParams.set('pool_timeout', '20') // 20 second pool timeout
-    url.searchParams.set('connect_timeout', '15') // 15 second connect timeout
-    url.searchParams.set('statement_timeout', '60000') // 60 second statement timeout
+    if (isVercel) {
+      // Vercel serverless environment - strict connection limits
+      url.searchParams.set('pgbouncer', 'true')
+      url.searchParams.set('connection_limit', '1') // Only 1 connection per serverless instance
+      url.searchParams.set('pool_timeout', '20') // 20 second pool timeout
+      url.searchParams.set('connect_timeout', '15') // 15 second connect timeout
+      url.searchParams.set('statement_timeout', '60000') // 60 second statement timeout
+      console.warn('🔗 Using optimized connection URL for Vercel serverless')
+    } else if (isDocker) {
+      // Docker environment - more relaxed connection limits
+      url.searchParams.set('connection_limit', '5') // Allow more connections for Docker
+      url.searchParams.set('pool_timeout', '30') // 30 second pool timeout
+      url.searchParams.set('connect_timeout', '20') // 20 second connect timeout
+      url.searchParams.set('statement_timeout', '120000') // 2 minute statement timeout
+      console.warn('🔗 Using optimized connection URL for Docker environment')
+    } else {
+      // Development or other environments - default settings
+      url.searchParams.set('connection_limit', '10') // More connections for development
+      url.searchParams.set('pool_timeout', '60') // 60 second pool timeout
+      url.searchParams.set('connect_timeout', '30') // 30 second connect timeout
+      url.searchParams.set('statement_timeout', '180000') // 3 minute statement timeout
+      console.warn(
+        '🔗 Using default connection URL for development environment'
+      )
+    }
 
     connectionUrl = url.toString()
-    console.log('🔗 Using optimized connection URL for Vercel serverless')
   }
 
   return connectionUrl
@@ -80,7 +118,7 @@ export async function ensureConnection() {
         await prisma.$connect()
         // 测试连接
         await prisma.$queryRaw`SELECT 1`
-        console.log(`✅ Reconnected to database on attempt ${i + 1}`)
+        console.warn(`✅ Reconnected to database on attempt ${i + 1}`)
         return prisma
       } catch (reconnectError) {
         console.warn(`❌ Reconnection attempt ${i + 1} failed:`, reconnectError)

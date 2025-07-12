@@ -234,10 +234,10 @@ export async function POST(request: NextRequest) {
           })
         }
 
-        // 30秒后清理进度数据
+        // 2分钟后清理进度数据，给用户足够时间查看结果
         setTimeout(() => {
           progressStore.delete(progressKey)
-        }, 30000)
+        }, 120000)
       } catch (error) {
         console.error('Error during async import process:', error)
         const t = await getUserTranslatorSafe(user.id)
@@ -251,10 +251,10 @@ export async function POST(request: NextRequest) {
           }),
         })
 
-        // 30秒后清理进度数据
+        // 2分钟后清理进度数据，给用户足够时间查看结果
         setTimeout(() => {
           progressStore.delete(progressKey)
-        }, 30000)
+        }, 120000)
       }
     })
 

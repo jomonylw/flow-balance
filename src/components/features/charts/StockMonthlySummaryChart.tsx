@@ -12,6 +12,7 @@ import type { SimpleCurrency } from '@/types/core'
 import type { TooltipParam } from '@/types/ui'
 import type { ChartStockAccount, StockMonthlyData } from '@/types/components'
 import { CHART } from '@/lib/constants/app-config'
+import LoadingSpinner from '@/components/ui/feedback/LoadingSpinner'
 
 // 本地类型定义（用于这个组件的特定需求）
 type StockTimeRange = 'last12months' | 'all'
@@ -23,6 +24,8 @@ interface StockMonthlySummaryChartProps {
   height?: number
   accounts?: ChartStockAccount[] // 新增账户信息，用于获取颜色
   showPieChart?: boolean
+  onTimeRangeChange?: (timeRange: StockTimeRange) => void // 新增时间范围变更回调
+  loading?: boolean // 新增外部loading状态
 }
 
 export default function StockMonthlySummaryChart({
@@ -32,6 +35,8 @@ export default function StockMonthlySummaryChart({
   height = CHART.DEFAULT_HEIGHT,
   accounts = [],
   showPieChart = false,
+  onTimeRangeChange,
+  loading = false,
 }: StockMonthlySummaryChartProps) {
   const { t, isLoading } = useLanguage()
   const { formatCurrency, getUserLocale: _getUserLocale } =
@@ -649,7 +654,12 @@ export default function StockMonthlySummaryChart({
           className='flex items-center justify-center'
           style={{ height: `${height}px` }}
         >
-          <div className='text-gray-500'>{t('chart.loading')}</div>
+          <LoadingSpinner
+            size='lg'
+            showText
+            text={t('chart.loading')}
+            color={resolvedTheme === 'dark' ? 'white' : 'primary'}
+          />
         </div>
       </div>
     )
@@ -663,7 +673,10 @@ export default function StockMonthlySummaryChart({
       <div className='flex justify-end mb-4'>
         <div className='flex space-x-2'>
           <button
-            onClick={() => setTimeRange('last12months')}
+            onClick={() => {
+              setTimeRange('last12months')
+              onTimeRangeChange?.('last12months')
+            }}
             className={`px-3 py-1 text-sm rounded ${
               timeRange === 'last12months'
                 ? resolvedTheme === 'dark'
@@ -677,7 +690,10 @@ export default function StockMonthlySummaryChart({
             {t('time.last.12.months')}
           </button>
           <button
-            onClick={() => setTimeRange('all')}
+            onClick={() => {
+              setTimeRange('all')
+              onTimeRangeChange?.('all')
+            }}
             className={`px-3 py-1 text-sm rounded ${
               timeRange === 'all'
                 ? resolvedTheme === 'dark'
@@ -695,27 +711,53 @@ export default function StockMonthlySummaryChart({
 
       {/* 柱状图 */}
       <div
-        key={`bar-${resolvedTheme}-${isLoading}`}
-        ref={chartRef}
+        className='relative'
         style={{
           width: '100%',
           height: showPieChart
             ? `${Math.floor(height * 0.6)}px`
             : `${height}px`,
         }}
-      />
+      >
+        <div
+          key={`bar-${resolvedTheme}-${isLoading}`}
+          ref={chartRef}
+          style={{
+            width: '100%',
+            height: '100%',
+          }}
+        />
+        {loading && (
+          <div className='absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 z-10'>
+            <LoadingSpinner />
+          </div>
+        )}
+      </div>
 
       {/* 饼状图 */}
       {showPieChart && (
         <div
-          key={`pie-${resolvedTheme}-${isLoading}-${selectedMonth}`}
-          ref={pieChartRef}
+          className='relative'
           style={{
             width: '100%',
             height: `${Math.floor(height * 0.4)}px`,
             marginTop: '16px',
           }}
-        />
+        >
+          <div
+            key={`pie-${resolvedTheme}-${isLoading}-${selectedMonth}`}
+            ref={pieChartRef}
+            style={{
+              width: '100%',
+              height: '100%',
+            }}
+          />
+          {loading && (
+            <div className='absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 z-10'>
+              <LoadingSpinner />
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
