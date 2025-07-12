@@ -22,18 +22,14 @@
     "NODE_ENV": "production",
     "NEXT_TELEMETRY_DISABLED": "1",
     "PRISMA_CLIENT_ENGINE_TYPE": "binary",
-    "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true",
-    "PRISMA_CLI_QUERY_ENGINE_TYPE": "binary",
-    "PRISMA_QUERY_ENGINE_LIBRARY": "binary"
+    "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true"
   },
   "build": {
     "env": {
       "NODE_ENV": "production",
       "NEXT_TELEMETRY_DISABLED": "1",
       "PRISMA_CLIENT_ENGINE_TYPE": "binary",
-      "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true",
-      "PRISMA_CLI_QUERY_ENGINE_TYPE": "binary",
-      "PRISMA_QUERY_ENGINE_LIBRARY": "binary"
+      "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true"
     }
   },
   "headers": [
