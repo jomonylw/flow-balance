@@ -27,20 +27,54 @@ import {
 
 interface UserSettingsPageProps {
   user: User
-  userSettings: (UserSettings & { baseCurrency: Currency | null }) | null
-  currencies: Currency[]
+  userSettings?: (UserSettings & { baseCurrency: Currency | null }) | null
+  currencies?: Currency[]
 }
 
 export default function UserSettingsPage({
   user,
-  userSettings,
-  currencies,
+  userSettings: initialUserSettings,
+  currencies: initialCurrencies,
 }: UserSettingsPageProps) {
   const { t } = useLanguage()
   const searchParams = useSearchParams()
   const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState<TabType>('profile')
   const [isLoading, setIsLoading] = useState(false)
+  const [userSettings, setUserSettings] = useState<
+    (UserSettings & { baseCurrency: Currency | null }) | null
+  >(initialUserSettings || null)
+  const [currencies, setCurrencies] = useState<Currency[]>(
+    initialCurrencies || []
+  )
+
+  // 客户端数据获取
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!initialUserSettings || !initialCurrencies) {
+        try {
+          const [settingsResponse, currenciesResponse] = await Promise.all([
+            fetch('/api/user/settings'),
+            fetch('/api/currencies'),
+          ])
+
+          if (settingsResponse.ok) {
+            const settingsData = await settingsResponse.json()
+            setUserSettings(settingsData.data.userSettings)
+          }
+
+          if (currenciesResponse.ok) {
+            const currenciesData = await currenciesResponse.json()
+            setCurrencies(currenciesData.data)
+          }
+        } catch (error) {
+          console.error('Failed to fetch settings data:', error)
+        }
+      }
+    }
+
+    fetchData()
+  }, [initialUserSettings, initialCurrencies])
 
   useEffect(() => {
     // 检查URL参数中是否指定了标签页
