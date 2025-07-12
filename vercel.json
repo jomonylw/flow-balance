@@ -2,7 +2,7 @@
   "name": "flow-balance",
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "pnpm db:generate && pnpm build",
+  "buildCommand": "if [[ \"$DATABASE_URL\" == postgresql://* ]] || [[ \"$DATABASE_URL\" == postgres://* ]]; then echo 'Switching to PostgreSQL schema...' && cp prisma/schema.postgresql.prisma prisma/schema.prisma && npx prisma db push; fi && pnpm db:generate && echo 'Checking seed data...' && node -e \"const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); prisma.currency.count().then(count => { if (count === 0) { console.log('Importing seed data...'); process.exit(0); } else { console.log('Seed data exists, skipping...'); process.exit(1); } }).catch(() => { console.log('Importing seed data...'); process.exit(0); }).finally(() => { prisma.\\$disconnect(); });\" && pnpm db:seed || echo 'Seed data check completed' && pnpm build",
   "devCommand": "pnpm dev",
   "installCommand": "pnpm install",
   "outputDirectory": ".next",
