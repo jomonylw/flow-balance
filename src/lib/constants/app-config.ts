@@ -9,8 +9,8 @@ export const APP_INFO = {
   VERSION: process.env.NEXT_PUBLIC_APP_VERSION || '0.1.0',
   DESCRIPTION: '个人财务管理系统',
   AUTHOR: 'Flow Balance Team',
-  HOMEPAGE: 'https://flowbalance.app',
-  REPOSITORY: 'https://github.com/jomon-finance/flow-balance',
+  HOMEPAGE: 'https://flow-balance.vercel.app',
+  REPOSITORY: 'https://github.com/jomonylw/flow-balance',
   BUILD_DATE:
     process.env.NEXT_PUBLIC_BUILD_DATE ||
     new Date().toISOString().split('T')[0],

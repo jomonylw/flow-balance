@@ -184,6 +184,22 @@ export async function getUserTranslator(userId: string) {
 }
 
 /**
+ * 获取用户语言偏好并创建翻译函数（安全版本）
+ * 在数据库连接问题时返回默认翻译函数
+ * @param userId 用户ID
+ * @returns 翻译函数
+ */
+export async function getUserTranslatorSafe(userId: string) {
+  try {
+    const userLanguage = await getUserLanguage(userId)
+    return createServerTranslator(userLanguage)
+  } catch (error) {
+    console.warn('Failed to get user language, using default:', error)
+    return createServerTranslator('zh') // 返回默认中文翻译函数
+  }
+}
+
+/**
  * 清除用户语言缓存
  * @param userId 可选，指定用户ID则只清除该用户的缓存，否则清除所有
  */

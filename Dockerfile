@@ -45,6 +45,8 @@ COPY . .
 # Set environment variables for build
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# 设置构建时的默认数据库 URL，避免 Prisma 客户端初始化错误
+ENV DATABASE_URL="file:/tmp/build.db"
 # Pass build arguments as environment variables for Next.js build
 ENV NEXT_PUBLIC_BUILD_DATE=${BUILD_DATE}
 ENV NEXT_PUBLIC_GIT_COMMIT=${GIT_COMMIT}
@@ -57,6 +59,16 @@ RUN pnpm db:generate
 RUN echo "Prisma client locations:" && \
     find node_modules -path "*/@prisma/client*" -type d | head -3 || \
     echo "No Prisma client found in expected locations"
+
+# 验证环境变量
+RUN echo "Build environment check:" && \
+    echo "NODE_ENV: $NODE_ENV" && \
+    echo "DATABASE_URL: $DATABASE_URL" && \
+    echo "NEXT_TELEMETRY_DISABLED: $NEXT_TELEMETRY_DISABLED"
+
+# 验证 Prisma 客户端可以正常导入
+RUN echo "Testing Prisma client import..." && \
+    node -e "try { const { PrismaClient } = require('@prisma/client'); console.log('✅ Prisma client import successful'); } catch(e) { console.error('❌ Prisma client import failed:', e.message); process.exit(1); }"
 
 # Build the application
 RUN pnpm build

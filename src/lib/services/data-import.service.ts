@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/database/prisma'
+import { executeImportTransaction } from '@/lib/database/import-connection'
 import { Decimal } from '@prisma/client/runtime/library'
 import type {
   ExportedData,
@@ -177,8 +178,8 @@ export class DataImportService {
         result.warnings = validation.warnings
       }
 
-      // 使用事务确保数据一致性
-      await prisma.$transaction(async tx => {
+      // 使用专用的导入连接和事务确保数据一致性，支持长时间运行的导入操作
+      await executeImportTransaction(async tx => {
         // 创建ID映射表
         const idMappings: {
           categories: IdMapping

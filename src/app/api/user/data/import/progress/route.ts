@@ -13,7 +13,10 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/api/response'
-import { getUserTranslator } from '@/lib/utils/server-i18n'
+import {
+  getUserTranslator,
+  getUserTranslatorSafe,
+} from '@/lib/utils/server-i18n'
 import type {
   ExportedData,
   ImportOptions,
@@ -28,6 +31,7 @@ const progressStore = new Map<string, ImportProgress>()
  */
 export async function GET(request: NextRequest) {
   let user: any = null
+
   try {
     user = await getCurrentUser()
     if (!user) {
@@ -38,32 +42,49 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId')
 
     if (!sessionId) {
-      const t = await getUserTranslator(user.id)
-      return validationErrorResponse(t('data.import.session.id.required'))
+      // 只在需要时获取用户语言设置
+      try {
+        const t = await getUserTranslator(user.id)
+        return validationErrorResponse(t('data.import.session.id.required'))
+      } catch {
+        return validationErrorResponse('Session ID is required')
+      }
     }
 
     const progress = progressStore.get(`${user.id}_${sessionId}`)
 
     if (!progress) {
-      const t = await getUserTranslator(user.id)
-      return NextResponse.json(
-        {
-          success: false,
-          error: t('data.import.session.not.found'),
-        },
-        { status: 404 }
-      )
+      // 只在需要时获取用户语言设置
+      try {
+        const t = await getUserTranslator(user.id)
+        return NextResponse.json(
+          {
+            success: false,
+            error: t('data.import.session.not.found'),
+          },
+          { status: 404 }
+        )
+      } catch {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Import session not found',
+          },
+          { status: 404 }
+        )
+      }
     }
 
     return successResponse(progress)
   } catch (error) {
     console.error('Failed to get import progress:', error)
-    const t = await getUserTranslator(user?.id || '')
+
+    // 避免在错误处理中再次查询数据库
     return NextResponse.json(
       {
         success: false,
-        error: t('data.import.progress.get.failed'),
-        details: error instanceof Error ? error.message : t('error.unknown'),
+        error: 'Failed to get import progress',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     )
@@ -141,10 +162,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 异步执行导入，不阻塞响应
-    setImmediate(async () => {
+    // 使用 Promise 而不是 setImmediate 来更好地处理错误和连接管理
+    Promise.resolve().then(async () => {
       try {
         // 更新进度：开始验证
-        const t = await getUserTranslator(user.id)
+        const t = await getUserTranslatorSafe(user.id)
         progressStore.set(progressKey, {
           stage: 'validating',
           current: 0,
@@ -190,7 +212,7 @@ export async function POST(request: NextRequest) {
 
         // 更新最终进度
         if (result.success) {
-          const t = await getUserTranslator(user.id)
+          const t = await getUserTranslatorSafe(user.id)
           progressStore.set(progressKey, {
             stage: 'completed',
             current: 100,
@@ -202,7 +224,7 @@ export async function POST(request: NextRequest) {
             }),
           })
         } else {
-          const t = await getUserTranslator(user.id)
+          const t = await getUserTranslatorSafe(user.id)
           progressStore.set(progressKey, {
             stage: 'failed',
             current: result.statistics.processed,
@@ -218,7 +240,7 @@ export async function POST(request: NextRequest) {
         }, 30000)
       } catch (error) {
         console.error('Error during async import process:', error)
-        const t = await getUserTranslator(user.id)
+        const t = await getUserTranslatorSafe(user.id)
         progressStore.set(progressKey, {
           stage: 'failed',
           current: 0,

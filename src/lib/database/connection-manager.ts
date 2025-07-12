@@ -7,14 +7,14 @@ import { PrismaClient } from '@prisma/client'
 
 // 连接池配置
 const CONNECTION_CONFIG = {
-  // 最大连接数 - 针对免费版数据库限制
-  maxConnections: 5,
+  // 最大连接数 - 针对免费版数据库限制，降低以避免连接池耗尽
+  maxConnections: 3,
   // 连接超时时间
   connectionTimeout: 10000,
-  // 查询超时时间
-  queryTimeout: 30000,
+  // 查询超时时间，增加以支持长时间运行的导入操作
+  queryTimeout: 60000,
   // 连接空闲超时时间
-  idleTimeout: 60000,
+  idleTimeout: 30000,
 } as const
 
 // 全局连接管理器
@@ -91,7 +91,7 @@ class DatabaseConnectionManager {
    * 构建连接URL，添加连接池参数
    */
   private buildConnectionUrl(): string {
-    const baseUrl = process.env.DATABASE_URL || ''
+    const baseUrl = process.env.DATABASE_URL || 'file:/tmp/fallback.db'
 
     // 如果是 PostgreSQL，添加连接池参数
     if (
@@ -101,11 +101,11 @@ class DatabaseConnectionManager {
       const url = new URL(baseUrl)
 
       // 设置连接池参数
-      url.searchParams.set('connection_limit', '3') // 每个实例最多3个连接
-      url.searchParams.set('pool_timeout', '10') // 连接池超时10秒
-      url.searchParams.set('connect_timeout', '10') // 连接超时10秒
-      url.searchParams.set('statement_timeout', '30000') // 语句超时30秒
-      url.searchParams.set('idle_in_transaction_session_timeout', '60000') // 空闲事务超时60秒
+      url.searchParams.set('connection_limit', '2') // 每个实例最多2个连接，避免连接池耗尽
+      url.searchParams.set('pool_timeout', '15') // 连接池超时15秒
+      url.searchParams.set('connect_timeout', '15') // 连接超时15秒
+      url.searchParams.set('statement_timeout', '120000') // 语句超时2分钟，支持长时间导入操作
+      url.searchParams.set('idle_in_transaction_session_timeout', '180000') // 空闲事务超时3分钟
 
       return url.toString()
     }
