@@ -10,11 +10,13 @@
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 60,
-      "memory": 1024
+      "memory": 1024,
+      "regions": ["iad1"]
     },
     "src/app/**/page.tsx": {
       "maxDuration": 30,
-      "memory": 512
+      "memory": 512,
+      "regions": ["iad1"]
     }
   },
 
@@ -22,14 +24,18 @@
     "NODE_ENV": "production",
     "NEXT_TELEMETRY_DISABLED": "1",
     "PRISMA_CLIENT_ENGINE_TYPE": "binary",
-    "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true"
+    "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true",
+    "PRISMA_CLI_QUERY_ENGINE_TYPE": "binary",
+    "PRISMA_QUERY_ENGINE_LIBRARY": "binary"
   },
   "build": {
     "env": {
       "NODE_ENV": "production",
       "NEXT_TELEMETRY_DISABLED": "1",
       "PRISMA_CLIENT_ENGINE_TYPE": "binary",
-      "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true"
+      "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true",
+      "PRISMA_CLI_QUERY_ENGINE_TYPE": "binary",
+      "PRISMA_QUERY_ENGINE_LIBRARY": "binary"
     }
   },
   "headers": [

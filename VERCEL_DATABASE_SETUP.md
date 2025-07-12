@@ -12,13 +12,16 @@
 ### 1. 数据库连接 URL
 
 ```bash
-DATABASE_URL=postgresql://username:password@hostname:port/database?pgbouncer=true&connection_limit=1
+DATABASE_URL=postgresql://username:password@hostname:port/database?pgbouncer=true&connection_limit=1&pool_timeout=20&connect_timeout=15&statement_timeout=60000
 ```
 
-**重要参数说明：**
+**关键参数说明：**
 
-- `pgbouncer=true` - 启用 PgBouncer 连接池
-- `connection_limit=1` - 每个 serverless 函数最多 1 个连接
+- `pgbouncer=true` - 启用 PgBouncer 连接池 (必须)
+- `connection_limit=1` - 每个 serverless 函数最多 1 个连接 (必须)
+- `pool_timeout=20` - 连接池超时 20 秒
+- `connect_timeout=15` - 连接超时 15 秒
+- `statement_timeout=60000` - 语句超时 60 秒
 
 ### 2. Prisma 优化配置
 

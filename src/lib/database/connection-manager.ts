@@ -6,14 +6,44 @@ const globalForPrisma = global as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Function to build optimized connection URL for Vercel serverless
+function buildConnectionUrl(): string {
+  let connectionUrl = process.env.DATABASE_URL || ''
+
+  if (
+    connectionUrl.includes('postgresql://') ||
+    connectionUrl.includes('postgres://')
+  ) {
+    const url = new URL(connectionUrl)
+
+    // Remove any existing connection parameters to avoid conflicts
+    url.searchParams.delete('connection_limit')
+    url.searchParams.delete('pool_timeout')
+    url.searchParams.delete('connect_timeout')
+    url.searchParams.delete('statement_timeout')
+
+    // Add strict serverless-optimized parameters
+    url.searchParams.set('pgbouncer', 'true')
+    url.searchParams.set('connection_limit', '1') // Only 1 connection per serverless instance
+    url.searchParams.set('pool_timeout', '20') // 20 second pool timeout
+    url.searchParams.set('connect_timeout', '15') // 15 second connect timeout
+    url.searchParams.set('statement_timeout', '60000') // 60 second statement timeout
+
+    connectionUrl = url.toString()
+    console.log('🔗 Using optimized connection URL for Vercel serverless')
+  }
+
+  return connectionUrl
+}
+
 // Create and export the singleton PrismaClient optimized for Vercel serverless
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    // Configure for serverless environment with connection pooling
+    // Configure for serverless environment with strict connection pooling
     datasources: {
       db: {
-        url: process.env.DATABASE_URL,
+        url: buildConnectionUrl(),
       },
     },
     // Optimize logging for production
