@@ -288,9 +288,119 @@ export default function SystemUpdateCard() {
       {/* 处理中信息 */}
       {syncStatus.status === 'processing' && (
         <div className='mt-3 p-3 bg-blue-100 dark:bg-blue-900/30 rounded-md'>
-          <p className='text-sm text-blue-600 dark:text-blue-400'>
-            {t('sync.processing.message')}
-          </p>
+          <div className='flex items-center space-x-2 mb-2'>
+            <LoadingSpinner size='xs' color='primary' />
+            <p className='text-sm text-blue-600 dark:text-blue-400'>
+              {t('sync.processing.message')}
+            </p>
+          </div>
+
+          {/* 简约阶段状态显示 - 只在处理中时显示 */}
+          {syncStatus.status === 'processing' && syncStatus.stages && (
+            <div className='mt-2 flex items-center space-x-3 text-xs'>
+              {/* 定期交易 */}
+              <div className='flex items-center space-x-1'>
+                {(() => {
+                  const stage =
+                    syncStatus.stages?.recurringTransactions?.stage || 'pending'
+                  if (stage === 'completed') {
+                    return (
+                      <div className='w-3 h-3 rounded-full bg-green-500 flex items-center justify-center'>
+                        <svg
+                          className='w-2 h-2 text-white'
+                          fill='currentColor'
+                          viewBox='0 0 20 20'
+                        >
+                          <path
+                            fillRule='evenodd'
+                            d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
+                            clipRule='evenodd'
+                          />
+                        </svg>
+                      </div>
+                    )
+                  } else if (stage === 'processing') {
+                    return <LoadingSpinner size='xs' color='primary' />
+                  } else {
+                    return (
+                      <span className='w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600' />
+                    )
+                  }
+                })()}
+                <span className='text-gray-600 dark:text-gray-400'>
+                  {t('sync.stages.recurringTransactions')}
+                </span>
+              </div>
+
+              {/* 贷款合约 */}
+              <div className='flex items-center space-x-1'>
+                {(() => {
+                  const stage =
+                    syncStatus.stages?.loanContracts?.stage || 'pending'
+                  if (stage === 'completed') {
+                    return (
+                      <div className='w-3 h-3 rounded-full bg-green-500 flex items-center justify-center'>
+                        <svg
+                          className='w-2 h-2 text-white'
+                          fill='currentColor'
+                          viewBox='0 0 20 20'
+                        >
+                          <path
+                            fillRule='evenodd'
+                            d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
+                            clipRule='evenodd'
+                          />
+                        </svg>
+                      </div>
+                    )
+                  } else if (stage === 'processing') {
+                    return <LoadingSpinner size='xs' color='primary' />
+                  } else {
+                    return (
+                      <span className='w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600' />
+                    )
+                  }
+                })()}
+                <span className='text-gray-600 dark:text-gray-400'>
+                  {t('sync.stages.loanContracts')}
+                </span>
+              </div>
+
+              {/* 汇率更新 */}
+              <div className='flex items-center space-x-1'>
+                {(() => {
+                  const stage =
+                    syncStatus.stages?.exchangeRates?.stage || 'pending'
+                  if (stage === 'completed') {
+                    return (
+                      <div className='w-3 h-3 rounded-full bg-green-500 flex items-center justify-center'>
+                        <svg
+                          className='w-2 h-2 text-white'
+                          fill='currentColor'
+                          viewBox='0 0 20 20'
+                        >
+                          <path
+                            fillRule='evenodd'
+                            d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
+                            clipRule='evenodd'
+                          />
+                        </svg>
+                      </div>
+                    )
+                  } else if (stage === 'processing') {
+                    return <LoadingSpinner size='xs' color='primary' />
+                  } else {
+                    return (
+                      <span className='w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600' />
+                    )
+                  }
+                })()}
+                <span className='text-gray-600 dark:text-gray-400'>
+                  {t('sync.stages.exchangeRates')}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

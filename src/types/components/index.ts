@@ -95,9 +95,14 @@ export interface CashFlowChartData {
 
 /** 图表数据容器 */
 export interface ChartData {
-  netWorthChart: NetWorthChartData
-  cashFlowChart: CashFlowChartData
-  currency: SimpleCurrency
+  netWorthChart?: NetWorthChartData
+  cashFlowChart?: CashFlowChartData
+  currency?: SimpleCurrency
+  currencyConversion?: {
+    baseCurrency: SimpleCurrency
+    hasErrors: boolean
+    note: string
+  }
 }
 
 // ============================================================================

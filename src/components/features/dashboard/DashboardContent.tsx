@@ -14,10 +14,7 @@ import PageContainer from '@/components/ui/layout/PageContainer'
 import TranslationLoader from '@/components/ui/data-display/TranslationLoader'
 import { DashboardSkeleton } from '@/components/ui/data-display/page-skeletons'
 
-import {
-  validateAccountDataWithI18n,
-  validateChartData,
-} from '@/lib/utils/validation'
+import { validateAccountDataWithI18n } from '@/lib/utils/validation'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useTheme } from '@/contexts/providers/ThemeContext'
 import { useAuth } from '@/contexts/providers/AuthContext'
@@ -48,8 +45,13 @@ export default function DashboardContent({
   const [defaultTransactionType, setDefaultTransactionType] = useState<
     TransactionType.INCOME | TransactionType.EXPENSE
   >(TransactionType.EXPENSE)
-  const [chartData, setChartData] = useState<ChartData | null>(null)
-  const [isLoadingCharts, setIsLoadingCharts] = useState(true)
+  const [chartData, setChartData] = useState<ChartData>({
+    netWorthChart: undefined,
+    cashFlowChart: undefined,
+    currency: undefined,
+    currencyConversion: undefined,
+  })
+  // 移除 isLoadingCharts，使用独立的加载状态
   const [_chartError, setChartError] = useState<string | null>(null)
   const [validationResult, setValidationResult] =
     useState<ValidationResult | null>(null)
@@ -114,12 +116,9 @@ export default function DashboardContent({
         setSummaryData(summaryData.data)
       }
 
-      // 重新获取图表数据
-      const chartResponse = await fetch('/api/dashboard/charts?months=12')
-      if (chartResponse.ok) {
-        const chartData = await chartResponse.json()
-        setChartData(chartData.data)
-      }
+      // 重新获取图表数据 - 使用拆分后的 API
+      fetchNetWorthChartData()
+      fetchCashFlowChartData()
     } catch (error) {
       console.error('Error refreshing dashboard data:', error)
     }
@@ -150,39 +149,68 @@ export default function DashboardContent({
     fetchSummaryData()
   }, [user, isAuthenticated])
 
-  // 获取图表数据 - 初始加载时获取所有数据
-  const fetchInitialChartData = useCallback(async () => {
+  // 获取净资产图表数据
+  const fetchNetWorthChartData = useCallback(async () => {
     try {
-      setIsLoadingCharts(true)
+      setIsLoadingNetWorth(true)
       setChartError(null)
 
-      // 初始加载时获取所有数据，以支持后续的前端过滤
-      const response = await fetch('/api/dashboard/charts?months=all')
+      // 获取净资产图表数据
+      const response = await fetch('/api/dashboard/charts/net-worth?months=all')
       if (response.ok) {
         const data = await response.json()
-        setChartData(data.data)
-
-        // 验证图表数据
-        const chartValidation = validateChartData(data.data)
-        if (!chartValidation.isValid) {
-          console.warn('Chart data validation failed:', chartValidation.errors)
-          setChartError(
-            t('dashboard.chart.data.validation.failed', {
-              errors: chartValidation.errors.join(', '),
-            })
-          )
-        }
+        setChartData(prevData => ({
+          ...prevData,
+          netWorthChart: data.data.netWorthChart,
+          currency: data.data.currency,
+          currencyConversion: data.data.currencyConversion,
+        }))
       } else {
         const errorData = await response.json()
         setChartError(errorData.error || t('dashboard.chart.data.fetch.failed'))
       }
     } catch (error) {
-      console.error('Error fetching chart data:', error)
+      console.error('Error fetching net worth chart data:', error)
       setChartError(t('dashboard.network.error.charts'))
     } finally {
-      setIsLoadingCharts(false)
+      setIsLoadingNetWorth(false)
     }
   }, [t])
+
+  // 获取现金流图表数据
+  const fetchCashFlowChartData = useCallback(async () => {
+    try {
+      setIsLoadingCashFlow(true)
+      setChartError(null)
+
+      // 获取现金流图表数据
+      const response = await fetch('/api/dashboard/charts/cash-flow?months=all')
+      if (response.ok) {
+        const data = await response.json()
+        setChartData(prevData => ({
+          ...prevData,
+          cashFlowChart: data.data.cashFlowChart,
+          currency: data.data.currency,
+          currencyConversion: data.data.currencyConversion,
+        }))
+      } else {
+        const errorData = await response.json()
+        setChartError(errorData.error || t('dashboard.chart.data.fetch.failed'))
+      }
+    } catch (error) {
+      console.error('Error fetching cash flow chart data:', error)
+      setChartError(t('dashboard.network.error.charts'))
+    } finally {
+      setIsLoadingCashFlow(false)
+    }
+  }, [t])
+
+  // 初始化图表数据 - 并行加载两个图表，各自独立显示
+  const fetchInitialChartData = useCallback(async () => {
+    // 立即开始并行加载，每个图表根据自己的状态独立显示
+    fetchNetWorthChartData()
+    fetchCashFlowChartData()
+  }, [fetchNetWorthChartData, fetchCashFlowChartData])
 
   // 初始加载图表数据
   useEffect(() => {
@@ -388,7 +416,9 @@ export default function DashboardContent({
           >
             {t('dashboard.financial.overview')}
             {/* <span
-              className={`ml-2 text-sm font-normal ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+              className={`ml-2 text-sm font-normal ${
+                resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}
             >
               ({t('dashboard.api.data.note')})
             </span> */}
@@ -1018,49 +1048,58 @@ export default function DashboardContent({
             {t('dashboard.financial.trend.analysis')}
           </h2>
 
-          {isLoadingCharts ? (
+          {chartData.netWorthChart ||
+          chartData.cashFlowChart ||
+          isLoadingNetWorth ||
+          isLoadingCashFlow ? (
             <div className='space-y-6'>
-              <div
-                className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
-              >
-                <div className='animate-pulse'>
-                  <div
-                    className={`h-4 rounded w-1/3 mb-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}
-                  ></div>
-                  <div
-                    className={`h-64 rounded ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}
-                  ></div>
+              {/* 净资产图表 - 独立显示 */}
+              {chartData.netWorthChart && chartData.currency ? (
+                <NetWorthChart
+                  data={chartData.netWorthChart}
+                  currency={chartData.currency}
+                  loading={isLoadingNetWorth}
+                  onTimeRangeChange={handleNetWorthTimeRangeChange}
+                  timeRange={netWorthTimeRange}
+                />
+              ) : isLoadingNetWorth ? (
+                <div
+                  className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
+                >
+                  <div className='animate-pulse'>
+                    <div
+                      className={`h-4 rounded w-1/3 mb-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}
+                    ></div>
+                    <div
+                      className={`h-64 rounded ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}
+                    ></div>
+                  </div>
                 </div>
-              </div>
-              <div
-                className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
-              >
-                <div className='animate-pulse'>
-                  <div
-                    className={`h-4 rounded w-1/3 mb-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}
-                  ></div>
-                  <div
-                    className={`h-64 rounded ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}
-                  ></div>
+              ) : null}
+
+              {/* 现金流图表 - 独立显示 */}
+              {chartData.cashFlowChart && chartData.currency ? (
+                <CashFlowChart
+                  data={chartData.cashFlowChart}
+                  currency={chartData.currency}
+                  loading={isLoadingCashFlow}
+                  onTimeRangeChange={handleCashFlowTimeRangeChange}
+                  timeRange={cashFlowTimeRange}
+                />
+              ) : isLoadingCashFlow ? (
+                <div
+                  className={`rounded-lg shadow p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
+                >
+                  <div className='animate-pulse'>
+                    <div
+                      className={`h-4 rounded w-1/3 mb-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}
+                    ></div>
+                    <div
+                      className={`h-64 rounded ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}
+                    ></div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ) : chartData ? (
-            <div className='space-y-6'>
-              <NetWorthChart
-                data={chartData.netWorthChart}
-                currency={chartData.currency}
-                loading={isLoadingCharts || isLoadingNetWorth}
-                onTimeRangeChange={handleNetWorthTimeRangeChange}
-                timeRange={netWorthTimeRange}
-              />
-              <CashFlowChart
-                data={chartData.cashFlowChart}
-                currency={chartData.currency}
-                loading={isLoadingCashFlow}
-                onTimeRangeChange={handleCashFlowTimeRangeChange}
-                timeRange={cashFlowTimeRange}
-              />
+              ) : null}
             </div>
           ) : (
             <div
@@ -1089,115 +1128,6 @@ export default function DashboardContent({
               </div>
             </div>
           )}
-
-          {/* 数据质量评分 */}
-          {/* {validationResult && validationResult.score !== undefined && (
-            <div className='mb-4 sm:mb-6'>
-              <div
-                className={`rounded-lg shadow p-4 sm:p-6 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
-              >
-                <div className='flex items-center justify-between mb-4'>
-                  <h2
-                    className={`text-xl font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
-                  >
-                    {t('dashboard.data.quality.score')}
-                  </h2>
-                  <div className='flex items-center'>
-                    <div
-                      className={`text-2xl font-bold ${
-                        validationResult.score >= 90
-                          ? 'text-green-600'
-                          : validationResult.score >= 70
-                            ? 'text-yellow-600'
-                            : 'text-red-600'
-                      }`}
-                    >
-                      {validationResult.score}
-                    </div>
-                    <span
-                      className={`ml-1 ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
-                    >
-                      /100
-                    </span>
-                  </div>
-                </div>
-
-                <div
-                  className={`w-full rounded-full h-2 mb-4 ${resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}
-                >
-                  <div
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      validationResult.score >= 90
-                        ? 'bg-green-500'
-                        : validationResult.score >= 70
-                          ? 'bg-yellow-500'
-                          : 'bg-red-500'
-                    }`}
-                    style={{ width: `${validationResult.score}%` }}
-                  ></div>
-                </div>
-
-                {validationResult.details && (
-                  <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm'>
-                    <div className='text-center'>
-                      <div
-                        className={`text-base sm:text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
-                      >
-                        {validationResult.details.accountsChecked}
-                      </div>
-                      <div
-                        className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
-                      >
-                        {t('dashboard.accounts.checked')}
-                      </div>
-                    </div>
-                    <div className='text-center'>
-                      <div
-                        className={`text-base sm:text-lg font-semibold ${resolvedTheme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}
-                      >
-                        {validationResult.details.transactionsChecked}
-                      </div>
-                      <div
-                        className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
-                      >
-                        {t('dashboard.transactions.checked')}
-                      </div>
-                    </div>
-                    <div className='text-center'>
-                      <div className='text-base sm:text-lg font-semibold text-red-600'>
-                        {validationResult.details.categoriesWithoutType}
-                      </div>
-                      <div
-                        className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
-                      >
-                        {t('dashboard.categories.without.type')}
-                      </div>
-                    </div>
-                    <div className='text-center'>
-                      <div className='text-base sm:text-lg font-semibold text-red-600'>
-                        {validationResult.details.invalidTransactions}
-                      </div>
-                      <div
-                        className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
-                      >
-                        {t('dashboard.invalid.transactions')}
-                      </div>
-                    </div>
-                    <div className='text-center col-span-2 sm:col-span-1'>
-                      <div className='text-base sm:text-lg font-semibold text-yellow-600'>
-                        {validationResult.details.businessLogicViolations}
-                      </div>
-                      <div
-                        className={`text-xs sm:text-sm ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
-                      >
-                        {t('dashboard.business.logic.violations')}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )} */}
         </div>
 
         {/* 快速交易表单模态框 */}

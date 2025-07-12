@@ -95,6 +95,8 @@ export const BUSINESS_LIMITS = {
   LOAN_TERM_MAX_MONTHS: 360,
   /** 利率最大值（百分比） */
   INTEREST_RATE_MAX: 100,
+  /** 图表最大月份数 */
+  MAX_CHART_MONTHS: 120, // 10年的数据
 } as const
 
 /** 缓存配置 */

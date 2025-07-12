@@ -88,9 +88,11 @@ export const CURRENCY_ENDPOINTS = {
 /** 仪表板相关端点 */
 export const DASHBOARD_ENDPOINTS = {
   SUMMARY: `${API_BASE}/dashboard/summary`,
-  CHARTS: `${API_BASE}/dashboard/charts`,
+  // 图表端点
+  NET_WORTH_CHART: `${API_BASE}/dashboard/charts/net-worth`,
+  CASH_FLOW_CHART: `${API_BASE}/dashboard/charts/cash-flow`,
+  // 其他图表端点（预留）
   BALANCE_SHEET: `${API_BASE}/dashboard/charts/balance-sheet`,
-  CASH_FLOW: `${API_BASE}/dashboard/charts/cash-flow`,
   NET_WORTH_TREND: `${API_BASE}/dashboard/charts/net-worth-trend`,
   MONTHLY_SUMMARY: `${API_BASE}/dashboard/charts/monthly-summary`,
 } as const
