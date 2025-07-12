@@ -16,6 +16,38 @@ interface ImportProgressModalProps {
   onComplete: () => void
 }
 
+// 数据类型标签映射
+const getDataTypeLabel = (dataType: string): string => {
+  const labels: Record<string, string> = {
+    transactions: '交易记录',
+    recurringTransactions: '定期交易',
+    loanContracts: '贷款合约',
+    loanPayments: '贷款还款记录',
+    categories: '分类',
+    tags: '标签',
+    accounts: '账户',
+    transactionTemplates: '交易模板',
+    currencies: '货币',
+    exchangeRates: '汇率',
+  }
+  return labels[dataType] || dataType
+}
+
+// 格式化剩余时间
+const formatTimeRemaining = (milliseconds: number): string => {
+  const seconds = Math.ceil(milliseconds / 1000)
+
+  if (seconds < 60) {
+    return `${seconds} 秒`
+  } else if (seconds < 3600) {
+    const minutes = Math.ceil(seconds / 60)
+    return `${minutes} 分钟`
+  } else {
+    const hours = Math.ceil(seconds / 3600)
+    return `${hours} 小时`
+  }
+}
+
 export default function ImportProgressModal({
   isOpen,
   progress,
@@ -183,7 +215,7 @@ export default function ImportProgressModal({
             </p>
           )}
 
-          {/* 进度条 */}
+          {/* 主进度条 */}
           <div className='mb-4'>
             <ProgressBar
               percentage={progress?.percentage || 0}
@@ -191,17 +223,48 @@ export default function ImportProgressModal({
               color={getStageColor(progress?.stage || 'processing')}
               animated={true}
               striped={progress?.stage === 'importing'}
+              label={
+                progress?.dataType
+                  ? `${getDataTypeLabel(progress.dataType)}`
+                  : undefined
+              }
             />
           </div>
 
-          {/* 进度百分比 */}
+          {/* 批次进度条 (仅在有批次信息时显示) */}
+          {progress?.batchInfo && progress.batchInfo.totalBatches > 1 && (
+            <div className='mb-4'>
+              <ProgressBar
+                percentage={Math.round(
+                  (progress.batchInfo.currentBatch /
+                    progress.batchInfo.totalBatches) *
+                    100
+                )}
+                height='md'
+                color='blue'
+                animated={true}
+                label={`批次进度 (${progress.batchInfo.currentBatch}/${progress.batchInfo.totalBatches})`}
+                showPercentage={true}
+              />
+            </div>
+          )}
+
+          {/* 进度百分比和预估时间 */}
           <div className='flex justify-between items-center text-sm text-gray-600 dark:text-gray-400'>
             <span>
               {progress?.current || 0} / {progress?.total || 0}
             </span>
-            <span className='font-medium'>
-              {Math.round(progress?.percentage || 0)}%
-            </span>
+            <div className='text-right'>
+              <div className='font-medium'>
+                {Math.round(progress?.percentage || 0)}%
+              </div>
+              {progress?.estimatedTimeRemaining !== undefined &&
+                progress.estimatedTimeRemaining > 0 && (
+                  <div className='text-xs text-gray-500 dark:text-gray-400'>
+                    剩余 {formatTimeRemaining(progress.estimatedTimeRemaining)}
+                  </div>
+                )}
+            </div>
           </div>
         </div>
 
@@ -247,6 +310,16 @@ export default function ImportProgressModal({
                     {progress?.stage || 'unknown'}
                   </span>
                 </div>
+                {progress?.dataType && (
+                  <div className='flex justify-between'>
+                    <span className='text-gray-600 dark:text-gray-400'>
+                      数据类型:
+                    </span>
+                    <span className='text-gray-800 dark:text-gray-200'>
+                      {getDataTypeLabel(progress.dataType)}
+                    </span>
+                  </div>
+                )}
                 {progress?.current !== undefined &&
                   progress?.total !== undefined && (
                     <div className='flex justify-between'>
@@ -255,6 +328,28 @@ export default function ImportProgressModal({
                       </span>
                       <span className='text-gray-800 dark:text-gray-200'>
                         {progress.current} / {progress.total}
+                      </span>
+                    </div>
+                  )}
+                {progress?.batchInfo && (
+                  <div className='flex justify-between'>
+                    <span className='text-gray-600 dark:text-gray-400'>
+                      批次进度:
+                    </span>
+                    <span className='text-gray-800 dark:text-gray-200'>
+                      {progress.batchInfo.currentBatch} /{' '}
+                      {progress.batchInfo.totalBatches}
+                    </span>
+                  </div>
+                )}
+                {progress?.estimatedTimeRemaining !== undefined &&
+                  progress.estimatedTimeRemaining > 0 && (
+                    <div className='flex justify-between'>
+                      <span className='text-gray-600 dark:text-gray-400'>
+                        预估剩余时间:
+                      </span>
+                      <span className='text-gray-800 dark:text-gray-200'>
+                        {formatTimeRemaining(progress.estimatedTimeRemaining)}
                       </span>
                     </div>
                   )}

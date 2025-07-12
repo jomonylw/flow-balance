@@ -272,7 +272,6 @@ export interface ImportOptions {
   skipDuplicates?: boolean
   validateData?: boolean
   createMissingCurrencies?: boolean
-  batchSize?: number
   enableProgressTracking?: boolean
   onProgress?: (progress: ImportProgress) => void
   // 🆕 选择性导入选项
@@ -331,6 +330,14 @@ export interface ItemImportResult {
   warning?: string
 }
 
+/** 批次进度信息 */
+export interface BatchProgress {
+  currentBatch: number
+  totalBatches: number
+  batchSize?: number // 批次大小（可选，不向前端暴露）
+  batchProgress?: number // 当前批次内的进度百分比
+}
+
 /** 导入进度信息 */
 export interface ImportProgress {
   stage: string
@@ -338,6 +345,9 @@ export interface ImportProgress {
   total: number
   percentage: number
   message: string
+  batchInfo?: BatchProgress
+  dataType?: string // 当前正在导入的数据类型
+  estimatedTimeRemaining?: number // 预估剩余时间（毫秒）
 }
 
 /** 导入验证结果 */

@@ -153,7 +153,6 @@ export async function POST(request: NextRequest) {
       skipDuplicates: options.skipDuplicates || true,
       validateData: options.validateData !== false,
       createMissingCurrencies: options.createMissingCurrencies || true,
-      batchSize: options.batchSize || 100,
       enableProgressTracking: true,
       onProgress: (progress: ImportProgress) => {
         progressStore.set(progressKey, progress)

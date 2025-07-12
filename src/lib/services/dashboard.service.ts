@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/database/connection-manager'
 import { AccountType, TransactionType } from '@/types/core/constants'
-import type { Currency } from '@/types/core'
 import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import { subMonths, endOfMonth, startOfMonth } from 'date-fns'

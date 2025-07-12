@@ -33,7 +33,6 @@ export default function DataManagementSection() {
     skipDuplicates: true,
     validateData: true,
     createMissingCurrencies: true,
-    batchSize: 100,
     enableProgressTracking: true,
   })
   const [selectedDataTypes, setSelectedDataTypes] =
@@ -296,7 +295,6 @@ export default function DataManagementSection() {
 
   const startProgressPolling = (sessionId: string) => {
     let pollTimeoutId: NodeJS.Timeout | null = null
-    let completionTime: number | null = null // 记录完成时间
 
     const pollInterval = setInterval(async () => {
       try {
@@ -310,38 +308,38 @@ export default function DataManagementSection() {
 
           // 检查是否完成
           if (result.data.stage === 'completed') {
-            if (!completionTime) {
-              completionTime = Date.now()
-              showSuccess(t('data.import.success'), result.data.message)
-              setImportData(null)
-              setValidationResult(null)
-            }
-
-            // 完成后继续轮询30秒，然后自动关闭
-            if (Date.now() - completionTime > 30000) {
-              clearInterval(pollInterval)
-              if (pollTimeoutId) clearTimeout(pollTimeoutId)
-              setShowProgressModal(false)
-              setImportProgress(null)
-              setImportSessionId(null)
-            }
-          } else if (result.data.stage === 'failed') {
-            if (!completionTime) {
-              completionTime = Date.now()
-              showError(t('data.import.failed'), result.data.message)
-            }
-
-            // 失败后继续轮询30秒，然后自动关闭
-            if (Date.now() - completionTime > 30000) {
-              clearInterval(pollInterval)
-              if (pollTimeoutId) clearTimeout(pollTimeoutId)
-              setShowProgressModal(false)
-              setImportProgress(null)
-              setImportSessionId(null)
-            }
-          } else if (result.data.stage === 'cancelled') {
+            // 导入完成，立即停止轮询
             clearInterval(pollInterval)
             if (pollTimeoutId) clearTimeout(pollTimeoutId)
+
+            showSuccess(t('data.import.success'), result.data.message)
+            setImportData(null)
+            setValidationResult(null)
+
+            // 延迟3秒后自动关闭弹窗，让用户看到完成状态
+            setTimeout(() => {
+              setShowProgressModal(false)
+              setImportProgress(null)
+              setImportSessionId(null)
+            }, 3000)
+          } else if (result.data.stage === 'failed') {
+            // 导入失败，立即停止轮询
+            clearInterval(pollInterval)
+            if (pollTimeoutId) clearTimeout(pollTimeoutId)
+
+            showError(t('data.import.failed'), result.data.message)
+
+            // 延迟5秒后自动关闭弹窗，让用户看到错误信息
+            setTimeout(() => {
+              setShowProgressModal(false)
+              setImportProgress(null)
+              setImportSessionId(null)
+            }, 5000)
+          } else if (result.data.stage === 'cancelled') {
+            // 导入取消，立即停止轮询
+            clearInterval(pollInterval)
+            if (pollTimeoutId) clearTimeout(pollTimeoutId)
+
             showWarning(t('data.import.cancelled'), result.data.message)
             setShowProgressModal(false)
             setImportProgress(null)

@@ -1353,12 +1353,24 @@ export class DataImportService {
     tagIdMapping: IdMapping,
     recurringIdMapping: IdMapping,
     result: ImportResult,
-    _options: ImportOptions
+    options: ImportOptions
   ): Promise<void> {
     if (recurringTransactions.length === 0) return
 
     const startTime = Date.now()
     console.log(`🚀 开始批量导入 ${recurringTransactions.length} 条定期交易...`)
+
+    // 进度回调
+    if (options.onProgress) {
+      options.onProgress({
+        stage: 'importing',
+        current: 0,
+        total: recurringTransactions.length,
+        percentage: 0,
+        message: `开始导入 ${recurringTransactions.length} 条定期交易...`,
+        dataType: 'recurringTransactions',
+      })
+    }
 
     // 预处理货币映射
     const missingCurrencyIds = new Set<string>()
@@ -1459,6 +1471,18 @@ export class DataImportService {
       result.statistics.processed += createdRecurringTransactions.length
       result.statistics.created += createdRecurringTransactions.length
 
+      // 更新完成进度
+      if (options.onProgress) {
+        options.onProgress({
+          stage: 'importing',
+          current: createdRecurringTransactions.length,
+          total: recurringTransactions.length,
+          percentage: 100,
+          message: `已完成 ${createdRecurringTransactions.length} 条定期交易导入`,
+          dataType: 'recurringTransactions',
+        })
+      }
+
       this.logPerformance(
         '定期交易批量导入',
         startTime,
@@ -1506,12 +1530,24 @@ export class DataImportService {
     tagIdMapping: IdMapping,
     loanIdMapping: IdMapping,
     result: ImportResult,
-    _options: ImportOptions
+    options: ImportOptions
   ): Promise<void> {
     if (loanContracts.length === 0) return
 
     const startTime = Date.now()
     console.log(`🚀 开始批量导入 ${loanContracts.length} 条贷款合约...`)
+
+    // 进度回调
+    if (options.onProgress) {
+      options.onProgress({
+        stage: 'importing',
+        current: 0,
+        total: loanContracts.length,
+        percentage: 0,
+        message: `开始导入 ${loanContracts.length} 条贷款合约...`,
+        dataType: 'loanContracts',
+      })
+    }
 
     // 预处理货币映射
     const missingCurrencyIds = new Set<string>()
@@ -1621,6 +1657,18 @@ export class DataImportService {
       result.statistics.processed += createdLoanContracts.length
       result.statistics.created += createdLoanContracts.length
 
+      // 更新完成进度
+      if (options.onProgress) {
+        options.onProgress({
+          stage: 'importing',
+          current: createdLoanContracts.length,
+          total: loanContracts.length,
+          percentage: 100,
+          message: `已完成 ${createdLoanContracts.length} 条贷款合约导入`,
+          dataType: 'loanContracts',
+        })
+      }
+
       this.logPerformance(
         '贷款合约批量导入',
         startTime,
@@ -1667,12 +1715,24 @@ export class DataImportService {
     paymentIdMapping: IdMapping,
     paymentsToUpdate: any[],
     result: ImportResult,
-    _options: ImportOptions
+    options: ImportOptions
   ): Promise<void> {
     if (loanPayments.length === 0) return
 
     const startTime = Date.now()
     console.log(`🚀 开始批量导入 ${loanPayments.length} 条贷款还款记录...`)
+
+    // 进度回调
+    if (options.onProgress) {
+      options.onProgress({
+        stage: 'importing',
+        current: 0,
+        total: loanPayments.length,
+        percentage: 0,
+        message: `开始导入 ${loanPayments.length} 条贷款还款记录...`,
+        dataType: 'loanPayments',
+      })
+    }
 
     // 预处理和验证数据
     const validLoanPayments: Array<{
@@ -1763,6 +1823,18 @@ export class DataImportService {
       result.statistics.processed += createdLoanPayments.length
       result.statistics.created += createdLoanPayments.length
 
+      // 更新完成进度
+      if (options.onProgress) {
+        options.onProgress({
+          stage: 'importing',
+          current: createdLoanPayments.length,
+          total: loanPayments.length,
+          percentage: 100,
+          message: `已完成 ${createdLoanPayments.length} 条贷款还款记录导入`,
+          dataType: 'loanPayments',
+        })
+      }
+
       this.logPerformance(
         '贷款还款记录批量导入',
         startTime,
@@ -1825,23 +1897,31 @@ export class DataImportService {
     paymentIdMapping: IdMapping,
     transactionIdMapping: IdMapping,
     result: ImportResult,
-    _options: ImportOptions
+    options: ImportOptions
   ): Promise<void> {
     const startTime = Date.now()
     console.log(`🚀 开始批量导入 ${transactions.length} 条交易记录...`)
 
+    // 使用固定的批次大小，优化性能和内存使用
+    const BATCH_SIZE = 100
+    const totalBatches = Math.ceil(transactions.length / BATCH_SIZE)
+
+    console.log(`📦 批次配置: ${BATCH_SIZE} 条/批次，共 ${totalBatches} 个批次`)
+
     // 进度回调
-    if (_options.onProgress) {
-      _options.onProgress({
+    if (options.onProgress) {
+      options.onProgress({
         stage: 'importing',
         current: 0,
         total: transactions.length,
         percentage: 0,
-        message: `开始导入 ${transactions.length} 条交易记录...`,
+        message: `开始导入 ${transactions.length} 条交易记录 (${BATCH_SIZE} 条/批次)...`,
+        batchInfo: {
+          currentBatch: 0,
+          totalBatches,
+        },
       })
     }
-    // 增大批次大小以提高效率，但避免内存问题
-    const BATCH_SIZE = 500
 
     // 预处理：批量查找缺失的货币ID，避免在循环中重复查询
     const missingCurrencyIds = new Set<string>()
@@ -1875,6 +1955,29 @@ export class DataImportService {
 
     for (let i = 0; i < transactions.length; i += BATCH_SIZE) {
       const batch = transactions.slice(i, i + BATCH_SIZE)
+      const currentBatch = Math.floor(i / BATCH_SIZE) + 1
+      const batchStartTime = Date.now()
+
+      console.log(
+        `📦 处理第 ${currentBatch}/${totalBatches} 批次 (${batch.length} 条记录)`
+      )
+
+      // 更新批次开始进度
+      if (options.onProgress) {
+        options.onProgress({
+          stage: 'importing',
+          current: i,
+          total: transactions.length,
+          percentage: Math.round((i / transactions.length) * 100),
+          message: `正在处理第 ${currentBatch}/${totalBatches} 批次交易记录...`,
+          dataType: 'transactions',
+          batchInfo: {
+            currentBatch,
+            totalBatches,
+            batchProgress: 0,
+          },
+        })
+      }
 
       // 预处理批次数据，过滤无效交易
       const validTransactions: any[] = []
@@ -2021,8 +2124,15 @@ export class DataImportService {
         result.statistics.processed += createdTransactions.length
         result.statistics.created += createdTransactions.length
 
-        // 更新进度
-        if (_options.onProgress) {
+        // 计算批次处理时间和预估剩余时间
+        const batchEndTime = Date.now()
+        const batchDuration = batchEndTime - batchStartTime
+        const avgTimePerBatch = (batchEndTime - startTime) / currentBatch
+        const remainingBatches = totalBatches - currentBatch
+        const estimatedTimeRemaining = remainingBatches * avgTimePerBatch
+
+        // 更新批次完成进度
+        if (options.onProgress) {
           const currentProgress = Math.min(
             i + validTransactions.length,
             transactions.length
@@ -2030,12 +2140,24 @@ export class DataImportService {
           const percentage = Math.round(
             (currentProgress / transactions.length) * 100
           )
-          _options.onProgress({
+
+          console.log(
+            `✅ 第 ${currentBatch} 批次完成，耗时 ${batchDuration}ms，预估剩余 ${Math.round(estimatedTimeRemaining / 1000)}s`
+          )
+
+          options.onProgress({
             stage: 'importing',
             current: currentProgress,
             total: transactions.length,
             percentage,
-            message: `已导入 ${currentProgress} / ${transactions.length} 条交易记录`,
+            message: `已完成第 ${currentBatch}/${totalBatches} 批次 (${currentProgress}/${transactions.length} 条记录)`,
+            dataType: 'transactions',
+            batchInfo: {
+              currentBatch,
+              totalBatches,
+              batchProgress: 100,
+            },
+            estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
           })
         }
       } catch (error) {
