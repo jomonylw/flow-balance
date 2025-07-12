@@ -4,20 +4,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { connectionManager } from '@/lib/database/connection-manager'
+import { prisma } from '@/lib/database/connection-manager'
 
 export async function GET(_request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    // 获取连接状态
-    const connectionStatus = connectionManager.getStatus()
-
-    // 测试数据库连接
-    const client = await connectionManager.getClient()
-
     // 执行简单查询测试
-    await client.$queryRaw`SELECT 1 as test`
+    await prisma.$queryRaw`SELECT 1 as test`
     const queryTime = Date.now() - startTime
 
     // 获取数据库统计信息
@@ -25,12 +19,12 @@ export async function GET(_request: NextRequest) {
     try {
       // 尝试获取数据库统计信息（仅适用于 PostgreSQL）
       if (process.env.DATABASE_URL?.includes('postgresql')) {
-        dbStats = await client.$queryRaw`
-          SELECT 
+        dbStats = await prisma.$queryRaw`
+          SELECT
             count(*) as total_connections,
             count(*) FILTER (WHERE state = 'active') as active_connections,
             count(*) FILTER (WHERE state = 'idle') as idle_connections
-          FROM pg_stat_activity 
+          FROM pg_stat_activity
           WHERE datname = current_database()
         `
       }
@@ -45,13 +39,6 @@ export async function GET(_request: NextRequest) {
       database: {
         connected: true,
         queryTime: `${queryTime}ms`,
-        connectionManager: {
-          connected: connectionStatus.connected,
-          connectionCount: connectionStatus.connectionCount,
-          maxConnections: connectionStatus.maxConnections,
-          idleTime: `${Math.round(connectionStatus.idleTime / 1000)}s`,
-          lastUsed: new Date(connectionStatus.lastUsed).toISOString(),
-        },
         statistics: dbStats || 'Not available',
       },
       environment: {
@@ -87,7 +74,6 @@ export async function GET(_request: NextRequest) {
       },
       database: {
         connected: false,
-        connectionManager: connectionManager.getStatus(),
       },
       environment: {
         nodeEnv: process.env.NODE_ENV,
@@ -114,8 +100,7 @@ export async function GET(_request: NextRequest) {
 // 支持 HEAD 请求用于简单的存活检查
 export async function HEAD(_request: NextRequest) {
   try {
-    const client = await connectionManager.getClient()
-    await client.$queryRaw`SELECT 1`
+    await prisma.$queryRaw`SELECT 1`
 
     return new NextResponse(null, {
       status: 200,

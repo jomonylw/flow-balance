@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { getPrismaClient } from '@/lib/database/connection-manager'
+import { prisma } from '@/lib/database/connection-manager'
 import {
   successResponse,
   errorResponse,
@@ -18,8 +18,6 @@ export async function GET() {
     if (!user) {
       return unauthorizedResponse()
     }
-
-    const prisma = await getPrismaClient()
 
     // 并行获取分类和账户数据
     const [categories, accounts] = await Promise.all([

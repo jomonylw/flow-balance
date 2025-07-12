@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { getPrismaClient } from '@/lib/database/connection-manager'
+import { prisma } from '@/lib/database/connection-manager'
 import { getAccountError } from '@/lib/constants/api-messages'
 import {
   successResponse,
@@ -21,9 +21,7 @@ export async function GET(
     }
 
     // 获取账户详情
-    const account = await (
-      await getPrismaClient()
-    ).account.findFirst({
+    const account = await prisma.account.findFirst({
       where: {
         id: accountId,
         userId: user.id,

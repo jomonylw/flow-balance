@@ -4,7 +4,7 @@
  * 提供按月分组的、包含所有历史月份的流量数据
  */
 
-import { getPrismaClient } from '@/lib/database/connection-manager'
+import { prisma } from '@/lib/database/connection-manager'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import type {
   ServiceCategoryWithChildren,
@@ -145,7 +145,7 @@ export async function getFlowCategorySummary(
   userId: string
 ): Promise<MonthlyReport[]> {
   // 1. 获取分类和本位币信息
-  const prisma = await getPrismaClient()
+  // prisma instance is already available
   const category = (await prisma.category.findFirst({
     where: {
       id: categoryId,

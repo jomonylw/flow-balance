@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { getPrismaClient } from '@/lib/database/connection-manager'
+import { prisma } from '@/lib/database/connection-manager'
 import {
   successResponse,
   errorResponse,
@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取用户设置以确定本位币
-    const prisma = await getPrismaClient()
     const userSettings = await prisma.userSettings.findUnique({
       where: { userId: user.id },
       include: { baseCurrency: true },
