@@ -20,6 +20,7 @@ import {
   type Account,
   type Currency,
   type Transaction,
+  Prisma,
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 import { AccountType } from '@/types/core/constants'
@@ -204,67 +205,147 @@ export async function getStockCategorySummary(
     name: '人民币',
   }
 
-  // 2. 计算时间范围
-  let dateFilter: { gte?: Date } | undefined = undefined
-  if (timeRange === 'lastYear') {
-    // 去年1月1日至今
-    const lastYear = new Date().getFullYear() - 1
-    const startDate = new Date(lastYear, 0, 1) // 去年1月1日
-    dateFilter = { gte: startDate }
-  }
-  // timeRange === 'all' 时不添加日期过滤
-
-  // 3. 获取所有相关账户及其交易
+  // 2. 确定报告的起始日期和月份范围
+  const now = new Date()
+  let reportStartDate: Date
   const allCategoryIds = await getAllCategoryIds(prisma, categoryId)
-  const allAccounts = await prisma.account.findMany({
-    where: {
-      userId: userId,
-      categoryId: { in: allCategoryIds },
-    },
-    include: {
-      currency: true,
-      transactions: {
+  let allAccounts: (Account & {
+    currency: Currency | null
+    transactions: (Transaction & { currency: Currency })[]
+  })[] = []
+
+  if (timeRange === 'lastYear') {
+    const lastYear = now.getFullYear() - 1
+    reportStartDate = new Date(lastYear, 0, 1) // 去年1月1日
+
+    // 优化模式：三步处理
+    // 1. 获取所有相关账户的基本信息
+    const baseAccounts = await prisma.account.findMany({
+      where: { userId, categoryId: { in: allCategoryIds } },
+      include: { currency: true },
+    })
+    const accountMap = new Map(
+      baseAccounts.map(acc => [
+        acc.id,
+        {
+          ...acc,
+          transactions: [] as (Transaction & { currency: Currency })[],
+        },
+      ])
+    )
+
+    // 2. 获取期内交易
+    const accountIds = baseAccounts.map(acc => acc.id)
+    if (accountIds.length === 0) {
+      allAccounts = []
+    } else {
+      const recentTransactions = await prisma.transaction.findMany({
         where: {
+          accountId: { in: accountIds },
           type: TransactionType.BALANCE,
-          ...(dateFilter && { date: dateFilter }),
+          date: { gte: reportStartDate },
         },
         include: { currency: true },
         orderBy: { date: 'asc' },
-      },
-    },
-  })
+      })
 
-  // 4. 确定全局月份范围
-  let firstTransactionDate = new Date()
+      // 3. 使用原生SQL获取期初余额
+      const initialBalanceTransactions: (Transaction & {
+        currency: Currency
+      })[] = await prisma.$queryRaw`
+        SELECT t1.*
+        FROM "transactions" AS t1
+        INNER JOIN (
+            SELECT "accountId", MAX("date") AS max_date
+            FROM "transactions"
+            WHERE "accountId" IN (${Prisma.join(accountIds)}) AND "date" < ${reportStartDate} AND "type" = 'BALANCE'
+            GROUP BY "accountId"
+        ) AS t2 ON t1."accountId" = t2."accountId" AND t1."date" = t2.max_date
+        WHERE t1."type" = 'BALANCE'
+      `
 
-  // 根据时间范围设置起始日期
-  if (timeRange === 'lastYear') {
-    const lastYear = new Date().getFullYear() - 1
-    firstTransactionDate = new Date(lastYear, 0, 1) // 去年1月1日
+      // 4. 合并数据
+      // 合并期内交易
+      for (const tx of recentTransactions) {
+        const account = accountMap.get(tx.accountId)
+        if (account) {
+          account.transactions.push(tx)
+        }
+      }
+
+      // 合并期初余额
+      for (const tx of initialBalanceTransactions) {
+        const account = accountMap.get(tx.accountId)
+        if (account) {
+          // 手动转换类型并附加货币信息
+          tx.amount = new Decimal(tx.amount)
+          tx.date = new Date(tx.date)
+          const txWithCurrency = { ...tx, currency: account.currency! }
+          account.transactions.unshift(txWithCurrency)
+        }
+      }
+
+      // 合并期内交易
+      for (const tx of recentTransactions) {
+        const account = accountMap.get(tx.accountId)
+        if (account) {
+          account.transactions.push(tx)
+        }
+      }
+
+      // 合并期初余额
+      for (const tx of initialBalanceTransactions) {
+        const account = accountMap.get(tx.accountId)
+        if (account) {
+          // 手动转换类型并附加货币信息
+          tx.amount = new Decimal(tx.amount)
+          tx.date = new Date(tx.date)
+          const txWithCurrency = { ...tx, currency: account.currency! }
+          account.transactions.unshift(txWithCurrency)
+        }
+      }
+
+      allAccounts = Array.from(accountMap.values())
+    }
   } else {
-    // timeRange === 'all' 时，查找最早的交易日期
+    // 'all' 模式：获取所有交易
+    allAccounts = await prisma.account.findMany({
+      where: { userId, categoryId: { in: allCategoryIds } },
+      include: {
+        currency: true,
+        transactions: {
+          where: { type: TransactionType.BALANCE },
+          include: { currency: true },
+          orderBy: { date: 'asc' },
+        },
+      },
+    })
+
+    // 确定 'all' 模式的起始日期
+    let earliestDate: Date | null = null
     allAccounts.forEach(account => {
       if (account.transactions.length > 0) {
-        const accountFirstDate = new Date(account.transactions[0].date)
-        if (accountFirstDate < firstTransactionDate) {
-          firstTransactionDate = accountFirstDate
+        const firstDate = new Date(account.transactions[0].date)
+        if (!earliestDate || firstDate < earliestDate) {
+          earliestDate = firstDate
         }
       }
     })
+    reportStartDate = earliestDate || now
   }
 
+  // 4. 确定全局月份范围
   const allMonths: string[] = []
-  const now = new Date()
-  const startDate = new Date(
-    firstTransactionDate.getFullYear(),
-    firstTransactionDate.getMonth(),
+  const monthIterator = new Date(
+    reportStartDate.getFullYear(),
+    reportStartDate.getMonth(),
     1
   )
-  while (startDate <= now) {
+  while (monthIterator <= now) {
     allMonths.push(
-      `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`
+      `${monthIterator.getFullYear()}-${(monthIterator.getMonth() + 1).toString().padStart(2, '0')}`
     )
-    startDate.setMonth(startDate.getMonth() + 1)
+    monthIterator.setMonth(monthIterator.getMonth() + 1)
   }
 
   if (allMonths.length === 0) {
@@ -292,7 +373,7 @@ export async function getStockCategorySummary(
         const zeroBalances: Record<string, MonthlyBalance> = {}
         for (const month of allMonths) {
           zeroBalances[month] = {
-            original: { [account.currency.code]: 0 },
+            original: { [account.currency?.code || baseCurrency.code]: 0 },
             converted: { [baseCurrency.code]: 0 },
           }
         }
