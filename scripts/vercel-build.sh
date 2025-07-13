@@ -49,7 +49,7 @@ echo "🔍 Checking seed data..."
 # 等待数据库连接稳定
 sleep 2
 
-SEED_CHECK_RESULT=$(node -e "
+SEED_CHECK_OUTPUT=$(node -e "
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -60,24 +60,23 @@ async function checkSeedData() {
 
         if (count === 0) {
             console.log('SEED_NEEDED');
-            return 0;
         } else {
             console.log('SEED_EXISTS');
-            return 1;
         }
     } catch (error) {
         console.log('Database check failed, assuming seed needed:', error.message);
         console.log('SEED_NEEDED');
-        return 0;
     } finally {
         await prisma.\$disconnect();
     }
 }
 
-checkSeedData().then(code => process.exit(code));
-" 2>/dev/null; echo $?)
+checkSeedData();
+" 2>/dev/null)
 
-if [ "$SEED_CHECK_RESULT" -eq 0 ]; then
+echo "$SEED_CHECK_OUTPUT"
+
+if echo "$SEED_CHECK_OUTPUT" | grep -q "SEED_NEEDED"; then
     echo "🌱 Database is empty or check failed, importing seed data..."
     if pnpm db:seed; then
         echo "✅ Seed data imported successfully"
