@@ -384,24 +384,24 @@ export class DataImportService {
     }
 
     try {
+      // 在事务外部进行数据验证，避免占用数据库连接
+      if (options.validateData !== false) {
+        const validation = await this.validateImportData(data)
+        if (!validation.isValid) {
+          result.errors = validation.errors
+          result.message = '数据验证失败'
+          return result
+        }
+        result.warnings = validation.warnings
+      }
+
+      // 预加载所有必要的数据，避免在导入过程中重复查询
+      const preloadedData = await this.preloadRequiredData(userId, data)
+
       // 使用专用的导入事务确保数据一致性，针对大量数据导入进行优化
       // 移除 withRetry 避免与全局 prisma 客户端的连接冲突
       await executeImportTransaction(async tx => {
-        // 在事务内部进行数据验证，避免连接冲突
-        if (options.validateData !== false) {
-          const validation = await this.validateImportDataInTransaction(
-            tx,
-            data
-          )
-          if (!validation.isValid) {
-            result.errors = validation.errors
-            result.message = '数据验证失败'
-            // 抛出错误以回滚事务
-            throw new Error('数据验证失败: ' + validation.errors.join(', '))
-          }
-          result.warnings = validation.warnings
-        }
-        // 创建ID映射表
+        // 创建ID映射表，使用预加载的数据映射
         const idMappings: {
           categories: IdMapping
           accounts: IdMapping
@@ -414,10 +414,10 @@ export class DataImportService {
           transactions: IdMapping
           exchangeRates: IdMapping
         } = {
-          categories: {},
-          accounts: {},
-          tags: {},
-          currencies: {},
+          categories: preloadedData.categoryMapping, // 使用预加载的分类映射
+          accounts: preloadedData.accountMapping, // 使用预加载的账户映射
+          tags: preloadedData.tagMapping, // 使用预加载的标签映射
+          currencies: preloadedData.currencyMapping, // 使用预加载的货币映射
           transactionTemplates: {},
           recurringTransactions: {},
           loanContracts: {},
@@ -487,7 +487,8 @@ export class DataImportService {
             data.categories,
             idMappings.categories,
             result,
-            options
+            options,
+            preloadedData.existingCategories
           )
         }
 
@@ -502,7 +503,8 @@ export class DataImportService {
             data.tags,
             idMappings.tags,
             result,
-            options
+            options,
+            preloadedData.existingTags
           )
         }
 
@@ -519,7 +521,8 @@ export class DataImportService {
             idMappings.currencies,
             idMappings.accounts,
             result,
-            options
+            options,
+            preloadedData.existingAccounts
           )
         }
 
@@ -556,7 +559,8 @@ export class DataImportService {
             idMappings.tags,
             idMappings.recurringTransactions,
             result,
-            options
+            options,
+            preloadedData.existingCurrencies
           )
         }
 
@@ -574,7 +578,8 @@ export class DataImportService {
             idMappings.tags,
             idMappings.loanContracts,
             result,
-            options
+            options,
+            preloadedData.existingCurrencies
           )
         }
 
@@ -650,7 +655,8 @@ export class DataImportService {
               idMappings.loanPayments,
               idMappings.transactions,
               result,
-              options
+              options,
+              preloadedData.existingCurrencies
             )
           }
         }
@@ -1046,7 +1052,8 @@ export class DataImportService {
     categories: any[],
     idMapping: IdMapping,
     result: ImportResult,
-    options: ImportOptions
+    options: ImportOptions,
+    preloadedCategories?: Map<string, any>
   ): Promise<void> {
     // 按层级排序，先导入父级分类
     const sortedCategories = categories.sort((a, b) => {
@@ -1065,14 +1072,26 @@ export class DataImportService {
           parentId = idMapping[category.parentId]
         }
 
-        // 检查是否存在同名分类（考虑父分类）
-        const existing = await tx.category.findFirst({
-          where: {
-            userId,
-            name: categoryName,
-            parentId: parentId || null,
-          },
-        })
+        // 检查是否存在同名分类，优先使用预加载的数据
+        let existing: any = null
+        if (preloadedCategories) {
+          existing = preloadedCategories.get(categoryName)
+          // 如果找到了，还需要验证父分类是否匹配
+          if (existing && existing.parentId !== (parentId || null)) {
+            existing = null // 父分类不匹配，需要查询数据库
+          }
+        }
+
+        if (!existing) {
+          // 回退到数据库查询
+          existing = await tx.category.findFirst({
+            where: {
+              userId,
+              name: categoryName,
+              parentId: parentId || null,
+            },
+          })
+        }
 
         if (existing) {
           if (options.overwriteExisting) {
@@ -1153,16 +1172,25 @@ export class DataImportService {
     tags: any[],
     idMapping: IdMapping,
     result: ImportResult,
-    options: ImportOptions
+    options: ImportOptions,
+    preloadedTags?: Map<string, any>
   ): Promise<void> {
     for (const tag of tags) {
       try {
         let tagName = tag.name
 
-        // 检查是否存在同名标签
-        const existing = await tx.tag.findFirst({
-          where: { userId, name: tagName },
-        })
+        // 检查是否存在同名标签，优先使用预加载的数据
+        let existing: any = null
+        if (preloadedTags) {
+          existing = preloadedTags.get(tagName)
+        }
+
+        if (!existing) {
+          // 回退到数据库查询
+          existing = await tx.tag.findFirst({
+            where: { userId, name: tagName },
+          })
+        }
 
         if (existing) {
           if (options.overwriteExisting) {
@@ -1232,7 +1260,8 @@ export class DataImportService {
     currencyIdMapping: IdMapping,
     accountIdMapping: IdMapping,
     result: ImportResult,
-    options: ImportOptions
+    options: ImportOptions,
+    preloadedAccounts?: Map<string, any>
   ): Promise<void> {
     for (const account of accounts) {
       try {
@@ -1266,10 +1295,18 @@ export class DataImportService {
 
         let accountName = account.name
 
-        // 检查是否存在同名账户
-        const existing = await tx.account.findFirst({
-          where: { userId, name: accountName },
-        })
+        // 检查是否存在同名账户，优先使用预加载的数据
+        let existing: any = null
+        if (preloadedAccounts) {
+          existing = preloadedAccounts.get(accountName)
+        }
+
+        if (!existing) {
+          // 回退到数据库查询
+          existing = await tx.account.findFirst({
+            where: { userId, name: accountName },
+          })
+        }
 
         if (existing) {
           if (options.overwriteExisting) {
@@ -1496,7 +1533,8 @@ export class DataImportService {
     tagIdMapping: IdMapping,
     recurringIdMapping: IdMapping,
     result: ImportResult,
-    options: ImportOptions
+    options: ImportOptions,
+    preloadedCurrencies?: Map<string, any>
   ): Promise<void> {
     if (recurringTransactions.length === 0) return
 
@@ -1515,28 +1553,41 @@ export class DataImportService {
       })
     }
 
-    // 预处理货币映射
-    const missingCurrencyIds = new Set<string>()
-    for (const rt of recurringTransactions) {
-      if (!currencyIdMapping[rt.currencyId] && rt.currencyCode) {
-        missingCurrencyIds.add(rt.currencyCode)
+    // 预处理货币映射，优先使用预加载的数据
+    if (preloadedCurrencies) {
+      // 使用预加载的货币数据更新映射
+      for (const rt of recurringTransactions) {
+        if (!currencyIdMapping[rt.currencyId] && rt.currencyCode) {
+          const currency = preloadedCurrencies.get(rt.currencyCode)
+          if (currency && rt.currencyId) {
+            currencyIdMapping[rt.currencyId] = currency.id
+          }
+        }
       }
-    }
+    } else {
+      // 回退到原有的批量查询逻辑
+      const missingCurrencyIds = new Set<string>()
+      for (const rt of recurringTransactions) {
+        if (!currencyIdMapping[rt.currencyId] && rt.currencyCode) {
+          missingCurrencyIds.add(rt.currencyCode)
+        }
+      }
 
-    if (missingCurrencyIds.size > 0) {
-      const additionalCurrencies = await tx.currency.findMany({
-        where: {
-          code: { in: Array.from(missingCurrencyIds) },
-          OR: [{ createdBy: null }, { createdBy: userId }],
-        },
-      })
+      if (missingCurrencyIds.size > 0) {
+        const additionalCurrencies = await tx.currency.findMany({
+          where: {
+            code: { in: Array.from(missingCurrencyIds) },
+            OR: [{ createdBy: null }, { createdBy: userId }],
+          },
+        })
 
-      for (const currency of additionalCurrencies) {
-        const originalCurrency = recurringTransactions.find(
-          rt => rt.currencyCode === currency.code
-        )
-        if (originalCurrency && originalCurrency.currencyId) {
-          currencyIdMapping[originalCurrency.currencyId] = currency.id
+        for (const currency of additionalCurrencies) {
+          const originalCurrency = recurringTransactions.find(
+            rt => rt.currencyCode === currency.code
+          )
+          if (originalCurrency && originalCurrency.currencyId) {
+            currencyIdMapping[originalCurrency.currencyId] = currency.id
+          }
         }
       }
     }
@@ -1673,7 +1724,8 @@ export class DataImportService {
     tagIdMapping: IdMapping,
     loanIdMapping: IdMapping,
     result: ImportResult,
-    options: ImportOptions
+    options: ImportOptions,
+    preloadedCurrencies?: Map<string, any>
   ): Promise<void> {
     if (loanContracts.length === 0) return
 
@@ -1692,28 +1744,41 @@ export class DataImportService {
       })
     }
 
-    // 预处理货币映射
-    const missingCurrencyIds = new Set<string>()
-    for (const loan of loanContracts) {
-      if (!currencyIdMapping[loan.currencyId] && loan.currencyCode) {
-        missingCurrencyIds.add(loan.currencyCode)
+    // 预处理货币映射，优先使用预加载的数据
+    if (preloadedCurrencies) {
+      // 使用预加载的货币数据更新映射
+      for (const loan of loanContracts) {
+        if (!currencyIdMapping[loan.currencyId] && loan.currencyCode) {
+          const currency = preloadedCurrencies.get(loan.currencyCode)
+          if (currency && loan.currencyId) {
+            currencyIdMapping[loan.currencyId] = currency.id
+          }
+        }
       }
-    }
+    } else {
+      // 回退到原有的批量查询逻辑
+      const missingCurrencyIds = new Set<string>()
+      for (const loan of loanContracts) {
+        if (!currencyIdMapping[loan.currencyId] && loan.currencyCode) {
+          missingCurrencyIds.add(loan.currencyCode)
+        }
+      }
 
-    if (missingCurrencyIds.size > 0) {
-      const additionalCurrencies = await tx.currency.findMany({
-        where: {
-          code: { in: Array.from(missingCurrencyIds) },
-          OR: [{ createdBy: null }, { createdBy: userId }],
-        },
-      })
+      if (missingCurrencyIds.size > 0) {
+        const additionalCurrencies = await tx.currency.findMany({
+          where: {
+            code: { in: Array.from(missingCurrencyIds) },
+            OR: [{ createdBy: null }, { createdBy: userId }],
+          },
+        })
 
-      for (const currency of additionalCurrencies) {
-        const originalLoan = loanContracts.find(
-          loan => loan.currencyCode === currency.code
-        )
-        if (originalLoan && originalLoan.currencyId) {
-          currencyIdMapping[originalLoan.currencyId] = currency.id
+        for (const currency of additionalCurrencies) {
+          const originalLoan = loanContracts.find(
+            loan => loan.currencyCode === currency.code
+          )
+          if (originalLoan && originalLoan.currencyId) {
+            currencyIdMapping[originalLoan.currencyId] = currency.id
+          }
         }
       }
     }
@@ -2040,7 +2105,8 @@ export class DataImportService {
     paymentIdMapping: IdMapping,
     transactionIdMapping: IdMapping,
     result: ImportResult,
-    options: ImportOptions
+    options: ImportOptions,
+    preloadedCurrencies?: Map<string, any>
   ): Promise<void> {
     const startTime = Date.now()
     console.log(`🚀 开始批量导入 ${transactions.length} 条交易记录...`)
@@ -2066,33 +2132,51 @@ export class DataImportService {
       })
     }
 
-    // 预处理：批量查找缺失的货币ID，避免在循环中重复查询
-    const missingCurrencyIds = new Set<string>()
-    for (const transaction of transactions) {
-      if (
-        !currencyIdMapping[transaction.currencyId] &&
-        transaction.currencyCode
-      ) {
-        missingCurrencyIds.add(transaction.currencyCode)
+    // 预处理：使用预加载的货币数据，避免数据库查询
+    if (preloadedCurrencies) {
+      // 使用预加载的货币数据更新映射
+      for (const transaction of transactions) {
+        if (
+          !currencyIdMapping[transaction.currencyId] &&
+          transaction.currencyCode
+        ) {
+          const currency = preloadedCurrencies.get(transaction.currencyCode)
+          if (currency && transaction.currencyId) {
+            currencyIdMapping[transaction.currencyId] = currency.id
+          }
+        }
       }
-    }
+    } else {
+      // 回退到原有的批量查询逻辑
+      const missingCurrencyIds = new Set<string>()
+      for (const transaction of transactions) {
+        if (
+          !currencyIdMapping[transaction.currencyId] &&
+          transaction.currencyCode
+        ) {
+          missingCurrencyIds.add(transaction.currencyCode)
+        }
+      }
 
-    // 批量查找货币
-    const additionalCurrencies = await tx.currency.findMany({
-      where: {
-        code: { in: Array.from(missingCurrencyIds) },
-        OR: [{ createdBy: null }, { createdBy: userId }],
-      },
-    })
+      if (missingCurrencyIds.size > 0) {
+        // 批量查找货币
+        const additionalCurrencies = await tx.currency.findMany({
+          where: {
+            code: { in: Array.from(missingCurrencyIds) },
+            OR: [{ createdBy: null }, { createdBy: userId }],
+          },
+        })
 
-    // 更新货币ID映射
-    for (const currency of additionalCurrencies) {
-      // 找到对应的原始货币ID
-      const originalCurrency = transactions.find(
-        t => t.currencyCode === currency.code
-      )
-      if (originalCurrency && originalCurrency.currencyId) {
-        currencyIdMapping[originalCurrency.currencyId] = currency.id
+        // 更新货币ID映射
+        for (const currency of additionalCurrencies) {
+          // 找到对应的原始货币ID
+          const originalCurrency = transactions.find(
+            t => t.currencyCode === currency.code
+          )
+          if (originalCurrency && originalCurrency.currencyId) {
+            currencyIdMapping[originalCurrency.currencyId] = currency.id
+          }
+        }
       }
     }
 
@@ -2469,5 +2553,149 @@ export class DataImportService {
     }
 
     return `导入${entityType} "${entityName}" 失败: 未知错误`
+  }
+
+  /**
+   * 预加载所有必要的数据，避免在导入过程中重复查询
+   */
+  private static async preloadRequiredData(
+    userId: string,
+    data: ExportedData
+  ): Promise<{
+    currencyMapping: IdMapping
+    existingCurrencies: Map<string, any>
+    categoryMapping: IdMapping
+    existingCategories: Map<string, any>
+    tagMapping: IdMapping
+    existingTags: Map<string, any>
+    accountMapping: IdMapping
+    existingAccounts: Map<string, any>
+  }> {
+    const { prisma } = await import('@/lib/database/connection-manager')
+
+    // 收集所有需要的货币代码
+    const requiredCurrencies = new Set<string>()
+
+    // 从账户中收集货币
+    data.accounts?.forEach(account => {
+      if (account.currencyCode) {
+        requiredCurrencies.add(account.currencyCode)
+      }
+    })
+
+    // 从交易中收集货币
+    data.transactions?.forEach(transaction => {
+      if (transaction.currencyCode) {
+        requiredCurrencies.add(transaction.currencyCode)
+      }
+    })
+
+    // 从循环交易中收集货币
+    data.recurringTransactions?.forEach(rt => {
+      if (rt.currencyCode) {
+        requiredCurrencies.add(rt.currencyCode)
+      }
+    })
+
+    // 从贷款合同中收集货币
+    data.loanContracts?.forEach(loan => {
+      if (loan.currencyCode) {
+        requiredCurrencies.add(loan.currencyCode)
+      }
+    })
+
+    // 批量查询所有需要的货币
+    const existingCurrencies = await prisma.currency.findMany({
+      where: {
+        code: { in: Array.from(requiredCurrencies) },
+        OR: [{ createdBy: null }, { createdBy: userId }],
+      },
+    })
+
+    // 创建货币映射
+    const currencyMapping: IdMapping = {}
+    const existingCurrencyMap = new Map<string, any>()
+
+    for (const currency of existingCurrencies) {
+      existingCurrencyMap.set(currency.code, currency)
+      // 如果导入数据中有对应的货币，建立映射关系
+      const importCurrency = data.customCurrencies?.find(
+        c => c.code === currency.code
+      )
+      if (importCurrency) {
+        currencyMapping[importCurrency.id] = currency.id
+      }
+    }
+
+    // 预加载用户的所有分类
+    const existingCategories = await prisma.category.findMany({
+      where: { userId },
+    })
+
+    const categoryMapping: IdMapping = {}
+    const existingCategoryMap = new Map<string, any>()
+
+    for (const category of existingCategories) {
+      existingCategoryMap.set(category.name, category)
+      // 如果导入数据中有对应的分类，建立映射关系
+      const importCategory = data.categories?.find(
+        c => c.name === category.name
+      )
+      if (importCategory) {
+        categoryMapping[importCategory.id] = category.id
+      }
+    }
+
+    // 预加载用户的所有标签
+    const existingTags = await prisma.tag.findMany({
+      where: { userId },
+    })
+
+    const tagMapping: IdMapping = {}
+    const existingTagMap = new Map<string, any>()
+
+    for (const tag of existingTags) {
+      existingTagMap.set(tag.name, tag)
+      // 如果导入数据中有对应的标签，建立映射关系
+      const importTag = data.tags?.find(t => t.name === tag.name)
+      if (importTag) {
+        tagMapping[importTag.id] = tag.id
+      }
+    }
+
+    // 预加载用户的所有账户
+    const existingAccounts = await prisma.account.findMany({
+      where: { userId },
+      include: { category: true, currency: true },
+    })
+
+    const accountMapping: IdMapping = {}
+    const existingAccountMap = new Map<string, any>()
+
+    for (const account of existingAccounts) {
+      existingAccountMap.set(account.name, account)
+      // 如果导入数据中有对应的账户，建立映射关系
+      const importAccount = data.accounts?.find(a => a.name === account.name)
+      if (importAccount) {
+        accountMapping[importAccount.id] = account.id
+      }
+    }
+
+    console.log('📦 预加载数据统计:')
+    console.log(`   - 货币: ${existingCurrencies.length} 个`)
+    console.log(`   - 分类: ${existingCategories.length} 个`)
+    console.log(`   - 标签: ${existingTags.length} 个`)
+    console.log(`   - 账户: ${existingAccounts.length} 个`)
+
+    return {
+      currencyMapping,
+      existingCurrencies: existingCurrencyMap,
+      categoryMapping,
+      existingCategories: existingCategoryMap,
+      tagMapping,
+      existingTags: existingTagMap,
+      accountMapping,
+      existingAccounts: existingAccountMap,
+    }
   }
 }
