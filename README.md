@@ -1,103 +1,121 @@
-# Flow Balance - 个人财务管理系统
+# Flow Balance - Personal Finance Management System
 
 [![CI](https://github.com/jomonylw/flow-balance/workflows/CI/badge.svg)](https://github.com/jomonylw/flow-balance/actions)
 [![Docker Build](https://github.com/jomonylw/flow-balance/workflows/Docker%20Build%20and%20Release/badge.svg)](https://github.com/jomonylw/flow-balance/actions)
 
+**Language:** [English](README.md) | [中文](README.zh_CN.md)
+
 ![Flow Balance](public/images/screenshots/og-image.png)
 
-基于现代 Web 技术栈的专业个人财务管理系统，正确区分**存量**（资产负债）和**流量**（收入支出）概念，为个人用户提供财务分析和管理工具。
+A professional personal finance management system built with modern web technologies, correctly
+distinguishing between **stock** (assets/liabilities) and **flow** (income/expenses) concepts to
+provide financial analysis and management tools for individuals.
 
-## ✨ 核心特色
+## 🌟 Live Demo
 
-### 📊 专业财务理念
+**Try Flow Balance now:** [https://flow-balance.vercel.app](https://flow-balance.vercel.app)
 
-- **存量概念**：资产和负债账户反映特定时点的财务状况
-- **流量概念**：收入和支出账户反映特定期间的现金流动
-- **标准报表**：提供资产负债表和现金流量表
+**Demo Account:**
 
-### 🚀 智能功能
+- Email: `demo@flowbalance.com`
+- Password: `1223abcd`
 
-- **智能粘贴**：Excel 风格的批量数据录入，支持复制粘贴和实时验证
-- **FIRE 计算器**：财务自由路径规划和时间预测
-- **循环交易**：自动生成定期交易记录
-- **贷款管理**：支持等额本息、等额本金等多种还款方式
+> 💡 The demo account includes complete sample data so you can experience all features immediately.
 
-### 💱 多币种支持
+## ✨ Core Features
 
-- **全球货币**：支持主要国际货币和自定义货币
-- **汇率管理**：手工录入或 API 自动更新汇率
-- **智能转换**：所有金额自动转换为本位币显示
+### 📊 Professional Financial Concepts
 
-### 🎨 现代界面
+- **Stock Concept**: Asset and liability accounts reflect financial position at specific points in
+  time
+- **Flow Concept**: Income and expense accounts reflect cash flows over specific periods
+- **Standard Reports**: Provides balance sheet and cash flow statements
 
-- **响应式设计**：完美适配桌面端和移动端
-- **主题切换**：明亮/暗黑主题，跟随系统自动切换
-- **国际化**：中英文双语支持，实时切换
+### 🚀 Smart Features
 
-## 📸 界面预览
+- **Smart Paste**: Excel-style batch data entry with copy-paste support and real-time validation
+- **FIRE Calculator**: Financial independence path planning and timeline prediction
+- **Recurring Transactions**: Automatically generate periodic transaction records
+- **Loan Management**: Support for various repayment methods including equal installments and equal
+  principal
 
-### 💼 仪表板概览
+### 💱 Multi-Currency Support
 
-<p align="center">
-  <img src="public/images/screenshots/dashboard-overview-light-zh.png" alt="仪表板概览" width="800"/>
-</p>
+- **Global Currencies**: Support for major international currencies and custom currencies
+- **Exchange Rate Management**: Manual entry or automatic API updates
+- **Smart Conversion**: All amounts automatically converted to base currency for display
 
-### ⚡ 智能粘贴功能
+### 🎨 Modern Interface
 
-<p align="center">
-  <img src="public/images/screenshots/smart-paste-light-zh.png" alt="智能粘贴功能" width="800"/>
-</p>
+- **Responsive Design**: Perfect adaptation for desktop and mobile devices
+- **Theme Switching**: Light/dark themes with automatic system following
+- **Internationalization**: Bilingual support (English/Chinese) with real-time switching
 
-### 📊 财务报表
+## 📸 Screenshots
 
-<p align="center">
-  <img src="public/images/screenshots/financial-reports-light-zh.png" alt="财务报表" width="800"/>
-</p>
-
-### 🎯 FIRE 计算器
+### 💼 Dashboard Overview
 
 <p align="center">
-  <img src="public/images/screenshots/fire-calculator-light-zh.png" alt="FIRE 计算器" width="800"/>
+  <img src="public/images/screenshots/dashboard-overview-light-en.png" alt="Dashboard Overview" width="800"/>
 </p>
 
-### 🌳 树状汇总及图形化显示
+### ⚡ Smart Paste Feature
 
 <p align="center">
-  <img src="public/images/screenshots/tree-summary-charts-zh.png" alt="树状汇总及图形化显示" width="800"/>
+  <img src="public/images/screenshots/smart-paste-light-en.png" alt="Smart Paste Feature" width="800"/>
 </p>
 
-## 🛠️ 技术栈
+### 📊 Financial Reports
 
-### 前端技术
+<p align="center">
+  <img src="public/images/screenshots/financial-reports-light-en.png" alt="Financial Reports" width="800"/>
+</p>
 
-- **框架**：Next.js 15.3.3 (App Router)
-- **UI**：React 19 + TypeScript 5 + Tailwind CSS 4
-- **图表**：ECharts 5.6.0
-- **状态管理**：React Context API
-- **数据验证**：Zod 3.25.67
+### 🎯 FIRE Calculator
 
-### 后端技术
+<p align="center">
+  <img src="public/images/screenshots/fire-calculator-light-en.png" alt="FIRE Calculator" width="800"/>
+</p>
 
-- **运行时**：Node.js 20+
-- **数据库**：SQLite / PostgreSQL (动态检测)
-- **ORM**：Prisma 6.9.0
-- **认证**：JWT + bcryptjs
-- **API**：Next.js API Routes
+### 🌳 Tree Summary and Charts
 
-### 开发工具
+<p align="center">
+  <img src="public/images/screenshots/tree-summary-charts-en.png" alt="Tree Summary and Charts" width="800"/>
+</p>
 
-- **包管理**：pnpm
-- **代码质量**：ESLint 9 + Prettier 3.5.3
-- **测试**：Jest 29.7.0 + Testing Library
-- **构建**：Next.js Turbopack
+## 🛠️ Tech Stack
 
-## 🚀 快速部署
+### Frontend
 
-### Docker 部署（推荐）
+- **Framework**: Next.js 15.3.3 (App Router)
+- **UI**: React 19 + TypeScript 5 + Tailwind CSS 4
+- **Charts**: ECharts 5.6.0
+- **State Management**: React Context API
+- **Data Validation**: Zod 3.25.67
 
-Flow Balance 支持**动态数据库检测**，同一镜像可根据 `DATABASE_URL` 自动选择 SQLite 或 PostgreSQL。
+### Backend
 
-#### SQLite 版本（个人使用）
+- **Runtime**: Node.js 20+
+- **Database**: SQLite / PostgreSQL (Dynamic Detection)
+- **ORM**: Prisma 6.9.0
+- **Authentication**: JWT + bcryptjs
+- **API**: Next.js API Routes
+
+### Development Tools
+
+- **Package Manager**: pnpm
+- **Code Quality**: ESLint 9 + Prettier 3.5.3
+- **Testing**: Jest 29.7.0 + Testing Library
+- **Build**: Next.js Turbopack
+
+## 🚀 Quick Deployment
+
+### Docker Deployment (Recommended)
+
+Flow Balance supports **dynamic database detection** - the same image can automatically choose
+SQLite or PostgreSQL based on the `DATABASE_URL`.
+
+#### SQLite Version (Personal Use)
 
 ```bash
 docker run -d \
@@ -109,7 +127,7 @@ docker run -d \
   ghcr.io/jomonylw/flow-balance:latest
 ```
 
-#### PostgreSQL 版本（生产环境）
+#### PostgreSQL Version (Production)
 
 ```bash
 docker run -d \
@@ -139,39 +157,81 @@ volumes:
   flow-balance-data:
 ```
 
-### Vercel 部署
+### Vercel Deployment
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jomonylw/flow-balance)
 
-### 本地开发
+#### Environment Variables
+
+Configure the following environment variables in your Vercel project settings:
+
+| Variable              | Description                                             | Example                                         |
+| --------------------- | ------------------------------------------------------- | ----------------------------------------------- |
+| `DATABASE_URL`        | **Required** - PostgreSQL database connection string    | `postgresql://user:password@host:5432/database` |
+| `JWT_SECRET`          | **Required** - JWT token signing secret (random string) | `your-super-secret-jwt-key-here`                |
+| `NEXTAUTH_SECRET`     | **Required** - NextAuth.js authentication secret        | `your-nextauth-secret-key`                      |
+| `NEXTAUTH_URL`        | **Required** - Complete application URL                 | `https://your-app.vercel.app`                   |
+| `NEXT_PUBLIC_APP_URL` | **Required** - Public application URL                   | `https://your-app.vercel.app`                   |
+
+#### Setup Steps
+
+1. **Fork Project**: Click the "Deploy with Vercel" button above
+2. **Configure Database**: Recommended to use free
+   [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres) (Prisma-based)
+3. **Set Environment Variables**: Add the above variables in Vercel project settings → Environment
+   Variables
+4. **Deploy Complete**: Vercel will automatically build and deploy the application
+
+#### Vercel Postgres Configuration
+
+1. In your Vercel project dashboard, go to the **Storage** tab
+2. Click **Create Database** → Select **Postgres**
+3. After creation, Vercel will automatically set the `DATABASE_URL` environment variable
+4. Other environment variables need to be manually added to **Environment Variables**
+
+#### Database Initialization
+
+After first deployment, the database will automatically create table structure and seed data. For
+manual initialization:
 
 ```bash
-# 克隆项目
+# Connect to production database locally
+DATABASE_URL="your-production-database-url" pnpm db:migrate
+DATABASE_URL="your-production-database-url" pnpm db:seed
+```
+
+> ⚠️ **Note**: Ensure the database URL includes correct SSL configuration, usually requires adding
+> `?sslmode=require` parameter.
+
+### Local Development
+
+```bash
+# Clone the project
 git clone https://github.com/jomonylw/flow-balance.git
 cd flow-balance
 
-# 安装依赖
+# Install dependencies
 pnpm install
 
-# 配置环境变量
+# Configure environment variables
 cp .env.example .env.local
 
-# 初始化数据库
+# Initialize database
 pnpm db:migrate
 pnpm db:seed
 
-# 启动开发服务器
+# Start development server
 pnpm dev
 ```
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
-## 📄 许可证
+## 📄 License
 
 MIT License
 
 ---
 
-**Flow Balance** - 让个人财务管理可视化 🚀
+**Flow Balance** - Visualize Your Personal Finance 🚀
