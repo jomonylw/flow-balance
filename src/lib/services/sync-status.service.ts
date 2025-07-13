@@ -122,13 +122,52 @@ export class SyncStatusService {
       }
     }
 
+    const currentStatus =
+      (userSettings?.recurringProcessingStatus as
+        | 'idle'
+        | 'processing'
+        | 'completed'
+        | 'failed') || 'idle'
+
+    // 检查并自动修复状态不一致的情况
+    if (stages && currentStatus === 'processing') {
+      const allStagesCompleted = Object.values(stages).every(
+        stage => stage.stage === 'completed'
+      )
+      if (allStagesCompleted) {
+        console.warn(
+          `Status inconsistency detected for user ${userId}: all stages completed but status is still processing`
+        )
+        console.warn('User settings status:', currentStatus)
+        console.warn('Latest log status:', latestLog?.status)
+        console.warn('Stages:', stages)
+
+        // 自动修复状态不一致
+        try {
+          console.log(`Auto-fixing status inconsistency for user ${userId}`)
+          await this.updateSyncStatus(userId, 'completed', new Date())
+          // 更新返回的状态
+          return {
+            status: 'completed' as const,
+            lastSyncTime: new Date(),
+            processedRecurring: latestLog?.processedRecurring || 0,
+            processedLoans: latestLog?.processedLoans || 0,
+            processedExchangeRates: latestLog?.processedExchangeRates || 0,
+            failedCount: latestLog?.failedCount || 0,
+            errorMessage: latestLog?.errorMessage || undefined,
+            futureDataGenerated: futurePendingCount > 0,
+            futureDataUntil: undefined,
+            stages,
+            currentStage,
+          }
+        } catch (fixError) {
+          console.error('Failed to auto-fix status inconsistency:', fixError)
+        }
+      }
+    }
+
     return {
-      status:
-        (userSettings?.recurringProcessingStatus as
-          | 'idle'
-          | 'processing'
-          | 'completed'
-          | 'failed') || 'idle',
+      status: currentStatus,
       lastSyncTime: userSettings?.lastRecurringSync || undefined,
       processedRecurring: latestLog?.processedRecurring || 0,
       processedLoans: latestLog?.processedLoans || 0,
@@ -161,10 +200,18 @@ export class SyncStatusService {
       updateData.lastRecurringSync = lastSyncTime
     }
 
-    return await prisma.userSettings.update({
+    console.log(`Updating sync status for user ${userId} to ${status}`)
+
+    const result = await prisma.userSettings.update({
       where: { userId },
       data: updateData,
     })
+
+    console.log(
+      `Sync status updated successfully for user ${userId}: ${result.recurringProcessingStatus}`
+    )
+
+    return result
   }
 
   /**
@@ -285,6 +332,29 @@ export class SyncStatusService {
    */
   static async resetProcessingStatus(userId: string) {
     return await this.updateSyncStatus(userId, 'idle')
+  }
+
+  /**
+   * 修复状态不一致问题
+   * 当所有阶段都完成但状态仍为processing时，将状态更新为completed
+   */
+  static async fixStatusInconsistency(userId: string): Promise<boolean> {
+    const syncStatus = await this.getSyncStatus(userId)
+
+    // 检查是否存在状态不一致
+    if (syncStatus.status === 'processing' && syncStatus.stages) {
+      const allStagesCompleted = Object.values(syncStatus.stages).every(
+        stage => stage.stage === 'completed'
+      )
+
+      if (allStagesCompleted) {
+        console.log(`Fixing status inconsistency for user ${userId}`)
+        await this.updateSyncStatus(userId, 'completed', new Date())
+        return true
+      }
+    }
+
+    return false
   }
 
   /**

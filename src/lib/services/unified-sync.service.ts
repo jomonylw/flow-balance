@@ -178,19 +178,37 @@ export class UnifiedSyncService {
         throw error
       }
 
-      // 更新完成状态
-      await SyncStatusService.updateSyncStatus(userId, 'completed', new Date())
+      // 更新完成状态 - 先更新日志，再更新用户状态，确保原子性
+      try {
+        await SyncStatusService.updateProcessingLog(log.id, {
+          endTime: new Date(),
+          status: 'completed',
+          processedRecurring,
+          processedLoans,
+          processedExchangeRates,
+          failedCount: 0,
+          errorMessage:
+            errorMessages.length > 0 ? errorMessages.join('; ') : undefined,
+        })
 
-      await SyncStatusService.updateProcessingLog(log.id, {
-        endTime: new Date(),
-        status: 'completed',
-        processedRecurring,
-        processedLoans,
-        processedExchangeRates,
-        failedCount: 0,
-        errorMessage:
-          errorMessages.length > 0 ? errorMessages.join('; ') : undefined,
-      })
+        // 最后更新用户状态为完成
+        await SyncStatusService.updateSyncStatus(
+          userId,
+          'completed',
+          new Date()
+        )
+      } catch (logError) {
+        console.error(
+          'Failed to update processing log, but sync completed:',
+          logError
+        )
+        // 即使日志更新失败，也要确保用户状态更新为完成
+        await SyncStatusService.updateSyncStatus(
+          userId,
+          'completed',
+          new Date()
+        )
+      }
     } catch (error) {
       // 处理失败
       await SyncStatusService.updateSyncStatus(userId, 'failed')
