@@ -47,13 +47,13 @@ statement_timeout=120000
 idle_in_transaction_session_timeout=180000
 ```
 
-### 3. 专用导入连接管理
+### 3. 统一连接管理优化
 
-创建了 `src/lib/database/import-connection.ts`：
+优化了 `src/lib/database/connection-manager.ts`：
 
-- 为数据导入操作提供专用的数据库连接
-- 使用独立的连接配置，避免影响其他操作
-- 自动管理连接的创建和清理
+- 统一使用单例 PrismaClient 实例，避免连接冲突
+- 添加扩展事务函数支持长时间运行的操作
+- 保持 Vercel 环境的连接池配置一致性
 - 支持长时间运行的事务（5分钟超时）
 
 ### 4. 事务超时优化
@@ -135,12 +135,12 @@ DATABASE_STATEMENT_TIMEOUT=120000
 - ✅ 减少连接空闲超时时间到 30 秒
 - ✅ 优化 PostgreSQL 连接参数
 
-### 3. 专用导入连接管理
+### 3. 统一连接管理优化
 
-- ✅ 创建 `import-connection.ts` 专用连接管理器
+- ✅ 优化 `connection-manager.ts` 统一连接管理
 - ✅ 实现 `executeImportTransaction` 函数
 - ✅ 支持 5 分钟的长事务超时
-- ✅ 自动连接创建和清理
+- ✅ 保持单例模式避免连接冲突
 
 ### 4. 事务超时优化
 

@@ -74,7 +74,6 @@ const isBuildTime =
 所有数据库连接管理器都添加了回退 URL：
 
 - `connection-manager.ts`
-- `import-connection.ts`
 - `build-safe-prisma.ts`
 
 ## 构建流程

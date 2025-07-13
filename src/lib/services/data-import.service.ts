@@ -3,7 +3,7 @@
  * 处理用户数据的完整导入，确保数据完整性和一致性
  */
 
-import { executeImportTransaction } from '@/lib/database/import-connection'
+import { executeImportTransaction } from '@/lib/database/connection-manager'
 import { Decimal } from '@prisma/client/runtime/library'
 import type {
   ExportedData,

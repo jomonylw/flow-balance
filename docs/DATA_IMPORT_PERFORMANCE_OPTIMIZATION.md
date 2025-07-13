@@ -102,9 +102,9 @@ const transactionTagsToCreate: Array<{ transactionIndex: number; tagIds: string[
 #### 导入专用连接：
 
 ```typescript
-import { executeImportTransaction } from '@/lib/database/import-connection'
+import { executeImportTransaction } from '@/lib/database/connection-manager'
 
-// 使用专用的导入事务，针对大量数据导入进行优化
+// 使用统一连接管理器的导入事务，针对大量数据导入进行优化
 await executeImportTransaction(async tx => {
   // 导入操作
 })

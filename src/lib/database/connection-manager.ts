@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { API_TIMEOUTS } from '@/lib/constants/app-config'
 
 // Declare a global variable to cache the PrismaClient instance
 // This prevents creating multiple PrismaClient instances during development hot-reloading
@@ -176,6 +177,28 @@ export async function withRetry<T>(
   }
 
   throw lastError
+}
+
+// Extended transaction function for long-running operations like data import
+export async function executeExtendedTransaction<T>(
+  operation: (tx: any) => Promise<T>,
+  timeoutMs: number = API_TIMEOUTS.DATABASE_TRANSACTION_TIMEOUT
+): Promise<T> {
+  return withRetry(async () => {
+    return prisma.$transaction(operation, {
+      maxWait: timeoutMs + 5000, // 最大等待时间比事务超时多5秒
+      timeout: timeoutMs, // 可配置的事务超时时间
+    })
+  })
+}
+
+// Long-running transaction function for data import operations
+export async function executeImportTransaction<T>(
+  operation: (tx: any) => Promise<T>
+): Promise<T> {
+  // 使用更长的超时时间用于数据导入操作
+  const IMPORT_TIMEOUT = 5 * 60 * 1000 // 5分钟
+  return executeExtendedTransaction(operation, IMPORT_TIMEOUT)
 }
 
 // Ensure proper connection handling in serverless environment

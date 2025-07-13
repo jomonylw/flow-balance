@@ -154,6 +154,10 @@ export const API_TIMEOUTS = {
   EXCHANGE_RATE_API_TIMEOUT: 20 * 1000, // 20秒
   /** 数据库查询超时时间（毫秒） */
   DATABASE_QUERY_TIMEOUT: 15 * 1000, // 15秒
+  /** 数据库事务超时时间（毫秒） */
+  DATABASE_TRANSACTION_TIMEOUT: 10 * 1000, // 10秒
+  /** 批量操作事务超时时间（毫秒） */
+  BATCH_TRANSACTION_TIMEOUT: 10 * 1000, // 10秒
   /** 内部 API 调用超时时间（毫秒） */
   INTERNAL_API_TIMEOUT: 10 * 1000, // 10秒
   /** 文件上传超时时间（毫秒） */
