@@ -1,11 +1,11 @@
-# Flow Balance - Personal Finance Management System
+# <img src="public/images/screenshots/icon.png" alt="Flow Balance Icon" width="48" style="vertical-align: middle;"> Flow Balance - Personal Finance Management System
 
 [![CI](https://github.com/jomonylw/flow-balance/workflows/CI/badge.svg)](https://github.com/jomonylw/flow-balance/actions)
 [![Docker Build](https://github.com/jomonylw/flow-balance/workflows/Docker%20Build%20and%20Release/badge.svg)](https://github.com/jomonylw/flow-balance/actions)
 
 **Language:** [English](README.md) | [中文](README.zh_CN.md)
 
-![Flow Balance](public/images/screenshots/og-image.png)
+![Flow Balance](public/images/screenshots/og-image-en.png)
 
 A professional personal finance management system built with modern web technologies, correctly
 distinguishing between **stock** (assets/liabilities) and **flow** (income/expenses) concepts to
@@ -18,7 +18,7 @@ provide financial analysis and management tools for individuals.
 **Demo Account:**
 
 - Email: `demo@flowbalance.com`
-- Password: `1223abcd`
+- Password: `1234abcd`
 
 > 💡 The demo account includes complete sample data so you can experience all features immediately.
 

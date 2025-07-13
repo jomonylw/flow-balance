@@ -1,11 +1,11 @@
-# Flow Balance - 个人财务管理系统
+# <img src="public/images/screenshots/icon.png" alt="Flow Balance Icon" width="48" style="vertical-align: middle;"> Flow Balance - 个人财务管理系统
 
 [![CI](https://github.com/jomonylw/flow-balance/workflows/CI/badge.svg)](https://github.com/jomonylw/flow-balance/actions)
 [![Docker Build](https://github.com/jomonylw/flow-balance/workflows/Docker%20Build%20and%20Release/badge.svg)](https://github.com/jomonylw/flow-balance/actions)
 
 **语言:** [English](README.md) | [中文](README.zh_CN.md)
 
-![Flow Balance](public/images/screenshots/og-image.png)
+![Flow Balance](public/images/screenshots/og-image-zh.png)
 
 基于现代 Web 技术栈的专业个人财务管理系统，正确区分**存量**（资产负债）和**流量**（收入支出）概念，为个人用户提供财务分析和管理工具。
 
@@ -16,7 +16,7 @@
 **演示账户：**
 
 - 邮箱：`demo@flowbalance.com`
-- 密码：`1223abcd`
+- 密码：`1234abcd`
 
 > 💡 演示账户包含完整的示例数据，您可以直接体验所有功能特性。
 
