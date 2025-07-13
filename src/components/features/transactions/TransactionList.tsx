@@ -9,8 +9,9 @@ import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserCurrencyFormatter } from '@/hooks/useUserCurrencyFormatter'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useToast } from '@/contexts/providers/ToastContext'
-import { ExtendedTransaction } from '@/types/core'
+import { ExtendedTransaction, TransactionBatchResult } from '@/types/core'
 import { AccountType } from '@/types/core/constants'
+import { publishSystemUpdate } from '@/lib/services/data-update.service'
 
 interface TransactionListProps {
   transactions: ExtendedTransaction[]
@@ -378,21 +379,40 @@ export default function TransactionList({
   }
 
   // 处理智能粘贴成功
-  const handleSmartPasteSuccess = async (result: any) => {
+  const handleSmartPasteSuccess = async (result: TransactionBatchResult) => {
     // 计算总的处理数量：创建数量 + 更新数量
     const processedCount = (result.created || 0) + (result.updated || 0)
 
-    console.log('TransactionList - 智能粘贴成功:', {
-      result,
-      processedCount,
-      created: result.created,
-      updated: result.updated,
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('TransactionList - 智能粘贴成功:', {
+        result,
+        processedCount,
+        created: result.created,
+        updated: result.updated,
+      })
+    }
 
     showSuccess(
       t('batch.process.success'),
       t('batch.process.success.detail', { count: processedCount })
     )
+
+    // 发布系统更新事件，触发侧边栏更新
+    // 当批量操作的处理数量大于0时，触发系统更新事件
+    if (processedCount > 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          '[TransactionList] 发布系统更新事件，处理数量:',
+          processedCount
+        )
+      }
+      await publishSystemUpdate({
+        type: 'batch-operation',
+        processedCount,
+        created: result.created || 0,
+        updated: result.updated || 0,
+      })
+    }
 
     // 调用父组件的成功回调
     if (onSmartPasteSuccess) {

@@ -19,7 +19,10 @@ import {
   useBalanceUpdateListener,
   useTransactionListener,
 } from '@/hooks/business/useDataUpdateListener'
-import { publishTransactionDelete } from '@/lib/services/data-update.service'
+import {
+  publishTransactionDelete,
+  publishSystemUpdate,
+} from '@/lib/services/data-update.service'
 import { Transaction } from '@/types/business/transaction'
 import type {
   MonthlyDataItem,
@@ -673,7 +676,13 @@ export default function StockCategoryDetailView({
             // 智能粘贴相关属性 - 分类详情页面支持多账户
             showAccountSelector={true}
             accountType={category.type as AccountType}
-            onSmartPasteSuccess={() => {
+            onSmartPasteSuccess={async () => {
+              // 发布系统更新事件，触发侧边栏更新
+              await publishSystemUpdate({
+                type: 'batch-operation',
+                categoryId: category.id,
+              })
+
               handleBalanceUpdateSuccess()
             }}
           />

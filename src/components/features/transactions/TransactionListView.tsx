@@ -19,7 +19,10 @@ import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { Transaction, User } from '@/types/business/transaction'
 import { PAGINATION } from '@/lib/constants/app-config'
 import type { TransactionFilters } from '@/types/components'
-import { publishTransactionDelete } from '@/lib/services/data-update.service'
+import {
+  publishTransactionDelete,
+  publishSystemUpdate,
+} from '@/lib/services/data-update.service'
 
 interface TransactionListViewProps {
   user: User
@@ -380,7 +383,12 @@ export default function TransactionListView({
               }}
               // 智能粘贴相关属性 - 全局交易页面支持多账户
               showAccountSelector={true}
-              onSmartPasteSuccess={() => {
+              onSmartPasteSuccess={async () => {
+                // 发布系统更新事件，触发侧边栏更新
+                await publishSystemUpdate({
+                  type: 'batch-operation',
+                })
+
                 // 只有在用户已认证时才重新加载数据
                 if (isAuthenticated) {
                   loadTransactions()

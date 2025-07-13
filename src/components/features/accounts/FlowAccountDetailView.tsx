@@ -20,6 +20,7 @@ import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
 import {
   publishTransactionDelete,
   publishAccountClear,
+  publishSystemUpdate,
 } from '@/lib/services/data-update.service'
 
 import {
@@ -770,6 +771,13 @@ export default function FlowAccountDetailView({
               color: account.color,
             }}
             onSmartPasteSuccess={async () => {
+              // 发布系统更新事件，触发侧边栏更新
+              await publishSystemUpdate({
+                type: 'batch-operation',
+                accountId: account.id,
+                categoryId: account.categoryId,
+              })
+
               await loadTransactions(pagination.currentPage)
               await fetchTrendData(timeRange)
             }}

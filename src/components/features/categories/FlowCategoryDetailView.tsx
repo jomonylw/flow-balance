@@ -15,7 +15,10 @@ import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useUserDateFormatter } from '@/hooks/useUserDateFormatter'
 import { useTransactionListener } from '@/hooks/business/useDataUpdateListener'
-import { publishTransactionDelete } from '@/lib/services/data-update.service'
+import {
+  publishTransactionDelete,
+  publishSystemUpdate,
+} from '@/lib/services/data-update.service'
 import { Transaction, LegacyAccount } from '@/types/business/transaction'
 import type { CategoryTransaction } from '@/types/core'
 import type { FlowMonthlyData, FlowSummaryData } from '@/types/components'
@@ -709,7 +712,13 @@ export default function FlowCategoryDetailView({
             // 智能粘贴相关属性 - 分类详情页面支持多账户
             showAccountSelector={true}
             accountType={category.type as AccountType}
-            onSmartPasteSuccess={() => {
+            onSmartPasteSuccess={async () => {
+              // 发布系统更新事件，触发侧边栏更新
+              await publishSystemUpdate({
+                type: 'batch-operation',
+                categoryId: category.id,
+              })
+
               handleTransactionSuccess()
             }}
           />
