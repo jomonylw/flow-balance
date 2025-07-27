@@ -19,6 +19,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false",
+    "test:no-coverage": "jest --ci --watchAll=false",
+    "test:setup": "node scripts/setup-test-db.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "node prisma/seed.js",
@@ -95,5 +97,13 @@
     "typescript": "^5",
     "webpack-bundle-analyzer": "^4.10.2",
     "zod": "^3.25.67"
+  },
+  "pnpm": {
+    "overrides": {
+      "brace-expansion@>=1.0.0 <=1.1.11": ">=1.1.12",
+      "brace-expansion@>=2.0.0 <=2.0.1": ">=2.0.2",
+      "@eslint/plugin-kit@<0.3.3": ">=0.3.3",
+      "form-data@>=4.0.0 <4.0.4": ">=4.0.4"
+    }
   }
 }

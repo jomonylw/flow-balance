@@ -1,5 +1,54 @@
 import '@testing-library/jest-dom'
 
+// Polyfill for TextEncoder/TextDecoder (required for Next.js unstable_cache in Jest)
+import { TextEncoder, TextDecoder } from 'util'
+
+global.TextEncoder = TextEncoder
+global.TextDecoder = TextDecoder
+
+// Polyfill for Request/Response (required for Next.js unstable_cache in Jest)
+// Mock Request
+global.Request = class Request {
+  constructor(input, init) {
+    this.url = typeof input === 'string' ? input : input.url
+    this.method = init?.method || 'GET'
+    this.headers = new Map(Object.entries(init?.headers || {}))
+    this.body = init?.body || null
+  }
+}
+
+// Mock Response
+global.Response = class Response {
+  constructor(body, init) {
+    this.body = body
+    this.status = init?.status || 200
+    this.statusText = init?.statusText || 'OK'
+    this.headers = new Map(Object.entries(init?.headers || {}))
+  }
+
+  json() {
+    return Promise.resolve(JSON.parse(this.body))
+  }
+
+  text() {
+    return Promise.resolve(this.body)
+  }
+}
+
+// Mock Headers
+global.Headers = class Headers extends Map {
+  constructor(init) {
+    super()
+    if (init) {
+      if (Array.isArray(init)) {
+        init.forEach(([key, value]) => this.set(key, value))
+      } else {
+        Object.entries(init).forEach(([key, value]) => this.set(key, value))
+      }
+    }
+  }
+}
+
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter() {
