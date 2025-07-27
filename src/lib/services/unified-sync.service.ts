@@ -57,11 +57,17 @@ export class UnifiedSyncService {
     const errorMessages: string[] = []
 
     try {
+      // 检查是否需要汇率更新来决定初始化阶段
+      const needsExchangeRateUpdate =
+        await SyncStatusService.needsExchangeRateUpdate(userId)
+
       // 初始化阶段状态
       const initialStages = {
         recurringTransactions: { stage: 'pending' as const },
         loanContracts: { stage: 'pending' as const },
-        exchangeRates: { stage: 'pending' as const },
+        ...(needsExchangeRateUpdate && {
+          exchangeRates: { stage: 'pending' as const },
+        }),
       }
 
       await SyncStatusService.updateProcessingLog(log.id, {
@@ -150,32 +156,46 @@ export class UnifiedSyncService {
         throw error
       }
 
-      // 3. 处理汇率自动更新
-      await SyncStatusService.updateSyncStage(log.id, 'exchangeRates', {
-        stage: 'processing',
-        startTime: new Date(),
-      })
+      // 3. 处理汇率自动更新 - 使用之前检查的结果
+      if (needsExchangeRateUpdate) {
+        await SyncStatusService.updateSyncStage(log.id, 'exchangeRates', {
+          stage: 'processing',
+          startTime: new Date(),
+        })
 
-      try {
-        const exchangeRateResult = await this.processExchangeRateUpdate(userId)
-        processedExchangeRates += exchangeRateResult.processed
-        if (exchangeRateResult.errors.length > 0) {
-          errorMessages.push(...exchangeRateResult.errors)
+        try {
+          const exchangeRateResult =
+            await this.processExchangeRateUpdate(userId)
+          processedExchangeRates += exchangeRateResult.processed
+          if (exchangeRateResult.errors.length > 0) {
+            errorMessages.push(...exchangeRateResult.errors)
+          }
+
+          await SyncStatusService.updateSyncStage(log.id, 'exchangeRates', {
+            stage: 'completed',
+            processed: processedExchangeRates,
+            errors: exchangeRateResult.errors,
+            endTime: new Date(),
+          })
+        } catch (error) {
+          await SyncStatusService.updateSyncStage(log.id, 'exchangeRates', {
+            stage: 'failed',
+            errors: [
+              error instanceof Error ? error.message : '汇率更新处理失败',
+            ],
+            endTime: new Date(),
+          })
+          throw error
         }
-
+      } else {
+        // 如果不需要汇率更新，直接标记为跳过
         await SyncStatusService.updateSyncStage(log.id, 'exchangeRates', {
           stage: 'completed',
-          processed: processedExchangeRates,
-          errors: exchangeRateResult.errors,
+          processed: 0,
+          errors: [],
+          startTime: new Date(),
           endTime: new Date(),
         })
-      } catch (error) {
-        await SyncStatusService.updateSyncStage(log.id, 'exchangeRates', {
-          stage: 'failed',
-          errors: [error instanceof Error ? error.message : '汇率更新处理失败'],
-          endTime: new Date(),
-        })
-        throw error
       }
 
       // 更新完成状态 - 先更新日志，再更新用户状态，确保原子性

@@ -80,5 +80,9 @@
   "dashboard.accounts.unit": "accounts",
   "dashboard.currency.breakdown.title": "Breakdown",
   "dashboard.currency.breakdown.note": "Shows original and converted amounts by currency",
-  "dashboard.debt.to.asset.ratio": "Debt-to-Asset Ratio"
+  "dashboard.debt.to.asset.ratio": "Debt-to-Asset Ratio",
+  "dashboard.net.income.breakdown": "Net Income by Currency",
+  "dashboard.income.breakdown": "Income by Currency",
+  "dashboard.expense.breakdown": "Expense by Currency",
+  "dashboard.net.worth.breakdown": "Breakdown"
 }

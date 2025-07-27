@@ -96,7 +96,7 @@ export function DashboardSkeleton() {
  */
 export function AccountDetailSkeleton() {
   return (
-    <div className='p-6 space-y-6'>
+    <div className='max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8'>
       {/* 面包屑导航 */}
       <div className='flex items-center space-x-2'>
         <Skeleton height='1rem' width='60px' />
@@ -129,7 +129,7 @@ export function AccountDetailSkeleton() {
  */
 export function CategoryDetailSkeleton() {
   return (
-    <div className='p-6 space-y-6'>
+    <div className='max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8'>
       {/* 面包屑导航 */}
       <div className='flex items-center space-x-2'>
         <Skeleton height='1rem' width='60px' />
@@ -191,7 +191,7 @@ export function CategoryDetailSkeleton() {
  */
 export function TransactionListSkeleton() {
   return (
-    <div className='p-6 space-y-6'>
+    <div className='max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8'>
       {/* 页面标题和过滤器 */}
       <div>
         <Skeleton height='2rem' width='25%' className='mb-4' />
@@ -220,7 +220,7 @@ export function TransactionListSkeleton() {
  */
 export function ReportsSkeleton() {
   return (
-    <div className='p-6 space-y-6'>
+    <div className='max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8'>
       {/* 页面标题 */}
       <div>
         <Skeleton height='2rem' width='20%' className='mb-2' />
@@ -302,7 +302,7 @@ export function SidebarSkeleton({ isMobile = false }: { isMobile?: boolean }) {
  */
 export function FirePageSkeleton() {
   return (
-    <div className='p-6 space-y-8'>
+    <div className='max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8'>
       {/* 页面标题 */}
       <div>
         <Skeleton height='2rem' width='30%' className='mb-2' />
@@ -483,7 +483,7 @@ export function SettingsPageMobileSkeleton() {
  */
 export function SettingsPageDesktopSkeleton() {
   return (
-    <div className='p-6'>
+    <div className='max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8'>
       {/* 页面标题 */}
       <div className='mb-6'>
         <Skeleton height='2rem' width='25%' className='mb-2' />

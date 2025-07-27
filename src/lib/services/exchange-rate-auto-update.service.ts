@@ -6,6 +6,7 @@
 import { prisma } from '@/lib/database/connection-manager'
 import { Decimal } from '@prisma/client/runtime/library'
 import { generateAutoExchangeRates } from './exchange-rate-auto-generation.service'
+import { cleanupExchangeRateHistory } from './exchange-rate-cleanup.service'
 import { API_TIMEOUTS } from '@/lib/constants/app-config'
 import {
   fetchJsonWithTimeout,
@@ -289,6 +290,17 @@ export class ExchangeRateAutoUpdateService {
         console.error('自动重新生成汇率失败:', error)
         // 不影响主要操作，只记录错误
         errors.push('自动生成反向汇率和传递汇率失败')
+      }
+
+      // 清理汇率历史记录，只保留最新的 effectiveDate 汇率
+      if (updatedCount > 0) {
+        try {
+          await cleanupExchangeRateHistory(userId, { clearCache: false })
+        } catch (error) {
+          console.error('清理汇率历史失败:', error)
+          // 不影响主要操作，只记录错误
+          errors.push('清理汇率历史记录失败')
+        }
       }
 
       // 构建返回消息

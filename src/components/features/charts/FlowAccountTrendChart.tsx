@@ -351,7 +351,7 @@ export default function FlowAccountTrendChart({
 
   return (
     <div className='bg-white dark:bg-gray-800 rounded-lg shadow'>
-      <div className='p-4 border-b border-gray-200 dark:border-gray-700'>
+      <div className='p-4 border-gray-200 dark:border-gray-700'>
         <div className='flex items-center justify-between'>
           <div>
             <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>

@@ -7,8 +7,20 @@ import {
   unauthorizedResponse,
 } from '@/lib/api/response'
 import { getUserTranslator } from '@/lib/utils/server-i18n'
+import { getCachedUserTags } from '@/lib/services/cache.service'
+import { revalidateBasicDataCache } from '@/lib/services/cache-revalidation'
+import {
+  withApiMonitoring,
+  withCacheMonitoring,
+} from '@/lib/utils/cache-monitor'
 
-export async function GET() {
+// 包装缓存函数以进行监控
+const monitoredGetCachedUserTags = withCacheMonitoring(
+  getCachedUserTags,
+  'getCachedUserTags'
+)
+
+export const GET = withApiMonitoring(async () => {
   let user: any = null
   try {
     user = await getCurrentUser()
@@ -16,21 +28,8 @@ export async function GET() {
       return unauthorizedResponse()
     }
 
-    const tags = await prisma.tag.findMany({
-      where: {
-        userId: user.id,
-      },
-      orderBy: {
-        name: 'asc',
-      },
-      include: {
-        _count: {
-          select: {
-            transactions: true,
-          },
-        },
-      },
-    })
+    // 使用带监控的缓存获取标签数据
+    const tags = await monitoredGetCachedUserTags(user.id)
 
     return successResponse(tags)
   } catch (error) {
@@ -38,7 +37,7 @@ export async function GET() {
     const t = await getUserTranslator(user?.id || '')
     return errorResponse(t('tag.get.failed'), 500)
   }
-}
+}, '/api/tags [GET]')
 
 export async function POST(request: NextRequest) {
   let user: any = null
@@ -90,6 +89,9 @@ export async function POST(request: NextRequest) {
         color: color || null,
       },
     })
+
+    // 清除标签缓存
+    revalidateBasicDataCache(user.id)
 
     return successResponse(tag, t('tag.create.success'))
   } catch (error) {

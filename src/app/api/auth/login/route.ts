@@ -7,6 +7,7 @@ import {
 } from '@/lib/api/response'
 import { getCommonError } from '@/lib/constants/api-messages'
 import { createServerTranslator } from '@/lib/utils/server-i18n'
+import { preloadUserCache } from '@/lib/services/cache.service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +38,11 @@ export async function POST(request: NextRequest) {
       return errorResponse(t('auth.user.info.failed'), 500)
     }
     const { password: _password, ...userWithoutPassword } = result.user
+
+    // 预热用户缓存数据（异步执行，不阻塞响应）
+    preloadUserCache(result.user.id).catch(err => {
+      console.error('缓存预热失败:', err)
+    })
 
     return successResponse({
       user: userWithoutPassword,

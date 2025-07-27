@@ -11,6 +11,7 @@ import type { Prisma } from '@prisma/client'
 import { calculateAccountBalance } from '@/lib/services/account.service'
 import { AccountType, TransactionType } from '@/types/core/constants'
 import { getMonthsAgoDateRange } from '@/lib/utils/date-range'
+import { getAllCategoryIds } from '@/lib/services/category-summary/utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -272,25 +273,8 @@ async function getFlowMonthlyData(
       return errorResponse('分类不存在', 404)
     }
 
-    // 递归获取所有子分类ID
-    const getAllCategoryIds = async (catId: string): Promise<string[]> => {
-      const children = await prisma.category.findMany({
-        where: {
-          parentId: catId,
-          userId: userId,
-        },
-        select: { id: true },
-      })
-
-      let allIds = [catId]
-      for (const child of children) {
-        const childIds = await getAllCategoryIds(child.id)
-        allIds = allIds.concat(childIds)
-      }
-      return allIds
-    }
-
-    const categoryIds = await getAllCategoryIds(categoryId)
+    // 使用优化的递归CTE查询获取所有子分类ID
+    const categoryIds = await getAllCategoryIds(prisma, categoryId)
 
     // 获取这些分类下的所有账户ID
     const accounts = await prisma.account.findMany({

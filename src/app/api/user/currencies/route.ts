@@ -7,18 +7,33 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from '@/lib/api/response'
+import { getCachedUserCurrencies } from '@/lib/services/cache.service'
+import { revalidateUserCurrencyCache } from '@/lib/services/cache-revalidation'
+import {
+  withApiMonitoring,
+  withCacheMonitoring,
+} from '@/lib/utils/cache-monitor'
+
+// 包装缓存函数以进行监控
+const monitoredGetCachedUserCurrencies = withCacheMonitoring(
+  getCachedUserCurrencies,
+  'getCachedUserCurrencies'
+)
 
 /**
  * 获取用户可用货币列表
  */
-export async function GET(_request: NextRequest) {
+export const GET = withApiMonitoring(async (_request: NextRequest) => {
   try {
     const user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
 
-    // 获取用户可用货币
+    // 使用带监控的缓存获取用户货币
+    const _currencyCodes = await monitoredGetCachedUserCurrencies(user.id)
+
+    // 获取详细的用户货币信息（包含排序）
     const userCurrencies = await prisma.userCurrency.findMany({
       where: {
         userId: user.id,
@@ -41,7 +56,7 @@ export async function GET(_request: NextRequest) {
     console.error('获取用户货币失败:', error)
     return errorResponse('获取货币列表失败', 500)
   }
-}
+}, '/api/user/currencies [GET]')
 
 /**
  * 批量设置用户可用货币
@@ -153,6 +168,9 @@ export async function PUT(request: NextRequest) {
       }
     })
 
+    // 清除用户货币缓存
+    revalidateUserCurrencyCache(user.id)
+
     return successResponse({ message: '货币设置更新成功' })
   } catch (error) {
     console.error('更新用户货币失败:', error)
@@ -259,6 +277,10 @@ export async function POST(request: NextRequest) {
         where: { id: existingUserCurrency.id },
         data: { isActive: true },
       })
+
+      // 清除用户货币缓存
+      revalidateUserCurrencyCache(user.id)
+
       return successResponse({ message: '货币已激活' })
     }
 
@@ -280,6 +302,9 @@ export async function POST(request: NextRequest) {
         currency: true,
       },
     })
+
+    // 清除用户货币缓存
+    revalidateUserCurrencyCache(user.id)
 
     return successResponse({
       currency: {

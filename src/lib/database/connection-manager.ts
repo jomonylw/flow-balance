@@ -86,7 +86,10 @@ export const prisma =
       },
     },
     // Optimize logging for production
-    log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
+    log:
+      process.env.NODE_ENV === 'production'
+        ? ['error']
+        : ['error', 'warn', 'query'],
     // Optimize for serverless with minimal error format
     errorFormat: 'minimal',
   })

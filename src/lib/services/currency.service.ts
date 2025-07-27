@@ -1,23 +1,38 @@
 /**
  * 货币转换工具函数
  * 提供统一的汇率查询和货币转换功能
+ * 使用统一的缓存服务进行优化
  */
 
 import { prisma } from '@/lib/database/connection-manager'
+import {
+  ServiceExchangeRateData,
+  ConversionResult,
+  getCachedUserActiveCurrency,
+  getCachedUserExchangeRate,
+  getCachedUserCurrencies,
+  getCachedUserCurrencyRecords,
+  getCachedMultipleCurrencyConversions,
+} from '@/lib/services/cache.service'
 
-// 服务层专用的汇率数据类型（effectiveDate 为 Date 类型）
-export interface ServiceExchangeRateData {
-  id: string
-  fromCurrency: string
-  toCurrency: string
-  rate: number
-  effectiveDate: Date
-  notes?: string
+// 导出类型
+export type { ServiceExchangeRateData, ConversionResult }
+
+// ==================== 公共 API 函数 ====================
+// 这些函数使用缓存服务，为向后兼容性保留原有的函数名
+
+/**
+ * 根据货币代码查找用户实际使用的货币记录
+ * @param userId 用户ID
+ * @param currencyCode 货币代码
+ * @returns 货币记录或null
+ */
+export async function findUserActiveCurrency(
+  userId: string,
+  currencyCode: string
+) {
+  return await getCachedUserActiveCurrency(userId, currencyCode)
 }
-
-// 导入统一的 ConversionResult 类型
-import type { ConversionResult } from '@/types/core'
-export type { ConversionResult }
 
 /**
  * 获取用户的汇率设置
@@ -27,111 +42,66 @@ export type { ConversionResult }
  * @param asOfDate 查询日期（可选，默认为当前日期）
  * @returns 汇率数据或null
  */
-/**
- * 根据货币代码查找用户实际使用的货币记录
- * @param userId 用户ID
- * @param currencyCode 货币代码
- * @returns 货币记录或null
- */
-async function findUserActiveCurrency(userId: string, currencyCode: string) {
-  // 首先查找用户在 userCurrency 表中选择的货币
-  const userCurrency = await prisma.userCurrency.findFirst({
-    where: {
-      userId,
-      isActive: true,
-      currency: {
-        code: currencyCode,
-      },
-    },
-    include: {
-      currency: true,
-    },
-  })
-
-  if (userCurrency) {
-    return userCurrency.currency
-  }
-
-  // 如果用户没有在 userCurrency 表中选择该货币，则回退到默认查找逻辑
-  return await prisma.currency.findFirst({
-    where: {
-      code: currencyCode,
-      OR: [
-        { createdBy: userId }, // 用户自定义货币
-        { createdBy: null }, // 全局货币
-      ],
-    },
-    orderBy: { createdBy: 'desc' }, // 用户自定义货币优先
-  })
-}
-
 export async function getUserExchangeRate(
   userId: string,
   fromCurrency: string,
   toCurrency: string,
   asOfDate?: Date
 ): Promise<ServiceExchangeRateData | null> {
-  try {
-    const targetDate = asOfDate || new Date()
-
-    // 查找用户实际使用的货币记录
-    const fromCurrencyRecord = await findUserActiveCurrency(
-      userId,
-      fromCurrency
-    )
-    const toCurrencyRecord = await findUserActiveCurrency(userId, toCurrency)
-
-    if (!fromCurrencyRecord || !toCurrencyRecord) {
-      return null
-    }
-
-    // 如果源货币和目标货币是同一个货币记录，返回1:1汇率
-    if (fromCurrencyRecord.id === toCurrencyRecord.id) {
-      return {
-        id: 'same-currency',
-        fromCurrency,
-        toCurrency,
-        rate: 1,
-        effectiveDate: targetDate,
-        notes: '同币种转换',
-      }
-    }
-
-    // 查找最近的有效汇率
-    const exchangeRate = await prisma.exchangeRate.findFirst({
-      where: {
-        userId,
-        fromCurrencyId: fromCurrencyRecord.id,
-        toCurrencyId: toCurrencyRecord.id,
-        effectiveDate: {
-          lte: targetDate,
-        },
-      },
-      orderBy: {
-        effectiveDate: 'desc',
-      },
-    })
-
-    if (!exchangeRate) {
-      return null
-    }
-
-    return {
-      id: exchangeRate.id,
-      fromCurrency,
-      toCurrency,
-      rate: parseFloat(exchangeRate.rate.toString()),
-      effectiveDate: exchangeRate.effectiveDate,
-      notes: exchangeRate.notes || undefined,
-    }
-  } catch (error) {
-    console.error('获取汇率失败:', error)
-    return null
-  }
+  return await getCachedUserExchangeRate(
+    userId,
+    fromCurrency,
+    toCurrency,
+    asOfDate
+  )
 }
 
 /**
- * 转换货币金额
+ * 获取用户使用的所有货币
+ * @param userId 用户ID
+ * @returns 货币代码数组
+ */
+export async function getUserCurrencies(userId: string): Promise<string[]> {
+  return await getCachedUserCurrencies(userId)
+}
+
+/**
+ * 获取用户使用的所有货币记录（包含ID信息）
+ * @param userId 用户ID
+ * @returns 货币记录数组
+ */
+export async function getUserCurrencyRecords(
+  userId: string
+): Promise<Array<{ id: string; code: string; name: string; symbol: string }>> {
+  return await getCachedUserCurrencyRecords(userId)
+}
+
+/**
+ * 批量转换多个金额到本位币
+ * @param userId 用户ID
+ * @param amounts 金额数组，格式：[{amount, currency}]
+ * @param baseCurrency 本位币
+ * @param asOfDate 转换日期（可选）
+ * @returns 转换结果数组
+ */
+export async function convertMultipleCurrencies(
+  userId: string,
+  amounts: Array<{ amount: number; currency: string }>,
+  baseCurrency: string,
+  asOfDate?: Date
+): Promise<ConversionResult[]> {
+  return await getCachedMultipleCurrencyConversions(
+    userId,
+    amounts,
+    baseCurrency,
+    asOfDate
+  )
+}
+
+// ==================== 非缓存辅助函数 ====================
+
+/**
+ * 转换货币金额（单个转换，使用缓存服务）
  * @param userId 用户ID
  * @param amount 金额
  * @param fromCurrency 源货币
@@ -147,7 +117,7 @@ export async function convertCurrency(
   asOfDate?: Date
 ): Promise<ConversionResult> {
   try {
-    const exchangeRateData = await getUserExchangeRate(
+    const exchangeRateData = await getCachedUserExchangeRate(
       userId,
       fromCurrency,
       toCurrency,
@@ -197,167 +167,6 @@ export async function convertCurrency(
 }
 
 /**
- * 批量转换多个金额到本位币
- * @param userId 用户ID
- * @param amounts 金额数组，格式：[{amount, currency}]
- * @param baseCurrency 本位币
- * @param asOfDate 转换日期（可选）
- * @returns 转换结果数组
- */
-export async function convertMultipleCurrencies(
-  userId: string,
-  amounts: Array<{ amount: number; currency: string }>,
-  baseCurrency: string,
-  asOfDate?: Date
-): Promise<ConversionResult[]> {
-  const results: ConversionResult[] = []
-
-  for (const { amount, currency } of amounts) {
-    const result = await convertCurrency(
-      userId,
-      amount,
-      currency,
-      baseCurrency,
-      asOfDate
-    )
-    results.push(result)
-  }
-
-  return results
-}
-
-/**
- * 获取用户使用的所有货币
- * @param userId 用户ID
- * @returns 货币代码数组
- */
-export async function getUserCurrencies(userId: string): Promise<string[]> {
-  try {
-    // 首先获取用户设置的可用货币
-    const userCurrencies = await prisma.userCurrency.findMany({
-      where: {
-        userId,
-        isActive: true,
-      },
-      include: {
-        currency: {
-          select: { code: true },
-        },
-      },
-    })
-
-    if (userCurrencies.length > 0) {
-      return userCurrencies.map(uc => uc.currency.code)
-    }
-
-    // 如果用户没有设置可用货币，则回退到从交易记录中获取
-    const transactions = await prisma.transaction.findMany({
-      where: { userId },
-      select: {
-        currency: {
-          select: { code: true },
-        },
-      },
-      distinct: ['currencyId'],
-    })
-
-    // 获取用户的本位币
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId },
-      include: {
-        baseCurrency: {
-          select: { code: true },
-        },
-      },
-    })
-
-    const currencyCodes = new Set<string>()
-
-    // 添加交易中的货币
-    transactions.forEach(t => currencyCodes.add(t.currency.code))
-
-    // 添加本位币
-    if (userSettings?.baseCurrency?.code) {
-      currencyCodes.add(userSettings.baseCurrency.code)
-    }
-
-    return Array.from(currencyCodes)
-  } catch (error) {
-    console.error('获取用户货币失败:', error)
-    return []
-  }
-}
-
-/**
- * 获取用户使用的所有货币记录（包含ID信息）
- * @param userId 用户ID
- * @returns 货币记录数组
- */
-export async function getUserCurrencyRecords(
-  userId: string
-): Promise<Array<{ id: string; code: string; name: string; symbol: string }>> {
-  try {
-    // 首先获取用户设置的可用货币
-    const userCurrencies = await prisma.userCurrency.findMany({
-      where: {
-        userId,
-        isActive: true,
-      },
-      include: {
-        currency: {
-          select: { id: true, code: true, name: true, symbol: true },
-        },
-      },
-    })
-
-    if (userCurrencies.length > 0) {
-      return userCurrencies.map(uc => uc.currency)
-    }
-
-    // 如果用户没有设置可用货币，则回退到从交易记录中获取
-    const transactions = await prisma.transaction.findMany({
-      where: { userId },
-      select: {
-        currency: {
-          select: { id: true, code: true, name: true, symbol: true },
-        },
-      },
-      distinct: ['currencyId'],
-    })
-
-    // 获取用户的本位币
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId },
-      include: {
-        baseCurrency: {
-          select: { id: true, code: true, name: true, symbol: true },
-        },
-      },
-    })
-
-    const currencyMap = new Map<
-      string,
-      { id: string; code: string; name: string; symbol: string }
-    >()
-
-    // 添加交易中的货币
-    transactions.forEach(t => {
-      currencyMap.set(t.currency.id, t.currency)
-    })
-
-    // 添加本位币
-    if (userSettings?.baseCurrency) {
-      currencyMap.set(userSettings.baseCurrency.id, userSettings.baseCurrency)
-    }
-
-    return Array.from(currencyMap.values())
-  } catch (error) {
-    console.error('获取用户货币记录失败:', error)
-    return []
-  }
-}
-
-/**
  * 检查用户是否需要设置汇率
  * @param userId 用户ID
  * @param baseCurrency 本位币代码
@@ -369,7 +178,7 @@ export async function getMissingExchangeRates(
 ): Promise<Array<{ fromCurrency: string; toCurrency: string }>> {
   try {
     // 获取用户的所有货币记录（包含ID）
-    const userCurrencyRecords = await getUserCurrencyRecords(userId)
+    const userCurrencyRecords = await getCachedUserCurrencyRecords(userId)
 
     // 获取用户设置以确定实际使用的本位币记录
     const userSettings = await prisma.userSettings.findUnique({
@@ -403,7 +212,7 @@ export async function getMissingExchangeRates(
     for (const currencyRecord of userCurrencyRecords) {
       // 使用货币ID进行比较，避免相同代码不同ID的问题
       if (currencyRecord.id !== baseCurrencyRecord.id) {
-        const rate = await getUserExchangeRate(
+        const rate = await getCachedUserExchangeRate(
           userId,
           currencyRecord.code,
           baseCurrency
@@ -460,3 +269,13 @@ export function formatCurrencyDisplay(
 
   return formattedAmount
 }
+
+// ==================== 缓存失效函数导出 ====================
+// 为向后兼容性重新导出缓存失效函数
+export {
+  revalidateUserCurrencyCache,
+  revalidateExchangeRateCache,
+  revalidateUserSettingsCache,
+  revalidateAllCurrencyCache,
+  revalidateAllCurrencyAndExchangeRateCache,
+} from '@/lib/services/cache-revalidation'

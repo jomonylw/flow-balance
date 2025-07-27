@@ -9,22 +9,9 @@ import {
 // import { getUserTranslator } from '@/lib/utils/server-i18n'
 import { TransactionType, Prisma } from '@prisma/client'
 import { normalizeDateRange } from '@/lib/utils/date-range'
+import { getAllCategoryIds } from '@/lib/services/category-summary/utils'
 
-// 辅助函数：递归获取所有后代分类的ID
-async function getDescendantCategoryIds(categoryId: string): Promise<string[]> {
-  const children = await prisma.category.findMany({
-    where: { parentId: categoryId },
-    select: { id: true },
-  })
-
-  const descendantIds: string[] = []
-  for (const child of children) {
-    descendantIds.push(child.id)
-    const grandChildrenIds = await getDescendantCategoryIds(child.id)
-    descendantIds.push(...grandChildrenIds)
-  }
-  return descendantIds
-}
+// 注意：getDescendantCategoryIds 已替换为优化的 getAllCategoryIds 函数
 
 export async function GET(request: NextRequest) {
   try {
@@ -51,9 +38,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (categoryId) {
-      // 获取该分类及其所有后代分类的ID
-      const descendantIds = await getDescendantCategoryIds(categoryId)
-      const allCategoryIds = [categoryId, ...descendantIds]
+      // 获取该分类及其所有后代分类的ID（使用优化的CTE版本）
+      const allCategoryIds = await getAllCategoryIds(prisma, categoryId)
       baseConditions.push({
         account: {
           categoryId: { in: allCategoryIds },

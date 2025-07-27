@@ -9,6 +9,7 @@ import CashFlowChart from './CashFlowChart'
 import ExchangeRateAlert from './ExchangeRateAlert'
 import SystemUpdateCard from './SystemUpdateCard'
 import CurrencyBreakdown from './CurrencyBreakdown'
+import ExpandableIncomeExpenseRow from './ExpandableIncomeExpenseRow'
 import AnimatedNumber from '@/components/ui/data-display/AnimatedNumber'
 import PageContainer from '@/components/ui/layout/PageContainer'
 import TranslationLoader from '@/components/ui/data-display/TranslationLoader'
@@ -704,6 +705,17 @@ export default function DashboardContent({
                       </span>
                     </p>
                   )}
+                  {/* 净资产分货币信息 */}
+                  {summaryData.netWorth.byCurrency && (
+                    <CurrencyBreakdown
+                      byCurrency={summaryData.netWorth.byCurrency}
+                      type='dynamic' // 使用动态颜色主题
+                      baseCurrency={summaryData.netWorth.currency}
+                      customTitle={t('dashboard.net.worth.breakdown')}
+                      hideAccountCount={true} // 隐藏账户数量
+                      dynamicAmount={summaryData.netWorth.amount} // 传入净资产金额用于判断颜色
+                    />
+                  )}
                 </div>
               </div>
 
@@ -765,40 +777,31 @@ export default function DashboardContent({
                     })}
                   </p>
                 </div>
-                <div className='mt-3 space-y-1 text-xs'>
-                  <div className='flex justify-between'>
-                    <span
-                      className={`${resolvedTheme === 'dark' ? 'text-green-400' : 'text-green-600'}`}
-                    >
-                      {t('dashboard.income.label')}
-                    </span>
-                    <span
-                      className={`font-medium ${resolvedTheme === 'dark' ? 'text-green-300' : 'text-green-800'}`}
-                    >
-                      +
-                      {formatCurrencyAmount(
-                        summaryData.recentActivity.summaryInBaseCurrency.income,
-                        summaryData.recentActivity.baseCurrency
-                      )}
-                    </span>
-                  </div>
-                  <div className='flex justify-between'>
-                    <span
-                      className={`${resolvedTheme === 'dark' ? 'text-red-400' : 'text-red-600'}`}
-                    >
-                      {t('dashboard.expense.label')}
-                    </span>
-                    <span
-                      className={`font-medium ${resolvedTheme === 'dark' ? 'text-red-300' : 'text-red-800'}`}
-                    >
-                      -
-                      {formatCurrencyAmount(
-                        summaryData.recentActivity.summaryInBaseCurrency
-                          .expense,
-                        summaryData.recentActivity.baseCurrency
-                      )}
-                    </span>
-                  </div>
+                <div className='mt-3 space-y-1 text-sm'>
+                  {/* 收入明细 */}
+                  <ExpandableIncomeExpenseRow
+                    type='income'
+                    label={t('dashboard.income.label')}
+                    amount={
+                      summaryData.recentActivity.summaryInBaseCurrency.income
+                    }
+                    currency={summaryData.recentActivity.baseCurrency}
+                    byCurrency={summaryData.recentActivity.incomeByCurrency}
+                    formatCurrencyAmount={formatCurrencyAmount}
+                  />
+                </div>
+                <div className='mt-3 space-y-1 text-sm'>
+                  {/* 支出明细 */}
+                  <ExpandableIncomeExpenseRow
+                    type='expense'
+                    label={t('dashboard.expense.label')}
+                    amount={
+                      summaryData.recentActivity.summaryInBaseCurrency.expense
+                    }
+                    currency={summaryData.recentActivity.baseCurrency}
+                    byCurrency={summaryData.recentActivity.expenseByCurrency}
+                    formatCurrencyAmount={formatCurrencyAmount}
+                  />
                 </div>
               </div>
             </div>

@@ -8,6 +8,7 @@ import {
   validationErrorResponse,
 } from '@/lib/api/response'
 import { generateAutoExchangeRates } from '@/lib/services/exchange-rate-auto-generation.service'
+import { cleanupSpecificCurrencyPairHistory } from '@/lib/services/exchange-rate-cleanup.service'
 
 /**
  * 获取单个汇率详情
@@ -154,6 +155,19 @@ export async function PUT(
         await generateAutoExchangeRates(user.id)
       } catch (error) {
         console.warn('自动重新生成汇率失败:', error)
+        // 不影响主要操作，只记录错误
+      }
+
+      // 清理汇率历史记录，只保留最新的 effectiveDate 汇率
+      try {
+        await cleanupSpecificCurrencyPairHistory(
+          user.id,
+          existingRate.fromCurrencyId,
+          existingRate.toCurrencyId,
+          { clearCache: false } // 缓存会在其他地方清理
+        )
+      } catch (error) {
+        console.warn('清理汇率历史失败:', error)
         // 不影响主要操作，只记录错误
       }
     }

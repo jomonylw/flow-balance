@@ -80,5 +80,9 @@
   "dashboard.accounts.unit": "个账户",
   "dashboard.currency.breakdown.title": "分货币",
   "dashboard.currency.breakdown.note": "显示各币种原始金额和折算金额",
-  "dashboard.debt.to.asset.ratio": "资产负债率"
+  "dashboard.debt.to.asset.ratio": "资产负债率",
+  "dashboard.net.income.breakdown": "净收入分货币",
+  "dashboard.income.breakdown": "收入分货币",
+  "dashboard.expense.breakdown": "支出分货币",
+  "dashboard.net.worth.breakdown": "分货币"
 }

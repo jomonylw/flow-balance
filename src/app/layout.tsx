@@ -8,6 +8,7 @@ import { AuthProvider } from '@/contexts/providers/AuthContext'
 import ThemeScript from '@/components/ThemeScript'
 import LanguageScript from '@/components/LanguageScript'
 import EChartsInitializer from '@/components/EChartsInitializer'
+import { initializeServer } from '@/lib/utils/server-init'
 
 export const metadata: Metadata = {
   title: 'Flow Balance - 个人财务管理',
@@ -37,11 +38,14 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // 初始化服务器组件（包括缓存监控）
+  await initializeServer()
+
   return (
     <html suppressHydrationWarning>
       <head>

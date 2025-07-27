@@ -729,6 +729,26 @@ export class DataImportService {
         ? 'import.success'
         : 'import.partial.success'
 
+      // 如果导入成功，清除相关缓存
+      if (result.success || result.statistics.created > 0) {
+        try {
+          // 动态导入缓存失效函数，避免循环依赖
+          const { revalidateAllUserCache } = await import(
+            './cache-revalidation'
+          )
+          revalidateAllUserCache(userId)
+
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`🔄 数据导入完成，已清除用户 ${userId} 的所有缓存`)
+          }
+        } catch (error) {
+          console.warn('清除导入后缓存失败:', error)
+          result.warnings.push(
+            '数据导入成功，但缓存清除失败，可能需要手动刷新页面'
+          )
+        }
+      }
+
       return result
     } catch {
       result.errors.push('data.import.process.error')

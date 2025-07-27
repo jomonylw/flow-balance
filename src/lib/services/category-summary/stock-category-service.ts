@@ -14,7 +14,11 @@ import type {
   MonthlyChildCategorySummary,
   MonthlyReport,
 } from './types'
-import { getAllCategoryIds, extractBalanceChangeFromNotes } from './utils'
+import {
+  extractBalanceChangeFromNotes,
+  buildCategoryHierarchyMap,
+  getDescendantsFromHierarchyMap,
+} from './utils'
 import {
   TransactionType,
   type Account,
@@ -205,10 +209,19 @@ export async function getStockCategorySummary(
     name: '人民币',
   }
 
-  // 2. 确定报告的起始日期和月份范围
+  // 2. 构建分类层级关系图（一次性获取，避免循环查询）
+  const hierarchyMap = await buildCategoryHierarchyMap(prisma, userId, [
+    'ASSET',
+    'LIABILITY',
+  ])
+  const allCategoryIds = getDescendantsFromHierarchyMap(
+    hierarchyMap,
+    categoryId
+  )
+
+  // 3. 确定报告的起始日期和月份范围
   const now = new Date()
   let reportStartDate: Date
-  const allCategoryIds = await getAllCategoryIds(prisma, categoryId)
   let allAccounts: (Account & {
     currency: Currency | null
     transactions: (Transaction & { currency: Currency })[]
@@ -392,42 +405,45 @@ export async function getStockCategorySummary(
       directAccounts: [],
     }
 
-    // 聚合子分类数据
+    // 聚合子分类数据（使用内存中的层级关系图，避免数据库查询）
     const validChildren = category.children.filter(
       child => child.type === 'ASSET' || child.type === 'LIABILITY'
     )
-    await Promise.all(
-      validChildren.map(async child => {
-        const childCategoryIds = await getAllCategoryIds(prisma, child.id)
-        const childAccounts = allAccounts.filter(acc =>
-          childCategoryIds.includes(acc.categoryId)
-        )
 
-        const summary: MonthlyChildCategorySummary = {
-          id: child.id,
-          name: child.name,
-          type: child.type as AccountType,
-          order: child.order,
-          accountCount: childAccounts.length,
-          balances: { original: {}, converted: {} },
+    // 同步处理，因为不再需要数据库查询
+    validChildren.forEach(child => {
+      const childCategoryIds = getDescendantsFromHierarchyMap(
+        hierarchyMap,
+        child.id
+      )
+      const childAccounts = allAccounts.filter(acc =>
+        childCategoryIds.includes(acc.categoryId)
+      )
+
+      const summary: MonthlyChildCategorySummary = {
+        id: child.id,
+        name: child.name,
+        type: child.type as AccountType,
+        order: child.order,
+        accountCount: childAccounts.length,
+        balances: { original: {}, converted: {} },
+      }
+
+      childAccounts.forEach(acc => {
+        const balances = accountMonthlyBalances[acc.id]?.[month]
+        if (balances) {
+          Object.entries(balances.original).forEach(([currency, amount]) => {
+            summary.balances.original[currency] =
+              (summary.balances.original[currency] || 0) + amount
+          })
+          Object.entries(balances.converted).forEach(([currency, amount]) => {
+            summary.balances.converted[currency] =
+              (summary.balances.converted[currency] || 0) + amount
+          })
         }
-
-        childAccounts.forEach(acc => {
-          const balances = accountMonthlyBalances[acc.id]?.[month]
-          if (balances) {
-            Object.entries(balances.original).forEach(([currency, amount]) => {
-              summary.balances.original[currency] =
-                (summary.balances.original[currency] || 0) + amount
-            })
-            Object.entries(balances.converted).forEach(([currency, amount]) => {
-              summary.balances.converted[currency] =
-                (summary.balances.converted[currency] || 0) + amount
-            })
-          }
-        })
-        report.childCategories.push(summary)
       })
-    )
+      report.childCategories.push(summary)
+    })
 
     // 聚合直属账户数据
     const directAccounts = allAccounts.filter(

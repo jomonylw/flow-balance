@@ -625,14 +625,7 @@ export interface DashboardSummary {
     amount: number
     currency: SimpleCurrency
     hasConversionErrors?: boolean
-    byCurrency?: Record<
-      string,
-      {
-        currencyCode: string
-        amount: number
-        currency: { code: string; symbol: string; name: string }
-      }
-    >
+    byCurrency?: Record<string, ByCurrencyInfo>
   }
   recentActivity: {
     summaryInBaseCurrency: {
@@ -640,6 +633,9 @@ export interface DashboardSummary {
       income: number
       expense: number
     }
+    incomeByCurrency?: Record<string, ByCurrencyInfo>
+    expenseByCurrency?: Record<string, ByCurrencyInfo>
+    netByCurrency?: Record<string, ByCurrencyInfo>
     baseCurrency: SimpleCurrency
     period: string
   }

@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/services/auth.service'
-import { prisma } from '@/lib/database/connection-manager'
+
 import {
   successResponse,
   errorResponse,
@@ -7,52 +7,33 @@ import {
 } from '@/lib/api/response'
 import type { CategoryWithChildren, TreeAccountInfo } from '@/types/api'
 import { AccountType } from '@/types/core/constants'
+import { getCachedTreeStructure } from '@/lib/services/cache.service'
+import {
+  withApiMonitoring,
+  withCacheMonitoring,
+} from '@/lib/utils/cache-monitor'
+
+// 包装缓存函数以进行监控
+const monitoredGetCachedTreeStructure = withCacheMonitoring(
+  getCachedTreeStructure,
+  'getCachedTreeStructure'
+)
 
 /**
  * 获取完整的分类+账户树状结构
  * 优化侧边栏数据获取，减少API调用次数
  */
-export async function GET() {
+export const GET = withApiMonitoring(async () => {
   try {
     const user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
     }
 
-    // 并行获取分类和账户数据
-    const [categories, accounts] = await Promise.all([
-      // 获取所有分类
-      prisma.category.findMany({
-        where: {
-          userId: user.id,
-        },
-        orderBy: [{ order: 'asc' }, { name: 'asc' }],
-      }),
-
-      // 获取所有账户（不包含交易数据，减少数据传输）
-      prisma.account.findMany({
-        where: {
-          userId: user.id,
-        },
-        include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-            },
-          },
-          currency: {
-            select: {
-              code: true,
-            },
-          },
-        },
-        orderBy: {
-          name: 'asc',
-        },
-      }),
-    ])
+    // 使用带监控的缓存获取分类和账户数据
+    const { categories, accounts } = await monitoredGetCachedTreeStructure(
+      user.id
+    )
 
     // 构建树状结构
     const categoryMap = new Map<string, CategoryWithChildren>()
@@ -136,4 +117,4 @@ export async function GET() {
     console.error('Get tree structure error:', error)
     return errorResponse('获取树状结构失败', 500)
   }
-}
+}, '/api/tree-structure [GET]')

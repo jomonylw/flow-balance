@@ -10,6 +10,11 @@ import {
 import type { Prisma } from '@prisma/client'
 import { generateAutoExchangeRates } from '@/lib/services/exchange-rate-auto-generation.service'
 import { getUserTranslator } from '@/lib/utils/server-i18n'
+import { revalidateExchangeRateCache } from '@/lib/services/cache-revalidation'
+import {
+  cleanupSpecificCurrencyPairHistory,
+  cleanupExchangeRateHistory,
+} from '@/lib/services/exchange-rate-cleanup.service'
 
 /**
  * 获取用户的汇率设置
@@ -251,6 +256,22 @@ export async function POST(request: NextRequest) {
       // 不影响主要操作，只记录错误
     }
 
+    // 清理汇率历史记录，只保留最新的 effectiveDate 汇率
+    try {
+      await cleanupSpecificCurrencyPairHistory(
+        user.id,
+        fromCurrencyExists.id,
+        toCurrencyExists.id,
+        { clearCache: false } // 稍后统一清除缓存
+      )
+    } catch (error) {
+      console.error('清理汇率历史失败:', error)
+      // 不影响主要操作，只记录错误
+    }
+
+    // 清除汇率缓存
+    revalidateExchangeRateCache(user.id)
+
     return successResponse(
       serializedRate,
       existingRate
@@ -428,6 +449,22 @@ export async function PUT(request: NextRequest) {
         console.error('汇率自动生成失败:', error)
         // 不影响主要操作，只记录错误
       }
+    }
+
+    // 如果有成功创建的汇率，清理汇率历史记录，只保留最新的 effectiveDate 汇率
+    if (results.length > 0) {
+      try {
+        // 批量清理所有用户的汇率历史记录
+        await cleanupExchangeRateHistory(user.id, { clearCache: false })
+      } catch (error) {
+        console.error('批量清理汇率历史失败:', error)
+        // 不影响主要操作，只记录错误
+      }
+    }
+
+    // 如果有成功创建的汇率，清除汇率缓存
+    if (results.length > 0) {
+      revalidateExchangeRateCache(user.id)
     }
 
     return successResponse(

@@ -11,6 +11,7 @@ import type { SerializedCategoryWithTransactions } from '@/components/features/c
 import type { SerializedTransactionWithBasic } from '@/types/database'
 import { Decimal } from '@prisma/client/runtime/library'
 import type { AccountType } from '@prisma/client'
+import { getAllCategoryIds } from '@/lib/services/category-summary/utils'
 
 // 强制动态渲染
 export const dynamic = 'force-dynamic'
@@ -214,24 +215,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     notFound()
   }
 
-  // 递归获取所有子分类ID
-  const getAllCategoryIds = async (categoryId: string): Promise<string[]> => {
-    const category = await prisma.category.findUnique({
-      where: { id: categoryId },
-      include: { children: true },
-    })
-
-    if (!category) return [categoryId]
-
-    let ids = [categoryId]
-    for (const child of category.children) {
-      const childIds = await getAllCategoryIds(child.id)
-      ids = ids.concat(childIds)
-    }
-    return ids
-  }
-
-  const allCategoryIds = await getAllCategoryIds(id)
+  // 使用优化的递归CTE查询获取所有子分类ID
+  const allCategoryIds = await getAllCategoryIds(prisma, id)
 
   // 获取该分类及其所有子分类的交易
   const allTransactions = await prisma.transaction.findMany({

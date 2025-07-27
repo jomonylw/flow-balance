@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/services/auth.service'
 import { prisma } from '@/lib/database/connection-manager'
 import AppLayoutClient from '@/components/features/layout/AppLayoutClient'
+import { initializeServer } from '@/lib/utils/server-init'
 
 // 强制动态渲染
 export const dynamic = 'force-dynamic'
@@ -11,6 +12,9 @@ export default async function MainLayout({
 }: {
   children: React.ReactNode
 }) {
+  // 初始化服务器组件（包括缓存监控）
+  await initializeServer()
+
   // 强制执行身份验证
   const user = await getCurrentUser()
   if (!user) {

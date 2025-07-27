@@ -11,8 +11,20 @@ import {
   getUserTranslator,
   clearUserLanguageCache,
 } from '@/lib/utils/server-i18n'
+import { getCachedUserSettings } from '@/lib/services/cache.service'
+import { revalidateUserSettingsCache } from '@/lib/services/cache-revalidation'
+import {
+  withApiMonitoring,
+  withCacheMonitoring,
+} from '@/lib/utils/cache-monitor'
 
-export async function GET() {
+// 包装缓存函数以进行监控
+const monitoredGetCachedUserSettings = withCacheMonitoring(
+  getCachedUserSettings,
+  'getCachedUserSettings'
+)
+
+export const GET = withApiMonitoring(async () => {
   let user = null
   try {
     user = await getCurrentUser()
@@ -20,11 +32,8 @@ export async function GET() {
       return unauthorizedResponse()
     }
 
-    // 获取用户设置
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId: user.id },
-      include: { baseCurrency: true },
-    })
+    // 使用带监控的缓存获取用户设置
+    const userSettings = await monitoredGetCachedUserSettings(user.id)
 
     return successResponse({
       userSettings,
@@ -34,7 +43,7 @@ export async function GET() {
     const t = await getUserTranslator(user?.id || '')
     return errorResponse(t('settings.get.failed'), 500)
   }
-}
+}, '/api/user/settings [GET]')
 
 export async function PUT(request: NextRequest) {
   let user = null
@@ -227,6 +236,9 @@ export async function PUT(request: NextRequest) {
         clearUserLanguageCache(user.id)
       }
     }
+
+    // 清除用户设置缓存
+    revalidateUserSettingsCache(user.id)
 
     return successResponse({
       message: t('settings.update.success'),

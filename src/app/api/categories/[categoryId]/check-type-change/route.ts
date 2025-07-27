@@ -7,6 +7,7 @@ import {
   unauthorizedResponse,
   notFoundResponse,
 } from '@/lib/api/response'
+import { getAllCategoryIds } from '@/lib/services/category-summary/utils'
 
 export async function GET(
   request: NextRequest,
@@ -36,8 +37,8 @@ export async function GET(
       return errorResponse('只有顶级分类才能变更类型', 400)
     }
 
-    // 获取该分类及其所有子分类的ID
-    const allCategoryIds = await getAllCategoryIds(categoryId)
+    // 获取该分类及其所有子分类的ID（使用优化的CTE版本）
+    const allCategoryIds = await getAllCategoryIds(prisma, categoryId)
 
     // 检查是否有账户
     const accountCount = await prisma.account.count({
@@ -128,26 +129,7 @@ export async function GET(
   }
 }
 
-// 递归获取所有子分类ID
-async function getAllCategoryIds(categoryId: string): Promise<string[]> {
-  const result = [categoryId]
-
-  const children = await prisma.category.findMany({
-    where: {
-      parentId: categoryId,
-    },
-    select: {
-      id: true,
-    },
-  })
-
-  for (const child of children) {
-    const childIds = await getAllCategoryIds(child.id)
-    result.push(...childIds)
-  }
-
-  return result
-}
+// 注意：getAllCategoryIds 函数已从 utils 中导入，使用优化的CTE版本
 
 // 评估风险等级
 function getRiskLevel(

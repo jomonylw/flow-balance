@@ -4,6 +4,7 @@
  */
 
 import { initializeJWTSecret } from './jwt-secret-manager'
+import { initCacheMonitoring } from './cache-monitor'
 
 let isInitialized = false
 let initializationPromise: Promise<void> | null = null
@@ -33,9 +34,11 @@ async function performInitialization(): Promise<void> {
     // 1. 初始化 JWT 密钥系统
     await initializeJWTSecret()
 
-    // 2. 其他初始化任务可以在这里添加
+    // 2. 初始化缓存监控系统（仅在开发环境）
+    initCacheMonitoring()
+
+    // 3. 其他初始化任务可以在这里添加
     // - 数据库连接检查
-    // - 缓存初始化
     // - 外部服务连接等
 
     isInitialized = true

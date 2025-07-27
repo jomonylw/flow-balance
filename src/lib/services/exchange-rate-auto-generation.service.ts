@@ -28,10 +28,10 @@ export interface AutoGenerationResult {
  */
 export async function generateAutoExchangeRates(
   userId: string,
-  _effectiveDate?: Date
+  effectiveDate?: Date
 ): Promise<AutoGenerationResult> {
-  // 统一使用当前日期，避免日期匹配问题
-  const targetDate = new Date()
+  // 使用传入的日期，如果没有传入则使用当前日期
+  const targetDate = effectiveDate ? new Date(effectiveDate) : new Date()
   // 设置为当天的开始时间（UTC时间），与单笔创建交易保持一致
   targetDate.setUTCHours(0, 0, 0, 0)
 

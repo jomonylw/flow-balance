@@ -221,6 +221,7 @@ scripts/refactor-success-report.md
 
 dev-files-backup-*
 prisma/prisma/dev.db
+src/app/dev
 
 # 如果您希望完全忽略这些文件夹，取消下面的注释
 # /docs
