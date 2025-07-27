@@ -2,7 +2,6 @@
  * 汇率历史清理服务测试
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
 import { prisma } from '@/lib/database/connection-manager'
 import {
   cleanupExchangeRateHistory,
@@ -33,7 +32,7 @@ describe('Exchange Rate Cleanup Service', () => {
         id: testUserId,
         email: 'test-cleanup@example.com',
         name: 'Test User Cleanup',
-        hashedPassword: 'test-password',
+        password: 'test-password',
       },
     })
 
