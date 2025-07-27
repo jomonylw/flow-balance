@@ -75,6 +75,9 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
 
+      - name: Setup test database
+        run: pnpm test:setup
+
       - name: Run linting
         run: pnpm lint
 
