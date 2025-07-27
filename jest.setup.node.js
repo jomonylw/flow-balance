@@ -32,11 +32,11 @@ global.Response = class Response {
     this.statusText = init?.statusText || 'OK'
     this.headers = new Map(Object.entries(init?.headers || {}))
   }
-  
+
   json() {
     return Promise.resolve(JSON.parse(this.body))
   }
-  
+
   text() {
     return Promise.resolve(this.body)
   }
