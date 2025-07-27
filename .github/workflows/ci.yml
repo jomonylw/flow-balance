@@ -71,6 +71,9 @@ jobs:
       - name: Generate Prisma client
         run: pnpm db:generate
 
+      - name: Setup test database
+        run: pnpm test:setup
+
       - name: Run ESLint
         run: pnpm lint
 

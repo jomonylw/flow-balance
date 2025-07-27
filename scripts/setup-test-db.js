@@ -25,14 +25,14 @@ try {
 
   // 生成 Prisma 客户端
   console.log('📦 生成 Prisma 客户端...')
-  execSync('npx prisma generate', {
+  execSync('pnpm prisma generate', {
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: 'file:./test.db' },
   })
 
   // 推送数据库架构（不使用迁移文件）
   console.log('🗄️ 创建数据库表结构...')
-  execSync('npx prisma db push --force-reset', {
+  execSync('pnpm prisma db push --force-reset', {
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: 'file:./test.db' },
   })
