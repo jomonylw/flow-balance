@@ -98,13 +98,92 @@ export function AccountDetailSkeleton() {
   return (
     <div className='max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8'>
       {/* 面包屑导航 */}
-      <div className='flex items-center space-x-2'>
-        <Skeleton height='1rem' width='60px' />
-        <span className='text-gray-500 dark:text-gray-400'>/</span>
-        <Skeleton height='1rem' width='80px' />
-        <span className='text-gray-500 dark:text-gray-400'>/</span>
-        <Skeleton height='1rem' width='100px' />
-      </div>
+      <nav
+        className='flex items-center mb-4 sm:mb-6 overflow-x-auto scrollbar-hide'
+        aria-label='Breadcrumb'
+      >
+        <div className='inline-flex items-center space-x-0.5 bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200/60 dark:border-gray-700/60 rounded-lg p-1 sm:p-1.5 shadow-sm backdrop-blur-sm min-w-0'>
+          {/* 导航图标骨架 */}
+          <div className='flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-blue-100 dark:bg-blue-900/40 mr-1 flex-shrink-0'>
+            <Skeleton height='12px' width='12px' className='rounded-sm' />
+          </div>
+
+          <div className='inline-flex items-center space-x-0.5 whitespace-nowrap min-w-0'>
+            {/* 第一个面包屑项 */}
+            <div className='inline-flex items-center min-w-0'>
+              <div className='inline-flex items-center rounded-md px-2 py-1 sm:px-2.5 sm:py-1.5 min-h-[32px] sm:min-h-[36px]'>
+                <Skeleton height='14px' width='60px' className='rounded-sm' />
+              </div>
+            </div>
+
+            {/* 分隔符 */}
+            <div className='flex items-center mx-0.5 sm:mx-1 flex-shrink-0'>
+              <svg
+                className='w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-400 dark:text-gray-500'
+                fill='currentColor'
+                viewBox='0 0 20 20'
+              >
+                <path
+                  fillRule='evenodd'
+                  d='M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z'
+                  clipRule='evenodd'
+                />
+              </svg>
+            </div>
+
+            {/* 第二个面包屑项 */}
+            <div className='inline-flex items-center min-w-0'>
+              <div className='inline-flex items-center rounded-md px-2 py-1 sm:px-2.5 sm:py-1.5 min-h-[32px] sm:min-h-[36px]'>
+                <Skeleton height='14px' width='80px' className='rounded-sm' />
+              </div>
+            </div>
+
+            {/* 分隔符 */}
+            <div className='flex items-center mx-0.5 sm:mx-1 flex-shrink-0'>
+              <svg
+                className='w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-400 dark:text-gray-500'
+                fill='currentColor'
+                viewBox='0 0 20 20'
+              >
+                <path
+                  fillRule='evenodd'
+                  d='M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z'
+                  clipRule='evenodd'
+                />
+              </svg>
+            </div>
+
+            {/* 第三个面包屑项 */}
+            <div className='inline-flex items-center min-w-0'>
+              <div className='inline-flex items-center rounded-md px-2 py-1 sm:px-2.5 sm:py-1.5 min-h-[32px] sm:min-h-[36px]'>
+                <Skeleton height='14px' width='80px' className='rounded-sm' />
+              </div>
+            </div>
+
+            {/* 分隔符 */}
+            <div className='flex items-center mx-0.5 sm:mx-1 flex-shrink-0'>
+              <svg
+                className='w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-400 dark:text-gray-500'
+                fill='currentColor'
+                viewBox='0 0 20 20'
+              >
+                <path
+                  fillRule='evenodd'
+                  d='M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z'
+                  clipRule='evenodd'
+                />
+              </svg>
+            </div>
+
+            {/* 第四个面包屑项（账户名） */}
+            <div className='inline-flex items-center min-w-0'>
+              <div className='inline-flex items-center rounded-md px-2 py-1 sm:px-2.5 sm:py-1.5 min-h-[32px] sm:min-h-[36px]'>
+                <Skeleton height='14px' width='100px' className='rounded-sm' />
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* 账户信息卡片 */}
       <SkeletonCard hasHeader={true} contentLines={4} hasFooter={true} />
