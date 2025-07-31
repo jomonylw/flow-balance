@@ -170,8 +170,8 @@ jobs:
         env:
           DATABASE_URL: 'file:./test.db'
         run: |
-          pnpm db:generate
-          pnpm db:deploy
+          pnpm prisma generate --schema=prisma/schema.sqlite.prisma
+          pnpm prisma db push --force-reset --schema=prisma/schema.sqlite.prisma
 
   # 安全检查
   security-check:
