@@ -149,10 +149,16 @@ export async function generateAutoExchangeRatesOptimized(
 
     // 5. 批量写入数据库
     if (newRatesToCreate.length > 0) {
-      await prisma.exchangeRate.createMany({
-        data: newRatesToCreate,
-        skipDuplicates: true, // 防止并发创建时的重复
-      })
+      try {
+        // 尝试批量插入（Prisma createMany 不支持 skipDuplicates）
+        await prisma.exchangeRate.createMany({
+          data: newRatesToCreate,
+        })
+      } catch (error) {
+        // 如果批量插入失败（可能由于重复数据），尝试逐条插入
+        console.warn('汇率批量插入失败，尝试逐条插入:', error)
+        await createExchangeRatesIndividually(prisma, newRatesToCreate, result)
+      }
     }
 
     result.generatedCount = newRatesToCreate.length
@@ -363,5 +369,48 @@ function generateTransitiveRatesInMemory(
       })
     )
     return result
+  }
+}
+
+/**
+ * 逐条创建汇率记录（处理重复数据）
+ */
+async function createExchangeRatesIndividually(
+  prisma: any,
+  exchangeRates: NewRateToCreate[],
+  result: any
+): Promise<void> {
+  let successCount = 0
+  let skipCount = 0
+
+  for (const rate of exchangeRates) {
+    try {
+      await prisma.exchangeRate.create({
+        data: rate,
+      })
+      successCount++
+    } catch (error) {
+      // 检查是否是唯一约束错误
+      if (
+        error instanceof Error &&
+        (error.message.includes('Unique constraint') ||
+          error.message.includes('unique constraint') ||
+          error.message.includes('UNIQUE constraint'))
+      ) {
+        // 跳过重复的汇率记录
+        skipCount++
+      } else {
+        // 其他错误记录到结果中
+        result.errors.push(
+          `创建汇率记录失败: ${error instanceof Error ? error.message : '未知错误'}`
+        )
+      }
+    }
+  }
+
+  if (skipCount > 0) {
+    console.log(
+      `📊 汇率记录处理: 成功 ${successCount} 个，跳过重复 ${skipCount} 个`
+    )
   }
 }

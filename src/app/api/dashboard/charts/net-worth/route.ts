@@ -74,17 +74,10 @@ export async function GET(request: NextRequest) {
         Math.round(data.totalLiabilities * precision) / precision,
     }))
 
-    // 准备图表数据
+    // 准备图表数据 - 按照用户要求的顺序：总资产，总负债，净资产
     const netWorthChartData = {
       xAxis: processedData.map(d => d.month), // 使用标准格式 YYYY-MM
       series: [
-        {
-          name: 'net_worth', // 使用键名，前端翻译
-          type: 'line',
-          data: processedData.map(d => d.netWorth),
-          smooth: true,
-          itemStyle: { color: ColorManager.getSemanticColor('info') }, // 使用青色，与蓝色资产柱状图区分
-        },
         {
           name: 'total_assets', // 使用键名，前端翻译
           type: 'bar',
@@ -100,6 +93,13 @@ export async function GET(request: NextRequest) {
           itemStyle: {
             color: ColorManager.getAccountTypeColor(AccountType.LIABILITY),
           },
+        },
+        {
+          name: 'net_worth', // 使用键名，前端翻译
+          type: 'line',
+          data: processedData.map(d => d.netWorth),
+          smooth: true,
+          itemStyle: { color: ColorManager.getSemanticColor('info') }, // 使用青色，与蓝色资产柱状图区分
         },
       ],
     }

@@ -25,17 +25,20 @@ try {
 
   // 生成 Prisma 客户端
   console.log('📦 生成 Prisma 客户端...')
-  execSync('pnpm prisma generate', {
+  execSync('pnpm prisma generate --schema=prisma/schema.sqlite.prisma', {
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: 'file:./test.db' },
   })
 
   // 推送数据库架构（不使用迁移文件）
   console.log('🗄️ 创建数据库表结构...')
-  execSync('pnpm prisma db push --force-reset', {
-    stdio: 'inherit',
-    env: { ...process.env, DATABASE_URL: 'file:./test.db' },
-  })
+  execSync(
+    'pnpm prisma db push --force-reset --schema=prisma/schema.sqlite.prisma',
+    {
+      stdio: 'inherit',
+      env: { ...process.env, DATABASE_URL: 'file:./test.db' },
+    }
+  )
 
   console.log('✅ 测试数据库设置完成！')
   console.log(`📍 数据库位置: ${testDbPath}`)

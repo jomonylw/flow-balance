@@ -233,6 +233,7 @@ export default function CashFlowChart({
             ...baseSeries,
             stack: 'cashflow',
             barWidth: '60%',
+            barMaxWidth: 40,
             itemStyle: {
               ...series.itemStyle,
               borderRadius: 4, // 统一使用4px圆角，堆叠柱状图使用统一圆角
