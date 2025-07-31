@@ -170,6 +170,7 @@ export interface CategoryTreeItemProps {
   onToggle: () => void
   onCategoryClick?: (category: SimpleCategory) => void
   onAccountClick?: (account: SimpleAccount) => void
+  onNavigate?: () => void
   onDataChange?: (options?: {
     type?: 'account' | 'category' | 'full'
     silent?: boolean

@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from 'react'
 import { useAuth } from './AuthContext'
 import { Language, Theme } from '@/types/core/constants'
@@ -171,6 +172,7 @@ export interface UserDataContextType extends UserData {
   // 同步相关方法
   triggerSync: (force?: boolean) => Promise<void>
   refreshSyncStatus: () => Promise<void>
+  forceStopSync: () => void
 }
 
 const UserDataContext = createContext<UserDataContextType | undefined>(
@@ -720,64 +722,146 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
     }
   }, [isAuthenticated])
 
+  // 轮询控制器引用，用于取消正在进行的轮询
+  const pollControllerRef = useRef<{ cancel: () => void } | null>(null)
+
   // 触发同步
-  const triggerSync = useCallback(
-    async (force: boolean = false) => {
-      try {
-        // 设置处理状态
-        setUserData(prev => ({
-          ...prev,
-          syncStatus: { ...prev.syncStatus, status: 'processing' },
-        }))
+  const triggerSync = useCallback(async (force: boolean = false) => {
+    try {
+      // 如果已有轮询在进行，先取消它
+      if (pollControllerRef.current) {
+        pollControllerRef.current.cancel()
+        pollControllerRef.current = null
+      }
 
-        // 触发同步
-        await triggerSyncAPI(force)
+      // 设置处理状态，清理旧的stages数据
+      setUserData(prev => ({
+        ...prev,
+        syncStatus: {
+          ...prev.syncStatus,
+          status: 'processing',
+          stages: undefined, // 清理旧的stages数据
+          currentStage: undefined, // 清理当前阶段
+        },
+      }))
 
-        // 开始轮询状态更新（更频繁的轮询）
-        const pollInterval = setInterval(async () => {
-          try {
-            const syncStatus = await fetchSyncStatus()
+      // 触发同步
+      await triggerSyncAPI(force)
+
+      // 轮询配置
+      const startTime = Date.now()
+      const maxPollDuration = 5 * 60 * 1000 // 5分钟最大轮询时间
+      const initialDelay = 2000 // 初始1秒间隔
+      const maxDelay = 5000 // 最大5秒间隔
+      const backoffMultiplier = 1.2 // 退避倍数
+
+      let currentDelay = initialDelay
+      let consecutiveErrors = 0
+      let isCancelled = false
+
+      // 创建轮询控制器
+      const controller = {
+        cancel: () => {
+          isCancelled = true
+          pollControllerRef.current = null
+        },
+      }
+      pollControllerRef.current = controller
+
+      const pollStatus = async (): Promise<void> => {
+        // 检查是否已被取消
+        if (isCancelled) {
+          return
+        }
+
+        // 检查是否超过最大轮询时间
+        if (Date.now() - startTime > maxPollDuration) {
+          console.warn('Sync polling timeout after 5 minutes')
+          setUserData(prev => ({
+            ...prev,
+            syncStatus: {
+              ...prev.syncStatus,
+              status: 'failed',
+              errorMessage: '同步超时，请重试',
+            },
+          }))
+          pollControllerRef.current = null
+          return
+        }
+
+        try {
+          const syncStatus = await fetchSyncStatus()
+
+          // 重置错误计数和延迟
+          consecutiveErrors = 0
+          currentDelay = initialDelay
+
+          setUserData(prev => ({
+            ...prev,
+            syncStatus,
+            lastUpdated: new Date(),
+          }))
+
+          // 如果同步完成或失败，停止轮询
+          if (
+            syncStatus.status === 'completed' ||
+            syncStatus.status === 'failed'
+          ) {
+            pollControllerRef.current = null
+            return // 停止递归轮询
+          }
+
+          // 如果状态仍然是 processing，安排下一次轮询
+          if (syncStatus.status === 'processing' && !isCancelled) {
+            setTimeout(pollStatus, currentDelay)
+          }
+        } catch (error) {
+          consecutiveErrors++
+          console.error(
+            `Failed to poll sync status (attempt ${consecutiveErrors}):`,
+            error
+          )
+
+          // 实现指数退避，但有最大重试次数限制
+          if (consecutiveErrors >= 3) {
+            console.error('Too many consecutive polling errors, stopping')
             setUserData(prev => ({
               ...prev,
-              syncStatus,
-              lastUpdated: new Date(),
+              syncStatus: {
+                ...prev.syncStatus,
+                status: 'failed',
+                errorMessage: '轮询状态失败次数过多，请重试',
+              },
             }))
-
-            // 如果同步完成或失败，停止轮询
-            if (
-              syncStatus.status === 'completed' ||
-              syncStatus.status === 'failed'
-            ) {
-              clearInterval(pollInterval)
-            }
-          } catch (error) {
-            console.error('Failed to poll sync status:', error)
-            clearInterval(pollInterval)
+            pollControllerRef.current = null
+            return
           }
-        }, 1000) // 每秒轮询一次
 
-        // 设置最大轮询时间（5分钟后强制停止）
-        setTimeout(
-          () => {
-            clearInterval(pollInterval)
-          },
-          5 * 60 * 1000
-        )
-      } catch (error) {
-        console.error('Failed to trigger sync:', error)
-        setUserData(prev => ({
-          ...prev,
-          syncStatus: {
-            ...prev.syncStatus,
-            status: 'failed',
-            errorMessage:
-              error instanceof Error ? error.message : '触发同步失败',
-          },
-        }))
+          // 增加延迟时间（指数退避）
+          currentDelay = Math.min(currentDelay * backoffMultiplier, maxDelay)
+
+          // 继续轮询，但使用更长的延迟
+          if (!isCancelled) {
+            setTimeout(pollStatus, currentDelay)
+          }
+        }
       }
-    },
-    [refreshSyncStatus]
-  )
+
+      // 开始第一次轮询
+      setTimeout(pollStatus, initialDelay)
+    } catch (error) {
+      console.error('Failed to trigger sync:', error)
+      pollControllerRef.current = null
+      setUserData(prev => ({
+        ...prev,
+        syncStatus: {
+          ...prev.syncStatus,
+          status: 'failed',
+          errorMessage: error instanceof Error ? error.message : '触发同步失败',
+        },
+      }))
+    }
+  }, [])
 
   // 检查并触发同步（初始化时使用）
   const checkAndTriggerSync = useCallback(async () => {
@@ -798,6 +882,27 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
       }))
     }
   }, [triggerSync])
+
+  // 强制停止同步轮询
+  const forceStopSync = useCallback(() => {
+    // 取消正在进行的轮询
+    if (pollControllerRef.current) {
+      pollControllerRef.current.cancel()
+      pollControllerRef.current = null
+    }
+
+    // 立即将状态设置为待机
+    setUserData(prev => ({
+      ...prev,
+      syncStatus: {
+        ...prev.syncStatus,
+        status: 'idle',
+        stages: undefined,
+        currentStage: undefined,
+        errorMessage: undefined,
+      },
+    }))
+  }, [])
 
   // 更新单个账户余额（用于实时更新）
   const updateAccountBalance = useCallback(
@@ -1070,6 +1175,7 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
       updateAccountBalance,
       triggerSync,
       refreshSyncStatus,
+      forceStopSync,
     }),
     [
       userData,
@@ -1103,8 +1209,19 @@ export const UserDataProvider: React.FC<UserDataProviderProps> = ({
       updateAccountBalance,
       triggerSync,
       refreshSyncStatus,
+      forceStopSync,
     ]
   )
+
+  // 组件卸载时清理轮询
+  useEffect(() => {
+    return () => {
+      if (pollControllerRef.current) {
+        pollControllerRef.current.cancel()
+        pollControllerRef.current = null
+      }
+    }
+  }, [])
 
   return (
     <UserDataContext.Provider value={contextValue}>

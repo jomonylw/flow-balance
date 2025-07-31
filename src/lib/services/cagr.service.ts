@@ -1,10 +1,7 @@
 import { prisma } from '@/lib/database/connection-manager'
 import { AccountType } from '@/types/core/constants'
-import {
-  calculateTotalBalanceWithConversion,
-  type ServiceAccount,
-} from './account.service'
 import { convertMultipleCurrencies } from './currency.service'
+import { calculateTotalBalanceWithConversion } from './dashboard-query.service'
 
 /**
  * CAGR计算结果接口
@@ -23,45 +20,51 @@ export interface CAGRResult {
 }
 
 /**
- * 计算指定日期的净资产
+ * 统一版：使用与当前净资产相同的计算逻辑
+ * 基于 BALANCE 交易记录，而非累加所有交易
  */
-async function calculateNetWorthAtDate(
+async function calculateNetWorthAtDateOptimized(
   userId: string,
   asOfDate: Date,
-  assetAccounts: ServiceAccount[],
-  liabilityAccounts: ServiceAccount[],
   baseCurrency: { code: string; symbol: string; name: string }
 ): Promise<number> {
   try {
-    // 计算指定日期的资产和负债总额
-    const [assetsResult, liabilitiesResult] = await Promise.all([
-      calculateTotalBalanceWithConversion(userId, assetAccounts, baseCurrency, {
-        asOfDate,
-      }),
+    const [totalAssetsResult, totalLiabilitiesResult] = await Promise.all([
       calculateTotalBalanceWithConversion(
         userId,
-        liabilityAccounts,
+        AccountType.ASSET,
         baseCurrency,
-        { asOfDate }
+        { asOfDate, includeAllUserCurrencies: false }
+      ),
+      calculateTotalBalanceWithConversion(
+        userId,
+        AccountType.LIABILITY,
+        baseCurrency,
+        { asOfDate, includeAllUserCurrencies: false }
       ),
     ])
 
-    return (
-      assetsResult.totalInBaseCurrency - liabilitiesResult.totalInBaseCurrency
+    const netWorth =
+      totalAssetsResult.totalInBaseCurrency -
+      totalLiabilitiesResult.totalInBaseCurrency
+
+    console.log(
+      `统一逻辑净资产计算 - 日期: ${asOfDate.toISOString().split('T')[0]}, 资产: ${totalAssetsResult.totalInBaseCurrency}, 负债: ${totalLiabilitiesResult.totalInBaseCurrency}, 净资产: ${netWorth}`
     )
+
+    return netWorth
   } catch (error) {
-    console.error('计算净资产失败:', error)
-    return 0
+    console.error(`计算日期 ${asOfDate.toISOString()} 的净资产失败:`, error)
+    return 0 // 发生错误时返回0
   }
 }
 
 /**
- * 找到净资产首次为正的日期
+ * 优化版：使用二分查找找到净资产首次为正的日期
+ * 避免逐日循环，大幅提升性能
  */
-async function findFirstPositiveNetWorthDate(
+async function findFirstPositiveNetWorthDateOptimized(
   userId: string,
-  assetAccounts: ServiceAccount[],
-  liabilityAccounts: ServiceAccount[],
   baseCurrency: { code: string; symbol: string; name: string }
 ): Promise<Date | null> {
   try {
@@ -77,138 +80,198 @@ async function findFirstPositiveNetWorthDate(
       return null
     }
 
-    // 逐日检查净资产（从最早的交易日期开始）
-    for (const { date } of allTransactionDates) {
-      const netWorth = await calculateNetWorthAtDate(
+    const dates = allTransactionDates.map(t => t.date)
+
+    // 先检查最后一天的净资产，如果仍为负则直接返回null
+    const lastDate = dates[dates.length - 1]
+    const lastNetWorth = await calculateNetWorthAtDateOptimized(
+      userId,
+      lastDate,
+      baseCurrency
+    )
+
+    if (lastNetWorth <= 0) {
+      console.log('CAGR: 净资产从未为正')
+      return null
+    }
+
+    // 使用二分查找找到首次为正的日期
+    let left = 0
+    let right = dates.length - 1
+    let firstPositiveDate: Date | null = null
+
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2)
+      const midDate = dates[mid]
+      const netWorth = await calculateNetWorthAtDateOptimized(
         userId,
-        date,
-        assetAccounts,
-        liabilityAccounts,
+        midDate,
         baseCurrency
       )
 
       if (netWorth > 0) {
-        console.log(
-          `CAGR: 找到首次正净资产日期: ${date.toISOString()}, 净资产: ${netWorth}`
-        )
-        return date
+        firstPositiveDate = midDate
+        right = mid - 1 // 继续向左查找更早的正值日期
+      } else {
+        left = mid + 1 // 向右查找
       }
     }
 
-    return null // 净资产从未为正
+    if (firstPositiveDate) {
+      console.log(
+        `CAGR: 找到首次正净资产日期: ${firstPositiveDate.toISOString()}, 使用二分查找优化`
+      )
+    }
+
+    return firstPositiveDate
   } catch (error) {
-    console.error('查找首次正净资产日期失败:', error)
+    console.error('优化版查找首次正净资产日期失败:', error)
     return null
   }
 }
 
 /**
- * 转换并汇总交易金额
+ * 优化版：使用数据库聚合计算期间净投入（收入 - 支出）
  */
-async function convertAndSumTransactions(
-  transactions: Array<{
-    amount: any
-    currency: { code: string }
-  }>,
-  baseCurrencyCode: string,
-  userId: string
-): Promise<number> {
-  if (transactions.length === 0) {
-    return 0
-  }
-
-  const amounts = transactions.map(transaction => ({
-    amount:
-      typeof transaction.amount === 'number'
-        ? transaction.amount
-        : parseFloat(transaction.amount.toString()),
-    currency: transaction.currency.code,
-  }))
-
-  try {
-    const conversions = await convertMultipleCurrencies(
-      userId,
-      amounts,
-      baseCurrencyCode
-    )
-
-    return conversions.reduce(
-      (sum, result) =>
-        sum + (result.success ? result.convertedAmount : result.originalAmount),
-      0
-    )
-  } catch (error) {
-    console.error('转换交易金额失败:', error)
-    // 转换失败时使用原始金额作为近似值（仅限相同币种）
-    return amounts
-      .filter(amount => amount.currency === baseCurrencyCode)
-      .reduce((sum, amount) => sum + amount.amount, 0)
-  }
-}
-
-/**
- * 计算期间净投入（收入 - 支出）
- */
-async function calculateNetContribution(
+async function calculateNetContributionOptimized(
   userId: string,
   startDate: Date,
   endDate: Date,
   baseCurrency: { code: string; symbol: string; name: string }
 ): Promise<number> {
   try {
-    // 获取期间内的收入和支出交易
-    const [incomeTransactions, expenseTransactions] = await Promise.all([
-      prisma.transaction.findMany({
+    // 使用数据库聚合直接计算收入和支出
+    const [incomeBalances, expenseBalances] = await Promise.all([
+      prisma.transaction.groupBy({
+        by: ['currencyId'],
         where: {
           userId,
           date: { gte: startDate, lte: endDate },
           account: { category: { type: AccountType.INCOME } },
         },
-        include: { currency: true },
+        _sum: { amount: true },
       }),
-      prisma.transaction.findMany({
+      prisma.transaction.groupBy({
+        by: ['currencyId'],
         where: {
           userId,
           date: { gte: startDate, lte: endDate },
           account: { category: { type: AccountType.EXPENSE } },
         },
-        include: { currency: true },
+        _sum: { amount: true },
       }),
     ])
 
-    // 转换为基础货币并计算总额
-    const [totalIncome, totalExpense] = await Promise.all([
-      convertAndSumTransactions(incomeTransactions, baseCurrency.code, userId),
-      convertAndSumTransactions(expenseTransactions, baseCurrency.code, userId),
-    ])
+    // 处理收入转换
+    let totalIncome = 0
+    if (incomeBalances.length > 0) {
+      const incomeAmounts = incomeBalances
+        .filter(balance => balance._sum.amount !== null)
+        .map(balance => ({
+          amount: Number(balance._sum.amount),
+          currencyId: balance.currencyId,
+        }))
 
+      if (incomeAmounts.length > 0) {
+        const incomeCurrencies = await prisma.currency.findMany({
+          where: { id: { in: incomeAmounts.map(a => a.currencyId) } },
+          select: { id: true, code: true },
+        })
+
+        const incomeConversionData = incomeAmounts.map(income => {
+          const currency = incomeCurrencies.find(
+            c => c.id === income.currencyId
+          )
+          return {
+            amount: income.amount,
+            currency: currency?.code || baseCurrency.code,
+          }
+        })
+
+        const incomeConversions = await convertMultipleCurrencies(
+          userId,
+          incomeConversionData,
+          baseCurrency.code
+        )
+
+        totalIncome = incomeConversions.reduce(
+          (sum, result) =>
+            sum +
+            (result.success ? result.convertedAmount : result.originalAmount),
+          0
+        )
+      }
+    }
+
+    // 处理支出转换
+    let totalExpense = 0
+    if (expenseBalances.length > 0) {
+      const expenseAmounts = expenseBalances
+        .filter(balance => balance._sum.amount !== null)
+        .map(balance => ({
+          amount: Number(balance._sum.amount),
+          currencyId: balance.currencyId,
+        }))
+
+      if (expenseAmounts.length > 0) {
+        const expenseCurrencies = await prisma.currency.findMany({
+          where: { id: { in: expenseAmounts.map(a => a.currencyId) } },
+          select: { id: true, code: true },
+        })
+
+        const expenseConversionData = expenseAmounts.map(expense => {
+          const currency = expenseCurrencies.find(
+            c => c.id === expense.currencyId
+          )
+          return {
+            amount: expense.amount,
+            currency: currency?.code || baseCurrency.code,
+          }
+        })
+
+        const expenseConversions = await convertMultipleCurrencies(
+          userId,
+          expenseConversionData,
+          baseCurrency.code
+        )
+
+        totalExpense = expenseConversions.reduce(
+          (sum, result) =>
+            sum +
+            (result.success ? result.convertedAmount : result.originalAmount),
+          0
+        )
+      }
+    }
+
+    const netContribution = totalIncome - totalExpense
     console.log(
-      `CAGR: 期间净投入计算 - 收入: ${totalIncome}, 支出: ${totalExpense}, 净投入: ${totalIncome - totalExpense}`
+      `CAGR: 优化版期间净投入计算 - 收入: ${totalIncome}, 支出: ${totalExpense}, 净投入: ${netContribution}`
     )
 
-    return totalIncome - totalExpense
+    return netContribution
   } catch (error) {
-    console.error('计算期间净投入失败:', error)
+    console.error('优化版计算期间净投入失败:', error)
     return 0
   }
 }
 
 /**
- * 计算历史年化复合增长率（CAGR）
+ * 优化版：计算历史年化复合增长率（CAGR）
  * 基于净资产，排除净投入影响，从净资产首次为正开始计算
+ * 使用数据库聚合查询，大幅提升性能
  */
 export async function calculateHistoricalCAGR(
   userId: string,
-  assetAccounts: ServiceAccount[],
-  liabilityAccounts: ServiceAccount[],
   baseCurrency: { code: string; symbol: string; name: string }
 ): Promise<CAGRResult> {
   try {
+    console.log('开始优化版CAGR计算...')
+    const startTime = Date.now()
+
     // 1. 找到净资产首次为正的日期
-    const startDate = await findFirstPositiveNetWorthDate(
+    const startDate = await findFirstPositiveNetWorthDateOptimized(
       userId,
-      assetAccounts,
-      liabilityAccounts,
       baseCurrency
     )
 
@@ -249,31 +312,18 @@ export async function calculateHistoricalCAGR(
       }
     }
 
-    // 2. 计算初始和当前净资产
-    const [initialNetWorth, currentNetWorth] = await Promise.all([
-      calculateNetWorthAtDate(
-        userId,
-        startDate,
-        assetAccounts,
-        liabilityAccounts,
-        baseCurrency
-      ),
-      calculateNetWorthAtDate(
-        userId,
-        endDate,
-        assetAccounts,
-        liabilityAccounts,
-        baseCurrency
-      ),
-    ])
-
-    // 3. 计算期间净投入
-    const totalNetContribution = await calculateNetContribution(
-      userId,
-      startDate,
-      endDate,
-      baseCurrency
-    )
+    // 2. 并行计算初始净资产、当前净资产和期间净投入
+    const [initialNetWorth, currentNetWorth, totalNetContribution] =
+      await Promise.all([
+        calculateNetWorthAtDateOptimized(userId, startDate, baseCurrency),
+        calculateNetWorthAtDateOptimized(userId, endDate, baseCurrency),
+        calculateNetContributionOptimized(
+          userId,
+          startDate,
+          endDate,
+          baseCurrency
+        ),
+      ])
 
     // 4. 计算调整后的增长
     const adjustedGrowth =
@@ -291,7 +341,11 @@ export async function calculateHistoricalCAGR(
     // 限制在合理范围内
     const cagrPercentage = Math.max(-50, Math.min(100, cagr * 100))
 
-    console.log('CAGR计算详情:', {
+    const endTime = Date.now()
+    const executionTime = endTime - startTime
+
+    console.log('优化版CAGR计算详情:', {
+      executionTime: `${executionTime}ms`,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       years: years.toFixed(2),
@@ -313,7 +367,7 @@ export async function calculateHistoricalCAGR(
       totalNetContribution,
       adjustedGrowth,
       isValid: true,
-      message: `基于${years.toFixed(1)}年历史数据计算的CAGR`,
+      message: `基于${years.toFixed(1)}年历史数据计算的优化版CAGR（${executionTime}ms）`,
     }
   } catch (error) {
     console.error('计算历史CAGR失败:', error)

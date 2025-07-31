@@ -182,6 +182,7 @@ export default function CategoryAccountTree({
           isExpanded={isExpanded}
           hasChildren={hasChildren}
           onToggle={() => toggleCategory(category.id)}
+          onNavigate={onNavigate}
           onDataChange={onDataChange}
         />
 

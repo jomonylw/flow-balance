@@ -16,6 +16,7 @@ import {
   createServerTranslator,
   getUserTranslator,
 } from '@/lib/utils/server-i18n'
+// import { BUSINESS_LIMITS } from '@/lib/constants/app-config'
 
 // 创建服务端翻译函数（默认）
 const t = createServerTranslator()
@@ -1177,6 +1178,7 @@ export class LoanContractService {
 
   /**
    * 根据LoanPayment记录处理到期还款（包括未来提前生成的记录）
+   * @deprecated 使用 processBatchLoanPayments 替代以获得更好的性能
    */
   static async processLoanPaymentsBySchedule(userId?: string): Promise<{
     processed: number
@@ -1251,6 +1253,486 @@ export class LoanContractService {
     }
 
     return { processed, errors }
+  }
+
+  /**
+   * 批量处理到期的贷款还款记录（优化版本）
+   * 使用单个数据库事务处理所有到期的还款记录，显著提升性能
+   */
+  static async processBatchLoanPayments(userId?: string): Promise<{
+    processed: number
+    errors: string[]
+    performance: {
+      duration: number
+      rate: number
+      metrics: {
+        contractsProcessed: number
+        transactionsCreated: number
+        paymentsUpdated: number
+      }
+    }
+  }> {
+    const startTime = Date.now()
+    const now = new Date()
+
+    // 标准化当前日期，确保时间部分为0（UTC时间）
+    let endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    endDate.setUTCHours(0, 0, 0, 0)
+
+    // 如果指定了用户ID，获取用户的未来数据生成设置
+    if (userId) {
+      const userSettings = await prisma.userSettings.findUnique({
+        where: { userId },
+      })
+
+      const daysAhead = userSettings?.futureDataDays || 0
+
+      if (daysAhead > 0) {
+        // 扩大处理范围到未来指定天数
+        endDate = new Date(now)
+        endDate.setDate(endDate.getDate() + daysAhead)
+        // 设置为当天的结束时间，以包含整天（UTC时间）
+        endDate.setUTCHours(23, 59, 59, 999)
+      } else {
+        // 如果不生成未来数据，设置为当天的结束时间（UTC时间）
+        endDate.setUTCHours(23, 59, 59, 999)
+      }
+    } else {
+      // 如果没有指定用户ID，设置为当天的结束时间（UTC时间）
+      endDate.setUTCHours(23, 59, 59, 999)
+    }
+
+    let processed = 0
+    const errors: string[] = []
+
+    // 获取到期的待处理还款记录（包括未来的记录）
+    const whereClause: WhereClause = {
+      paymentDate: { lte: endDate },
+      status: 'PENDING',
+    }
+
+    if (userId) {
+      whereClause.userId = userId
+    }
+
+    // 一次性获取所有到期的还款记录及其关联数据
+    const duePayments = await prisma.loanPayment.findMany({
+      where: {
+        ...whereClause,
+        loanContract: {
+          isActive: true, // 只处理活跃的贷款合约
+        },
+      },
+      include: {
+        loanContract: {
+          include: {
+            account: { include: { category: true } },
+          },
+        },
+      },
+      orderBy: [{ loanContractId: 'asc' }, { period: 'asc' }],
+    })
+
+    if (duePayments.length === 0) {
+      const duration = Date.now() - startTime
+      return {
+        processed: 0,
+        errors: [],
+        performance: {
+          duration,
+          rate: 0,
+          metrics: {
+            contractsProcessed: 0,
+            transactionsCreated: 0,
+            paymentsUpdated: 0,
+          },
+        },
+      }
+    }
+
+    console.log(`🔄 开始批量处理 ${duePayments.length} 条到期贷款还款记录`)
+
+    // 性能监控数据
+    const performanceMetrics = {
+      queryTime: 0,
+      transactionTime: 0,
+      contractsProcessed: 0,
+      transactionsCreated: 0,
+      paymentsUpdated: 0,
+    }
+
+    // 使用扩展事务处理所有还款记录
+    try {
+      const transactionStartTime = Date.now()
+
+      await prisma.$transaction(
+        async tx => {
+          // 按贷款合约分组处理，以便正确更新合约状态
+          const paymentsByContract = new Map<string, typeof duePayments>()
+
+          for (const payment of duePayments) {
+            const contractId = payment.loanContractId
+            if (!paymentsByContract.has(contractId)) {
+              paymentsByContract.set(contractId, [])
+            }
+            paymentsByContract.get(contractId)!.push(payment)
+          }
+
+          performanceMetrics.contractsProcessed = paymentsByContract.size
+
+          // 为每个贷款合约处理其到期的还款记录
+          for (const [contractId, contractPayments] of paymentsByContract) {
+            try {
+              const contractResult =
+                await this.processBatchLoanPaymentsForContract(
+                  tx,
+                  contractPayments
+                )
+              processed += contractPayments.length
+              performanceMetrics.transactionsCreated +=
+                contractResult.transactionsCreated
+              performanceMetrics.paymentsUpdated += contractPayments.length
+            } catch (error) {
+              const errorMsg = `Contract ${contractId} batch processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+              errors.push(errorMsg)
+              console.error(errorMsg, error)
+            }
+          }
+        },
+        {
+          timeout: 5 * 60 * 1000, // 5分钟超时
+          maxWait: 60 * 1000, // 最大等待1分钟
+        }
+      )
+
+      performanceMetrics.transactionTime = Date.now() - transactionStartTime
+    } catch (error) {
+      const errorMsg = `Batch loan payment processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      errors.push(errorMsg)
+      console.error(errorMsg, error)
+    }
+
+    const duration = Date.now() - startTime
+    const rate = processed > 0 ? Math.round(processed / (duration / 1000)) : 0
+
+    // 详细的性能日志
+    console.log('✅ 批量贷款还款处理完成:')
+    console.log(
+      `   📊 处理统计: ${processed} 条还款记录，${performanceMetrics.contractsProcessed} 个合约`
+    )
+    console.log(
+      `   ⏱️  总耗时: ${duration}ms (事务: ${performanceMetrics.transactionTime}ms)`
+    )
+    console.log(`   🚀 处理速率: ${rate} 条/秒`)
+    console.log(
+      `   💾 数据操作: 创建 ${performanceMetrics.transactionsCreated} 笔交易，更新 ${performanceMetrics.paymentsUpdated} 条还款记录`
+    )
+
+    if (errors.length > 0) {
+      console.log(`   ⚠️  错误数量: ${errors.length}`)
+    }
+
+    return {
+      processed,
+      errors,
+      performance: {
+        duration,
+        rate,
+        metrics: performanceMetrics,
+      },
+    }
+  }
+
+  /**
+   * 批量处理单个贷款合约的所有到期还款记录（在事务内执行）
+   * @private
+   */
+  private static async processBatchLoanPaymentsForContract(
+    tx: PrismaTransaction,
+    contractPayments: Array<any>
+  ): Promise<{ transactionsCreated: number }> {
+    if (contractPayments.length === 0) return { transactionsCreated: 0 }
+
+    const firstPayment = contractPayments[0]
+    const loanContract = firstPayment.loanContract
+    const contractFields =
+      loanContract as unknown as LoanContractWithOptionalFields
+
+    // 性能计数器
+    let transactionsCreated = 0
+
+    // 获取用户的翻译函数
+    const userT = await getUserTranslator(loanContract.userId)
+
+    // 准备批量创建的交易数据
+    const transactionsToCreate: TransactionData[] = []
+    const paymentUpdates: Array<{
+      id: string
+      principalTransactionId?: string
+      interestTransactionId?: string
+      balanceTransactionId?: string
+    }> = []
+
+    // 为每个还款记录生成对应的交易
+    for (const payment of contractPayments) {
+      // 使用统一的并发检查服务
+      const concurrencyCheck = await DuplicateCheckService.checkConcurrency(
+        tx,
+        {
+          type: CheckType.LOAN_PAYMENT,
+          userId: loanContract.userId,
+          loanContractId: loanContract.id,
+          loanPaymentId: payment.id,
+          dateRange: {
+            startDate: payment.paymentDate,
+            endDate: payment.paymentDate,
+          },
+        }
+      )
+
+      if (!concurrencyCheck.isValid) {
+        throw new Error(concurrencyCheck.reason || '并发检查失败')
+      }
+
+      const paymentUpdate: any = { id: payment.id }
+
+      // 创建本金还款交易（从还款账户支出）
+      if (
+        Number(payment.principalAmount) > 0 &&
+        contractFields.paymentAccountId
+      ) {
+        const principalTransactionData: TransactionData = {
+          userId: loanContract.userId,
+          accountId: contractFields.paymentAccountId,
+          currencyId: loanContract.currencyId,
+          type: 'EXPENSE',
+          amount: Number(payment.principalAmount),
+          description: contractFields.transactionDescription
+            ? replaceTemplatePlaceholders(
+                contractFields.transactionDescription,
+                {
+                  period: payment.period,
+                  contractName: contractFields.contractName || '',
+                  remainingBalance: Number(payment.remainingBalance),
+                }
+              )
+            : userT('loan.contract.template.default.description', {
+                contractName: contractFields.contractName,
+                period: payment.period,
+                type: userT('loan.type.principal'),
+              }),
+          notes: contractFields.transactionNotes
+            ? replaceTemplatePlaceholders(contractFields.transactionNotes, {
+                period: payment.period,
+                contractName: contractFields.contractName || '',
+                remainingBalance: Number(payment.remainingBalance),
+              })
+            : userT('loan.contract.template.default.notes', {
+                contractName: contractFields.contractName,
+              }),
+          date: payment.paymentDate,
+          loanContractId: loanContract.id,
+          loanPaymentId: payment.id,
+        }
+
+        // 如果有标签，添加标签关系
+        if (
+          contractFields.transactionTagIds &&
+          Array.isArray(contractFields.transactionTagIds) &&
+          contractFields.transactionTagIds.length > 0
+        ) {
+          principalTransactionData.tags = {
+            create: contractFields.transactionTagIds.map((tagId: string) => ({
+              tagId,
+            })),
+          }
+        }
+
+        transactionsToCreate.push(principalTransactionData)
+      }
+
+      // 创建利息支出交易（从还款账户支出）
+      if (
+        Number(payment.interestAmount) > 0 &&
+        contractFields.paymentAccountId
+      ) {
+        const interestTransactionData: TransactionData = {
+          userId: loanContract.userId,
+          accountId: contractFields.paymentAccountId,
+          currencyId: loanContract.currencyId,
+          type: 'EXPENSE',
+          amount: Number(payment.interestAmount),
+          description: contractFields.transactionDescription
+            ? replaceTemplatePlaceholders(
+                contractFields.transactionDescription,
+                {
+                  period: payment.period,
+                  contractName: contractFields.contractName || '',
+                  remainingBalance: Number(payment.remainingBalance),
+                }
+              )
+            : userT('loan.contract.template.default.description', {
+                contractName: contractFields.contractName,
+                period: payment.period,
+                type: userT('loan.type.interest'),
+              }),
+          notes: contractFields.transactionNotes
+            ? replaceTemplatePlaceholders(contractFields.transactionNotes, {
+                period: payment.period,
+                contractName: contractFields.contractName || '',
+                remainingBalance: Number(payment.remainingBalance),
+              })
+            : userT('loan.contract.template.default.notes', {
+                contractName: contractFields.contractName,
+              }),
+          date: payment.paymentDate,
+          loanContractId: loanContract.id,
+          loanPaymentId: payment.id,
+        }
+
+        // 如果有标签，添加标签关系
+        if (
+          contractFields.transactionTagIds &&
+          Array.isArray(contractFields.transactionTagIds) &&
+          contractFields.transactionTagIds.length > 0
+        ) {
+          interestTransactionData.tags = {
+            create: contractFields.transactionTagIds.map((tagId: string) => ({
+              tagId,
+            })),
+          }
+        }
+
+        transactionsToCreate.push(interestTransactionData)
+      }
+
+      // 创建负债账户余额更新交易
+      const balanceTransactionData: TransactionData = {
+        userId: loanContract.userId,
+        accountId: loanContract.accountId,
+        currencyId: loanContract.currencyId,
+        type: 'BALANCE',
+        amount: Number(payment.remainingBalance),
+        description: contractFields.transactionDescription
+          ? replaceTemplatePlaceholders(contractFields.transactionDescription, {
+              period: payment.period,
+              contractName: contractFields.contractName || '',
+              remainingBalance: Number(payment.remainingBalance),
+            })
+          : userT('loan.contract.template.default.description', {
+              contractName: contractFields.contractName,
+              period: payment.period,
+              type: userT('loan.type.balance.update'),
+            }),
+        notes: contractFields.transactionNotes
+          ? replaceTemplatePlaceholders(contractFields.transactionNotes, {
+              period: payment.period,
+              contractName: contractFields.contractName || '',
+              remainingBalance: Number(payment.remainingBalance),
+            })
+          : userT('loan.contract.template.balance.notes', {
+              contractName: contractFields.contractName,
+              remainingBalance: Number(
+                payment.remainingBalance
+              ).toLocaleString(),
+            }),
+        date: payment.paymentDate,
+        loanContractId: loanContract.id,
+        loanPaymentId: payment.id,
+      }
+
+      transactionsToCreate.push(balanceTransactionData)
+      paymentUpdates.push(paymentUpdate)
+    }
+
+    // 批量创建所有交易记录
+    if (transactionsToCreate.length > 0) {
+      // 由于需要获取创建的交易ID来更新LoanPayment记录，我们需要逐个创建
+      // 但仍在同一个事务中，比原来的逐条处理要快很多
+      let transactionIndex = 0
+
+      for (let i = 0; i < contractPayments.length; i++) {
+        const payment = contractPayments[i]
+        const paymentUpdate = paymentUpdates[i]
+
+        // 创建本金交易
+        if (
+          Number(payment.principalAmount) > 0 &&
+          contractFields.paymentAccountId
+        ) {
+          const principalTransaction = await tx.transaction.create({
+            data: transactionsToCreate[transactionIndex++],
+          })
+          paymentUpdate.principalTransactionId = principalTransaction.id
+          transactionsCreated++
+        }
+
+        // 创建利息交易
+        if (
+          Number(payment.interestAmount) > 0 &&
+          contractFields.paymentAccountId
+        ) {
+          const interestTransaction = await tx.transaction.create({
+            data: transactionsToCreate[transactionIndex++],
+          })
+          paymentUpdate.interestTransactionId = interestTransaction.id
+          transactionsCreated++
+        }
+
+        // 创建余额交易
+        const balanceTransaction = await tx.transaction.create({
+          data: transactionsToCreate[transactionIndex++],
+        })
+        paymentUpdate.balanceTransactionId = balanceTransaction.id
+        transactionsCreated++
+      }
+    }
+
+    // 批量更新所有LoanPayment记录的状态
+    for (const paymentUpdate of paymentUpdates) {
+      await tx.loanPayment.update({
+        where: { id: paymentUpdate.id },
+        data: {
+          status: 'COMPLETED' as const,
+          principalTransactionId: paymentUpdate.principalTransactionId,
+          interestTransactionId: paymentUpdate.interestTransactionId,
+          balanceTransactionId: paymentUpdate.balanceTransactionId,
+          processedAt: new Date(),
+        },
+      })
+    }
+
+    // 更新贷款合约状态（使用最后一期的信息）
+    const lastPayment = contractPayments[contractPayments.length - 1]
+    const isCompleted = lastPayment.period >= loanContract.totalPeriods
+    let nextPaymentDate = null
+
+    if (!isCompleted) {
+      nextPaymentDate = new Date(loanContract.startDate)
+      nextPaymentDate.setMonth(nextPaymentDate.getMonth() + lastPayment.period)
+      nextPaymentDate.setDate(contractFields.paymentDay)
+    }
+
+    const updateData: {
+      currentPeriod: number
+      isActive?: boolean
+      nextPaymentDate?: Date
+    } = {
+      currentPeriod: lastPayment.period,
+    }
+
+    // 只有当合约当前为活跃状态时，才根据完成情况更新isActive
+    if (loanContract.isActive) {
+      updateData.isActive = !isCompleted
+      updateData.nextPaymentDate = nextPaymentDate || undefined
+    }
+
+    await tx.loanContract.update({
+      where: { id: loanContract.id },
+      data: updateData,
+    })
+
+    return { transactionsCreated }
   }
 
   /**

@@ -335,6 +335,42 @@ export class SyncStatusService {
   }
 
   /**
+   * 强制重置处理状态（彻底清理）
+   * 用于处理卡住的同步状态，会清理所有相关的处理记录
+   */
+  static async forceResetProcessingStatus(userId: string) {
+    console.log(`Force resetting sync status for user ${userId}`)
+
+    try {
+      // 1. 重置用户设置中的状态
+      await this.updateSyncStatus(userId, 'idle')
+
+      // 2. 清理最近的处理日志（可选，保留历史记录但标记为已取消）
+      const latestLog = await prisma.recurringProcessingLog.findFirst({
+        where: { userId },
+        orderBy: { startTime: 'desc' },
+      })
+
+      if (latestLog && latestLog.status === 'processing') {
+        await prisma.recurringProcessingLog.update({
+          where: { id: latestLog.id },
+          data: {
+            status: 'cancelled',
+            endTime: new Date(),
+            errorMessage: '用户强制重置',
+          },
+        })
+      }
+
+      console.log(`Force reset completed for user ${userId}`)
+      return true
+    } catch (error) {
+      console.error(`Force reset failed for user ${userId}:`, error)
+      throw error
+    }
+  }
+
+  /**
    * 修复状态不一致问题
    * 当所有阶段都完成但状态仍为processing时，将状态更新为completed
    */

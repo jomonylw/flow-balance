@@ -7,6 +7,7 @@ import { prisma } from '@/lib/database/connection-manager'
 import {
   /* RecurrenceFrequency, */ RecurringTransactionFormData,
 } from '@/types/core'
+// import { BUSINESS_LIMITS } from '@/lib/constants/app-config'
 
 // Using shared prisma instance from connection-manager
 
@@ -251,6 +252,36 @@ export class RecurringTransactionService {
 
     try {
       await prisma.$transaction(async tx => {
+        // 幂等性检查：检查该定期交易在该日期是否已有交易记录
+        const existingTransaction = await tx.transaction.findFirst({
+          where: {
+            recurringTransactionId: recurringTransaction.id,
+            date: recurringTransaction.nextDate,
+          },
+        })
+
+        if (existingTransaction) {
+          console.log(
+            `⏭️  跳过重复交易：定期交易 ${recurringTransaction.id} 在 ${recurringTransaction.nextDate.toISOString()} 的交易已存在`
+          )
+
+          // 交易已存在，只更新定期交易状态，不创建新交易
+          const nextDate = this.calculateNextDate(
+            recurringTransaction.nextDate,
+            recurringTransaction
+          )
+
+          await tx.recurringTransaction.update({
+            where: { id: recurringTransactionId },
+            data: {
+              currentCount: recurringTransaction.currentCount + 1,
+              nextDate,
+            },
+          })
+
+          return // 直接返回，不创建新交易
+        }
+
         // 获取账户信息来确定分类
         const account = await tx.account.findUnique({
           where: { id: recurringTransaction.accountId },
@@ -432,5 +463,346 @@ export class RecurringTransactionService {
     return await prisma.recurringTransaction.findMany({
       where,
     })
+  }
+
+  /**
+   * 批量处理到期的定期交易（优化版本）
+   * 使用单个数据库事务处理所有到期的定期交易，显著提升性能
+   */
+  static async processBatchRecurringTransactions(userId?: string): Promise<{
+    processed: number
+    errors: string[]
+    performance: {
+      duration: number
+      rate: number
+      metrics: {
+        queryTime: number
+        transactionTime: number
+        transactionsCreated: number
+        recurringUpdated: number
+        skippedDueToLimits: number
+        skippedDueToExisting: number
+        idempotencyChecked: number
+      }
+    }
+  }> {
+    const startTime = Date.now()
+    const now = new Date()
+
+    const where: {
+      isActive: boolean
+      nextDate: { lte: Date }
+      userId?: string
+    } = {
+      isActive: true,
+      nextDate: { lte: now },
+    }
+
+    if (userId) {
+      where.userId = userId
+    }
+
+    // 一次性获取所有到期的定期交易记录
+    const dueRecurringTransactions = await prisma.recurringTransaction.findMany(
+      {
+        where,
+        orderBy: [{ userId: 'asc' }, { nextDate: 'asc' }],
+      }
+    )
+
+    if (dueRecurringTransactions.length === 0) {
+      const duration = Date.now() - startTime
+      return {
+        processed: 0,
+        errors: [],
+        performance: {
+          duration,
+          rate: 0,
+          metrics: {
+            queryTime: 0,
+            transactionTime: 0,
+            transactionsCreated: 0,
+            recurringUpdated: 0,
+            skippedDueToLimits: 0,
+            skippedDueToExisting: 0,
+            idempotencyChecked: 0,
+          },
+        },
+      }
+    }
+
+    console.log(
+      `🔄 开始批量处理 ${dueRecurringTransactions.length} 条到期定期交易`
+    )
+
+    let processed = 0
+    const errors: string[] = []
+
+    // 性能监控数据
+    const performanceMetrics = {
+      queryTime: 0,
+      transactionTime: 0,
+      transactionsCreated: 0,
+      recurringUpdated: 0,
+      skippedDueToLimits: 0,
+      skippedDueToExisting: 0,
+      idempotencyChecked: 0,
+    }
+
+    // 使用扩展事务处理所有定期交易
+    try {
+      const transactionStartTime = Date.now()
+
+      await prisma.$transaction(
+        async tx => {
+          // 1. 幂等性检查：查询所有可能重复的交易记录
+          console.log('🔍 执行幂等性检查，查询已存在的交易记录...')
+
+          const recurringTransactionIds = dueRecurringTransactions.map(
+            rt => rt.id
+          )
+          const existingTransactions = await tx.transaction.findMany({
+            where: {
+              recurringTransactionId: { in: recurringTransactionIds },
+              date: {
+                in: dueRecurringTransactions.map(rt => rt.nextDate),
+              },
+            },
+            select: {
+              recurringTransactionId: true,
+              date: true,
+            },
+          })
+
+          // 创建快速查找的 Set 结构：recurringTransactionId-date
+          const existingTransactionSet = new Set(
+            existingTransactions.map(
+              t => `${t.recurringTransactionId}-${t.date.toISOString()}`
+            )
+          )
+
+          console.log(
+            `📊 幂等性检查完成：发现 ${existingTransactions.length} 条已存在的交易记录`
+          )
+          performanceMetrics.idempotencyChecked = existingTransactions.length
+
+          // 准备批量创建的交易数据和定期交易更新数据
+          const transactionsToCreate: Array<{
+            userId: string
+            accountId: string
+            currencyId: string
+            type: any
+            amount: number
+            description: string
+            notes?: string
+            date: Date
+            recurringTransactionId: string
+            tags?: {
+              create: Array<{ tagId: string }>
+            }
+          }> = []
+
+          const recurringUpdates: Array<{
+            id: string
+            currentCount: number
+            nextDate: Date
+            reason: 'created' | 'skipped_existing' | 'skipped_limit'
+          }> = []
+
+          // 为每个定期交易生成对应的实际交易记录
+          for (const recurring of dueRecurringTransactions) {
+            try {
+              // 检查是否已达到最大执行次数
+              if (
+                recurring.maxOccurrences &&
+                recurring.currentCount >= recurring.maxOccurrences
+              ) {
+                performanceMetrics.skippedDueToLimits++
+
+                // 即使跳过，也要更新状态以避免重复检查
+                const nextDate = this.calculateNextDate(
+                  recurring.nextDate,
+                  recurring
+                )
+                recurringUpdates.push({
+                  id: recurring.id,
+                  currentCount: recurring.currentCount,
+                  nextDate,
+                  reason: 'skipped_limit',
+                })
+                continue
+              }
+
+              // 检查是否已过结束日期
+              if (recurring.endDate && now > recurring.endDate) {
+                performanceMetrics.skippedDueToLimits++
+
+                // 即使跳过，也要更新状态以避免重复检查
+                const nextDate = this.calculateNextDate(
+                  recurring.nextDate,
+                  recurring
+                )
+                recurringUpdates.push({
+                  id: recurring.id,
+                  currentCount: recurring.currentCount,
+                  nextDate,
+                  reason: 'skipped_limit',
+                })
+                continue
+              }
+
+              // 2. 幂等性检查：检查该定期交易在该日期是否已有交易记录
+              const transactionKey = `${recurring.id}-${recurring.nextDate.toISOString()}`
+              const alreadyExists = existingTransactionSet.has(transactionKey)
+
+              // 计算下次执行日期（无论是否创建交易都需要）
+              const nextDate = this.calculateNextDate(
+                recurring.nextDate,
+                recurring
+              )
+
+              if (alreadyExists) {
+                // 交易已存在，跳过创建，但仍需更新定期交易状态
+                console.log(
+                  `⏭️  跳过重复交易：定期交易 ${recurring.id} 在 ${recurring.nextDate.toISOString()} 的交易已存在`
+                )
+
+                recurringUpdates.push({
+                  id: recurring.id,
+                  currentCount: recurring.currentCount + 1,
+                  nextDate,
+                  reason: 'skipped_existing',
+                })
+
+                performanceMetrics.skippedDueToExisting++
+                processed++ // 仍然计为已处理，因为状态得到了更新
+                continue
+              }
+
+              // 3. 创建新的交易记录
+              const transactionData: any = {
+                userId: recurring.userId,
+                accountId: recurring.accountId,
+                currencyId: recurring.currencyId,
+                type: recurring.type,
+                amount: Number(recurring.amount),
+                description: recurring.description,
+                notes: recurring.notes || undefined,
+                date: recurring.nextDate,
+                recurringTransactionId: recurring.id,
+              }
+
+              // 如果有标签，添加标签关系
+              if (
+                recurring.tagIds &&
+                Array.isArray(recurring.tagIds) &&
+                recurring.tagIds.length > 0
+              ) {
+                transactionData.tags = {
+                  create: (recurring.tagIds as string[]).map(
+                    (tagId: string) => ({
+                      tagId,
+                    })
+                  ),
+                }
+              }
+
+              transactionsToCreate.push(transactionData)
+
+              // 准备定期交易更新数据
+              recurringUpdates.push({
+                id: recurring.id,
+                currentCount: recurring.currentCount + 1,
+                nextDate,
+                reason: 'created',
+              })
+
+              processed++
+            } catch (error) {
+              const errorMsg = `Recurring transaction ${recurring.id} processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+              errors.push(errorMsg)
+              console.error(errorMsg, error)
+            }
+          }
+
+          // 批量创建所有交易记录
+          if (transactionsToCreate.length > 0) {
+            // 由于需要处理标签关系，我们需要逐个创建交易
+            // 但仍在同一个事务中，比原来的逐条处理要快很多
+            for (const transactionData of transactionsToCreate) {
+              await tx.transaction.create({
+                data: transactionData,
+              })
+              performanceMetrics.transactionsCreated++
+            }
+          }
+
+          // 批量更新所有定期交易的状态
+          for (const update of recurringUpdates) {
+            await tx.recurringTransaction.update({
+              where: { id: update.id },
+              data: {
+                currentCount: update.currentCount,
+                nextDate: update.nextDate,
+              },
+            })
+            performanceMetrics.recurringUpdated++
+          }
+        },
+        {
+          timeout: 5 * 60 * 1000, // 5分钟超时
+          maxWait: 60 * 1000, // 最大等待1分钟
+        }
+      )
+
+      performanceMetrics.transactionTime = Date.now() - transactionStartTime
+    } catch (error) {
+      const errorMsg = `Batch recurring transaction processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      errors.push(errorMsg)
+      console.error(errorMsg, error)
+    }
+
+    const duration = Date.now() - startTime
+    const rate = processed > 0 ? Math.round(processed / (duration / 1000)) : 0
+
+    // 详细的性能日志
+    console.log('✅ 批量定期交易处理完成:')
+    console.log(`   📊 处理统计: ${processed} 条定期交易`)
+    console.log(
+      `   ⏱️  总耗时: ${duration}ms (事务: ${performanceMetrics.transactionTime}ms)`
+    )
+    console.log(`   🚀 处理速率: ${rate} 条/秒`)
+    console.log(
+      `   💾 数据操作: 创建 ${performanceMetrics.transactionsCreated} 笔交易，更新 ${performanceMetrics.recurringUpdated} 条定期交易`
+    )
+    console.log(
+      `   🔍 幂等性检查: 检查了 ${performanceMetrics.idempotencyChecked} 条已存在记录`
+    )
+
+    if (performanceMetrics.skippedDueToExisting > 0) {
+      console.log(
+        `   ⏭️  跳过重复: ${performanceMetrics.skippedDueToExisting} 条 (交易已存在)`
+      )
+    }
+
+    if (performanceMetrics.skippedDueToLimits > 0) {
+      console.log(
+        `   ⏭️  跳过限制: ${performanceMetrics.skippedDueToLimits} 条 (达到限制条件)`
+      )
+    }
+
+    if (errors.length > 0) {
+      console.log(`   ⚠️  错误数量: ${errors.length}`)
+    }
+
+    return {
+      processed,
+      errors,
+      performance: {
+        duration,
+        rate,
+        metrics: performanceMetrics,
+      },
+    }
   }
 }

@@ -17,7 +17,7 @@ export interface MonthlyBalance {
 export interface MonthlyChildCategorySummary {
   id: string
   name: string
-  type: AccountType
+  type: string // 改为 string 类型以匹配前端期望
   balances: MonthlyBalance
   accountCount: number
   order: number
@@ -27,7 +27,6 @@ export interface MonthlyChildCategorySummary {
 export interface MonthlyAccountSummary {
   id: string
   name: string
-  description?: string
   categoryId: string
   balances: MonthlyBalance
   transactionCount: number

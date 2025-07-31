@@ -50,6 +50,7 @@ export default function CategoryTreeItem({
   onToggle,
   onDataChange,
   baseCurrency: propBaseCurrency,
+  onNavigate,
 }: CategoryTreeItemProps) {
   const { showSuccess, showError } = useToast()
   const { t } = useLanguage()
@@ -391,6 +392,7 @@ export default function CategoryTreeItem({
         style={{ paddingLeft: `${level * 16 + 12}px` }}
         onClick={e => {
           navigateToCategory(e, category.id)
+          onNavigate?.()
         }}
       >
         {/* 展开/折叠图标 */}

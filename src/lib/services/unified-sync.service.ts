@@ -6,6 +6,7 @@
 import { SyncStatusService } from './sync-status.service'
 import { FutureDataGenerationService } from './future-data-generation.service'
 import { LoanContractService } from './loan-contract.service'
+import { RecurringTransactionService } from './recurring-transaction.service'
 import { ExchangeRateAutoUpdateService } from './exchange-rate-auto-update.service'
 
 export class UnifiedSyncService {
@@ -92,15 +93,31 @@ export class UnifiedSyncService {
             userId
           )
 
-        // 生成定期交易记录（包含历史遗漏检查和未来生成）
-        const recurringResult =
+        // 使用新的批量处理方法处理到期的定期交易
+        const recurringBatchResult =
+          await RecurringTransactionService.processBatchRecurringTransactions(
+            userId
+          )
+        processedRecurring += recurringBatchResult.processed
+        if (recurringBatchResult.errors.length > 0) {
+          errorMessages.push(...recurringBatchResult.errors)
+        }
+
+        // 生成未来的定期交易记录
+        const futureRecurringResult =
           await FutureDataGenerationService.generateFutureRecurringTransactions(
             userId
           )
-        processedRecurring += recurringResult.generated
-        if (recurringResult.errors.length > 0) {
-          errorMessages.push(...recurringResult.errors)
+        processedRecurring += futureRecurringResult.generated
+        if (futureRecurringResult.errors.length > 0) {
+          errorMessages.push(...futureRecurringResult.errors)
         }
+
+        // 合并所有错误信息
+        const allErrors = [
+          ...recurringBatchResult.errors,
+          ...futureRecurringResult.errors,
+        ]
 
         await SyncStatusService.updateSyncStage(
           log.id,
@@ -108,8 +125,15 @@ export class UnifiedSyncService {
           {
             stage: 'completed',
             processed: processedRecurring,
-            errors: recurringResult.errors,
+            errors: allErrors,
             endTime: new Date(),
+            performance: {
+              batchProcessing: recurringBatchResult.performance,
+              futureGeneration: {
+                duration: 0, // FutureDataGenerationService doesn't return performance data yet
+                rate: 0,
+              },
+            },
           }
         )
       } catch (error) {
@@ -134,18 +158,20 @@ export class UnifiedSyncService {
       })
 
       try {
-        const loanResult =
-          await LoanContractService.processLoanPaymentsBySchedule(userId)
-        processedLoans += loanResult.processed
-        if (loanResult.errors.length > 0) {
-          errorMessages.push(...loanResult.errors)
+        // 使用新的批量处理方法处理到期的贷款还款
+        const loanBatchResult =
+          await LoanContractService.processBatchLoanPayments(userId)
+        processedLoans += loanBatchResult.processed
+        if (loanBatchResult.errors.length > 0) {
+          errorMessages.push(...loanBatchResult.errors)
         }
 
         await SyncStatusService.updateSyncStage(log.id, 'loanContracts', {
           stage: 'completed',
           processed: processedLoans,
-          errors: loanResult.errors,
+          errors: loanBatchResult.errors,
           endTime: new Date(),
+          performance: loanBatchResult.performance,
         })
       } catch (error) {
         await SyncStatusService.updateSyncStage(log.id, 'loanContracts', {

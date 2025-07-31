@@ -10,7 +10,7 @@ import {
 import type { Prisma } from '@prisma/client'
 import { generateAutoExchangeRates } from '@/lib/services/exchange-rate-auto-generation.service'
 import { getUserTranslator } from '@/lib/utils/server-i18n'
-import { revalidateExchangeRateCache } from '@/lib/services/cache-revalidation'
+import { revalidateAllCurrencyAndExchangeRateCache } from '@/lib/services/cache-revalidation'
 import {
   cleanupSpecificCurrencyPairHistory,
   cleanupExchangeRateHistory,
@@ -269,8 +269,11 @@ export async function POST(request: NextRequest) {
       // 不影响主要操作，只记录错误
     }
 
-    // 清除汇率缓存
-    revalidateExchangeRateCache(user.id)
+    // 🔥 关键修复：汇率创建/更新完成后，立即清除所有相关缓存
+    console.log(
+      `🧹 汇率创建/更新完成，清除用户 ${user.id} 的所有货币和汇率缓存`
+    )
+    revalidateAllCurrencyAndExchangeRateCache(user.id)
 
     return successResponse(
       serializedRate,
@@ -464,7 +467,10 @@ export async function PUT(request: NextRequest) {
 
     // 如果有成功创建的汇率，清除汇率缓存
     if (results.length > 0) {
-      revalidateExchangeRateCache(user.id)
+      console.log(
+        `🧹 批量汇率创建完成，清除用户 ${user.id} 的所有货币和汇率缓存`
+      )
+      revalidateAllCurrencyAndExchangeRateCache(user.id)
     }
 
     return successResponse(

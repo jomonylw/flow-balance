@@ -7,10 +7,10 @@ import {
   unauthorizedResponse,
 } from '@/lib/api/response'
 // import { getUserTranslator } from '@/lib/utils/server-i18n'
-import { TransactionType, AccountType } from '@/types/core/constants'
+import { AccountType } from '@/types/core/constants'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
-import { calculateAccountBalance } from '@/lib/services/account.service'
 import { normalizeEndOfDay } from '@/lib/utils/date-range'
+import { getLatestAccountBalances } from '@/lib/database/raw-queries'
 
 /**
  * 个人资产负债表 API
@@ -18,6 +18,7 @@ import { normalizeEndOfDay } from '@/lib/utils/date-range'
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('🚀 资产负债报表API被调用 - 修复折算金额显示 v4 - 添加调试信息')
     const user = await getCurrentUser()
     if (!user) {
       return unauthorizedResponse()
@@ -39,23 +40,36 @@ export async function GET(request: NextRequest) {
       name: '人民币',
     }
 
-    // 获取所有账户及其交易（截止到指定日期）
+    // 优化：使用数据库聚合查询替代内存计算
+    // 获取账户基本信息（不包含交易数据）
     const accounts = await prisma.account.findMany({
       where: { userId: user.id },
       include: {
         category: true,
-        currency: true, // 添加账户货币信息
-        transactions: {
-          where: {
-            date: {
-              lte: targetDate,
-            },
-          },
-          include: {
-            currency: true,
-          },
-        },
+        currency: true,
       },
+    })
+
+    // 使用统一查询服务计算每个账户的余额
+    const balanceResults = await getLatestAccountBalances(user.id, targetDate)
+
+    // 转换为原有格式
+    const accountBalances: Record<
+      string,
+      Record<string, { amount: number; currency: any }>
+    > = {}
+    balanceResults.forEach(result => {
+      if (!accountBalances[result.accountId]) {
+        accountBalances[result.accountId] = {}
+      }
+      accountBalances[result.accountId][result.currencyCode] = {
+        amount: result.finalBalance,
+        currency: {
+          code: result.currencyCode,
+          symbol: result.currencySymbol,
+          name: result.currencyName,
+        },
+      }
     })
 
     // 获取所有资产和负债类别，确保即使没有账户的分类也能被包含
@@ -147,48 +161,15 @@ export async function GET(request: NextRequest) {
         return
       }
 
-      // 序列化账户数据，将 Decimal 转换为 number，并映射交易类型
-      const serializedAccount = {
-        ...account,
-        category: account.category
-          ? {
-              id: account.category.id,
-              name: account.category.name,
-              type: account.category.type as AccountType | undefined,
-            }
-          : {
-              id: 'unknown',
-              name: 'Unknown',
-              type: undefined,
-            },
-        transactions: account.transactions.map(transaction => ({
-          id: transaction.id,
-          type: transaction.type as TransactionType,
-          amount: parseFloat(transaction.amount.toString()),
-          date: transaction.date.toISOString(),
-          description: transaction.description,
-          notes: transaction.notes,
-          currency: {
-            code: transaction.currency.code,
-            symbol: transaction.currency.symbol,
-            name: transaction.currency.name,
-          },
-        })),
-      }
-
-      // 使用专业的余额计算服务，传入截止日期
-      const accountBalances = calculateAccountBalance(serializedAccount, {
-        asOfDate: targetDate,
-        validateData: true,
-      })
+      // 获取该账户的优化余额数据
+      const accountBalanceData = accountBalances[account.id] || {}
 
       // 如果账户没有余额记录，使用账户的默认货币创建0余额记录
-      const balanceEntries = Object.entries(accountBalances)
+      const balanceEntries = Object.entries(accountBalanceData)
       if (balanceEntries.length === 0 && account.currency) {
         balanceEntries.push([
           account.currency.code,
           {
-            currencyCode: account.currency.code,
             amount: 0,
             currency: {
               code: account.currency.code,
@@ -317,10 +298,14 @@ export async function GET(request: NextRequest) {
       Object.entries(balanceSheet.assets.categories).forEach(
         ([categoryId, category]) => {
           category.accounts.forEach(account => {
-            if (
-              Math.abs(account.balance) > 0.01 &&
-              account.currency.code !== baseCurrency.code
-            ) {
+            console.log(
+              `🔍 检查资产账户 ${account.name}: ${account.balance} ${account.currency.code} (本币: ${baseCurrency.code})`
+            )
+            if (account.currency.code !== baseCurrency.code) {
+              // 非本币账户需要转换
+              console.log(
+                `📝 添加到转换列表: ${account.name} ${Math.abs(account.balance)} ${account.currency.code}`
+              )
               allAmountsToConvert.push({
                 amount: Math.abs(account.balance),
                 currency: account.currency.code,
@@ -328,6 +313,12 @@ export async function GET(request: NextRequest) {
                 categoryId,
                 accountId: account.id,
               })
+            } else {
+              // 本币账户直接设置本币余额
+              account.balanceInBaseCurrency = account.balance
+              console.log(
+                `🏦 本币资产账户 ${account.name}: ${account.balance} ${account.currency.code} → ${account.balanceInBaseCurrency} ${baseCurrency.code}`
+              )
             }
           })
         }
@@ -337,10 +328,8 @@ export async function GET(request: NextRequest) {
       Object.entries(balanceSheet.liabilities.categories).forEach(
         ([categoryId, category]) => {
           category.accounts.forEach(account => {
-            if (
-              Math.abs(account.balance) > 0.01 &&
-              account.currency.code !== baseCurrency.code
-            ) {
+            if (account.currency.code !== baseCurrency.code) {
+              // 非本币账户需要转换
               allAmountsToConvert.push({
                 amount: Math.abs(account.balance),
                 currency: account.currency.code,
@@ -348,6 +337,9 @@ export async function GET(request: NextRequest) {
                 categoryId,
                 accountId: account.id,
               })
+            } else {
+              // 本币账户直接设置本币余额
+              account.balanceInBaseCurrency = account.balance
             }
           })
         }
@@ -383,6 +375,9 @@ export async function GET(request: NextRequest) {
             account.conversionRate = result.exchangeRate
             account.conversionSuccess = result.success
             account.conversionError = result.error
+            console.log(
+              `💰 资产账户 ${account.name}: ${account.balance} ${account.currency.code} → ${convertedAmount} ${baseCurrency.code}`
+            )
           }
         } else {
           // 找到对应的负债账户并添加转换信息
@@ -396,6 +391,9 @@ export async function GET(request: NextRequest) {
             account.conversionRate = result.exchangeRate
             account.conversionSuccess = result.success
             account.conversionError = result.error
+            console.log(
+              `💳 负债账户 ${account.name}: ${account.balance} ${account.currency.code} → ${convertedAmount} ${baseCurrency.code}`
+            )
           }
         }
       })
@@ -405,6 +403,9 @@ export async function GET(request: NextRequest) {
         category.accounts.forEach(account => {
           if (account.currency.code === baseCurrency.code) {
             account.balanceInBaseCurrency = Math.abs(account.balance)
+            console.log(
+              `🏦 本币资产账户 ${account.name}: ${account.balance} ${account.currency.code} → ${account.balanceInBaseCurrency} ${baseCurrency.code}`
+            )
             account.conversionRate = 1
             account.conversionSuccess = true
           }

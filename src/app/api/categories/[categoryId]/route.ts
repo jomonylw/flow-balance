@@ -10,6 +10,10 @@ import {
 import type { Prisma, Category, AccountType } from '@prisma/client'
 import { getUserTranslator } from '@/lib/utils/server-i18n'
 import { getAllCategoryIds } from '@/lib/services/category-summary/utils'
+import {
+  checkIfDescendantOptimized,
+  getRootCategoryOptimized,
+} from '@/lib/database/queries/category-tree.queries'
 
 export async function GET(
   request: NextRequest,
@@ -107,15 +111,20 @@ export async function PUT(
         return errorResponse(t('category.parent.not.found'), 400)
       }
 
-      // 检查是否会形成循环引用
-      const isDescendant = await checkIfDescendant(categoryId, parentId)
+      // 检查是否会形成循环引用（使用优化版本）
+      const isDescendant = await checkIfDescendantOptimized(
+        categoryId,
+        parentId
+      )
       if (isDescendant) {
         return errorResponse(t('category.cannot.move.to.descendant'), 400)
       }
 
-      // 获取当前分类的根分类类型
-      const currentRootCategory = await getRootCategory(existingCategory.id)
-      const targetRootCategory = await getRootCategory(parentId)
+      // 获取当前分类的根分类类型（使用优化版本）
+      const currentRootCategory = await getRootCategoryOptimized(
+        existingCategory.id
+      )
+      const targetRootCategory = await getRootCategoryOptimized(parentId)
 
       // 验证只能在同类型分类范围内移动
       if (currentRootCategory?.type !== targetRootCategory?.type) {
@@ -239,8 +248,9 @@ export async function DELETE(
   }
 }
 
-// 辅助函数：检查是否是后代分类（防止循环引用）
-async function checkIfDescendant(
+// 辅助函数：检查是否是后代分类（防止循环引用）- 已弃用，保留用于回退
+// @deprecated 使用 checkIfDescendantOptimized 替代，此函数保留用于回退
+async function _checkIfDescendantLegacy(
   categoryId: string,
   potentialAncestorId: string
 ): Promise<boolean> {
@@ -254,7 +264,7 @@ async function checkIfDescendant(
     if (descendant.id === potentialAncestorId) {
       return true
     }
-    if (await checkIfDescendant(descendant.id, potentialAncestorId)) {
+    if (await _checkIfDescendantLegacy(descendant.id, potentialAncestorId)) {
       return true
     }
   }
@@ -262,8 +272,11 @@ async function checkIfDescendant(
   return false
 }
 
-// 辅助函数：获取根分类
-async function getRootCategory(categoryId: string): Promise<Category | null> {
+// 辅助函数：获取根分类 - 已弃用，保留用于回退
+// @deprecated 使用 getRootCategoryOptimized 替代，此函数保留用于回退
+async function _getRootCategoryLegacy(
+  categoryId: string
+): Promise<Category | null> {
   const category = await prisma.category.findUnique({
     where: { id: categoryId },
   })
@@ -278,7 +291,7 @@ async function getRootCategory(categoryId: string): Promise<Category | null> {
   }
 
   // 递归查找根分类
-  return getRootCategory(category.parentId)
+  return _getRootCategoryLegacy(category.parentId)
 }
 
 // 辅助函数：检查类型变更的安全性

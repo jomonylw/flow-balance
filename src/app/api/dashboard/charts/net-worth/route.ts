@@ -9,11 +9,9 @@ import { AccountType } from '@/types/core/constants'
 import { ColorManager } from '@/lib/utils/color'
 import { BUSINESS_LIMITS } from '@/lib/constants/app-config'
 import { getCommonError } from '@/lib/constants/api-messages'
-import { format } from 'date-fns'
 import {
   getUserBaseCurrency,
-  getUserAccountsForCalculation,
-  calculateMonthlyNetWorthData,
+  getOptimizedMonthlyNetWorthData,
   generateMonthsList,
   getUserEarliestTransactionDate,
 } from '@/lib/services/dashboard.service'
@@ -56,77 +54,41 @@ export async function GET(request: NextRequest) {
     // 获取用户设置以确定本位币
     const baseCurrency = await getUserBaseCurrency(user.id)
 
-    // 获取用户的所有账户
-    const accountsForCalculation = await getUserAccountsForCalculation(user.id)
-
     // 生成月份列表
     const monthsList = generateMonthsList(months, useAllData)
 
-    // 计算每个月的净资产数据
-    const monthlyData: Array<{
-      month: string
-      monthName: string
-      netWorth: number
-      totalAssets: number
-      totalLiabilities: number
-      hasConversionErrors: boolean
-      error?: string
-    }> = []
+    // 使用优化的批量计算函数（并行化处理）
+    const monthlyData = await getOptimizedMonthlyNetWorthData(
+      user.id,
+      monthsList,
+      baseCurrency
+    )
 
-    // 获取精度常量
+    // 获取精度常量并应用精度处理
     const precision = BUSINESS_LIMITS.PERCENTAGE_MULTIPLIER
-
-    for (const targetDate of monthsList) {
-      const monthLabel = format(targetDate, 'yyyy-MM')
-
-      try {
-        const netWorthData = await calculateMonthlyNetWorthData(
-          user.id,
-          targetDate,
-          accountsForCalculation,
-          baseCurrency
-        )
-
-        monthlyData.push({
-          month: monthLabel,
-          monthName: format(targetDate, 'yyyy年MM月'),
-          netWorth: Math.round(netWorthData.netWorth * precision) / precision,
-          totalAssets:
-            Math.round(netWorthData.totalAssets * precision) / precision,
-          totalLiabilities:
-            Math.round(netWorthData.totalLiabilities * precision) / precision,
-          hasConversionErrors: netWorthData.hasConversionErrors,
-        })
-      } catch (error) {
-        console.error(`计算月份 ${monthLabel} 净资产数据失败:`, error)
-        // 添加错误数据点
-        monthlyData.push({
-          month: monthLabel,
-          monthName: format(targetDate, 'yyyy年MM月'),
-          netWorth: 0,
-          totalAssets: 0,
-          totalLiabilities: 0,
-          hasConversionErrors: true,
-          error: getCommonError('INTERNAL_ERROR'),
-        })
-      }
-    }
+    const processedData = monthlyData.map(data => ({
+      ...data,
+      netWorth: Math.round(data.netWorth * precision) / precision,
+      totalAssets: Math.round(data.totalAssets * precision) / precision,
+      totalLiabilities:
+        Math.round(data.totalLiabilities * precision) / precision,
+    }))
 
     // 准备图表数据
     const netWorthChartData = {
-      xAxis: monthlyData.map(d => d.month), // 使用标准格式 YYYY-MM
+      xAxis: processedData.map(d => d.month), // 使用标准格式 YYYY-MM
       series: [
         {
           name: 'net_worth', // 使用键名，前端翻译
           type: 'line',
-          data: monthlyData.map(d => d.netWorth),
+          data: processedData.map(d => d.netWorth),
           smooth: true,
           itemStyle: { color: ColorManager.getSemanticColor('info') }, // 使用青色，与蓝色资产柱状图区分
         },
         {
           name: 'total_assets', // 使用键名，前端翻译
           type: 'bar',
-          data: monthlyData.map(d => d.totalAssets),
+          data: processedData.map(d => d.totalAssets),
           itemStyle: {
             color: ColorManager.getAccountTypeColor(AccountType.ASSET),
           },
@@ -134,7 +96,7 @@ export async function GET(request: NextRequest) {
         {
           name: 'total_liabilities', // 使用键名，前端翻译
           type: 'bar',
-          data: monthlyData.map(d => -d.totalLiabilities), // 负债显示为负数
+          data: processedData.map(d => -d.totalLiabilities), // 负债显示为负数
           itemStyle: {
             color: ColorManager.getAccountTypeColor(AccountType.LIABILITY),
           },
@@ -143,13 +105,13 @@ export async function GET(request: NextRequest) {
     }
 
     // 检查是否有转换错误
-    const hasAnyConversionErrors = monthlyData.some(
+    const hasAnyConversionErrors = processedData.some(
       data => data.hasConversionErrors
     )
 
     return successResponse({
       netWorthChart: netWorthChartData,
-      monthlyData,
+      monthlyData: processedData,
       currency: baseCurrency,
       period: useAllData ? '全部历史数据' : `最近${monthsParam}个月`,
       currencyConversion: {

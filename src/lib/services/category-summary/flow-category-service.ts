@@ -2,6 +2,8 @@
  * 流量类分类汇总服务
  * 专门处理收入(INCOME)和支出(EXPENSE)分类的汇总逻辑
  * 提供按月分组的、包含所有历史月份的流量数据
+ *
+ * 优化版本：使用数据库聚合查询替代内存计算
  */
 
 import { prisma } from '@/lib/database/connection-manager'
@@ -19,7 +21,8 @@ import {
   getDescendantsFromHierarchyMap,
 } from './utils'
 import { Decimal } from '@prisma/client/runtime/library'
-import { AccountType } from '@/types/core/constants'
+// import { Prisma } from '@prisma/client'
+import { getMonthlyFlowSummary } from '@/lib/database/raw-queries'
 
 type FlowTransaction = {
   date: string | Date
@@ -38,7 +41,7 @@ type FlowTransaction = {
  * @param userId 用户ID
  * @returns 按月份 (YYYY-MM) 组织的流量数据
  */
-async function calculateMonthlyHistoricalFlows(
+async function _calculateMonthlyHistoricalFlows(
   account: { id: string; transactions: FlowTransaction[] },
   allMonths: string[],
   baseCurrency: BaseCurrency,
@@ -138,7 +141,8 @@ async function calculateMonthlyHistoricalFlows(
 }
 
 /**
- * 获取流量类分类的月度历史汇总数据
+ * 获取流量类分类的月度历史汇总数据 (优化版本)
+ * 使用数据库聚合查询替代内存计算，显著提升性能
  * @param categoryId 分类ID
  * @param userId 用户ID
  * @param timeRange 时间范围，'lastYear' 表示去年1月1日至今，'all' 表示全部数据
@@ -150,7 +154,6 @@ export async function getFlowCategorySummary(
   timeRange: string = 'lastYear'
 ): Promise<MonthlyReport[]> {
   // 1. 获取分类和本位币信息
-  // prisma instance is already available
   const category = (await prisma.category.findFirst({
     where: {
       id: categoryId,
@@ -176,17 +179,7 @@ export async function getFlowCategorySummary(
     name: '人民币',
   }
 
-  // 2. 计算时间范围
-  let dateFilter: { gte?: Date } | undefined = undefined
-  if (timeRange === 'lastYear') {
-    // 去年1月1日至今
-    const lastYear = new Date().getFullYear() - 1
-    const startDate = new Date(lastYear, 0, 1) // 去年1月1日
-    dateFilter = { gte: startDate }
-  }
-  // timeRange === 'all' 时不添加日期过滤
-
-  // 3. 构建分类层级关系图（一次性获取，避免循环查询）
+  // 2. 构建分类层级关系图（一次性获取，避免循环查询）
   const hierarchyMap = await buildCategoryHierarchyMap(prisma, userId, [
     'INCOME',
     'EXPENSE',
@@ -196,63 +189,45 @@ export async function getFlowCategorySummary(
     categoryId
   )
 
-  // 4. 获取所有相关账户及其交易
-  const allAccounts = await prisma.account.findMany({
-    where: {
-      userId: userId,
-      categoryId: { in: allCategoryIds },
-    },
-    include: {
-      currency: true,
-      transactions: {
-        where: {
-          type: { in: ['INCOME', 'EXPENSE'] },
-          ...(dateFilter && { date: dateFilter }),
-        },
-        include: { currency: true },
-        orderBy: { date: 'asc' },
-      },
-    },
-  })
-
-  // 4. 确定全局月份范围
-  const allMonths: string[] = []
-  const now = new Date()
-  let firstTransactionDate: Date
-
-  // 根据时间范围设置起始日期
+  // 3. 计算时间范围
+  let startDate: Date
   if (timeRange === 'lastYear') {
+    // 去年1月1日至今
     const lastYear = new Date().getFullYear() - 1
-    firstTransactionDate = new Date(lastYear, 0, 1) // 去年1月1日
+    startDate = new Date(lastYear, 0, 1) // 去年1月1日
   } else {
     // timeRange === 'all' 时，查找最早的交易日期
-    const transactionDates: Date[] = []
-    allAccounts.forEach(account => {
-      if (account.transactions.length > 0) {
-        transactionDates.push(new Date(account.transactions[0].date))
-      }
+    const earliestTransaction = await prisma.transaction.findFirst({
+      where: {
+        userId: userId,
+        account: {
+          categoryId: { in: allCategoryIds },
+        },
+        type: { in: ['INCOME', 'EXPENSE'] },
+      },
+      orderBy: { date: 'asc' },
+      select: { date: true },
     })
 
-    if (transactionDates.length > 0) {
-      firstTransactionDate = new Date(
-        Math.min(...transactionDates.map(d => d.getTime()))
-      )
-    } else {
-      firstTransactionDate = now // 如果没有交易，使用当前日期
-    }
+    startDate = earliestTransaction
+      ? new Date(
+          earliestTransaction.date.getFullYear(),
+          earliestTransaction.date.getMonth(),
+          1
+        )
+      : new Date() // 如果没有交易，使用当前日期
   }
 
-  const startDate = new Date(
-    firstTransactionDate.getFullYear(),
-    firstTransactionDate.getMonth(),
-    1
-  )
+  // 4. 生成月份范围
+  const allMonths: string[] = []
+  const now = new Date()
+  const currentStartDate = new Date(startDate)
 
-  while (startDate <= now) {
+  while (currentStartDate <= now) {
     allMonths.push(
-      `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`
+      `${currentStartDate.getFullYear()}-${(currentStartDate.getMonth() + 1).toString().padStart(2, '0')}`
     )
-    startDate.setMonth(startDate.getMonth() + 1)
+    currentStartDate.setMonth(currentStartDate.getMonth() + 1)
   }
 
   if (allMonths.length === 0) {
@@ -261,45 +236,175 @@ export async function getFlowCategorySummary(
     allMonths.push(`${now.getFullYear()}-${month < 10 ? '0' + month : month}`)
   }
 
-  // 4. 为每个账户计算月度历史流量
-  const accountMonthlyFlows: Record<string, Record<string, MonthlyBalance>> = {}
-  await Promise.all(
-    allAccounts.map(async account => {
-      if (account.transactions.length > 0) {
-        // 转换交易数据格式以匹配FlowTransaction类型
-        const flowTransactions: FlowTransaction[] = account.transactions
-          .filter(t => t.type === 'INCOME' || t.type === 'EXPENSE')
-          .map(t => ({
-            date: t.date,
-            amount: t.amount,
-            type: t.type as 'INCOME' | 'EXPENSE',
-            currency: {
-              code: t.currency.code,
-            },
-          }))
-
-        accountMonthlyFlows[account.id] = await calculateMonthlyHistoricalFlows(
-          { id: account.id, transactions: flowTransactions },
-          allMonths,
-          baseCurrency,
-          userId
-        )
-      } else {
-        // 为没有交易记录的账户创建0金额的月度流量数据
-        const zeroFlows: Record<string, MonthlyBalance> = {}
-        for (const month of allMonths) {
-          zeroFlows[month] = {
-            original: { [account.currency.code]: 0 },
-            converted: { [baseCurrency.code]: 0 },
-          }
-        }
-        accountMonthlyFlows[account.id] = zeroFlows
-      }
-    })
+  // 5. 使用统一查询服务获取月度流量数据
+  const endDate = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999
   )
 
-  // 5. 按月聚合报告
+  const aggregatedData = await getMonthlyFlowSummary(
+    categoryId,
+    userId,
+    startDate,
+    endDate,
+    allCategoryIds
+  )
+
+  // 8. 处理聚合数据并进行货币转换
+  const monthlyDataMap: Record<
+    string,
+    Record<
+      string,
+      {
+        original: Record<string, number>
+        converted: Record<string, number>
+        transactionCount: number
+      }
+    >
+  > = {}
+
+  // 初始化所有月份的数据结构
+  for (const month of allMonths) {
+    monthlyDataMap[month] = {}
+  }
+
+  // 按账户和月份组织数据
+  const accountDataByMonth: Record<
+    string,
+    Record<
+      string,
+      {
+        account_id: string
+        account_name: string
+        account_description: string | null
+        category_id: string
+        amounts: Record<string, number>
+        transactionCount: number
+      }
+    >
+  > = {}
+
+  for (const row of aggregatedData) {
+    const {
+      month,
+      accountId,
+      accountName,
+      accountDescription,
+      categoryId,
+      currencyCode,
+      totalAmount,
+      transactionCount,
+    } = row
+
+    if (!accountDataByMonth[month]) {
+      accountDataByMonth[month] = {}
+    }
+
+    if (!accountDataByMonth[month][accountId]) {
+      accountDataByMonth[month][accountId] = {
+        account_id: accountId,
+        account_name: accountName,
+        account_description: accountDescription,
+        category_id: categoryId,
+        amounts: {},
+        transactionCount: 0,
+      }
+    }
+
+    accountDataByMonth[month][accountId].amounts[currencyCode] =
+      (accountDataByMonth[month][accountId].amounts[currencyCode] || 0) +
+      totalAmount
+    accountDataByMonth[month][accountId].transactionCount += transactionCount
+  }
+
+  // 进行货币转换
+  const conversionRequests: Array<{
+    amount: number
+    currency: string
+  }> = []
+
+  for (const monthData of Object.values(accountDataByMonth)) {
+    for (const accountData of Object.values(monthData)) {
+      for (const [currency, amount] of Object.entries(accountData.amounts)) {
+        if (amount !== 0 && currency !== baseCurrency.code) {
+          conversionRequests.push({
+            amount,
+            currency: currency,
+          })
+        }
+      }
+    }
+  }
+
+  const conversionResults =
+    conversionRequests.length > 0
+      ? await convertMultipleCurrencies(
+          userId,
+          conversionRequests,
+          baseCurrency.code
+        )
+      : []
+
+  // 应用转换结果
+  let conversionIndex = 0
+  for (const month of allMonths) {
+    const monthData = accountDataByMonth[month] || {}
+
+    for (const accountData of Object.values(monthData)) {
+      const original: Record<string, number> = {}
+      const converted: Record<string, number> = {}
+
+      for (const [currency, amount] of Object.entries(accountData.amounts)) {
+        original[currency] = amount
+
+        if (amount !== 0) {
+          if (currency === baseCurrency.code) {
+            // 本位币直接使用原金额
+            converted[currency] = amount
+          } else {
+            // 非本位币转换为本位币，但保持原货币作为键
+            const result = conversionResults[conversionIndex++]
+            const convertedAmount = result?.success
+              ? result.convertedAmount
+              : amount
+            converted[currency] = convertedAmount
+          }
+        } else {
+          converted[currency] = 0
+        }
+      }
+
+      monthlyDataMap[month][accountData.account_id] = {
+        original,
+        converted,
+        transactionCount: accountData.transactionCount,
+      }
+    }
+  }
+  // 9. 生成月度报告
   const monthlyReports: Record<string, MonthlyReport> = {}
+
+  // 获取所有账户信息（用于构建报告结构）
+  const allAccounts = await prisma.account.findMany({
+    where: {
+      userId: userId,
+      categoryId: { in: allCategoryIds },
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      categoryId: true,
+      currency: {
+        select: { code: true },
+      },
+    },
+  })
 
   for (const month of allMonths) {
     const report: MonthlyReport = {
@@ -308,12 +413,11 @@ export async function getFlowCategorySummary(
       directAccounts: [],
     }
 
-    // 聚合子分类数据（使用内存中的层级关系图，避免数据库查询）
+    // 聚合子分类数据
     const validChildren = category.children.filter(
       child => child.type === 'INCOME' || child.type === 'EXPENSE'
     )
 
-    // 同步处理，因为不再需要数据库查询
     validChildren.forEach(child => {
       const childCategoryIds = getDescendantsFromHierarchyMap(
         hierarchyMap,
@@ -326,25 +430,29 @@ export async function getFlowCategorySummary(
       const summary: MonthlyChildCategorySummary = {
         id: child.id,
         name: child.name,
-        type: child.type as AccountType,
+        type: child.type as string, // 转换为字符串类型
         order: child.order,
         accountCount: childAccounts.length,
         balances: { original: {}, converted: {} },
       }
 
+      // 聚合子分类下所有账户的数据
       childAccounts.forEach(acc => {
-        const balances = accountMonthlyFlows[acc.id]?.[month]
-        if (balances) {
-          Object.entries(balances.original).forEach(([currency, amount]) => {
+        const accountData = monthlyDataMap[month]?.[acc.id]
+        if (accountData) {
+          Object.entries(accountData.original).forEach(([currency, amount]) => {
             summary.balances.original[currency] =
               (summary.balances.original[currency] || 0) + amount
           })
-          Object.entries(balances.converted).forEach(([currency, amount]) => {
-            summary.balances.converted[currency] =
-              (summary.balances.converted[currency] || 0) + amount
-          })
+          Object.entries(accountData.converted).forEach(
+            ([currency, amount]) => {
+              summary.balances.converted[currency] =
+                (summary.balances.converted[currency] || 0) + amount
+            }
+          )
         }
       })
+
       report.childCategories.push(summary)
     })
 
@@ -352,26 +460,32 @@ export async function getFlowCategorySummary(
     const directAccounts = allAccounts.filter(
       acc => acc.categoryId === categoryId
     )
+
     directAccounts.forEach(acc => {
-      const balances = accountMonthlyFlows[acc.id]?.[month]
+      const accountData = monthlyDataMap[month]?.[acc.id]
       const currencyCode = acc.currency?.code || baseCurrency.code
+
       report.directAccounts.push({
         id: acc.id,
         name: acc.name,
-        description: acc.description || undefined,
         categoryId: acc.categoryId,
-        balances: balances || {
-          original: { [currencyCode]: 0 },
-          converted: { [currencyCode]: 0 },
-        },
-        transactionCount: acc.transactions.length,
+        balances: accountData
+          ? {
+              original: accountData.original,
+              converted: accountData.converted,
+            }
+          : {
+              original: { [currencyCode]: 0 },
+              converted: { [currencyCode]: 0 },
+            },
+        transactionCount: accountData?.transactionCount || 0,
       })
     })
 
     monthlyReports[month] = report
   }
 
-  // 6. 格式化并返回结果
+  // 10. 格式化并返回结果
   return Object.values(monthlyReports).sort((a, b) =>
     b.month.localeCompare(a.month)
   )

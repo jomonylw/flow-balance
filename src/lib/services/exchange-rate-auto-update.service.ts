@@ -12,6 +12,7 @@ import {
   fetchJsonWithTimeout,
   categorizeApiError,
 } from '@/lib/utils/fetch-with-timeout'
+import { revalidateAllCurrencyAndExchangeRateCache } from './cache-revalidation'
 
 interface FrankfurterResponse {
   amount: number
@@ -301,6 +302,16 @@ export class ExchangeRateAutoUpdateService {
           // 不影响主要操作，只记录错误
           errors.push('清理汇率历史记录失败')
         }
+      }
+
+      // 🔥 关键修复：汇率数据更新完成后，立即清除所有相关缓存
+      try {
+        console.log(`🧹 汇率更新完成，清除用户 ${userId} 的所有货币和汇率缓存`)
+        revalidateAllCurrencyAndExchangeRateCache(userId)
+      } catch (error) {
+        console.error('清除汇率缓存失败:', error)
+        // 不影响主要操作，只记录错误
+        errors.push('清除汇率缓存失败')
       }
 
       // 构建返回消息

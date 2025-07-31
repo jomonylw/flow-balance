@@ -995,6 +995,7 @@ export interface SyncStageStatus {
   errors?: string[]
   startTime?: Date
   endTime?: Date
+  performance?: any
 }
 
 /** 同步状态 */

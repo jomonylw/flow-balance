@@ -12,6 +12,7 @@ import {
 import CategoryTreeItem from './CategoryTreeItem'
 import AccountTreeItem from './AccountTreeItem'
 import TypeGroupHeader from './TypeGroupHeader'
+import { CategoryAccountTreeSkeleton } from '@/components/ui/data-display/page-skeletons'
 import { useUserData } from '@/contexts/providers/UserDataContext'
 import { useLanguage } from '@/contexts/providers/LanguageContext'
 import { useAllDataListener } from '@/hooks/business/useDataUpdateListener'
@@ -710,6 +711,7 @@ const OptimizedCategoryAccountTree = forwardRef<
             isExpanded={isExpanded}
             hasChildren={hasChildren}
             onToggle={() => toggleCategory(category.id)}
+            onNavigate={onNavigate}
             baseCurrency={getBaseCurrency() || undefined}
           />
 
@@ -739,41 +741,7 @@ const OptimizedCategoryAccountTree = forwardRef<
     // 避免 hydration 错误 - 在客户端挂载前显示加载状态
     // 只有在基础数据加载中时才显示加载状态，余额数据可以异步加载
     if (!isMounted || userDataLoading || filteredData === null) {
-      return (
-        <div className='space-y-3'>
-          {/* 显示类型分组的骨架屏 */}
-          {[1, 2, 3, 4].map(i => (
-            <div
-              key={i}
-              className='rounded-lg border border-gray-200 dark:border-gray-700 mx-1'
-            >
-              {/* 分组标题骨架屏 */}
-              <div className='p-3 bg-gray-50 dark:bg-gray-800 rounded-t-lg'>
-                <div className='flex items-center justify-between'>
-                  <div className='flex items-center space-x-2'>
-                    <div className='h-4 w-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse'></div>
-                    <div className='h-4 w-20 bg-gray-300 dark:bg-gray-600 rounded animate-pulse'></div>
-                  </div>
-                  <div className='h-4 w-16 bg-gray-300 dark:bg-gray-600 rounded animate-pulse'></div>
-                </div>
-              </div>
-              {/* 分组内容骨架屏 */}
-              <div className='space-y-1 px-2 pb-2'>
-                {[1, 2, 3].map(j => (
-                  <div
-                    key={j}
-                    className='flex items-center space-x-2 py-2 px-3'
-                  >
-                    <div className='h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse'></div>
-                    <div className='h-4 flex-1 bg-gray-200 dark:bg-gray-700 rounded animate-pulse'></div>
-                    <div className='h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse'></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )
+      return <CategoryAccountTreeSkeleton />
     }
 
     if (userDataError || balancesError) {

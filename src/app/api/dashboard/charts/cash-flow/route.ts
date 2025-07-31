@@ -9,11 +9,10 @@ import { AccountType } from '@/types/core/constants'
 import { ColorManager } from '@/lib/utils/color'
 import { BUSINESS_LIMITS } from '@/lib/constants/app-config'
 import { getCommonError } from '@/lib/constants/api-messages'
-import { format } from 'date-fns'
+
 import {
   getUserBaseCurrency,
-  getUserAccountsForCalculation,
-  calculateMonthlyCashFlowData,
+  getOptimizedMonthlyCashFlowData,
   generateMonthsList,
   getUserEarliestTransactionDate,
 } from '@/lib/services/dashboard.service'
@@ -56,71 +55,33 @@ export async function GET(request: NextRequest) {
     // 获取用户设置以确定本位币
     const baseCurrency = await getUserBaseCurrency(user.id)
 
-    // 获取用户的所有账户
-    const accountsForCalculation = await getUserAccountsForCalculation(user.id)
-
     // 生成月份列表
     const monthsList = generateMonthsList(months, useAllData)
 
-    // 计算每个月的现金流数据
-    const monthlyData: Array<{
-      month: string
-      monthName: string
-      monthlyIncome: number
-      monthlyExpense: number
-      netCashFlow: number
-      hasConversionErrors: boolean
-      error?: string
-    }> = []
+    // 使用优化的批量计算函数（并行化处理）
+    const monthlyData = await getOptimizedMonthlyCashFlowData(
+      user.id,
+      monthsList,
+      baseCurrency
+    )
 
-    // 获取精度常量
+    // 获取精度常量并应用精度处理
     const precision = BUSINESS_LIMITS.PERCENTAGE_MULTIPLIER
-
-    for (const targetDate of monthsList) {
-      const monthLabel = format(targetDate, 'yyyy-MM')
-
-      try {
-        const cashFlowData = await calculateMonthlyCashFlowData(
-          user.id,
-          targetDate,
-          accountsForCalculation,
-          baseCurrency
-        )
-
-        monthlyData.push({
-          month: monthLabel,
-          monthName: format(targetDate, 'yyyy年MM月'),
-          monthlyIncome:
-            Math.round(cashFlowData.monthlyIncome * precision) / precision,
-          monthlyExpense:
-            Math.round(cashFlowData.monthlyExpense * precision) / precision,
-          netCashFlow:
-            Math.round(cashFlowData.netCashFlow * precision) / precision,
-          hasConversionErrors: cashFlowData.hasConversionErrors,
-        })
-      } catch (error) {
-        console.error(`计算月份 ${monthLabel} 现金流数据失败:`, error)
-        // 添加错误数据点
-        monthlyData.push({
-          month: monthLabel,
-          monthName: format(targetDate, 'yyyy年MM月'),
-          monthlyIncome: 0,
-          monthlyExpense: 0,
-          netCashFlow: 0,
-          hasConversionErrors: true,
-          error: getCommonError('INTERNAL_ERROR'),
-        })
-      }
-    }
+    const processedData = monthlyData.map(data => ({
+      ...data,
+      monthlyIncome: Math.round(data.monthlyIncome * precision) / precision,
+      monthlyExpense: Math.round(data.monthlyExpense * precision) / precision,
+      netCashFlow: Math.round(data.netCashFlow * precision) / precision,
+    }))
 
     // 准备图表数据
     const cashFlowChartData = {
-      xAxis: monthlyData.map(d => d.month), // 使用标准格式 YYYY-MM
+      xAxis: processedData.map(d => d.month), // 使用标准格式 YYYY-MM
       series: [
         {
           name: 'income', // 使用键名，前端翻译
           type: 'bar',
-          data: monthlyData.map(d => d.monthlyIncome),
+          data: processedData.map(d => d.monthlyIncome),
           itemStyle: {
             color: ColorManager.getAccountTypeColor(AccountType.INCOME),
           },
@@ -128,7 +89,7 @@ export async function GET(request: NextRequest) {
         {
           name: 'expense', // 使用键名，前端翻译
           type: 'bar',
-          data: monthlyData.map(d => -d.monthlyExpense), // 负值显示
+          data: processedData.map(d => -d.monthlyExpense), // 负值显示
           itemStyle: {
             color: ColorManager.getAccountTypeColor(AccountType.EXPENSE),
           },
@@ -136,7 +97,7 @@ export async function GET(request: NextRequest) {
         {
           name: 'net_cash_flow', // 使用键名，前端翻译
           type: 'line',
-          data: monthlyData.map(d => d.netCashFlow),
+          data: processedData.map(d => d.netCashFlow),
           smooth: true,
           itemStyle: { color: ColorManager.getSemanticColor('primary') },
           yAxisIndex: 1,
@@ -145,13 +106,13 @@ export async function GET(request: NextRequest) {
     }
 
     // 检查是否有转换错误
-    const hasAnyConversionErrors = monthlyData.some(
+    const hasAnyConversionErrors = processedData.some(
       data => data.hasConversionErrors
     )
 
     return successResponse({
       cashFlowChart: cashFlowChartData,
-      monthlyData,
+      monthlyData: processedData,
       currency: baseCurrency,
       period: useAllData ? '全部历史数据' : `最近${monthsParam}个月`,
       currencyConversion: {

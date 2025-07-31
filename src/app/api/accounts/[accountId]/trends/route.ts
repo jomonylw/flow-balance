@@ -11,17 +11,10 @@ import {
 // import { getUserTranslator } from '@/lib/utils/server-i18n'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import {
-  startOfMonth,
-  endOfMonth,
-  startOfDay,
-  endOfDay,
-  subMonths,
-  subDays,
-  format,
-  eachDayOfInterval,
-  eachMonthOfInterval,
-} from 'date-fns'
-import type { TransactionWithBasic, Currency } from '@/types/database'
+  getAccountTrendData,
+  getFlowAccountTrendData,
+} from '@/lib/database/queries/account.queries'
+import { subMonths, subDays } from 'date-fns'
 import type { TrendDataPoint } from '@/types/core'
 
 /**
@@ -102,71 +95,98 @@ export async function GET(
         startDate = subMonths(now, 12)
     }
 
-    // 获取账户的所有交易记录
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        accountId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      include: {
-        account: {
-          select: {
-            id: true,
-            name: true,
-            category: {
-              select: {
-                id: true,
-                name: true,
-                type: true,
-              },
-            },
-          },
-        },
-        currency: true,
-        tags: {
-          include: {
-            tag: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { date: 'asc' },
-    })
-
     // 根据账户类型生成不同的趋势数据
     const accountType = account.category?.type
-
     let trendData: TrendDataPoint[] = []
 
     if (accountType === 'ASSET' || accountType === 'LIABILITY') {
-      // 存量账户：计算余额变动趋势
-      trendData = await generateStockAccountTrend(
+      // 存量账户：使用优化的数据库查询计算余额变动趋势
+      const stockTrendData = await getAccountTrendData(
+        user.id,
         accountId,
-        transactions,
         startDate,
         endDate,
-        granularity,
-        baseCurrency,
-        user.id
+        granularity as 'daily' | 'monthly'
       )
+
+      // 准备货币转换数据
+      const amountsToConvert = stockTrendData.map(item => ({
+        amount: item.balance,
+        currency: item.currencyCode,
+      }))
+
+      // 批量转换货币
+      let conversionResults: Array<{
+        convertedAmount: number
+        success: boolean
+      }> = []
+      if (amountsToConvert.length > 0) {
+        conversionResults = await convertMultipleCurrencies(
+          user.id,
+          amountsToConvert,
+          baseCurrency.code
+        )
+      }
+
+      // 转换为API响应格式
+      trendData = stockTrendData.map((item, index) => {
+        const conversionResult = conversionResults[index] || {
+          convertedAmount: item.balance,
+          success: true,
+        }
+        return {
+          date: item.period,
+          originalAmount: item.balance,
+          originalCurrency: item.currencyCode,
+          transactionCount: item.transactionCount,
+          convertedAmount: conversionResult.convertedAmount,
+          hasConversionError: !conversionResult.success,
+        }
+      })
     } else {
-      // 流量账户：计算交易流水趋势
-      trendData = await generateFlowAccountTrend(
+      // 流量账户：使用优化的数据库查询计算交易流水趋势
+      const flowTrendData = await getFlowAccountTrendData(
+        user.id,
         accountId,
-        transactions,
         startDate,
         endDate,
-        granularity,
-        baseCurrency,
-        user.id
+        granularity as 'daily' | 'monthly'
       )
+
+      // 准备货币转换数据
+      const amountsToConvert = flowTrendData.map(item => ({
+        amount: item.totalAmount,
+        currency: item.currencyCode,
+      }))
+
+      // 批量转换货币
+      let conversionResults: Array<{
+        convertedAmount: number
+        success: boolean
+      }> = []
+      if (amountsToConvert.length > 0) {
+        conversionResults = await convertMultipleCurrencies(
+          user.id,
+          amountsToConvert,
+          baseCurrency.code
+        )
+      }
+
+      // 转换为API响应格式
+      trendData = flowTrendData.map((item, index) => {
+        const conversionResult = conversionResults[index] || {
+          convertedAmount: item.totalAmount,
+          success: true,
+        }
+        return {
+          date: item.period,
+          originalAmount: item.totalAmount,
+          originalCurrency: item.currencyCode,
+          transactionCount: item.transactionCount,
+          convertedAmount: conversionResult.convertedAmount,
+          hasConversionError: !conversionResult.success,
+        }
+      })
     }
 
     return successResponse({
@@ -188,228 +208,4 @@ export async function GET(
     console.error('Get account trends error:', error)
     return errorResponse(getCommonError('INTERNAL_ERROR'), 500)
   }
-}
-
-/**
- * 生成存量账户的余额变动趋势
- */
-async function generateStockAccountTrend(
-  accountId: string,
-  transactions: TransactionWithBasic[],
-  startDate: Date,
-  endDate: Date,
-  granularity: string,
-  baseCurrency: Currency | { code: string; symbol: string; name: string },
-  userId: string
-): Promise<TrendDataPoint[]> {
-  const intervals =
-    granularity === 'daily'
-      ? eachDayOfInterval({ start: startDate, end: endDate })
-      : eachMonthOfInterval({ start: startDate, end: endDate })
-
-  const trendData = []
-  let runningBalance = 0
-
-  // 获取起始日期之前的初始余额
-  const initialTransactions = await prisma.transaction.findMany({
-    where: {
-      accountId: accountId, // 直接使用accountId而不是从transactions获取
-      date: { lt: startDate },
-    },
-    include: { currency: true },
-    orderBy: { date: 'asc' },
-  })
-
-  // 计算初始余额
-  for (const transaction of initialTransactions) {
-    const amount = parseFloat(transaction.amount.toString())
-    if (transaction.type === 'BALANCE') {
-      // 从备注中提取余额变化
-      const balanceChange = extractBalanceChangeFromNotes(transaction.notes)
-      if (balanceChange !== null) {
-        runningBalance += balanceChange
-      } else {
-        runningBalance = amount // 直接设置余额
-      }
-    }
-  }
-
-  // 准备货币转换数据
-  const amountsToConvert: Array<{ amount: number; currency: string }> = []
-
-  for (const interval of intervals) {
-    const intervalStart =
-      granularity === 'daily' ? startOfDay(interval) : startOfMonth(interval)
-    const intervalEnd =
-      granularity === 'daily' ? endOfDay(interval) : endOfMonth(interval)
-
-    // 获取该时间段内的交易
-    const intervalTransactions = transactions.filter(t => {
-      const transactionDate = new Date(t.date)
-      return transactionDate >= intervalStart && transactionDate <= intervalEnd
-    })
-
-    // 计算该时间段的余额变化
-    for (const transaction of intervalTransactions) {
-      const amount = parseFloat(transaction.amount.toString())
-      if (transaction.type === 'BALANCE') {
-        const balanceChange = extractBalanceChangeFromNotes(transaction.notes)
-        if (balanceChange !== null) {
-          runningBalance += balanceChange
-        } else {
-          runningBalance = amount
-        }
-      }
-    }
-
-    // 确定货币代码
-    const currencyCode =
-      intervalTransactions[0]?.currency?.code ||
-      transactions[0]?.currency?.code ||
-      baseCurrency.code
-
-    // 添加到转换列表
-    amountsToConvert.push({
-      amount: runningBalance,
-      currency: currencyCode,
-    })
-
-    trendData.push({
-      date: format(
-        interval,
-        granularity === 'daily' ? 'yyyy-MM-dd' : 'yyyy-MM'
-      ),
-      originalAmount: runningBalance,
-      originalCurrency: currencyCode,
-      transactionCount: intervalTransactions.length,
-      convertedAmount: 0, // Will be filled by currency conversion
-      hasConversionError: false, // Will be filled by currency conversion
-    })
-  }
-
-  // 批量转换货币
-  if (amountsToConvert.length > 0) {
-    const conversionResults = await convertMultipleCurrencies(
-      userId,
-      amountsToConvert,
-      baseCurrency.code
-    )
-
-    trendData.forEach((item, index) => {
-      const conversionResult = conversionResults[index]
-      item.convertedAmount = conversionResult.convertedAmount
-      item.hasConversionError = !conversionResult.success
-    })
-  } else {
-    // 如果没有数据需要转换，设置默认值
-    trendData.forEach(item => {
-      item.convertedAmount = item.originalAmount
-      item.hasConversionError = false
-    })
-  }
-
-  return trendData
-}
-
-/**
- * 生成流量账户的交易流水趋势
- */
-async function generateFlowAccountTrend(
-  accountId: string,
-  transactions: TransactionWithBasic[],
-  startDate: Date,
-  endDate: Date,
-  granularity: string,
-  baseCurrency: Currency | { code: string; symbol: string; name: string },
-  userId: string
-): Promise<TrendDataPoint[]> {
-  const intervals =
-    granularity === 'daily'
-      ? eachDayOfInterval({ start: startDate, end: endDate })
-      : eachMonthOfInterval({ start: startDate, end: endDate })
-
-  const trendData = []
-  const amountsToConvert: Array<{ amount: number; currency: string }> = []
-
-  for (const interval of intervals) {
-    const intervalStart =
-      granularity === 'daily' ? startOfDay(interval) : startOfMonth(interval)
-    const intervalEnd =
-      granularity === 'daily' ? endOfDay(interval) : endOfMonth(interval)
-
-    // 获取该时间段内的交易
-    const intervalTransactions = transactions.filter(t => {
-      const transactionDate = new Date(t.date)
-      return transactionDate >= intervalStart && transactionDate <= intervalEnd
-    })
-
-    // 计算该时间段的交易总额
-    let totalAmount = 0
-    for (const transaction of intervalTransactions) {
-      const amount = parseFloat(transaction.amount.toString())
-      if (transaction.type === 'INCOME' || transaction.type === 'EXPENSE') {
-        totalAmount += amount
-      }
-    }
-
-    // 确定货币代码
-    const currencyCode =
-      intervalTransactions[0]?.currency?.code || baseCurrency.code
-
-    // 添加到转换列表
-    amountsToConvert.push({
-      amount: totalAmount,
-      currency: currencyCode,
-    })
-
-    trendData.push({
-      date: format(
-        interval,
-        granularity === 'daily' ? 'yyyy-MM-dd' : 'yyyy-MM'
-      ),
-      originalAmount: totalAmount,
-      originalCurrency: currencyCode,
-      transactionCount: intervalTransactions.length,
-      convertedAmount: 0, // Will be filled by currency conversion
-      hasConversionError: false, // Will be filled by currency conversion
-    })
-  }
-
-  // 批量转换货币
-  if (amountsToConvert.length > 0) {
-    const conversionResults = await convertMultipleCurrencies(
-      userId,
-      amountsToConvert,
-      baseCurrency.code
-    )
-
-    trendData.forEach((item, index) => {
-      const conversionResult = conversionResults[index]
-      item.convertedAmount = conversionResult.convertedAmount
-      item.hasConversionError = !conversionResult.success
-    })
-  } else {
-    // 如果没有数据需要转换，设置默认值
-    trendData.forEach(item => {
-      item.convertedAmount = item.originalAmount
-      item.hasConversionError = false
-    })
-  }
-
-  return trendData
-}
-
-/**
- * 从交易备注中提取余额变化金额
- */
-function extractBalanceChangeFromNotes(notes: string | null): number | null {
-  if (!notes) return null
-
-  // 匹配模式：变化金额：+123.45 或 变化金额：-123.45
-  const match = notes.match(/变化金额：([+-]?\d+\.?\d*)/)
-  if (match && match[1]) {
-    return parseFloat(match[1])
-  }
-
-  return null
 }

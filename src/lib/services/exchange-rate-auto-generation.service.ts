@@ -6,6 +6,7 @@
 import { prisma } from '@/lib/database/connection-manager'
 import { Decimal } from '@prisma/client/runtime/library'
 import { createServerTranslator } from '@/lib/utils/server-i18n'
+import { generateAutoExchangeRatesOptimized } from './exchange-rate-auto-generation-optimized.service'
 
 // 创建服务端翻译函数
 const t = createServerTranslator()
@@ -30,77 +31,16 @@ export async function generateAutoExchangeRates(
   userId: string,
   effectiveDate?: Date
 ): Promise<AutoGenerationResult> {
-  // 使用传入的日期，如果没有传入则使用当前日期
-  const targetDate = effectiveDate ? new Date(effectiveDate) : new Date()
-  // 设置为当天的开始时间（UTC时间），与单笔创建交易保持一致
-  targetDate.setUTCHours(0, 0, 0, 0)
-
-  const result: AutoGenerationResult = {
-    success: true,
-    generatedCount: 0,
-    errors: [],
-    details: {
-      reverseRates: 0,
-      transitiveRates: 0,
-    },
-  }
-
-  try {
-    // 获取用户的所有用户输入汇率和API汇率（不限制日期，获取最新的）
-    const sourceRates = await prisma.exchangeRate.findMany({
-      where: {
-        userId,
-        type: { in: ['USER', 'API'] },
-      },
-      include: {
-        fromCurrencyRef: true,
-        toCurrencyRef: true,
-      },
-      orderBy: {
-        effectiveDate: 'desc',
-      },
-    })
-
-    // 1. 生成反向汇率
-    const reverseResult = await generateReverseRates(
-      userId,
-      sourceRates,
-      targetDate
-    )
-    result.details.reverseRates = reverseResult.count
-    result.generatedCount += reverseResult.count
-    result.errors.push(...reverseResult.errors)
-
-    // 2. 生成传递汇率
-    const transitiveResult = await generateTransitiveRates(userId, targetDate)
-    result.details.transitiveRates = transitiveResult.count
-    result.generatedCount += transitiveResult.count
-    result.errors.push(...transitiveResult.errors)
-
-    if (result.errors.length > 0) {
-      result.success = false
-    }
-
-    return result
-  } catch (error) {
-    console.error(t('exchange.rate.auto.generate.failed'), error)
-    return {
-      success: false,
-      generatedCount: 0,
-      errors: [error instanceof Error ? error.message : '未知错误'],
-      details: {
-        reverseRates: 0,
-        transitiveRates: 0,
-      },
-    }
-  }
+  // 使用优化版本的实现
+  return await generateAutoExchangeRatesOptimized(userId, effectiveDate)
 }
 
 /**
- * 生成反向汇率
+ * 生成反向汇率 - 已弃用，保留用于回退
  * 例如：CNY → USD = 0.14，自动生成 USD → CNY = 7.14
+ * @deprecated 使用优化版本替代，此函数保留用于回退
  */
-async function generateReverseRates(
+async function _generateReverseRatesLegacy(
   userId: string,
   userRates: Array<{
     id: string
@@ -165,10 +105,14 @@ async function generateReverseRates(
 }
 
 /**
- * 生成传递汇率
+ * 生成传递汇率 - 已弃用，保留用于回退
  * 支持多种传递路径：直接传递、反向计算、组合计算
+ * @deprecated 使用优化版本替代，此函数保留用于回退
  */
-async function generateTransitiveRates(userId: string, effectiveDate: Date) {
+async function _generateTransitiveRatesLegacy(
+  userId: string,
+  effectiveDate: Date
+) {
   const result = { count: 0, errors: [] as string[] }
 
   try {

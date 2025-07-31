@@ -131,13 +131,70 @@ export function CategoryDetailSkeleton() {
   return (
     <div className='max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8'>
       {/* 面包屑导航 */}
-      <div className='flex items-center space-x-2'>
-        <Skeleton height='1rem' width='60px' />
-        <span className='text-gray-500 dark:text-gray-400'>/</span>
-        <Skeleton height='1rem' width='80px' />
-        <span className='text-gray-500 dark:text-gray-400'>/</span>
-        <Skeleton height='1rem' width='100px' />
-      </div>
+      <nav
+        className='flex items-center mb-4 sm:mb-6 overflow-x-auto scrollbar-hide'
+        aria-label='Breadcrumb'
+      >
+        <div className='inline-flex items-center space-x-0.5 bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200/60 dark:border-gray-700/60 rounded-lg p-1 sm:p-1.5 shadow-sm backdrop-blur-sm min-w-0'>
+          {/* 导航图标骨架 */}
+          <div className='flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-blue-100 dark:bg-blue-900/40 mr-1 flex-shrink-0'>
+            <Skeleton height='12px' width='12px' className='rounded-sm' />
+          </div>
+
+          <div className='inline-flex items-center space-x-0.5 whitespace-nowrap min-w-0'>
+            {/* 第一个面包屑项 */}
+            <div className='inline-flex items-center min-w-0'>
+              <div className='inline-flex items-center rounded-md px-2 py-1 sm:px-2.5 sm:py-1.5 min-h-[32px] sm:min-h-[36px]'>
+                <Skeleton height='14px' width='60px' className='rounded-sm' />
+              </div>
+            </div>
+
+            {/* 分隔符 */}
+            <div className='flex items-center mx-0.5 sm:mx-1 flex-shrink-0'>
+              <svg
+                className='w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-400 dark:text-gray-500'
+                fill='currentColor'
+                viewBox='0 0 20 20'
+              >
+                <path
+                  fillRule='evenodd'
+                  d='M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z'
+                  clipRule='evenodd'
+                />
+              </svg>
+            </div>
+
+            {/* 第二个面包屑项 */}
+            <div className='inline-flex items-center min-w-0'>
+              <div className='inline-flex items-center rounded-md px-2 py-1 sm:px-2.5 sm:py-1.5 min-h-[32px] sm:min-h-[36px]'>
+                <Skeleton height='14px' width='80px' className='rounded-sm' />
+              </div>
+            </div>
+
+            {/* 分隔符 */}
+            <div className='flex items-center mx-0.5 sm:mx-1 flex-shrink-0'>
+              <svg
+                className='w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-400 dark:text-gray-500'
+                fill='currentColor'
+                viewBox='0 0 20 20'
+              >
+                <path
+                  fillRule='evenodd'
+                  d='M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z'
+                  clipRule='evenodd'
+                />
+              </svg>
+            </div>
+
+            {/* 第三个面包屑项 */}
+            <div className='inline-flex items-center min-w-0'>
+              <div className='inline-flex items-center rounded-md px-2 py-1 sm:px-2.5 sm:py-1.5 min-h-[32px] sm:min-h-[36px]'>
+                <Skeleton height='14px' width='100px' className='rounded-sm' />
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* 分类信息卡片 */}
       <SkeletonCard hasHeader={true} contentLines={3} hasFooter={false} />
@@ -265,31 +322,243 @@ export function SidebarSkeleton({ isMobile = false }: { isMobile?: boolean }) {
     <div
       className={`${isMobile ? 'w-full' : 'w-80'} bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full`}
     >
-      <div className='p-4 space-y-4'>
-        {/* 搜索框 */}
+      {/* 搜索框区域 */}
+      <div className='p-4 border-b border-gray-200 dark:border-gray-700'>
         <Skeleton height='2.5rem' rounded='md' />
+      </div>
 
-        {/* 导航链接 */}
-        <div className='space-y-2'>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} height='2rem' rounded='md' />
-          ))}
-        </div>
+      {/* 侧边栏内容 */}
+      <div className='flex-1 overflow-y-auto overflow-x-visible'>
+        <div className='p-4 space-y-4'>
+          {/* Dashboard 链接 */}
+          <div className='mb-4'>
+            <div className='flex items-center px-4 py-3 rounded-xl'>
+              <div className='flex items-center flex-1'>
+                <div className='flex items-center justify-center w-10 h-10 rounded-lg mr-3'>
+                  <Skeleton width='40px' height='40px' rounded='lg' />
+                </div>
+                <Skeleton height='0.875rem' width='60px' />
+              </div>
+            </div>
+          </div>
 
-        {/* 分隔线 */}
-        <div className='border-t border-gray-200 dark:border-gray-700 my-4' />
+          {/* FIRE 征途链接 */}
+          <div className='mb-4'>
+            <div className='flex items-center px-4 py-3 rounded-xl'>
+              <div className='flex items-center flex-1'>
+                <div className='flex items-center justify-center w-10 h-10 rounded-lg mr-3'>
+                  <Skeleton width='40px' height='40px' rounded='lg' />
+                </div>
+                <Skeleton height='0.875rem' width='80px' />
+              </div>
+            </div>
+          </div>
 
-        {/* 账户分类树 */}
-        <div className='space-y-2'>
-          <Skeleton height='1.5rem' width='60%' />
-          <div className='ml-4 space-y-2'>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton
-                key={i}
-                height='1.5rem'
-                width={`${70 + (i % 3) * 10}%`}
-              />
-            ))}
+          {/* 交易链接 */}
+          <div className='mb-4'>
+            <div className='flex items-center px-4 py-3 rounded-xl'>
+              <div className='flex items-center flex-1'>
+                <div className='flex items-center justify-center w-10 h-10 rounded-lg mr-3'>
+                  <Skeleton width='40px' height='40px' rounded='lg' />
+                </div>
+                <Skeleton height='0.875rem' width='50px' />
+              </div>
+            </div>
+          </div>
+
+          {/* 报表链接 */}
+          <div className='mb-4'>
+            <div className='flex items-center px-4 py-3 rounded-xl'>
+              <div className='flex items-center flex-1'>
+                <div className='flex items-center justify-center w-10 h-10 rounded-lg mr-3'>
+                  <Skeleton width='40px' height='40px' rounded='lg' />
+                </div>
+                <Skeleton height='0.875rem' width='50px' />
+              </div>
+            </div>
+          </div>
+
+          {/* 分类和账户树区域 */}
+          <div>
+            {/* 账户分类标题区域 */}
+            <div className='flex items-center justify-between mb-3'>
+              <div className='flex items-center space-x-2'>
+                <Skeleton height='1.125rem' width='80px' />
+                <Skeleton width='28px' height='28px' rounded='md' />
+              </div>
+              <div className='flex items-center space-x-2'>
+                <Skeleton width='28px' height='28px' rounded='md' />
+                <Skeleton width='28px' height='28px' rounded='md' />
+              </div>
+            </div>
+
+            {/* 账户类型分组 */}
+            <div className='space-y-3'>
+              {/* 资产分组 */}
+              <div className='rounded-lg border bg-blue-50/20 dark:bg-blue-950/15 border-blue-200/50 dark:border-blue-700/30 mx-1'>
+                {/* 分组头部 */}
+                <div className='flex items-center justify-between px-3 py-2.5'>
+                  <div className='flex items-center space-x-3'>
+                    <Skeleton width='20px' height='20px' />
+                    <Skeleton height='0.875rem' width='40px' />
+                  </div>
+                  <Skeleton height='0.875rem' width='60px' />
+                </div>
+
+                {/* 分组内容 */}
+                <div className='space-y-1 px-2 pb-2'>
+                  {/* 分类项 */}
+                  <div
+                    className='flex items-center px-3 py-2.5 rounded-lg'
+                    style={{ paddingLeft: '12px' }}
+                  >
+                    <Skeleton width='20px' height='20px' className='mr-2' />
+                    <div className='mr-3 flex-shrink-0'>
+                      <Skeleton width='32px' height='32px' rounded='xl' />
+                    </div>
+                    <div className='flex-1 py-3 min-w-0'>
+                      <Skeleton
+                        height='0.875rem'
+                        width='80px'
+                        className='mb-1.5'
+                      />
+                      <Skeleton height='0.75rem' width='60px' />
+                    </div>
+                    <Skeleton width='32px' height='32px' rounded='lg' />
+                  </div>
+
+                  {/* 账户项 */}
+                  <div
+                    className='flex items-center px-3 py-2.5 rounded-lg'
+                    style={{ paddingLeft: '28px' }}
+                  >
+                    <div className='mr-3 flex-shrink-0'>
+                      <Skeleton width='24px' height='20px' rounded='sm' />
+                    </div>
+                    <div className='flex-1 py-3 min-w-0'>
+                      <Skeleton
+                        height='0.875rem'
+                        width='100px'
+                        className='mb-1.5'
+                      />
+                      <Skeleton height='0.75rem' width='70px' />
+                    </div>
+                    <Skeleton width='32px' height='32px' rounded='lg' />
+                  </div>
+
+                  <div
+                    className='flex items-center px-3 py-2.5 rounded-lg'
+                    style={{ paddingLeft: '28px' }}
+                  >
+                    <div className='mr-3 flex-shrink-0'>
+                      <Skeleton width='24px' height='20px' rounded='sm' />
+                    </div>
+                    <div className='flex-1 py-3 min-w-0'>
+                      <Skeleton
+                        height='0.875rem'
+                        width='90px'
+                        className='mb-1.5'
+                      />
+                      <Skeleton height='0.75rem' width='50px' />
+                    </div>
+                    <Skeleton width='32px' height='32px' rounded='lg' />
+                  </div>
+                </div>
+              </div>
+
+              {/* 负债分组 */}
+              <div className='rounded-lg border bg-orange-50/20 dark:bg-orange-950/15 border-orange-200/50 dark:border-orange-700/30 mx-1'>
+                <div className='flex items-center justify-between px-3 py-2.5'>
+                  <div className='flex items-center space-x-3'>
+                    <Skeleton width='20px' height='20px' />
+                    <Skeleton height='0.875rem' width='40px' />
+                  </div>
+                  <Skeleton height='0.875rem' width='60px' />
+                </div>
+              </div>
+
+              {/* 收入分组 */}
+              <div className='rounded-lg border bg-green-50/20 dark:bg-green-950/15 border-green-200/50 dark:border-green-700/30 mx-1'>
+                <div className='flex items-center justify-between px-3 py-2.5'>
+                  <div className='flex items-center space-x-3'>
+                    <Skeleton width='20px' height='20px' />
+                    <Skeleton height='0.875rem' width='40px' />
+                  </div>
+                  <Skeleton height='0.875rem' width='60px' />
+                </div>
+
+                <div className='space-y-1 px-2 pb-2'>
+                  <div
+                    className='flex items-center px-3 py-2.5 rounded-lg'
+                    style={{ paddingLeft: '12px' }}
+                  >
+                    <Skeleton width='20px' height='20px' className='mr-2' />
+                    <div className='mr-3 flex-shrink-0'>
+                      <Skeleton width='32px' height='32px' rounded='xl' />
+                    </div>
+                    <div className='flex-1 py-3 min-w-0'>
+                      <Skeleton
+                        height='0.875rem'
+                        width='70px'
+                        className='mb-1.5'
+                      />
+                      <Skeleton height='0.75rem' width='50px' />
+                    </div>
+                    <Skeleton width='32px' height='32px' rounded='lg' />
+                  </div>
+                </div>
+              </div>
+
+              {/* 支出分组 */}
+              <div className='rounded-lg border bg-red-50/20 dark:bg-red-950/15 border-red-200/50 dark:border-red-700/30 mx-1'>
+                <div className='flex items-center justify-between px-3 py-2.5'>
+                  <div className='flex items-center space-x-3'>
+                    <Skeleton width='20px' height='20px' />
+                    <Skeleton height='0.875rem' width='40px' />
+                  </div>
+                  <Skeleton height='0.875rem' width='60px' />
+                </div>
+
+                <div className='space-y-1 px-2 pb-2'>
+                  <div
+                    className='flex items-center px-3 py-2.5 rounded-lg'
+                    style={{ paddingLeft: '12px' }}
+                  >
+                    <Skeleton width='20px' height='20px' className='mr-2' />
+                    <div className='mr-3 flex-shrink-0'>
+                      <Skeleton width='32px' height='32px' rounded='xl' />
+                    </div>
+                    <div className='flex-1 py-3 min-w-0'>
+                      <Skeleton
+                        height='0.875rem'
+                        width='60px'
+                        className='mb-1.5'
+                      />
+                      <Skeleton height='0.75rem' width='40px' />
+                    </div>
+                    <Skeleton width='32px' height='32px' rounded='lg' />
+                  </div>
+
+                  <div
+                    className='flex items-center px-3 py-2.5 rounded-lg'
+                    style={{ paddingLeft: '28px' }}
+                  >
+                    <div className='mr-3 flex-shrink-0'>
+                      <Skeleton width='24px' height='20px' rounded='sm' />
+                    </div>
+                    <div className='flex-1 py-3 min-w-0'>
+                      <Skeleton
+                        height='0.875rem'
+                        width='85px'
+                        className='mb-1.5'
+                      />
+                      <Skeleton height='0.75rem' width='55px' />
+                    </div>
+                    <Skeleton width='32px' height='32px' rounded='lg' />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -809,7 +1078,7 @@ export function ExchangeRateManagementSkeleton() {
       </div>
 
       {/* 缺失汇率提示 */}
-      <div className='bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4'>
+      {/* <div className='bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4'>
         <div className='flex items-start space-x-3'>
           <span className='text-yellow-600 dark:text-yellow-400'>⚠️</span>
           <div className='flex-1'>
@@ -817,7 +1086,7 @@ export function ExchangeRateManagementSkeleton() {
             <Skeleton height='0.875rem' width='320px' />
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* 操作按钮 */}
       <div className='flex justify-between items-center'>
@@ -1186,6 +1455,157 @@ export function CategorySummaryItemSkeleton() {
       </div>
       <div className='text-sm'>
         <Skeleton height='0.875rem' width='60px' />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 分类账户树骨架屏
+ * 专门用于 OptimizedCategoryAccountTree 组件的加载状态
+ */
+export function CategoryAccountTreeSkeleton() {
+  return (
+    <div className='space-y-3'>
+      {/* 资产分组 */}
+      <div className='rounded-lg border bg-blue-50/20 dark:bg-blue-950/15 border-blue-200/50 dark:border-blue-700/30 mx-1'>
+        {/* 分组头部 */}
+        <div className='flex items-center justify-between px-3 py-2.5'>
+          <div className='flex items-center space-x-3'>
+            <Skeleton width='20px' height='20px' />
+            <Skeleton height='0.875rem' width='40px' />
+          </div>
+          <Skeleton height='0.875rem' width='60px' />
+        </div>
+
+        {/* 分组内容 */}
+        <div className='space-y-1 px-2 pb-2'>
+          {/* 分类项 */}
+          <div
+            className='flex items-center px-3 py-2.5 rounded-lg'
+            style={{ paddingLeft: '12px' }}
+          >
+            <Skeleton width='20px' height='20px' className='mr-2' />
+            <div className='mr-3 flex-shrink-0'>
+              <Skeleton width='32px' height='32px' rounded='xl' />
+            </div>
+            <div className='flex-1 py-3 min-w-0'>
+              <Skeleton height='0.875rem' width='80px' className='mb-1.5' />
+              <Skeleton height='0.75rem' width='60px' />
+            </div>
+            <Skeleton width='32px' height='32px' rounded='lg' />
+          </div>
+
+          {/* 账户项 */}
+          <div
+            className='flex items-center px-3 py-2.5 rounded-lg'
+            style={{ paddingLeft: '28px' }}
+          >
+            <div className='mr-3 flex-shrink-0'>
+              <Skeleton width='24px' height='20px' rounded='sm' />
+            </div>
+            <div className='flex-1 py-3 min-w-0'>
+              <Skeleton height='0.875rem' width='100px' className='mb-1.5' />
+              <Skeleton height='0.75rem' width='70px' />
+            </div>
+            <Skeleton width='32px' height='32px' rounded='lg' />
+          </div>
+
+          <div
+            className='flex items-center px-3 py-2.5 rounded-lg'
+            style={{ paddingLeft: '28px' }}
+          >
+            <div className='mr-3 flex-shrink-0'>
+              <Skeleton width='24px' height='20px' rounded='sm' />
+            </div>
+            <div className='flex-1 py-3 min-w-0'>
+              <Skeleton height='0.875rem' width='90px' className='mb-1.5' />
+              <Skeleton height='0.75rem' width='50px' />
+            </div>
+            <Skeleton width='32px' height='32px' rounded='lg' />
+          </div>
+        </div>
+      </div>
+
+      {/* 负债分组 */}
+      <div className='rounded-lg border bg-orange-50/20 dark:bg-orange-950/15 border-orange-200/50 dark:border-orange-700/30 mx-1'>
+        <div className='flex items-center justify-between px-3 py-2.5'>
+          <div className='flex items-center space-x-3'>
+            <Skeleton width='20px' height='20px' />
+            <Skeleton height='0.875rem' width='40px' />
+          </div>
+          <Skeleton height='0.875rem' width='60px' />
+        </div>
+      </div>
+
+      {/* 收入分组 */}
+      <div className='rounded-lg border bg-green-50/20 dark:bg-green-950/15 border-green-200/50 dark:border-green-700/30 mx-1'>
+        <div className='flex items-center justify-between px-3 py-2.5'>
+          <div className='flex items-center space-x-3'>
+            <Skeleton width='20px' height='20px' />
+            <Skeleton height='0.875rem' width='40px' />
+          </div>
+          <Skeleton height='0.875rem' width='60px' />
+        </div>
+
+        <div className='space-y-1 px-2 pb-2'>
+          <div
+            className='flex items-center px-3 py-2.5 rounded-lg'
+            style={{ paddingLeft: '12px' }}
+          >
+            <Skeleton width='20px' height='20px' className='mr-2' />
+            <div className='mr-3 flex-shrink-0'>
+              <Skeleton width='32px' height='32px' rounded='xl' />
+            </div>
+            <div className='flex-1 py-3 min-w-0'>
+              <Skeleton height='0.875rem' width='70px' className='mb-1.5' />
+              <Skeleton height='0.75rem' width='50px' />
+            </div>
+            <Skeleton width='32px' height='32px' rounded='lg' />
+          </div>
+        </div>
+      </div>
+
+      {/* 支出分组 */}
+      <div className='rounded-lg border bg-red-50/20 dark:bg-red-950/15 border-red-200/50 dark:border-red-700/30 mx-1'>
+        <div className='flex items-center justify-between px-3 py-2.5'>
+          <div className='flex items-center space-x-3'>
+            <Skeleton width='20px' height='20px' />
+            <Skeleton height='0.875rem' width='40px' />
+          </div>
+          <Skeleton height='0.875rem' width='60px' />
+        </div>
+
+        <div className='space-y-1 px-2 pb-2'>
+          <div
+            className='flex items-center px-3 py-2.5 rounded-lg'
+            style={{ paddingLeft: '12px' }}
+          >
+            <Skeleton width='20px' height='20px' className='mr-2' />
+            <div className='mr-3 flex-shrink-0'>
+              <Skeleton width='32px' height='32px' rounded='xl' />
+            </div>
+            <div className='flex-1 py-3 min-w-0'>
+              <Skeleton height='0.875rem' width='60px' className='mb-1.5' />
+              <Skeleton height='0.75rem' width='40px' />
+            </div>
+            <Skeleton width='32px' height='32px' rounded='lg' />
+          </div>
+
+          <div
+            className='flex items-center px-3 py-2.5 rounded-lg'
+            style={{ paddingLeft: '28px' }}
+          >
+            <div className='mr-3 flex-shrink-0'>
+              <Skeleton width='24px' height='20px' rounded='sm' />
+            </div>
+            <div className='flex-1 py-3 min-w-0'>
+              <Skeleton height='0.875rem' width='85px' className='mb-1.5' />
+              <Skeleton height='0.75rem' width='55px' />
+            </div>
+            <Skeleton width='32px' height='32px' rounded='lg' />
+          </div>
+        </div>
       </div>
     </div>
   )

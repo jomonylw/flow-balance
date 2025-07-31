@@ -7,11 +7,11 @@ import {
   unauthorizedResponse,
 } from '@/lib/api/response'
 // import { getUserTranslator } from '@/lib/utils/server-i18n'
-import type { Prisma } from '@prisma/client'
 import {
   publishBalanceUpdate,
   publishTransactionUpdate,
 } from '@/lib/services/data-update.service'
+import { getAccountBalanceHistory } from '@/lib/database/queries/balance-history.queries'
 
 export async function POST(request: NextRequest) {
   try {
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 获取账户余额历史
+// 获取账户余额历史（优化版本）
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
@@ -234,203 +234,26 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const accountId = searchParams.get('accountId')
     const currencyCode = searchParams.get('currencyCode')
-    const limit = parseInt(searchParams.get('limit') || '10') // 保持较小的默认值用于余额更新
+    const limit = parseInt(searchParams.get('limit') || '10')
 
     if (!accountId) {
       return errorResponse('缺少账户ID', 400)
     }
 
-    // 验证账户是否属于当前用户
-    const account = await prisma.account.findFirst({
-      where: {
-        id: accountId,
-        userId: user.id,
-      },
-      include: {
-        category: true,
-      },
-    })
-
-    if (!account) {
-      return errorResponse('账户不存在', 400)
-    }
-
-    // 获取余额相关的交易历史
-    const whereClause: Prisma.TransactionWhereInput = {
-      userId: user.id,
-      accountId: accountId,
-    }
-
-    if (currencyCode) {
-      // 需要通过关联查询来过滤货币
-      whereClause.currency = {
-        code: currencyCode,
-        OR: [{ createdBy: user.id }, { createdBy: null }],
-      }
-    }
-
-    const transactions = await prisma.transaction.findMany({
-      where: whereClause,
-      include: {
-        currency: true,
-      },
-      orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
-      take: limit,
-    })
-
-    // 定义交易类型（包含关联数据）
-    type TransactionWithCurrency = Prisma.TransactionGetPayload<{
-      include: {
-        currency: true
-      }
-    }>
-
-    // 计算每个时点的累计余额
-    const balanceHistory: Array<{
-      date: string
-      balance: number
-      change: number
-      transaction: {
-        id: string
-        type: string
-        amount: number
-        description: string
-        notes: string | null
-      }
-    }> = []
-
-    // 按时间正序处理以计算累计余额
-    const sortedTransactions = [...transactions].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    // 使用优化的查询服务
+    const result = await getAccountBalanceHistory(
+      user.id,
+      accountId,
+      currencyCode || undefined,
+      limit
     )
 
-    // 对于存量类账户，需要特殊处理BALANCE
-    const isStockAccount =
-      account.category.type === 'ASSET' || account.category.type === 'LIABILITY'
-    let cumulativeBalance = 0
-
-    if (isStockAccount) {
-      // 存量类账户：找到最新的BALANCE作为基准
-      let latestBalanceAdjustment: TransactionWithCurrency | null = null
-      let latestBalanceDate = new Date(0)
-
-      sortedTransactions.forEach(transaction => {
-        if (transaction.type === 'BALANCE') {
-          const transactionDate = new Date(transaction.date)
-          if (transactionDate > latestBalanceDate) {
-            latestBalanceAdjustment = transaction as TransactionWithCurrency
-            latestBalanceDate = transactionDate
-          }
-        }
-      })
-
-      // 如果有余额调整记录，使用该记录作为基准
-      if (latestBalanceAdjustment) {
-        const balanceTransaction =
-          latestBalanceAdjustment as TransactionWithCurrency
-        cumulativeBalance = parseFloat(balanceTransaction.amount.toString())
-
-        // 添加余额调整记录到历史
-        balanceHistory.push({
-          date: balanceTransaction.date.toISOString(),
-          balance: cumulativeBalance,
-          change: cumulativeBalance, // 对于余额调整，变化金额就是目标余额
-          transaction: {
-            id: balanceTransaction.id,
-            type: balanceTransaction.type,
-            amount: parseFloat(balanceTransaction.amount.toString()),
-            description: balanceTransaction.description,
-            notes: balanceTransaction.notes,
-          },
-        })
-
-        // 处理余额调整之后的其他交易
-        sortedTransactions.forEach(transaction => {
-          if (
-            transaction.type === 'BALANCE' ||
-            new Date(transaction.date) <= latestBalanceDate
-          ) {
-            return // 跳过余额调整记录和之前的交易
-          }
-
-          const amount = parseFloat(transaction.amount.toString())
-          let balanceChange = 0
-
-          if (account.category.type === 'ASSET') {
-            balanceChange = transaction.type === 'INCOME' ? amount : -amount
-          } else if (account.category.type === 'LIABILITY') {
-            balanceChange = transaction.type === 'INCOME' ? amount : -amount
-          }
-
-          cumulativeBalance += balanceChange
-
-          balanceHistory.push({
-            date: transaction.date.toISOString(),
-            balance: cumulativeBalance,
-            change: balanceChange,
-            transaction: {
-              id: transaction.id,
-              type: transaction.type,
-              amount: amount,
-              description: transaction.description,
-              notes: transaction.notes,
-            },
-          })
-        })
-      }
-    } else {
-      // 流量类账户：累加所有交易
-      sortedTransactions.forEach(transaction => {
-        const amount = parseFloat(transaction.amount.toString())
-        let balanceChange = 0
-
-        if (account.category.type === 'INCOME') {
-          balanceChange = transaction.type === 'INCOME' ? amount : 0
-        } else if (account.category.type === 'EXPENSE') {
-          balanceChange = transaction.type === 'EXPENSE' ? amount : 0
-        }
-
-        cumulativeBalance += balanceChange
-
-        balanceHistory.push({
-          date: transaction.date.toISOString(),
-          balance: cumulativeBalance,
-          change: balanceChange,
-          transaction: {
-            id: transaction.id,
-            type: transaction.type,
-            amount: amount,
-            description: transaction.description,
-            notes: transaction.notes,
-          },
-        })
-      })
-    }
-
-    // 按日期倒序排列历史记录
-    balanceHistory.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
-
-    return successResponse({
-      account: {
-        id: account.id,
-        name: account.name,
-        type: account.category.type,
-      },
-      currentBalance: cumulativeBalance,
-      currency: currencyCode
-        ? await prisma.currency.findFirst({
-            where: {
-              code: currencyCode,
-              OR: [{ createdBy: user.id }, { createdBy: null }],
-            },
-          })
-        : null,
-      history: balanceHistory.slice(0, limit),
-    })
+    return successResponse(result)
   } catch (error) {
     console.error('Get balance history error:', error)
+    if (error instanceof Error && error.message === '账户不存在') {
+      return errorResponse('账户不存在', 400)
+    }
     return errorResponse('获取余额历史失败', 500)
   }
 }

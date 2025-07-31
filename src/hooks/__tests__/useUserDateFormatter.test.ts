@@ -116,6 +116,7 @@ const createMockUserData = (
     updateAccountBalance: jest.fn(),
     triggerSync: jest.fn(),
     refreshSyncStatus: jest.fn(),
+    forceStopSync: jest.fn(),
   }
 }
 

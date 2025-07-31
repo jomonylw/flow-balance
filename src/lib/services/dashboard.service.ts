@@ -2,8 +2,11 @@ import { prisma } from '@/lib/database/connection-manager'
 import { AccountType, TransactionType } from '@/types/core/constants'
 import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
-import { subMonths, endOfMonth, startOfMonth } from 'date-fns'
+import { subMonths, endOfMonth, startOfMonth, format } from 'date-fns'
 import { BUSINESS_LIMITS } from '@/lib/constants/app-config'
+// import { getMonthlyIncomeExpense } from '@/lib/database/raw-queries'
+import { getDashboardCashFlow } from '@/lib/database/queries/report.queries'
+import { getNetWorthHistory } from '@/lib/database/queries/account.queries'
 
 // Dashboard service 专用类型定义
 type DashboardAccountWithTransactions = {
@@ -76,8 +79,13 @@ export async function getUserBaseCurrency(userId: string) {
 
 /**
  * 获取用户的所有账户（用于计算）
+ * @deprecated 此函数存在严重性能问题，请使用优化版本的函数
  */
 export async function getUserAccountsForCalculation(userId: string) {
+  console.warn(
+    'getUserAccountsForCalculation is deprecated due to performance issues. Consider using optimized alternatives.'
+  )
+
   const accounts = await prisma.account.findMany({
     where: { userId },
     include: {
@@ -119,6 +127,175 @@ export async function getUserAccountsForCalculation(userId: string) {
       },
     })),
   }))
+}
+
+/**
+ * 优化版本：批量获取多个月份的净资产数据
+ * 使用数据库聚合查询替代内存计算
+ */
+export async function getOptimizedMonthlyNetWorthData(
+  userId: string,
+  monthsList: Date[],
+  baseCurrency: DashboardCurrency
+): Promise<
+  Array<{
+    month: string
+    monthName: string
+    netWorth: number
+    totalAssets: number
+    totalLiabilities: number
+    hasConversionErrors: boolean
+  }>
+> {
+  if (monthsList.length === 0) {
+    return []
+  }
+
+  const results: Array<{
+    month: string
+    monthName: string
+    netWorth: number
+    totalAssets: number
+    totalLiabilities: number
+    hasConversionErrors: boolean
+  }> = []
+
+  try {
+    // 计算日期范围
+    const startDate = monthsList[0]
+    const endDate = endOfMonth(monthsList[monthsList.length - 1])
+
+    // 使用新的批量查询函数，一次性获取所有月份的净资产数据
+    const netWorthData = await getNetWorthHistory(userId, startDate, endDate)
+
+    // 按月份分组数据
+    const monthlyDataMap = new Map<
+      string,
+      {
+        assets: Array<{ amount: number; currency: string }>
+        liabilities: Array<{ amount: number; currency: string }>
+      }
+    >()
+
+    // 初始化所有月份的数据结构
+    monthsList.forEach(date => {
+      const monthKey = format(date, 'yyyy-MM')
+      monthlyDataMap.set(monthKey, { assets: [], liabilities: [] })
+    })
+
+    // 填充数据
+    netWorthData.forEach(row => {
+      const monthData = monthlyDataMap.get(row.month)
+      if (monthData) {
+        if (row.categoryType === 'ASSET') {
+          monthData.assets.push({
+            amount: row.totalBalance,
+            currency: row.currencyCode,
+          })
+        } else if (row.categoryType === 'LIABILITY') {
+          monthData.liabilities.push({
+            amount: Math.abs(row.totalBalance), // 负债显示为正数
+            currency: row.currencyCode,
+          })
+        }
+      }
+    })
+
+    // 批量处理货币转换
+    for (const targetDate of monthsList) {
+      const monthEnd = endOfMonth(targetDate)
+      const monthLabel = format(targetDate, 'yyyy-MM')
+      const monthName = format(targetDate, 'yyyy年MM月')
+      const monthData = monthlyDataMap.get(monthLabel)
+
+      if (!monthData) {
+        results.push({
+          month: monthLabel,
+          monthName,
+          netWorth: 0,
+          totalAssets: 0,
+          totalLiabilities: 0,
+          hasConversionErrors: false,
+        })
+        continue
+      }
+
+      try {
+        // 批量货币转换
+        const [assetConversions, liabilityConversions] = await Promise.all([
+          convertMultipleCurrencies(
+            userId,
+            monthData.assets,
+            baseCurrency.code,
+            monthEnd
+          ),
+          convertMultipleCurrencies(
+            userId,
+            monthData.liabilities,
+            baseCurrency.code,
+            monthEnd
+          ),
+        ])
+
+        // 计算总资产
+        const totalAssets = assetConversions.reduce((sum, result) => {
+          if (result.success) {
+            return sum + result.convertedAmount
+          } else if (result.originalCurrency === baseCurrency.code) {
+            return sum + result.originalAmount
+          }
+          return sum
+        }, 0)
+
+        // 计算总负债
+        const totalLiabilities = liabilityConversions.reduce((sum, result) => {
+          if (result.success) {
+            return sum + result.convertedAmount
+          } else if (result.originalCurrency === baseCurrency.code) {
+            return sum + result.originalAmount
+          }
+          return sum
+        }, 0)
+
+        const netWorth = totalAssets - totalLiabilities
+        const hasConversionErrors =
+          assetConversions.some(r => !r.success) ||
+          liabilityConversions.some(r => !r.success)
+
+        results.push({
+          month: monthLabel,
+          monthName,
+          netWorth,
+          totalAssets,
+          totalLiabilities,
+          hasConversionErrors,
+        })
+      } catch (error) {
+        console.error(`计算月份 ${monthLabel} 净资产时出错:`, error)
+        results.push({
+          month: monthLabel,
+          monthName,
+          netWorth: 0,
+          totalAssets: 0,
+          totalLiabilities: 0,
+          hasConversionErrors: true,
+        })
+      }
+    }
+  } catch (error) {
+    console.error('批量获取净资产数据失败:', error)
+    // 如果批量查询失败，返回空数据而不是抛出错误
+    return monthsList.map(date => ({
+      month: format(date, 'yyyy-MM'),
+      monthName: format(date, 'yyyy年MM月'),
+      netWorth: 0,
+      totalAssets: 0,
+      totalLiabilities: 0,
+      hasConversionErrors: true,
+    }))
+  }
+
+  return results
 }
 
 /**
@@ -311,6 +488,174 @@ export async function calculateMonthlyCashFlowData(
 }
 
 /**
+ * 优化版本：批量获取多个月份的现金流数据
+ * 使用数据库聚合查询替代内存计算
+ */
+export async function getOptimizedMonthlyCashFlowData(
+  userId: string,
+  monthsList: Date[],
+  baseCurrency: DashboardCurrency
+): Promise<
+  Array<{
+    month: string
+    monthName: string
+    monthlyIncome: number
+    monthlyExpense: number
+    netCashFlow: number
+    hasConversionErrors: boolean
+  }>
+> {
+  if (monthsList.length === 0) {
+    return []
+  }
+
+  const results: Array<{
+    month: string
+    monthName: string
+    monthlyIncome: number
+    monthlyExpense: number
+    netCashFlow: number
+    hasConversionErrors: boolean
+  }> = []
+
+  try {
+    // 计算日期范围
+    const startDate = monthsList[0]
+    const endDate = endOfMonth(monthsList[monthsList.length - 1])
+
+    // 使用新的批量查询函数，一次性获取所有月份的现金流数据
+    const cashFlowData = await getDashboardCashFlow(userId, startDate, endDate)
+
+    // 按月份分组数据
+    const monthlyDataMap = new Map<
+      string,
+      {
+        income: Array<{ amount: number; currency: string }>
+        expense: Array<{ amount: number; currency: string }>
+      }
+    >()
+
+    // 初始化所有月份的数据结构
+    monthsList.forEach(date => {
+      const monthKey = format(date, 'yyyy-MM')
+      monthlyDataMap.set(monthKey, { income: [], expense: [] })
+    })
+
+    // 填充数据
+    cashFlowData.forEach(row => {
+      const monthData = monthlyDataMap.get(row.month)
+      if (monthData) {
+        if (row.categoryType === 'INCOME') {
+          monthData.income.push({
+            amount: row.totalAmount,
+            currency: row.currencyCode,
+          })
+        } else if (row.categoryType === 'EXPENSE') {
+          monthData.expense.push({
+            amount: row.totalAmount,
+            currency: row.currencyCode,
+          })
+        }
+      }
+    })
+
+    // 批量处理货币转换
+    for (const targetDate of monthsList) {
+      const monthEnd = endOfMonth(targetDate)
+      const monthLabel = format(targetDate, 'yyyy-MM')
+      const monthName = format(targetDate, 'yyyy年MM月')
+      const monthData = monthlyDataMap.get(monthLabel)
+
+      if (!monthData) {
+        results.push({
+          month: monthLabel,
+          monthName,
+          monthlyIncome: 0,
+          monthlyExpense: 0,
+          netCashFlow: 0,
+          hasConversionErrors: false,
+        })
+        continue
+      }
+
+      try {
+        // 批量货币转换
+        const [incomeConversions, expenseConversions] = await Promise.all([
+          convertMultipleCurrencies(
+            userId,
+            monthData.income,
+            baseCurrency.code,
+            monthEnd
+          ),
+          convertMultipleCurrencies(
+            userId,
+            monthData.expense,
+            baseCurrency.code,
+            monthEnd
+          ),
+        ])
+
+        // 计算本位币金额
+        const monthlyIncome = incomeConversions.reduce((sum, result) => {
+          if (result.success) {
+            return sum + result.convertedAmount
+          } else if (result.originalCurrency === baseCurrency.code) {
+            return sum + result.originalAmount
+          }
+          return sum
+        }, 0)
+
+        const monthlyExpense = expenseConversions.reduce((sum, result) => {
+          if (result.success) {
+            return sum + result.convertedAmount
+          } else if (result.originalCurrency === baseCurrency.code) {
+            return sum + result.originalAmount
+          }
+          return sum
+        }, 0)
+
+        const netCashFlow = monthlyIncome - monthlyExpense
+        const hasConversionErrors =
+          incomeConversions.some(r => !r.success) ||
+          expenseConversions.some(r => !r.success)
+
+        results.push({
+          month: monthLabel,
+          monthName,
+          monthlyIncome,
+          monthlyExpense,
+          netCashFlow,
+          hasConversionErrors,
+        })
+      } catch (error) {
+        console.error(`计算月份 ${monthLabel} 现金流时出错:`, error)
+        results.push({
+          month: monthLabel,
+          monthName,
+          monthlyIncome: 0,
+          monthlyExpense: 0,
+          netCashFlow: 0,
+          hasConversionErrors: true,
+        })
+      }
+    }
+  } catch (error) {
+    console.error('批量获取现金流数据失败:', error)
+    // 如果批量查询失败，返回空数据而不是抛出错误
+    return monthsList.map(date => ({
+      month: format(date, 'yyyy-MM'),
+      monthName: format(date, 'yyyy年MM月'),
+      monthlyIncome: 0,
+      monthlyExpense: 0,
+      netCashFlow: 0,
+      hasConversionErrors: true,
+    }))
+  }
+
+  return results
+}
+
+/**
  * 生成月份列表
  */
 export function generateMonthsList(
@@ -328,7 +673,10 @@ export function generateMonthsList(
   const now = new Date()
 
   for (let i = months - 1; i >= 0; i--) {
-    monthsList.push(subMonths(now, i))
+    // 修复：生成每个月的第一天，而不是保持当前日期
+    const monthDate = subMonths(now, i)
+    const firstDayOfMonth = startOfMonth(monthDate)
+    monthsList.push(firstDayOfMonth)
   }
 
   return monthsList

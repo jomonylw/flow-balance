@@ -194,22 +194,18 @@ export default function CashFlowCard() {
             (child.totalInBaseCurrency || 0)
         })
 
-        // 确保每个分类都有本币汇总金额（如果还没有的话）
-        if (
-          category.totalInBaseCurrency === undefined ||
-          category.totalInBaseCurrency === 0
-        ) {
-          // 如果没有子分类的汇总，则计算自己账户的本币汇总
-          if (category.accounts.length > 0) {
-            category.totalInBaseCurrency = category.accounts.reduce(
-              (sum, account) => {
-                return sum + (account.totalAmountInBaseCurrency || 0)
-              },
-              0
-            )
-          } else {
-            category.totalInBaseCurrency = 0
-          }
+        // 计算自己账户的本币汇总并加到总计中
+        if (category.accounts.length > 0) {
+          const ownAccountsTotal = category.accounts.reduce((sum, account) => {
+            return sum + (account.totalAmountInBaseCurrency || 0)
+          }, 0)
+          // console.log(`🔍 分类 ${category.name}: 子分类汇总=${category.totalInBaseCurrency || 0}, 自己账户汇总=${ownAccountsTotal}`)
+          category.totalInBaseCurrency =
+            (category.totalInBaseCurrency || 0) + ownAccountsTotal
+          // console.log(`✅ 分类 ${category.name}: 最终汇总=${category.totalInBaseCurrency}`)
+        } else if (category.totalInBaseCurrency === undefined) {
+          // 如果没有账户也没有子分类汇总，则设为0
+          category.totalInBaseCurrency = 0
         }
       }
 
@@ -1022,50 +1018,66 @@ export default function CashFlowCard() {
                   {t('reports.cash.flow.total.income')}
                 </span>
                 <div className='font-semibold'>
-                  {Object.entries(data.summary.currencyTotals)
-                    .filter(
-                      ([, currencyTotal]) => currencyTotal.totalIncome > 0
-                    )
-                    .map(([currencyCode, currencyTotal]) => {
-                      // 计算该币种的收入本币折算金额
-                      const incomeBaseCurrencyAmount = Object.values(
-                        data.cashFlow.income.categories
-                      )
-                        .flatMap(category => category.accounts)
-                        .filter(
-                          account => account.currency.code === currencyCode
-                        )
-                        .reduce(
-                          (sum, account) =>
-                            sum + (account.totalAmountInBaseCurrency || 0),
-                          0
-                        )
+                  {(() => {
+                    // 获取收入账户中实际存在的货币汇总
+                    const incomeCurrencyTotals: Record<
+                      string,
+                      {
+                        total: number
+                        currency: any
+                        baseCurrencyAmount: number
+                      }
+                    > = {}
 
-                      return (
-                        <div
-                          key={currencyCode}
-                          className='text-green-600 dark:text-green-400'
-                        >
-                          <div>
-                            +
-                            {formatCurrencyWithSymbol(
-                              currencyTotal.totalIncome,
-                              currencyTotal.currency
-                            )}
-                          </div>
-                          {currencyCode !== data.baseCurrency.code &&
-                            incomeBaseCurrencyAmount > 0 && (
+                    Object.values(data.cashFlow.income.categories).forEach(
+                      (category: any) => {
+                        category.accounts.forEach((account: any) => {
+                          const currencyCode = account.currency.code
+                          if (!incomeCurrencyTotals[currencyCode]) {
+                            incomeCurrencyTotals[currencyCode] = {
+                              total: 0,
+                              currency: account.currency,
+                              baseCurrencyAmount: 0,
+                            }
+                          }
+                          incomeCurrencyTotals[currencyCode].total +=
+                            account.totalAmount
+                          incomeCurrencyTotals[
+                            currencyCode
+                          ].baseCurrencyAmount +=
+                            account.totalAmountInBaseCurrency || 0
+                        })
+                      }
+                    )
+
+                    return Object.entries(incomeCurrencyTotals).map(
+                      ([currencyCode, currencyData]) => {
+                        return (
+                          <div
+                            key={currencyCode}
+                            className='text-green-600 dark:text-green-400'
+                          >
+                            <div>
+                              +
+                              {formatCurrencyWithSymbol(
+                                currencyData.total,
+                                currencyData.currency
+                              )}
+                            </div>
+                            {currencyCode !== data.baseCurrency.code && (
                               <div className='text-xs text-gray-400'>
                                 ≈ +
                                 {formatCurrencyById(
-                                  Math.abs(incomeBaseCurrencyAmount),
+                                  Math.abs(currencyData.baseCurrencyAmount),
                                   data.baseCurrency.id
                                 )}
                               </div>
                             )}
-                        </div>
-                      )
-                    })}
+                          </div>
+                        )
+                      }
+                    )
+                  })()}
                 </div>
               </div>
               <div>
@@ -1073,50 +1085,66 @@ export default function CashFlowCard() {
                   {t('reports.cash.flow.total.expense')}
                 </span>
                 <div className='font-semibold'>
-                  {Object.entries(data.summary.currencyTotals)
-                    .filter(
-                      ([, currencyTotal]) => currencyTotal.totalExpense > 0
-                    )
-                    .map(([currencyCode, currencyTotal]) => {
-                      // 计算该币种的支出本币折算金额
-                      const expenseBaseCurrencyAmount = Object.values(
-                        data.cashFlow.expense.categories
-                      )
-                        .flatMap(category => category.accounts)
-                        .filter(
-                          account => account.currency.code === currencyCode
-                        )
-                        .reduce(
-                          (sum, account) =>
-                            sum + (account.totalAmountInBaseCurrency || 0),
-                          0
-                        )
+                  {(() => {
+                    // 获取支出账户中实际存在的货币汇总
+                    const expenseCurrencyTotals: Record<
+                      string,
+                      {
+                        total: number
+                        currency: any
+                        baseCurrencyAmount: number
+                      }
+                    > = {}
 
-                      return (
-                        <div
-                          key={currencyCode}
-                          className='text-red-600 dark:text-red-400'
-                        >
-                          <div>
-                            -
-                            {formatCurrencyWithSymbol(
-                              currencyTotal.totalExpense,
-                              currencyTotal.currency
-                            )}
-                          </div>
-                          {currencyCode !== data.baseCurrency.code &&
-                            expenseBaseCurrencyAmount > 0 && (
+                    Object.values(data.cashFlow.expense.categories).forEach(
+                      (category: any) => {
+                        category.accounts.forEach((account: any) => {
+                          const currencyCode = account.currency.code
+                          if (!expenseCurrencyTotals[currencyCode]) {
+                            expenseCurrencyTotals[currencyCode] = {
+                              total: 0,
+                              currency: account.currency,
+                              baseCurrencyAmount: 0,
+                            }
+                          }
+                          expenseCurrencyTotals[currencyCode].total +=
+                            account.totalAmount
+                          expenseCurrencyTotals[
+                            currencyCode
+                          ].baseCurrencyAmount +=
+                            account.totalAmountInBaseCurrency || 0
+                        })
+                      }
+                    )
+
+                    return Object.entries(expenseCurrencyTotals).map(
+                      ([currencyCode, currencyData]) => {
+                        return (
+                          <div
+                            key={currencyCode}
+                            className='text-red-600 dark:text-red-400'
+                          >
+                            <div>
+                              -
+                              {formatCurrencyWithSymbol(
+                                currencyData.total,
+                                currencyData.currency
+                              )}
+                            </div>
+                            {currencyCode !== data.baseCurrency.code && (
                               <div className='text-xs text-gray-400'>
                                 ≈ -
                                 {formatCurrencyById(
-                                  Math.abs(expenseBaseCurrencyAmount),
+                                  Math.abs(currencyData.baseCurrencyAmount),
                                   data.baseCurrency.id
                                 )}
                               </div>
                             )}
-                        </div>
-                      )
-                    })}
+                          </div>
+                        )
+                      }
+                    )
+                  })()}
                 </div>
               </div>
               <div>
@@ -1124,67 +1152,113 @@ export default function CashFlowCard() {
                   {t('reports.cash.flow.net.summary')}
                 </span>
                 <div className='font-semibold'>
-                  {Object.entries(data.summary.currencyTotals)
-                    .filter(
-                      ([, currencyTotal]) =>
-                        Math.abs(currencyTotal.netCashFlow) > 0.01
+                  {(() => {
+                    // 获取所有账户中实际存在的货币汇总（收入+支出）
+                    const netCurrencyTotals: Record<
+                      string,
+                      {
+                        incomeTotal: number
+                        expenseTotal: number
+                        netTotal: number
+                        currency: any
+                        incomeBaseCurrencyAmount: number
+                        expenseBaseCurrencyAmount: number
+                        netBaseCurrencyAmount: number
+                      }
+                    > = {}
+
+                    // 收集收入数据
+                    Object.values(data.cashFlow.income.categories).forEach(
+                      (category: any) => {
+                        category.accounts.forEach((account: any) => {
+                          const currencyCode = account.currency.code
+                          if (!netCurrencyTotals[currencyCode]) {
+                            netCurrencyTotals[currencyCode] = {
+                              incomeTotal: 0,
+                              expenseTotal: 0,
+                              netTotal: 0,
+                              currency: account.currency,
+                              incomeBaseCurrencyAmount: 0,
+                              expenseBaseCurrencyAmount: 0,
+                              netBaseCurrencyAmount: 0,
+                            }
+                          }
+                          netCurrencyTotals[currencyCode].incomeTotal +=
+                            account.totalAmount
+                          netCurrencyTotals[
+                            currencyCode
+                          ].incomeBaseCurrencyAmount +=
+                            account.totalAmountInBaseCurrency || 0
+                        })
+                      }
                     )
-                    .map(([currencyCode, currencyTotal]) => {
-                      // 计算该币种的净现金流本币折算金额
-                      const incomeBaseCurrencyAmount = Object.values(
-                        data.cashFlow.income.categories
-                      )
-                        .flatMap(category => category.accounts)
-                        .filter(
-                          account => account.currency.code === currencyCode
-                        )
-                        .reduce(
-                          (sum, account) =>
-                            sum + (account.totalAmountInBaseCurrency || 0),
-                          0
-                        )
 
-                      const expenseBaseCurrencyAmount = Object.values(
-                        data.cashFlow.expense.categories
-                      )
-                        .flatMap(category => category.accounts)
-                        .filter(
-                          account => account.currency.code === currencyCode
-                        )
-                        .reduce(
-                          (sum, account) =>
-                            sum + (account.totalAmountInBaseCurrency || 0),
-                          0
-                        )
+                    // 收集支出数据
+                    Object.values(data.cashFlow.expense.categories).forEach(
+                      (category: any) => {
+                        category.accounts.forEach((account: any) => {
+                          const currencyCode = account.currency.code
+                          if (!netCurrencyTotals[currencyCode]) {
+                            netCurrencyTotals[currencyCode] = {
+                              incomeTotal: 0,
+                              expenseTotal: 0,
+                              netTotal: 0,
+                              currency: account.currency,
+                              incomeBaseCurrencyAmount: 0,
+                              expenseBaseCurrencyAmount: 0,
+                              netBaseCurrencyAmount: 0,
+                            }
+                          }
+                          netCurrencyTotals[currencyCode].expenseTotal +=
+                            account.totalAmount
+                          netCurrencyTotals[
+                            currencyCode
+                          ].expenseBaseCurrencyAmount +=
+                            account.totalAmountInBaseCurrency || 0
+                        })
+                      }
+                    )
 
-                      const netBaseCurrencyAmount =
-                        incomeBaseCurrencyAmount - expenseBaseCurrencyAmount
+                    // 计算净值
+                    Object.keys(netCurrencyTotals).forEach(currencyCode => {
+                      const data = netCurrencyTotals[currencyCode]
+                      data.netTotal = data.incomeTotal - data.expenseTotal
+                      data.netBaseCurrencyAmount =
+                        data.incomeBaseCurrencyAmount -
+                        data.expenseBaseCurrencyAmount
+                    })
 
-                      return (
-                        <div
-                          key={currencyCode}
-                          className='text-purple-600 dark:text-purple-400'
-                        >
-                          <div>
-                            {currencyTotal.netCashFlow >= 0 ? '+' : ''}
-                            {formatCurrencyWithSymbol(
-                              currencyTotal.netCashFlow,
-                              currencyTotal.currency
-                            )}
-                          </div>
-                          {currencyCode !== data.baseCurrency.code &&
-                            Math.abs(netBaseCurrencyAmount) > 0.01 && (
+                    return Object.entries(netCurrencyTotals).map(
+                      ([currencyCode, currencyData]) => {
+                        return (
+                          <div
+                            key={currencyCode}
+                            className='text-purple-600 dark:text-purple-400'
+                          >
+                            <div>
+                              {currencyData.netTotal >= 0 ? '+' : ''}
+                              {formatCurrencyWithSymbol(
+                                currencyData.netTotal,
+                                currencyData.currency
+                              )}
+                            </div>
+                            {currencyCode !== data.baseCurrency.code && (
                               <div className='text-xs text-gray-400'>
-                                ≈ {netBaseCurrencyAmount >= 0 ? '+' : '-'}
+                                ≈{' '}
+                                {currencyData.netBaseCurrencyAmount >= 0
+                                  ? '+'
+                                  : '-'}
                                 {formatCurrencyById(
-                                  Math.abs(netBaseCurrencyAmount),
+                                  Math.abs(currencyData.netBaseCurrencyAmount),
                                   data.baseCurrency.id
                                 )}
                               </div>
                             )}
-                        </div>
-                      )
-                    })}
+                          </div>
+                        )
+                      }
+                    )
+                  })()}
                 </div>
               </div>
             </div>

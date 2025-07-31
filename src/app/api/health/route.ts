@@ -4,14 +4,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/database/connection-manager'
+// import { prisma } from '@/lib/database/connection-manager'
+import { testDatabaseConnection } from '@/lib/database/raw-queries'
 
 export async function GET(_request: NextRequest) {
   const startTime = Date.now()
 
   try {
     // 检查数据库连接
-    await prisma.$queryRaw`SELECT 1`
+    const connectionResult = await testDatabaseConnection()
+
+    if (!connectionResult.connected) {
+      throw new Error(connectionResult.error || 'Database connection failed')
+    }
 
     // 返回健康状态
     return NextResponse.json(
@@ -64,7 +69,11 @@ export async function GET(_request: NextRequest) {
 // 支持 HEAD 请求用于简单的健康检查
 export async function HEAD(_request: NextRequest) {
   try {
-    await prisma.$queryRaw`SELECT 1`
+    const connectionResult = await testDatabaseConnection()
+
+    if (!connectionResult.connected) {
+      throw new Error(connectionResult.error || 'Database connection failed')
+    }
     return new NextResponse(null, {
       status: 200,
       headers: {

@@ -386,10 +386,10 @@ export class FutureDataGenerationService {
     const recurringResult =
       await this.generateFutureRecurringTransactions(userId)
 
-    // 重新生成贷款还款数据
+    // 重新生成贷款还款数据（使用批量处理方法）
     const { LoanContractService } = await import('./loan-contract.service')
     const loanResult =
-      await LoanContractService.processLoanPaymentsBySchedule(userId)
+      await LoanContractService.processBatchLoanPayments(userId)
 
     return {
       cleaned,

@@ -7,24 +7,17 @@ import {
   errorResponse,
   unauthorizedResponse,
 } from '@/lib/api/response'
-// import { getUserTranslator } from '@/lib/utils/server-i18n'
-import { calculateAccountBalance } from '@/lib/services/account.service'
+import { getAccountBalanceDetails } from '@/lib/services/dashboard-query.service'
 import {
   convertMultipleCurrencies,
   type ConversionResult,
 } from '@/lib/services/currency.service'
-import type { Prisma } from '@prisma/client'
-import { AccountType, TransactionType } from '@/types/core/constants'
-import { normalizeEndOfDay, normalizeStartOfDay } from '@/lib/utils/date-range'
+import { normalizeEndOfDay } from '@/lib/utils/date-range'
 
-// 这个函数已经不需要了，因为我们现在使用统一的 calculateAccountBalance 函数
-// 保留注释以便理解之前的逻辑
-// function calculateCurrentMonthFlow(account: AccountWithTransactions): Record<string, number> {
-//   // 之前的逻辑：计算当前月份的流量汇总
-//   // 现在由 calculateAccountBalance 统一处理
-// }
-
-// 批量获取所有账户余额
+/**
+ * 批量获取所有账户余额 - 高效版本
+ * 使用数据库聚合查询替代内存计算，大幅提升性能
+ */
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
@@ -50,36 +43,28 @@ export async function GET(request: NextRequest) {
       name: 'Chinese Yuan',
     }
 
-    // 构建查询条件
-    const whereCondition: Prisma.AccountWhereInput = {
-      userId: user.id,
-    }
+    // 获取当前日期，确保不包含未来的交易记录
+    const now = new Date()
+    const nowEndOfDay = normalizeEndOfDay(now)
 
-    // 如果指定了账户ID，则只获取这些账户
+    // 使用高效的数据库聚合查询获取账户余额详情
+    // 对于流量账户，默认获取当前月份的数据
+    const daysSinceMonthStart = now.getDate()
+
+    let accountDetails = await getAccountBalanceDetails(
+      user.id,
+      nowEndOfDay,
+      daysSinceMonthStart // 使用当前月份已过天数作为期间
+    )
+
+    // 如果指定了特定账户ID，则过滤结果
     if (accountIds && accountIds.length > 0) {
-      whereCondition.id = {
-        in: accountIds,
-      }
+      accountDetails = accountDetails.filter(account =>
+        accountIds.includes(account.id)
+      )
     }
 
-    // 获取所有账户及其交易数据
-    const accounts = await prisma.account.findMany({
-      where: whereCondition,
-      include: {
-        category: true,
-        transactions: {
-          include: {
-            currency: true,
-          },
-          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
-        },
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    })
-
-    // 批量计算所有账户余额
+    // 构建响应数据结构
     const accountBalances: Record<
       string,
       {
@@ -105,75 +90,36 @@ export async function GET(request: NextRequest) {
     // 准备货币转换数据
     const amountsToConvert: Array<{ amount: number; currency: string }> = []
 
-    for (const account of accounts) {
-      const accountType = account.category?.type || 'ASSET'
+    // 获取所有需要的货币信息
+    const currencyCodes = new Set<string>()
+    accountDetails.forEach(account => {
+      Object.keys(account.balances).forEach(currencyCode => {
+        currencyCodes.add(currencyCode)
+      })
+    })
 
-      // 序列化账户数据，将 Decimal 转换为 number
-      const serializedAccount = {
-        ...account,
-        category: account.category
-          ? {
-              id: account.category.id,
-              name: account.category.name,
-              type: account.category.type as AccountType | undefined,
-            }
-          : {
-              id: 'unknown',
-              name: 'Unknown',
-              type: undefined,
-            },
-        transactions: account.transactions.map(transaction => ({
-          id: transaction.id,
-          type: transaction.type as TransactionType,
-          amount: parseFloat(transaction.amount.toString()),
-          date: transaction.date.toISOString(),
-          description: transaction.description,
-          notes: transaction.notes,
-          currency: {
-            code: transaction.currency.code,
-            symbol: transaction.currency.symbol,
-            name: transaction.currency.name,
-          },
-        })),
-      }
+    // 批量获取货币信息
+    const currencies = await prisma.currency.findMany({
+      where: {
+        code: {
+          in: Array.from(currencyCodes),
+        },
+      },
+    })
 
-      let balances: Record<
-        string,
+    const currencyMap = new Map(
+      currencies.map(currency => [
+        currency.code,
         {
-          amount: number
-          currency: { code: string; symbol: string; name: string }
-        }
-      > = {}
+          code: currency.code,
+          symbol: currency.symbol,
+          name: currency.name,
+        },
+      ])
+    )
 
-      // 获取当前日期，确保不包含未来的交易记录
-      const now = new Date()
-      const nowEndOfDay = normalizeEndOfDay(now)
-
-      if (accountType === 'ASSET' || accountType === 'LIABILITY') {
-        // 存量账户：获取最新余额（截止到当前日期）
-        balances = calculateAccountBalance(serializedAccount, {
-          asOfDate: nowEndOfDay,
-        })
-      } else {
-        // 流量账户：计算当前月份的流量汇总
-        // 使用期间计算，默认为当前月份，但不超过当前日期
-        const periodStart = normalizeStartOfDay(
-          new Date(now.getFullYear(), now.getMonth(), 1)
-        )
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-        const periodEnd = new Date(
-          Math.min(nowEndOfDay.getTime(), normalizeEndOfDay(monthEnd).getTime())
-        )
-
-        balances = calculateAccountBalance(serializedAccount, {
-          asOfDate: now, // 添加截止日期，确保不包含未来交易
-          periodStart,
-          periodEnd,
-          usePeriodCalculation: true,
-        })
-      }
-
-      // 转换为API响应格式
+    // 处理账户数据
+    for (const account of accountDetails) {
       const balancesForResponse: Record<
         string,
         {
@@ -186,16 +132,22 @@ export async function GET(request: NextRequest) {
         }
       > = {}
 
-      Object.entries(balances).forEach(([currencyCode, balanceData]) => {
+      Object.entries(account.balances).forEach(([currencyCode, amount]) => {
+        const currency = currencyMap.get(currencyCode) || {
+          code: currencyCode,
+          symbol: currencyCode,
+          name: currencyCode,
+        }
+
         balancesForResponse[currencyCode] = {
-          amount: balanceData.amount,
-          currency: balanceData.currency,
+          amount,
+          currency,
         }
 
         // 收集需要转换的金额
         if (currencyCode !== baseCurrency.code) {
           amountsToConvert.push({
-            amount: balanceData.amount,
+            amount,
             currency: currencyCode,
           })
         }
@@ -204,8 +156,8 @@ export async function GET(request: NextRequest) {
       accountBalances[account.id] = {
         id: account.id,
         name: account.name,
-        categoryId: account.categoryId,
-        accountType,
+        categoryId: account.category.id,
+        accountType: account.category.type,
         balances: balancesForResponse,
         balanceInBaseCurrency: 0, // 稍后计算
       }

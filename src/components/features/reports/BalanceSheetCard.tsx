@@ -965,16 +965,15 @@ export default function BalanceSheetCard() {
                           <div className='text-blue-600 dark:text-blue-400'>
                             {formatCurrencyWithCode(total, currencyCode)}
                           </div>
-                          {currencyCode !== data.baseCurrency.code &&
-                            baseCurrencyAmount > 0 && (
-                              <div className='text-xs text-gray-400'>
-                                ≈{' '}
-                                {formatCurrencyById(
-                                  Math.abs(baseCurrencyAmount),
-                                  data.baseCurrency.id
-                                )}
-                              </div>
-                            )}
+                          {currencyCode !== data.baseCurrency.code && (
+                            <div className='text-xs text-gray-400'>
+                              ≈{' '}
+                              {formatCurrencyById(
+                                Math.abs(baseCurrencyAmount),
+                                data.baseCurrency.id
+                              )}
+                            </div>
+                          )}
                         </div>
                       )
                     }
@@ -1009,16 +1008,15 @@ export default function BalanceSheetCard() {
                           <div className='text-orange-600 dark:text-orange-400'>
                             {formatCurrencyWithCode(total, currencyCode)}
                           </div>
-                          {currencyCode !== data.baseCurrency.code &&
-                            baseCurrencyAmount > 0 && (
-                              <div className='text-xs text-gray-400'>
-                                ≈{' '}
-                                {formatCurrencyById(
-                                  Math.abs(baseCurrencyAmount),
-                                  data.baseCurrency.id
-                                )}
-                              </div>
-                            )}
+                          {currencyCode !== data.baseCurrency.code && (
+                            <div className='text-xs text-gray-400'>
+                              ≈{' '}
+                              {formatCurrencyById(
+                                Math.abs(baseCurrencyAmount),
+                                data.baseCurrency.id
+                              )}
+                            </div>
+                          )}
                         </div>
                       )
                     }
@@ -1078,16 +1076,15 @@ export default function BalanceSheetCard() {
                           <div>
                             {formatCurrencyWithCode(netWorth, currencyCode)}
                           </div>
-                          {currencyCode !== data.baseCurrency.code &&
-                            Math.abs(netBaseCurrencyAmount) > 0.01 && (
-                              <div className='text-xs text-gray-400'>
-                                ≈{' '}
-                                {formatCurrencyById(
-                                  Math.abs(netBaseCurrencyAmount),
-                                  data.baseCurrency.id
-                                )}
-                              </div>
-                            )}
+                          {currencyCode !== data.baseCurrency.code && (
+                            <div className='text-xs text-gray-400'>
+                              ≈{' '}
+                              {formatCurrencyById(
+                                Math.abs(netBaseCurrencyAmount),
+                                data.baseCurrency.id
+                              )}
+                            </div>
+                          )}
                         </div>
                       )
                     }

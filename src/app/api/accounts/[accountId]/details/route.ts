@@ -8,6 +8,7 @@ import {
   unauthorizedResponse,
   notFoundResponse,
 } from '@/lib/api/response'
+import { getAccountBalanceHistory } from '@/lib/database/raw-queries'
 
 export async function GET(
   request: NextRequest,
@@ -20,7 +21,7 @@ export async function GET(
       return unauthorizedResponse()
     }
 
-    // 获取账户详情
+    // 获取账户基本信息（不包含交易数据）
     const account = await prisma.account.findFirst({
       where: {
         id: accountId,
@@ -28,12 +29,7 @@ export async function GET(
       },
       include: {
         category: true,
-        transactions: {
-          include: {
-            currency: true,
-          },
-          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
-        },
+        currency: true,
       },
     })
 
@@ -41,91 +37,43 @@ export async function GET(
       return notFoundResponse(getAccountError('NOT_FOUND'))
     }
 
-    // 计算账户余额（按币种分组）
-    const balances: Record<
-      string,
-      {
-        amount: number
+    // 使用优化的数据库聚合查询获取账户统计和余额
+    const [balances, transactionStats, monthlyStats, recentTransactions] =
+      await Promise.all([
+        (async () => {
+          const balanceResults = await getAccountBalanceHistory(
+            accountId,
+            user.id
+          )
+          const balances: Record<string, { amount: number; currency: any }> = {}
+          balanceResults.forEach(result => {
+            balances[result.currencyCode] = {
+              amount: result.finalBalance,
+              currency: {
+                code: result.currencyCode,
+                symbol: result.currencySymbol,
+                name: result.currencyName,
+              },
+            }
+          })
+          return balances
+        })(),
+        getOptimizedTransactionStats(accountId, user.id),
+        getOptimizedMonthlyStats(accountId, user.id),
+        getRecentTransactions(accountId, user.id, 5),
+      ])
+
+    // 如果账户没有余额记录，使用账户的默认货币创建0余额记录
+    if (Object.keys(balances).length === 0 && account.currency) {
+      balances[account.currency.code] = {
+        amount: 0,
         currency: {
-          code: string
-          symbol: string
-          name: string
-        }
+          code: account.currency.code,
+          symbol: account.currency.symbol,
+          name: account.currency.name,
+        },
       }
-    > = {}
-
-    account.transactions.forEach(transaction => {
-      const currencyCode = transaction.currency.code
-      if (!balances[currencyCode]) {
-        balances[currencyCode] = {
-          amount: 0,
-          currency: {
-            code: transaction.currency.code,
-            symbol: transaction.currency.symbol,
-            name: transaction.currency.name,
-          },
-        }
-      }
-
-      const amount = parseFloat(transaction.amount.toString())
-      if (transaction.type === 'INCOME') {
-        balances[currencyCode].amount += amount
-      } else if (transaction.type === 'EXPENSE') {
-        balances[currencyCode].amount -= amount
-      }
-      // 转账交易需要特殊处理，这里简化处理
-    })
-
-    // 统计交易信息
-    const transactionStats = {
-      total: account.transactions.length,
-      income: account.transactions.filter(t => t.type === 'INCOME').length,
-      expense: account.transactions.filter(t => t.type === 'EXPENSE').length,
-      balanceAdjustment: account.transactions.filter(t => t.type === 'BALANCE')
-        .length,
     }
-
-    // 按月统计交易（最近12个月）
-    const monthlyStats: Record<
-      string,
-      { income: number; expense: number; count: number }
-    > = {}
-    const now = new Date()
-
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-      monthlyStats[monthKey] = { income: 0, expense: 0, count: 0 }
-    }
-
-    account.transactions.forEach(transaction => {
-      const transactionDate = new Date(transaction.date)
-      const monthKey = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}`
-
-      if (monthlyStats[monthKey]) {
-        const amount = parseFloat(transaction.amount.toString())
-        monthlyStats[monthKey].count++
-
-        if (transaction.type === 'INCOME') {
-          monthlyStats[monthKey].income += amount
-        } else if (transaction.type === 'EXPENSE') {
-          monthlyStats[monthKey].expense += amount
-        }
-      }
-    })
-
-    // 获取最近的交易（不包含在主要交易列表中，用于快速预览）
-    const recentTransactions = account.transactions
-      .slice(0, 5)
-      .map(transaction => ({
-        id: transaction.id,
-        type: transaction.type,
-        amount: transaction.amount,
-        currency: transaction.currency,
-        description: transaction.description,
-        date: transaction.date,
-        createdAt: transaction.createdAt,
-      }))
 
     return successResponse({
       account: {
@@ -133,23 +81,193 @@ export async function GET(
         name: account.name,
         description: account.description,
         category: account.category,
+        currency: account.currency,
         createdAt: account.createdAt,
         updatedAt: account.updatedAt,
       },
       balances: Object.values(balances),
       transactionStats,
-      monthlyStats: Object.entries(monthlyStats)
-        .sort(([a], [b]) => b.localeCompare(a))
-        .slice(0, 12)
-        .map(([month, stats]) => ({
-          month,
-          ...stats,
-          net: stats.income - stats.expense,
-        })),
+      monthlyStats,
       recentTransactions,
     })
   } catch (error) {
     console.error('Get account details error:', error)
     return errorResponse(getAccountError('GET_DETAILS_FAILED'), 500)
   }
+}
+
+/**
+ * 优化的交易统计函数
+ */
+async function getOptimizedTransactionStats(
+  accountId: string,
+  userId: string
+): Promise<{
+  total: number
+  income: number
+  expense: number
+  balanceAdjustment: number
+}> {
+  const stats = await prisma.$queryRaw<
+    Array<{
+      transaction_type: string
+      count: number
+    }>
+  >`
+    SELECT
+      t.type as transaction_type,
+      COUNT(*) as count
+    FROM transactions t
+    WHERE t."accountId" = ${accountId}
+      AND t."userId" = ${userId}
+    GROUP BY t.type
+  `
+
+  const result = {
+    total: 0,
+    income: 0,
+    expense: 0,
+    balanceAdjustment: 0,
+  }
+
+  stats.forEach(stat => {
+    const count = Number(stat.count)
+    result.total += count
+
+    switch (stat.transaction_type) {
+      case 'INCOME':
+        result.income = count
+        break
+      case 'EXPENSE':
+        result.expense = count
+        break
+      case 'BALANCE':
+        result.balanceAdjustment = count
+        break
+    }
+  })
+
+  return result
+}
+
+/**
+ * 优化的月度统计函数
+ */
+async function getOptimizedMonthlyStats(
+  accountId: string,
+  userId: string
+): Promise<
+  Array<{
+    month: string
+    income: number
+    expense: number
+    count: number
+    net: number
+  }>
+> {
+  // 获取最近12个月的数据
+  const now = new Date()
+  const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+
+  const monthlyData = await prisma.$queryRaw<
+    Array<{
+      month: string
+      transaction_type: string
+      total_amount: number
+      count: number
+    }>
+  >`
+    SELECT
+      to_char(t.date, 'YYYY-MM') as month,
+      t.type as transaction_type,
+      SUM(t.amount) as total_amount,
+      COUNT(*) as count
+    FROM transactions t
+    WHERE t."accountId" = ${accountId}
+      AND t."userId" = ${userId}
+      AND t.date >= ${twelveMonthsAgo}
+      AND t.type IN ('INCOME', 'EXPENSE')
+    GROUP BY month, t.type
+    ORDER BY month DESC
+  `
+
+  // 初始化最近12个月的数据结构
+  const monthlyStats: Record<
+    string,
+    { income: number; expense: number; count: number }
+  > = {}
+
+  for (let i = 0; i < 12; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    monthlyStats[monthKey] = { income: 0, expense: 0, count: 0 }
+  }
+
+  // 填充实际数据
+  monthlyData.forEach(row => {
+    const month = row.month
+    const amount = parseFloat(row.total_amount.toString())
+    const count = Number(row.count)
+
+    if (monthlyStats[month]) {
+      monthlyStats[month].count += count
+
+      if (row.transaction_type === 'INCOME') {
+        monthlyStats[month].income = amount
+      } else if (row.transaction_type === 'EXPENSE') {
+        monthlyStats[month].expense = amount
+      }
+    }
+  })
+
+  // 转换为数组格式并计算净值
+  return Object.entries(monthlyStats)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .slice(0, 12)
+    .map(([month, stats]) => ({
+      month,
+      ...stats,
+      net: stats.income - stats.expense,
+    }))
+}
+
+/**
+ * 获取最近的交易记录
+ */
+async function getRecentTransactions(
+  accountId: string,
+  userId: string,
+  limit: number = 5
+): Promise<
+  Array<{
+    id: string
+    type: string
+    amount: any
+    currency: any
+    description: string
+    date: Date
+    createdAt: Date
+  }>
+> {
+  const transactions = await prisma.transaction.findMany({
+    where: {
+      accountId,
+      userId,
+    },
+    include: {
+      currency: true,
+    },
+    orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+    take: limit,
+  })
+
+  return transactions.map(transaction => ({
+    id: transaction.id,
+    type: transaction.type,
+    amount: transaction.amount,
+    currency: transaction.currency,
+    description: transaction.description,
+    date: transaction.date,
+    createdAt: transaction.createdAt,
+  }))
 }

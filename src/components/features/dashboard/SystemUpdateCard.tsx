@@ -14,14 +14,29 @@ import LoadingSpinner, {
 export default function SystemUpdateCard() {
   const { t } = useLanguage()
   const { resolvedTheme: _resolvedTheme } = useTheme()
-  const { syncStatus, triggerSync, userSettings } = useUserData()
+  const {
+    syncStatus,
+    triggerSync,
+    refreshSyncStatus: _refreshSyncStatus,
+    forceStopSync,
+    userSettings,
+  } = useUserData()
   const { showSuccess, showError } = useToast()
   const [isManualSyncing, setIsManualSyncing] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   const previousSyncStatusRef = useRef(syncStatus)
 
   // 检查是否启用了汇率自动更新
   const isExchangeRateAutoUpdateEnabled =
     userSettings?.autoUpdateExchangeRates || false
+
+  // 检查是否存在状态不一致（真正的卡住状态）
+  // 条件：同步状态为processing，存在stages数据，且所有阶段都完成但没有任何阶段在处理中
+  const isStatusInconsistent =
+    syncStatus.status === 'processing' &&
+    syncStatus.stages &&
+    Object.values(syncStatus.stages).every(s => s.stage === 'completed') &&
+    !Object.values(syncStatus.stages).some(s => s.stage === 'processing')
 
   // 监听同步状态变化，当同步完成且有更新时触发refreshBalances
   useEffect(() => {
@@ -165,6 +180,91 @@ export default function SystemUpdateCard() {
     }
   }
 
+  const handleForceReset = async () => {
+    if (isResetting) return
+
+    setIsResetting(true)
+    try {
+      const response = await fetch('/api/sync/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        showSuccess(t('sync.force.reset.success'))
+
+        // 立即停止所有轮询并设置为待机状态
+        forceStopSync()
+
+        // 发布系统更新事件，触发相关组件数据刷新
+        await publishSystemUpdate({
+          type: 'force-reset',
+          resetData: result.data,
+        })
+      } else {
+        showError(result.error || t('sync.force.reset.failed'))
+      }
+    } catch (error) {
+      console.error('Force reset failed:', error)
+      showError(t('sync.force.reset.failed'))
+    } finally {
+      setIsResetting(false)
+    }
+  }
+
+  // 渲染阶段状态图标的辅助函数
+  const renderStageIcon = (stage: string) => {
+    if (stage === 'completed') {
+      // 如果存在状态不一致，显示警告状态
+      if (isStatusInconsistent) {
+        return (
+          <div
+            className='w-3 h-3 rounded-full bg-yellow-500 flex items-center justify-center'
+            title='状态异常，请强制重置'
+          >
+            <svg
+              className='w-2 h-2 text-white'
+              fill='currentColor'
+              viewBox='0 0 20 20'
+            >
+              <path
+                fillRule='evenodd'
+                d='M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z'
+                clipRule='evenodd'
+              />
+            </svg>
+          </div>
+        )
+      }
+      // 正常完成状态
+      return (
+        <div className='w-3 h-3 rounded-full bg-green-500 flex items-center justify-center'>
+          <svg
+            className='w-2 h-2 text-white'
+            fill='currentColor'
+            viewBox='0 0 20 20'
+          >
+            <path
+              fillRule='evenodd'
+              d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
+              clipRule='evenodd'
+            />
+          </svg>
+        </div>
+      )
+    } else if (stage === 'processing') {
+      return <LoadingSpinner size='xs' color='primary' />
+    } else {
+      return (
+        <span className='w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600' />
+      )
+    }
+  }
+
   return (
     <div
       className={`rounded-lg border-2 p-4 mb-6 transition-all duration-200 ${getStatusBgColor(syncStatus.status)}`}
@@ -272,6 +372,36 @@ export default function SystemUpdateCard() {
               </>
             )}
           </button>
+
+          {/* 强制重置按钮 - 只在卡住时显示 */}
+          {syncStatus.status === 'processing' && (
+            <button
+              onClick={handleForceReset}
+              disabled={isResetting}
+              className='inline-flex items-center justify-center w-10 h-10 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200'
+              title={
+                isResetting ? t('common.processing') : t('sync.force.reset')
+              }
+            >
+              {isResetting ? (
+                <LoadingSpinner size='sm' color='muted' />
+              ) : (
+                <svg
+                  className='h-4 w-4'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M6 18L18 6M6 6l12 12'
+                  />
+                </svg>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -300,33 +430,9 @@ export default function SystemUpdateCard() {
             <div className='mt-2 flex items-center space-x-3 text-xs'>
               {/* 定期交易 */}
               <div className='flex items-center space-x-1'>
-                {(() => {
-                  const stage =
-                    syncStatus.stages?.recurringTransactions?.stage || 'pending'
-                  if (stage === 'completed') {
-                    return (
-                      <div className='w-3 h-3 rounded-full bg-green-500 flex items-center justify-center'>
-                        <svg
-                          className='w-2 h-2 text-white'
-                          fill='currentColor'
-                          viewBox='0 0 20 20'
-                        >
-                          <path
-                            fillRule='evenodd'
-                            d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                            clipRule='evenodd'
-                          />
-                        </svg>
-                      </div>
-                    )
-                  } else if (stage === 'processing') {
-                    return <LoadingSpinner size='xs' color='primary' />
-                  } else {
-                    return (
-                      <span className='w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600' />
-                    )
-                  }
-                })()}
+                {renderStageIcon(
+                  syncStatus.stages?.recurringTransactions?.stage || 'pending'
+                )}
                 <span className='text-gray-600 dark:text-gray-400'>
                   {t('sync.stages.recurringTransactions')}
                 </span>
@@ -334,33 +440,9 @@ export default function SystemUpdateCard() {
 
               {/* 贷款合约 */}
               <div className='flex items-center space-x-1'>
-                {(() => {
-                  const stage =
-                    syncStatus.stages?.loanContracts?.stage || 'pending'
-                  if (stage === 'completed') {
-                    return (
-                      <div className='w-3 h-3 rounded-full bg-green-500 flex items-center justify-center'>
-                        <svg
-                          className='w-2 h-2 text-white'
-                          fill='currentColor'
-                          viewBox='0 0 20 20'
-                        >
-                          <path
-                            fillRule='evenodd'
-                            d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                            clipRule='evenodd'
-                          />
-                        </svg>
-                      </div>
-                    )
-                  } else if (stage === 'processing') {
-                    return <LoadingSpinner size='xs' color='primary' />
-                  } else {
-                    return (
-                      <span className='w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600' />
-                    )
-                  }
-                })()}
+                {renderStageIcon(
+                  syncStatus.stages?.loanContracts?.stage || 'pending'
+                )}
                 <span className='text-gray-600 dark:text-gray-400'>
                   {t('sync.stages.loanContracts')}
                 </span>
@@ -369,33 +451,9 @@ export default function SystemUpdateCard() {
               {/* 汇率更新 - 只有在启用汇率自动更新时才显示 */}
               {isExchangeRateAutoUpdateEnabled && (
                 <div className='flex items-center space-x-1'>
-                  {(() => {
-                    const stage =
-                      syncStatus.stages?.exchangeRates?.stage || 'pending'
-                    if (stage === 'completed') {
-                      return (
-                        <div className='w-3 h-3 rounded-full bg-green-500 flex items-center justify-center'>
-                          <svg
-                            className='w-2 h-2 text-white'
-                            fill='currentColor'
-                            viewBox='0 0 20 20'
-                          >
-                            <path
-                              fillRule='evenodd'
-                              d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                              clipRule='evenodd'
-                            />
-                          </svg>
-                        </div>
-                      )
-                    } else if (stage === 'processing') {
-                      return <LoadingSpinner size='xs' color='primary' />
-                    } else {
-                      return (
-                        <span className='w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600' />
-                      )
-                    }
-                  })()}
+                  {renderStageIcon(
+                    syncStatus.stages?.exchangeRates?.stage || 'pending'
+                  )}
                   <span className='text-gray-600 dark:text-gray-400'>
                     {t('sync.stages.exchangeRates')}
                   </span>

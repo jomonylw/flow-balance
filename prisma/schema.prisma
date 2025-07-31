@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -161,6 +161,10 @@ model Category {
 
 
   @@unique([userId, name, parentId]) // 同一用户下同一父分类中的分类名不能重复
+
+  // 性能优化索引
+  @@index([userId, parentId])  // 用于递归查询优化（获取子分类）
+  @@index([userId, type])      // 按用户和账户类型查询分类
   @@map("categories")
 }
 
@@ -197,6 +201,9 @@ model Account {
   paymentLoanContracts LoanContract[] @relation("LoanPaymentAccount") // 作为还款账户的贷款合约
 
   @@unique([userId, name]) // 同一用户下账户名不能重复
+
+  // 性能优化索引
+  @@index([userId, categoryId])  // 按用户和分类查询账户（分析接口常用）
   @@map("accounts")
 }
 
@@ -231,6 +238,11 @@ model Transaction {
   balancePayments   LoanPayment[] @relation("BalanceTransaction")
 
   // 注意：由于Prisma不支持条件唯一约束，我们在应用层实现每天每账户只能有一笔BALANCE记录的逻辑
+
+  // 性能优化索引 - 核心查询场景
+  @@index([userId, date])     // 按用户和日期查询交易（最常用）
+  @@index([accountId, date])  // 按账户和日期查询交易（余额计算）
+  @@index([userId, type])     // 按用户和交易类型查询（报表统计）
   @@map("transactions")
 }
 

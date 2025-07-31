@@ -24,11 +24,11 @@ export async function POST() {
         user.id
       )
 
-    // 生成历史遗漏的贷款还款记录（包含历史检查和未来生成）
+    // 生成历史遗漏的贷款还款记录（使用批量处理方法）
     const { LoanContractService } = await import(
       '@/lib/services/loan-contract.service'
     )
-    const loanResult = await LoanContractService.processLoanPaymentsBySchedule(
+    const loanResult = await LoanContractService.processBatchLoanPayments(
       user.id
     )
 

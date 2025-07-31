@@ -4,30 +4,24 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/database/connection-manager'
+// import { prisma } from '@/lib/database/connection-manager'
+import {
+  testDatabaseConnection,
+  getDatabaseStats,
+} from '@/lib/database/raw-queries'
 
 export async function GET(_request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    // 执行简单查询测试
-    await prisma.$queryRaw`SELECT 1 as test`
-    const queryTime = Date.now() - startTime
+    // 使用统一查询服务测试数据库连接
+    const connectionResult = await testDatabaseConnection()
+    const queryTime = connectionResult.responseTime
 
     // 获取数据库统计信息
     let dbStats = null
     try {
-      // 尝试获取数据库统计信息（仅适用于 PostgreSQL）
-      if (process.env.DATABASE_URL?.includes('postgresql')) {
-        dbStats = await prisma.$queryRaw`
-          SELECT
-            count(*) as total_connections,
-            count(*) FILTER (WHERE state = 'active') as active_connections,
-            count(*) FILTER (WHERE state = 'idle') as idle_connections
-          FROM pg_stat_activity
-          WHERE datname = current_database()
-        `
-      }
+      dbStats = await getDatabaseStats()
     } catch (error) {
       // 忽略统计查询错误，可能是权限问题
       console.warn('Could not fetch database statistics:', error)
@@ -100,7 +94,11 @@ export async function GET(_request: NextRequest) {
 // 支持 HEAD 请求用于简单的存活检查
 export async function HEAD(_request: NextRequest) {
   try {
-    await prisma.$queryRaw`SELECT 1`
+    const connectionResult = await testDatabaseConnection()
+
+    if (!connectionResult.connected) {
+      throw new Error(connectionResult.error || 'Database connection failed')
+    }
 
     return new NextResponse(null, {
       status: 200,

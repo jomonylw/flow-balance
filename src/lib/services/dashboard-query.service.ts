@@ -2,6 +2,10 @@ import { prisma } from '@/lib/database/connection-manager'
 import { AccountType, TransactionType } from '@/types/core/constants'
 import { getDaysAgoDateRange } from '@/lib/utils/date-range'
 import {
+  getDashboardAccounts as getUnifiedDashboardAccounts,
+  getFlowAccountSummary as getUnifiedFlowAccountSummary,
+} from '@/lib/database/raw-queries'
+import {
   convertMultipleCurrencies,
   type ConversionResult,
 } from '@/lib/services/currency.service'
@@ -50,118 +54,20 @@ export async function getStockAccountBalances(
 ): Promise<StockAccountBalance[]> {
   const dateFilter = asOfDate ? asOfDate : new Date()
 
-  // 检测数据库类型以使用兼容的SQL语法
-  const isPostgreSQL =
-    process.env.DATABASE_URL?.includes('postgresql') ||
-    process.env.DATABASE_URL?.includes('postgres')
+  // 使用统一查询服务
+  const result = await getUnifiedDashboardAccounts(userId, dateFilter)
 
-  if (isPostgreSQL) {
-    // PostgreSQL 版本：使用 DISTINCT ON
-    const result = await prisma.$queryRaw<
-      Array<{
-        account_id: string
-        account_name: string
-        category_id: string
-        category_name: string
-        category_type: string
-        currency_code: string
-        currency_symbol: string
-        currency_name: string
-        balance: number
-      }>
-    >`
-      SELECT DISTINCT ON (a.id, t."currencyId")
-        a.id as account_id,
-        a.name as account_name,
-        c.id as category_id,
-        c.name as category_name,
-        c.type as category_type,
-        cur.code as currency_code,
-        cur.symbol as currency_symbol,
-        cur.name as currency_name,
-        COALESCE(t.amount, 0) as balance
-      FROM accounts a
-      INNER JOIN categories c ON a."categoryId" = c.id
-      INNER JOIN currencies cur ON a."currencyId" = cur.id
-      LEFT JOIN LATERAL (
-        SELECT amount, "currencyId"
-        FROM transactions t2
-        WHERE t2."accountId" = a.id
-          AND t2.type = 'BALANCE'
-          AND t2.date <= ${dateFilter}
-        ORDER BY t2.date DESC, t2."createdAt" DESC
-        LIMIT 1
-      ) t ON true
-      WHERE a."userId" = ${userId}
-        AND c.type IN ('ASSET', 'LIABILITY')
-      ORDER BY a.id, t."currencyId", a."createdAt"
-    `
-
-    return result.map(row => ({
-      accountId: row.account_id,
-      accountName: row.account_name,
-      categoryId: row.category_id,
-      categoryName: row.category_name,
-      categoryType: row.category_type as AccountType,
-      currencyCode: row.currency_code,
-      currencySymbol: row.currency_symbol,
-      currencyName: row.currency_name,
-      balance: Number(row.balance),
-    }))
-  } else {
-    // SQLite 版本：使用子查询
-    const result = await prisma.$queryRaw<
-      Array<{
-        account_id: string
-        account_name: string
-        category_id: string
-        category_name: string
-        category_type: string
-        currency_code: string
-        currency_symbol: string
-        currency_name: string
-        balance: number
-      }>
-    >`
-      SELECT
-        a.id as account_id,
-        a.name as account_name,
-        c.id as category_id,
-        c.name as category_name,
-        c.type as category_type,
-        cur.code as currency_code,
-        cur.symbol as currency_symbol,
-        cur.name as currency_name,
-        COALESCE(
-          (SELECT amount
-           FROM transactions t
-           WHERE t."accountId" = a.id
-             AND t.type = 'BALANCE'
-             AND t.date <= ${dateFilter}
-           ORDER BY t.date DESC, t."createdAt" DESC
-           LIMIT 1),
-          0
-        ) as balance
-      FROM accounts a
-      INNER JOIN categories c ON a."categoryId" = c.id
-      INNER JOIN currencies cur ON a."currencyId" = cur.id
-      WHERE a."userId" = ${userId}
-        AND c.type IN ('ASSET', 'LIABILITY')
-      ORDER BY a."createdAt"
-    `
-
-    return result.map(row => ({
-      accountId: row.account_id,
-      accountName: row.account_name,
-      categoryId: row.category_id,
-      categoryName: row.category_name,
-      categoryType: row.category_type as AccountType,
-      currencyCode: row.currency_code,
-      currencySymbol: row.currency_symbol,
-      currencyName: row.currency_name,
-      balance: Number(row.balance),
-    }))
-  }
+  return result.map(row => ({
+    accountId: row.accountId,
+    accountName: row.accountName,
+    categoryId: row.categoryId,
+    categoryName: row.categoryName,
+    categoryType: row.categoryType as AccountType,
+    currencyCode: row.currencyCode,
+    currencySymbol: row.currencySymbol,
+    currencyName: row.currencyName,
+    balance: row.balance,
+  }))
 }
 
 /**
@@ -172,46 +78,16 @@ export async function getFlowAccountSummary(
   userId: string,
   periodDays: number = 30
 ): Promise<FlowAccountSummary[]> {
-  const { startDate: periodStart, endDate: periodEnd } =
-    getDaysAgoDateRange(periodDays)
-
-  // 直接使用原生 SQL 查询，避免 Prisma groupBy 的限制
-  const summaryData = await prisma.$queryRaw<
-    Array<{
-      category_type: string
-      currency_code: string
-      currency_symbol: string
-      currency_name: string
-      total_amount: number
-      transaction_count: number
-    }>
-  >`
-    SELECT 
-      c.type as category_type,
-      cur.code as currency_code,
-      cur.symbol as currency_symbol,
-      cur.name as currency_name,
-      SUM(t.amount) as total_amount,
-      COUNT(t.id) as transaction_count
-    FROM transactions t
-    INNER JOIN accounts a ON t."accountId" = a.id
-    INNER JOIN categories c ON a."categoryId" = c.id
-    INNER JOIN currencies cur ON t."currencyId" = cur.id
-    WHERE t."userId" = ${userId}
-      AND t.date >= ${periodStart}
-      AND t.date <= ${periodEnd}
-      AND c.type IN ('INCOME', 'EXPENSE')
-    GROUP BY c.type, cur.code, cur.symbol, cur.name
-    ORDER BY c.type, total_amount DESC
-  `
+  // 使用统一查询服务
+  const summaryData = await getUnifiedFlowAccountSummary(userId, periodDays)
 
   return summaryData.map(row => ({
-    accountType: row.category_type as AccountType,
-    currencyCode: row.currency_code,
-    currencySymbol: row.currency_symbol,
-    currencyName: row.currency_name,
-    totalAmount: Number(row.total_amount),
-    transactionCount: Number(row.transaction_count),
+    accountType: row.categoryType as AccountType,
+    currencyCode: row.currencyCode,
+    currencySymbol: row.currencySymbol,
+    currencyName: row.currencyName,
+    totalAmount: row.totalAmount,
+    transactionCount: row.transactionCount,
   }))
 }
 

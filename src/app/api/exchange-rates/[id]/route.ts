@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/response'
 import { generateAutoExchangeRates } from '@/lib/services/exchange-rate-auto-generation.service'
 import { cleanupSpecificCurrencyPairHistory } from '@/lib/services/exchange-rate-cleanup.service'
+import { revalidateAllCurrencyAndExchangeRateCache } from '@/lib/services/cache-revalidation'
 
 /**
  * 获取单个汇率详情
@@ -164,10 +165,21 @@ export async function PUT(
           user.id,
           existingRate.fromCurrencyId,
           existingRate.toCurrencyId,
-          { clearCache: false } // 缓存会在其他地方清理
+          { clearCache: false } // 缓存会在下面统一清理
         )
       } catch (error) {
         console.warn('清理汇率历史失败:', error)
+        // 不影响主要操作，只记录错误
+      }
+
+      // 🔥 关键修复：汇率更新完成后，立即清除所有相关缓存
+      try {
+        console.log(
+          `🧹 手动汇率更新完成，清除用户 ${user.id} 的所有货币和汇率缓存`
+        )
+        revalidateAllCurrencyAndExchangeRateCache(user.id)
+      } catch (error) {
+        console.error('清除汇率缓存失败:', error)
         // 不影响主要操作，只记录错误
       }
     }
@@ -226,6 +238,17 @@ export async function DELETE(
         await generateAutoExchangeRates(user.id)
       } catch (error) {
         console.warn('自动重新生成汇率失败:', error)
+        // 不影响主要操作，只记录错误
+      }
+
+      // 🔥 关键修复：汇率删除完成后，立即清除所有相关缓存
+      try {
+        console.log(
+          `🧹 手动汇率删除完成，清除用户 ${user.id} 的所有货币和汇率缓存`
+        )
+        revalidateAllCurrencyAndExchangeRateCache(user.id)
+      } catch (error) {
+        console.error('清除汇率缓存失败:', error)
         // 不影响主要操作，只记录错误
       }
     }

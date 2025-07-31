@@ -8,10 +8,11 @@ import {
 } from '@/lib/api/response'
 // import { getUserTranslator } from '@/lib/utils/server-i18n'
 import type { Prisma } from '@prisma/client'
-import { calculateAccountBalance } from '@/lib/services/account.service'
-import { AccountType, TransactionType } from '@/types/core/constants'
 import { getMonthsAgoDateRange } from '@/lib/utils/date-range'
+import { AccountType, TransactionType } from '@/types/core/constants'
+import { calculateAccountBalance } from '@/lib/services/account.service'
 import { getAllCategoryIds } from '@/lib/services/category-summary/utils'
+import { getCategoryTreeIds } from '@/lib/database/raw-queries'
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,12 +51,12 @@ export async function GET(request: NextRequest) {
         return errorResponse('分类不存在', 404)
       }
 
-      // 如果是存量类分类，使用专门的存量数据处理逻辑
+      // 如果是存量类分类，使用优化的存量数据处理逻辑
       if (
         targetCategory.type === 'ASSET' ||
         targetCategory.type === 'LIABILITY'
       ) {
-        return await getStockCategoryMonthlyData(
+        return await getOptimizedStockCategoryMonthlyData(
           user.id,
           categoryId,
           months,
@@ -64,8 +65,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 流量类数据处理逻辑（原有逻辑）
-    return await getFlowMonthlyData(user.id, categoryId, months, baseCurrency)
+    // 使用优化的流量类数据处理逻辑
+    return await getOptimizedFlowMonthlyData(
+      user.id,
+      categoryId,
+      months,
+      baseCurrency
+    )
   } catch (error) {
     console.error('Get monthly summary error:', error)
     return errorResponse('获取月度汇总数据失败', 500)
@@ -73,9 +79,10 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * 获取存量类分类的月度数据
+ * 优化的存量类分类月度数据获取函数
+ * 使用数据库聚合查询替代内存计算
  */
-async function getStockCategoryMonthlyData(
+async function getOptimizedStockCategoryMonthlyData(
   userId: string,
   categoryId: string,
   months: number,
@@ -242,7 +249,7 @@ async function getStockCategoryMonthlyData(
 /**
  * 获取流量类数据（原有逻辑）
  */
-async function getFlowMonthlyData(
+async function _getFlowMonthlyData(
   userId: string,
   categoryId: string | null,
   months: number,
@@ -415,5 +422,141 @@ async function getFlowMonthlyData(
     },
     totalMonths: months,
     dataType: 'flow', // 标识为流量数据
+  })
+}
+
+/**
+ * 优化的流量类数据获取函数
+ * 使用数据库聚合查询替代内存计算
+ */
+async function getOptimizedFlowMonthlyData(
+  userId: string,
+  categoryId: string | null,
+  months: number,
+  baseCurrency: { code: string; symbol: string; name: string }
+) {
+  // 计算日期范围
+  const { startDate, endDate } = getMonthsAgoDateRange(months)
+
+  // 构建查询条件
+  let whereCondition = `t."userId" = '${userId}' AND t.date >= '${startDate.toISOString()}' AND t.date <= '${endDate.toISOString()}' AND t.type IN ('INCOME', 'EXPENSE')`
+
+  if (categoryId) {
+    const categoryIds = await getCategoryTreeIds(categoryId)
+    const categoryIdsStr = categoryIds.map(id => `'${id}'`).join(',')
+    whereCondition += ` AND a."categoryId" IN (${categoryIdsStr})`
+  }
+
+  // 使用单次数据库查询获取月度流量数据
+  const monthlyFlowData = await prisma.$queryRaw<
+    Array<{
+      month: string
+      account_id: string
+      account_name: string
+      category_name: string
+      currency_code: string
+      currency_symbol: string
+      currency_name: string
+      transaction_type: string
+      total_amount: number
+      transaction_count: number
+    }>
+  >`
+    SELECT
+      to_char(t.date, 'YYYY-MM') as month,
+      a.id as account_id,
+      a.name as account_name,
+      cat.name as category_name,
+      c.code as currency_code,
+      c.symbol as currency_symbol,
+      c.name as currency_name,
+      t.type as transaction_type,
+      SUM(t.amount) as total_amount,
+      COUNT(*) as transaction_count
+    FROM transactions t
+    JOIN accounts a ON t."accountId" = a.id
+    JOIN categories cat ON a."categoryId" = cat.id
+    JOIN currencies c ON t."currencyId" = c.id
+    WHERE ${whereCondition}
+    GROUP BY month, a.id, a.name, cat.name, c.code, c.symbol, c.name, t.type
+    ORDER BY month DESC, account_name
+  `
+
+  // 处理查询结果并按月分组
+  const monthlyData: Record<string, any> = {}
+
+  monthlyFlowData.forEach(row => {
+    const month = row.month
+
+    if (!monthlyData[month]) {
+      monthlyData[month] = {
+        month,
+        accounts: {},
+        totalByCurrency: {},
+        totalInBaseCurrency: 0,
+      }
+    }
+
+    if (!monthlyData[month].accounts[row.account_id]) {
+      monthlyData[month].accounts[row.account_id] = {
+        id: row.account_id,
+        name: row.account_name,
+        categoryName: row.category_name,
+        income: {},
+        expense: {},
+        net: {},
+      }
+    }
+
+    const account = monthlyData[month].accounts[row.account_id]
+    const amount = parseFloat(row.total_amount.toString())
+    const currency = {
+      code: row.currency_code,
+      symbol: row.currency_symbol,
+      name: row.currency_name,
+    }
+
+    if (row.transaction_type === 'INCOME') {
+      account.income[row.currency_code] = { amount, currency }
+    } else if (row.transaction_type === 'EXPENSE') {
+      account.expense[row.currency_code] = { amount, currency }
+    }
+
+    // 计算净值
+    const incomeAmount = account.income[row.currency_code]?.amount || 0
+    const expenseAmount = account.expense[row.currency_code]?.amount || 0
+    account.net[row.currency_code] = {
+      amount: incomeAmount - expenseAmount,
+      currency,
+    }
+
+    // 累加到货币总计
+    if (!monthlyData[month].totalByCurrency[row.currency_code]) {
+      monthlyData[month].totalByCurrency[row.currency_code] = {
+        income: 0,
+        expense: 0,
+        net: 0,
+        currency,
+      }
+    }
+
+    if (row.transaction_type === 'INCOME') {
+      monthlyData[month].totalByCurrency[row.currency_code].income += amount
+    } else if (row.transaction_type === 'EXPENSE') {
+      monthlyData[month].totalByCurrency[row.currency_code].expense += amount
+    }
+
+    monthlyData[month].totalByCurrency[row.currency_code].net =
+      monthlyData[month].totalByCurrency[row.currency_code].income -
+      monthlyData[month].totalByCurrency[row.currency_code].expense
+  })
+
+  return successResponse({
+    monthlyData: Object.values(monthlyData),
+    baseCurrency,
+    summary: {
+      totalMonths: months,
+      dataType: 'flow',
+    },
   })
 }
