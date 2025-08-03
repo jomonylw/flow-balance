@@ -44,7 +44,11 @@ ENV NEXT_PUBLIC_GIT_COMMIT=${GIT_COMMIT}
 RUN pnpm build && \
     # 清理不需要的文件
     rm -rf .next/cache && \
-    rm -rf node_modules/.cache
+    rm -rf node_modules/.cache && \
+    # 将 Prisma Client 和 Schema 复制到 standalone 输出目录，确保在最终镜像中可用
+    mkdir -p .next/standalone/prisma && \
+    cp prisma/schema.prisma .next/standalone/prisma/ && \
+    cp -r node_modules/.prisma .next/standalone/node_modules/
 
 # Stage 3: Runner (极简运行环境)
 FROM node:18-alpine AS runner
@@ -69,10 +73,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# 复制 Prisma 相关文件（只复制必要的）
-COPY --from=builder /app/prisma/schema.prisma ./prisma/
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Prisma 相关文件已作为 standalone 输出的一部分被复制，无需单独操作
 
 # 复制脚本和配置
 COPY scripts/docker-entrypoint.sh ./scripts/
