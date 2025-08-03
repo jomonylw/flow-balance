@@ -74,8 +74,8 @@ COPY --from=builder /app/.next/static ./.next/static
 
 # 复制 Prisma 相关文件（只复制必要的）
 COPY --from=builder /app/prisma/schema.prisma ./prisma/
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
 
 # 复制脚本和配置
 COPY scripts/docker-entrypoint.sh ./scripts/
