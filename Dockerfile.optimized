@@ -44,7 +44,7 @@ ENV NEXT_PUBLIC_BUILD_DATE=${BUILD_DATE}
 ENV NEXT_PUBLIC_GIT_COMMIT=${GIT_COMMIT}
 RUN pnpm build && \
     # 只保留生产依赖
-    pnpm install --frozen-lockfile --production && \
+    pnpm install --frozen-lockfile --production --ignore-scripts && \
     # 清理不需要的文件
     rm -rf .next/cache && \
     rm -rf node_modules/.cache

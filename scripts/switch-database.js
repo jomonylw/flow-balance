@@ -1,68 +1,64 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-var-requires */
 
 /**
  * Flow Balance - Database Switch Script
  * 数据库切换脚本，支持 SQLite 和 PostgreSQL
- * 仅更新 schema.prisma 文件中的 provider
+ * 通过复制预定义的 schema 文件来更新主 schema.prisma 文件
  */
 
 const fs = require('fs')
 const path = require('path')
 
-const SCHEMA_PATH = path.join(__dirname, '..', 'prisma', 'schema.prisma')
+const PRISMA_DIR = path.join(__dirname, '..', 'prisma')
+const DEST_SCHEMA_PATH = path.join(PRISMA_DIR, 'schema.prisma')
 
 function showUsage() {
   console.log(`
-Flow Balance - Database Provider Switch Script
+Flow Balance - Database Schema Switch Script
 
 Usage:
   node scripts/switch-database.js <database-type>
 
 Database Types:
-  sqlite      - Switch provider to "sqlite"
-  postgresql  - Switch provider to "postgresql"
+  sqlite      - Switch to SQLite by copying schema.sqlite.prisma
+  postgresql  - Switch to PostgreSQL by copying schema.postgresql.prisma
   postgres    - Alias for postgresql
 
 Examples:
   node scripts/switch-database.js sqlite
   node scripts/switch-database.js postgresql
 
-This script only modifies the 'provider' in the datasource block of your schema.prisma.
+This script overwrites 'prisma/schema.prisma' with the content of the selected database-specific schema file.
 `)
 }
 
-function switchProvider(provider) {
-  console.log(`🔄 Switching provider to "${provider}"...`)
+function switchDatabaseSchema(dbType) {
+  console.log(`🔄 Switching database schema to "${dbType}"...`)
 
-  if (!fs.existsSync(SCHEMA_PATH)) {
-    console.error(`❌ Schema file not found at: ${SCHEMA_PATH}`)
+  const sourceFileName = `schema.${dbType}.prisma`
+  const sourceSchemaPath = path.join(PRISMA_DIR, sourceFileName)
+
+  if (!fs.existsSync(sourceSchemaPath)) {
+    console.error(`❌ Source schema file not found at: ${sourceSchemaPath}`)
     process.exit(1)
   }
 
-  const schemaContent = fs.readFileSync(SCHEMA_PATH, 'utf8')
+  try {
+    const schemaContent = fs.readFileSync(sourceSchemaPath, 'utf8')
+    fs.writeFileSync(DEST_SCHEMA_PATH, schemaContent)
 
-  // 使用正则表达式替换 provider 的值
-  const updatedSchemaContent = schemaContent.replace(
-    /(datasource db {\s*provider\s*=\s*")[^"]*(")/,
-    `$1${provider}$2`
-  )
-
-  if (schemaContent === updatedSchemaContent) {
-    console.warn(
-      `🟡 Provider is already set to "${provider}". No changes made.`
-    )
-    return
+    console.log(`✅ Successfully switched to "${dbType}" schema.`)
+    console.log(`   - Source: ${sourceFileName}`)
+    console.log('   - Destination: schema.prisma')
+    console.log('🔧 Next steps:')
+    console.log('   - Update your DATABASE_URL in the .env file if necessary.')
+    console.log('   - Run \`pnpm db:generate\` to update Prisma Client.')
+    console.log('   - Run \`pnpm db:migrate\` if you have schema changes.')
+  } catch (error) {
+    console.error('❌ An error occurred during the switch:', error)
+    process.exit(1)
   }
-
-  fs.writeFileSync(SCHEMA_PATH, updatedSchemaContent)
-
-  console.log(
-    `✅ Successfully switched provider to "${provider}" in ${SCHEMA_PATH}`
-  )
-  console.log('🔧 Next steps:')
-  console.log('   - Update your DATABASE_URL in the .env file accordingly.')
-  console.log('   - Run `pnpm db:generate` to update Prisma Client.')
-  console.log('   - Run `pnpm db:migrate` if you have schema changes.')
 }
 
 function main() {
@@ -77,12 +73,13 @@ function main() {
 
   switch (dbType) {
     case 'sqlite':
-      switchProvider('sqlite')
+      switchDatabaseSchema('sqlite')
       break
 
     case 'postgresql':
     case 'postgres':
-      switchProvider('postgresql')
+      // Use 'postgresql' as the canonical name for the file
+      switchDatabaseSchema('postgresql')
       break
 
     default:
@@ -92,11 +89,7 @@ function main() {
   }
 }
 
-// 检查是否直接运行此脚本
+// Check if the script is being run directly
 if (require.main === module) {
   main()
-}
-
-module.exports = {
-  switchProvider,
 }
