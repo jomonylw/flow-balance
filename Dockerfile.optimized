@@ -81,6 +81,11 @@ COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/scripts/docker-entrypoint.sh ./scripts/
 COPY --from=builder /app/healthcheck.js ./
 
+# 修复潜在的 Windows 换行符问题 (CRLF -> LF)
+RUN apk add --no-cache dos2unix && \
+    dos2unix ./scripts/docker-entrypoint.sh && \
+    apk del dos2unix
+
 # 创建数据目录并设置权限
 RUN mkdir -p /app/data && \
     chmod +x ./scripts/docker-entrypoint.sh && \
