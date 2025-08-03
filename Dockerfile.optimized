@@ -63,7 +63,7 @@ ARG GIT_COMMIT
 ARG APP_VERSION
 
 # 只安装必要的系统包
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init bash
 
 # 创建用户
 RUN addgroup --system --gid 1001 nodejs && \
@@ -113,6 +113,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node healthcheck.js
 
-# 使用 shell 格式和绝对路径来执行 entrypoint，消除所有路径歧义
-ENTRYPOINT /app/scripts/docker-entrypoint.sh
+ENTRYPOINT ["./scripts/docker-entrypoint.sh"]
 CMD ["dumb-init", "node", "server.js"]
