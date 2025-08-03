@@ -65,6 +65,9 @@ ARG APP_VERSION
 # 只安装必要的系统包
 RUN apk add --no-cache dumb-init bash
 
+# 在 runner 阶段启用 corepack 以使用 pnpm
+RUN corepack enable
+
 # 创建用户
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -80,11 +83,6 @@ COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 # 复制脚本和配置
 COPY --from=builder /app/scripts/docker-entrypoint.sh ./scripts/
 COPY --from=builder /app/healthcheck.js ./
-
-# 修复潜在的 Windows 换行符问题 (CRLF -> LF)
-RUN apk add --no-cache dos2unix && \
-    dos2unix ./scripts/docker-entrypoint.sh && \
-    apk del dos2unix
 
 # 创建数据目录并设置权限
 RUN mkdir -p /app/data && \
