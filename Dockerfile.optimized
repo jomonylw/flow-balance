@@ -91,11 +91,6 @@ RUN mkdir -p /app/data && \
     chmod +x ./scripts/docker-entrypoint.sh && \
     chown -R nextjs:nodejs /app
 
-# --- DEBUGGING ---
-# 强制打印出 /app/scripts 目录下的内容，用于最终确认文件是否存在
-RUN ls -la /app/scripts
-# --- END DEBUGGING ---
-
 USER nextjs
 
 # 环境变量
@@ -118,5 +113,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node healthcheck.js
 
-ENTRYPOINT ["./scripts/docker-entrypoint.sh"]
+# 使用 shell 格式和绝对路径来执行 entrypoint，消除所有路径歧义
+ENTRYPOINT /app/scripts/docker-entrypoint.sh
 CMD ["dumb-init", "node", "server.js"]
