@@ -73,10 +73,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
-
+# 复制 package.json 以便 entrypoint 可以读取版本等信息
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 # 复制脚本和配置
-COPY scripts/docker-entrypoint.sh ./scripts/
-COPY healthcheck.js ./
+COPY --from=builder /app/scripts/docker-entrypoint.sh ./scripts/
+COPY --from=builder /app/healthcheck.js ./
 
 # 创建数据目录
 RUN mkdir -p /app/data && \
