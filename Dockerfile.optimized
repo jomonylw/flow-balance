@@ -65,8 +65,8 @@ ARG APP_VERSION
 # 只安装必要的系统包
 RUN apk add --no-cache dumb-init bash
 
-# 在 runner 阶段启用 corepack 以使用 pnpm
-RUN corepack enable
+# 安装 Prisma CLI 以便在运行时执行迁移等操作
+RUN npm install -g prisma
 
 # 创建用户
 RUN addgroup --system --gid 1001 nodejs && \
