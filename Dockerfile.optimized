@@ -92,8 +92,8 @@ RUN mkdir -p /app/data && \
     chown -R nextjs:nodejs /app
 
 # --- DEBUGGING ---
-# 强制打印出 /app 目录下的所有文件和权限，用于调试
-RUN ls -laR /app
+# 强制打印出 /app/scripts 目录下的内容，用于最终确认文件是否存在
+RUN ls -la /app/scripts
 # --- END DEBUGGING ---
 
 USER nextjs
