@@ -19,3 +19,17 @@ export * from './dashboard.queries'
 
 // 系统和健康检查相关查询
 export * from './system.queries'
+
+// 余额历史相关查询 (优化版)
+export * from './balance-history.queries'
+
+// 分类树相关查询 (优化版)
+export * from './category-tree.queries'
+
+// 交易统计相关查询 (优化版)
+export * from './transaction-stats.queries'
+
+// 新增的重构模块
+export * from './analytics.queries'
+export * from './fire.queries'
+export * from './debug.queries'

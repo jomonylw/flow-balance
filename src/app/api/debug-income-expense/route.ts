@@ -6,6 +6,7 @@ import {
   unauthorizedResponse,
 } from '@/lib/api/response'
 import { getDaysAgoDateRange } from '@/lib/utils/date-range'
+import { getRawIncomeExpenseDataForDebug } from '@/lib/database/queries'
 
 export async function GET() {
   try {
@@ -106,33 +107,12 @@ export async function GET() {
       },
     })
 
-    // 原生 SQL 查询
-    const rawIncomeExpenseData = await prisma.$queryRaw<
-      Array<{
-        transaction_type: string
-        currency_code: string
-        currency_symbol: string
-        currency_name: string
-        total_amount: number
-        transaction_count: number
-      }>
-    >`
-      SELECT 
-        t.type as transaction_type,
-        cur.code as currency_code,
-        cur.symbol as currency_symbol,
-        cur.name as currency_name,
-        SUM(t.amount) as total_amount,
-        COUNT(t.id) as transaction_count
-      FROM transactions t
-      INNER JOIN currencies cur ON t."currencyId" = cur.id
-      WHERE t."userId" = ${user.id}
-        AND t.date >= ${periodStart}
-        AND t.date <= ${periodEnd}
-        AND t.type IN ('INCOME', 'EXPENSE')
-      GROUP BY t.type, cur.code, cur.symbol, cur.name
-      ORDER BY t.type, total_amount DESC
-    `
+    // 使用重构后的查询函数
+    const rawIncomeExpenseData = await getRawIncomeExpenseDataForDebug(
+      user.id,
+      periodStart,
+      periodEnd
+    )
 
     return successResponse({
       periodStart: periodStart.toISOString(),

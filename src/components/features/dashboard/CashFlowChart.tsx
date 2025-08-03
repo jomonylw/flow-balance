@@ -72,12 +72,15 @@ export default function CashFlowChart({
   }, [data])
 
   // 辅助函数：智能格式化货币
-  const formatCurrencyAmount = (amount: number) => {
-    const currencyInfo = findCurrencyByCode(currency.code)
-    return currencyInfo?.id
-      ? formatCurrencyById(amount, currencyInfo.id)
-      : `${amount} ${currency.code}`
-  }
+  const formatCurrencyAmount = useCallback(
+    (amount: number) => {
+      const currencyInfo = findCurrencyByCode(currency.code)
+      return currencyInfo?.id
+        ? formatCurrencyById(amount, currencyInfo.id)
+        : `${amount} ${currency.code}`
+    },
+    [currency.code, findCurrencyByCode, formatCurrencyById]
+  )
 
   useEffect(() => {
     if (!chartRef.current || !data || loading) return
@@ -140,8 +143,24 @@ export default function CashFlowChart({
             return ''
           }
           // 使用统一的日期格式化
-          const date = new Date(params[0].axisValue + '-01')
-          const formattedDate = formatChartDate(date, 'month')
+          let formattedDate: string
+          try {
+            const date = new Date(params[0].axisValue + '-01T00:00:00')
+            if (isNaN(date.getTime())) {
+              console.warn('Invalid date in tooltip:', params[0].axisValue)
+              formattedDate = params[0].axisValue
+            } else {
+              formattedDate = formatChartDate(date, 'month')
+            }
+          } catch (error) {
+            console.warn(
+              'Error formatting tooltip date:',
+              error,
+              'value:',
+              params[0].axisValue
+            )
+            formattedDate = params[0].axisValue
+          }
           let result = `<div style="font-weight: bold; margin-bottom: 5px;">${formattedDate}</div>`
           params.forEach(param => {
             const value = param.value
@@ -180,9 +199,23 @@ export default function CashFlowChart({
           fontSize: window.innerWidth < 768 ? 10 : 12,
           interval: labelInterval,
           formatter: function (value: string) {
-            // 使用用户设置的日期格式显示月份
-            const date = new Date(value + '-01') // 添加日期部分以创建有效的日期
-            return formatChartDate(date, 'month')
+            try {
+              // 使用用户设置的日期格式显示月份
+              const date = new Date(value + '-01T00:00:00') // 添加日期部分以创建有效的日期
+              if (isNaN(date.getTime())) {
+                console.warn('Invalid date in chart formatter:', value)
+                return value
+              }
+              return formatChartDate(date, 'month')
+            } catch (error) {
+              console.warn(
+                'Error formatting chart date:',
+                error,
+                'value:',
+                value
+              )
+              return value
+            }
           },
         },
         axisLine: {
@@ -273,6 +306,7 @@ export default function CashFlowChart({
     getFilteredData,
     currentTimeRange,
     loading,
+    formatCurrencyAmount,
   ])
 
   useEffect(() => {

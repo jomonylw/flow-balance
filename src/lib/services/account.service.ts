@@ -11,6 +11,8 @@ import {
   ConversionResult,
 } from '@/lib/services/currency.service'
 import { AccountType, TransactionType } from '@/types/core/constants'
+import { getStockAccountBalances } from './dashboard-query.service'
+import { prisma } from '../database/connection-manager'
 
 /**
  * 计算存量类账户的余额
@@ -770,44 +772,70 @@ export async function calculateAccountBalanceWithConversion(
 }
 
 /**
- * 计算多个账户的汇总余额并转换为本位币
+ * 计算多个账户的汇总余额并转换为本位币 (重构版本)
+ * 直接从数据库获取聚合后的余额，不再接收 accounts 列表
  * @param userId 用户ID
- * @param accounts 账户列表
+ * @param accountType 要计算的账户类型 (ASSET 或 LIABILITY)
  * @param baseCurrency 本位币
  * @param options 计算选项
  * @returns 转换为本位币的汇总余额
  */
 export async function calculateTotalBalanceWithConversion(
   userId: string,
-  accounts: ServiceAccount[],
+  accountType: AccountType.ASSET | AccountType.LIABILITY,
   baseCurrency: { code: string; symbol: string; name: string },
-  options: CalculationOptions & { includeAllUserCurrencies?: boolean } = {}
+  options: {
+    asOfDate?: Date
+    includeAllUserCurrencies?: boolean
+  } = {}
 ): Promise<{
   totalInBaseCurrency: number
   totalsByOriginalCurrency: Record<string, ServiceAccountBalance>
   conversionDetails: ConversionResult[]
   hasConversionErrors: boolean
 }> {
-  let totalInBaseCurrency = 0
-  const totalsByOriginalCurrency: Record<string, ServiceAccountBalance> = {}
-  const conversionDetails: ConversionResult[] = []
-  let hasConversionErrors = false
+  const { asOfDate, includeAllUserCurrencies = false } = options
 
-  // 如果需要包含所有账户币种，先初始化所有账户使用的币种为0余额
-  if (options.includeAllUserCurrencies) {
-    // 获取所有账户使用的币种（去重）
-    const accountCurrencies = new Map<string, any>()
-    accounts.forEach(account => {
-      if (account.currency) {
-        accountCurrencies.set(account.currency.code, account.currency)
+  // 1. 从数据库获取指定类型的账户余额
+  const balances = await getStockAccountBalances(userId, asOfDate)
+  const filteredBalances = balances.filter(
+    balance => balance.categoryType === accountType
+  )
+
+  // 2. 按币种汇总余额
+  const totalsByOriginalCurrency: Record<string, ServiceAccountBalance> = {}
+
+  filteredBalances.forEach(balance => {
+    const currencyCode = balance.currencyCode
+    if (!totalsByOriginalCurrency[currencyCode]) {
+      totalsByOriginalCurrency[currencyCode] = {
+        currencyCode,
+        amount: 0,
+        currency: {
+          code: balance.currencyCode,
+          symbol: balance.currencySymbol,
+          name: balance.currencyName,
+        },
       }
+    }
+    totalsByOriginalCurrency[currencyCode].amount += balance.balance
+  })
+
+  // 3. 如果需要，包含所有用户定义的货币（即使余额为0）
+  if (includeAllUserCurrencies) {
+    const allUserCurrencies = await prisma.currency.findMany({
+      where: {
+        userCurrencies: {
+          some: { userId },
+        },
+      },
+      select: { code: true, symbol: true, name: true },
     })
 
-    // 初始化所有账户币种为0余额
-    accountCurrencies.forEach((currency, currencyCode) => {
-      if (!totalsByOriginalCurrency[currencyCode]) {
-        totalsByOriginalCurrency[currencyCode] = {
-          currencyCode,
+    allUserCurrencies.forEach(currency => {
+      if (!totalsByOriginalCurrency[currency.code]) {
+        totalsByOriginalCurrency[currency.code] = {
+          currencyCode: currency.code,
           amount: 0,
           currency: {
             code: currency.code,
@@ -819,78 +847,46 @@ export async function calculateTotalBalanceWithConversion(
     })
   }
 
-  // 计算所有账户的原始余额
-  const allAmountsToConvert: Array<{ amount: number; currency: string }> = []
-
-  for (const account of accounts) {
-    const accountBalances = calculateAccountBalance(account, options)
-    const _accountType = account.category?.type
-
-    Object.values(accountBalances).forEach(balance => {
-      const currencyCode = balance.currencyCode
-
-      if (!totalsByOriginalCurrency[currencyCode]) {
-        totalsByOriginalCurrency[currencyCode] = {
-          currencyCode,
-          amount: 0,
-          currency: balance.currency,
-        }
-      }
-
-      // 直接累加余额，不调整符号
-      // 符号调整应该在更高层的逻辑中处理
-      totalsByOriginalCurrency[currencyCode].amount += balance.amount
-    })
-  }
-
-  // 准备转换数据
-  Object.values(totalsByOriginalCurrency).forEach(balance => {
-    allAmountsToConvert.push({
+  // 4. 准备转换数据
+  const amountsToConvert = Object.values(totalsByOriginalCurrency).map(
+    balance => ({
       amount: balance.amount,
       currency: balance.currencyCode,
     })
-  })
+  )
 
+  let totalInBaseCurrency = 0
+  let conversionDetails: ConversionResult[] = []
+  let hasConversionErrors = false
+
+  // 5. 批量转换货币
   try {
-    // 批量转换货币
-    const conversionResults = await convertMultipleCurrencies(
-      userId,
-      allAmountsToConvert,
-      baseCurrency.code,
-      options.asOfDate
-    )
+    if (amountsToConvert.length > 0) {
+      conversionDetails = await convertMultipleCurrencies(
+        userId,
+        amountsToConvert,
+        baseCurrency.code,
+        asOfDate
+      )
 
-    conversionDetails.push(...conversionResults)
-
-    // 计算本位币总额
-    conversionResults.forEach(result => {
-      if (result.success) {
-        totalInBaseCurrency += result.convertedAmount
-      } else {
-        hasConversionErrors = true
-        // 转换失败时，如果是相同货币则使用原始金额，否则标记为不可用
-        if (result.fromCurrency === baseCurrency.code) {
-          totalInBaseCurrency += result.originalAmount
+      conversionDetails.forEach(result => {
+        if (result.success) {
+          totalInBaseCurrency += result.convertedAmount
         } else {
-          console.warn(
-            `汇率转换失败: ${result.fromCurrency} -> ${baseCurrency.code}, 金额: ${result.originalAmount}`
-          )
-          // 不添加到总额中，避免数据偏差
+          hasConversionErrors = true
+          if (result.fromCurrency === baseCurrency.code) {
+            totalInBaseCurrency += result.originalAmount
+          }
         }
-      }
-    })
+      })
+    }
   } catch (error) {
     console.error('批量货币转换失败:', error)
     hasConversionErrors = true
-
-    // 转换失败时，只使用本位币的金额，其他货币标记为不可用
+    // 失败时，只累加本位币的金额
     Object.values(totalsByOriginalCurrency).forEach(balance => {
       if (balance.currencyCode === baseCurrency.code) {
         totalInBaseCurrency += balance.amount
-      } else {
-        console.warn(
-          `无法转换货币 ${balance.currencyCode} 的金额: ${balance.amount}`
-        )
       }
     })
   }

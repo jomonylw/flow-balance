@@ -7,6 +7,36 @@ import { prisma } from '../connection-manager'
 import { isPostgreSQL } from './system.queries'
 // import { Prisma } from '@prisma/client'
 
+/**
+ * 安全地将数据库返回的数值转换为 JavaScript number
+ * 处理 SQLite 和 PostgreSQL 之间的类型差异
+ */
+function convertToNumber(value: any): number {
+  if (value === null || value === undefined) {
+    return 0
+  }
+
+  // 如果是 BigInt，转换为 number
+  if (typeof value === 'bigint') {
+    return Number(value)
+  }
+
+  // 如果是字符串，尝试解析为数字
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value)
+    return isNaN(parsed) ? 0 : parsed
+  }
+
+  // 如果已经是数字，直接返回
+  if (typeof value === 'number') {
+    return isNaN(value) ? 0 : value
+  }
+
+  // 其他情况，尝试转换为数字
+  const converted = Number(value)
+  return isNaN(converted) ? 0 : converted
+}
+
 export interface TransactionStatsResult {
   totalIncome: number
   totalExpense: number
@@ -280,78 +310,88 @@ async function getTransactionStatsSQLite(
   thisMonth: Date,
   lastMonth: Date
 ): Promise<TransactionStatsResult> {
-  // 构建WHERE条件参数
+  // 统一参数处理，确保与查询中的 '?' 占位符一一对应
   const params: any[] = [
-    userId,
-    baseCurrency.code,
-    baseCurrency.id,
-    thisMonth.toISOString(),
-    lastMonth.toISOString(),
-  ]
-  const _paramIndex = 5
+    // SELECT and JOIN parameters
+    baseCurrency.code, // total_income currency
+    baseCurrency.code, // total_expense currency
+    thisMonth.toISOString(), // this_month_income date
+    baseCurrency.code, // this_month_income currency
+    thisMonth.toISOString(), // this_month_expense date
+    baseCurrency.code, // this_month_expense currency
+    lastMonth.toISOString(), // last_month_income start
+    thisMonth.toISOString(), // last_month_income end
+    baseCurrency.code, // last_month_income currency
+    lastMonth.toISOString(), // last_month_expense start
+    thisMonth.toISOString(), // last_month_expense end
+    baseCurrency.code, // last_month_expense currency
+    baseCurrency.id, // exchange_rates join toCurrencyId
 
-  // 构建动态WHERE条件（SQLite语法）
-  const conditions: string[] = ['t.userId = ?']
+    // WHERE parameters
+    userId,
+  ]
+
+  // 构建动态WHERE条件
+  const whereConditions: string[] = ['t.userId = ?']
 
   if (filters.accountId) {
-    conditions.push('t.accountId = ?')
+    whereConditions.push('t.accountId = ?')
     params.push(filters.accountId)
   }
 
   if (filters.categoryIds && filters.categoryIds.length > 0) {
     const placeholders = filters.categoryIds.map(() => '?').join(',')
-    conditions.push(`a.categoryId IN (${placeholders})`)
+    whereConditions.push(`a.categoryId IN (${placeholders})`)
     params.push(...filters.categoryIds)
   }
 
   if (filters.currencyId) {
-    conditions.push('t.currencyId = ?')
+    whereConditions.push('t.currencyId = ?')
     params.push(filters.currencyId)
   }
 
   if (filters.type) {
     if (typeof filters.type === 'string') {
-      conditions.push('t.type = ?')
+      whereConditions.push('t.type = ?')
       params.push(filters.type)
     } else if (Array.isArray(filters.type)) {
       const placeholders = filters.type.map(() => '?').join(',')
-      conditions.push(`t.type IN (${placeholders})`)
+      whereConditions.push(`t.type IN (${placeholders})`)
       params.push(...filters.type)
     }
   } else {
-    conditions.push("t.type IN ('INCOME', 'EXPENSE')")
+    whereConditions.push("t.type IN ('INCOME', 'EXPENSE')")
   }
 
   if (filters.dateFrom) {
-    conditions.push('t.date >= ?')
+    whereConditions.push('t.date >= ?')
     params.push(filters.dateFrom.toISOString())
   }
 
   if (filters.dateTo) {
-    conditions.push('t.date <= ?')
+    whereConditions.push('t.date <= ?')
     params.push(filters.dateTo.toISOString())
   }
 
   if (filters.search) {
-    conditions.push('(t.description LIKE ? OR t.notes LIKE ?)')
+    whereConditions.push('(t.description LIKE ? OR t.notes LIKE ?)')
     params.push(`%${filters.search}%`, `%${filters.search}%`)
   }
 
   if (filters.tagIds && filters.tagIds.length > 0) {
     const placeholders = filters.tagIds.map(() => '?').join(',')
-    conditions.push(`EXISTS (
+    whereConditions.push(`EXISTS (
       SELECT 1 FROM transaction_tags tt
       WHERE tt.transactionId = t.id AND tt.tagId IN (${placeholders})
     )`)
     params.push(...filters.tagIds)
   }
 
-  const whereClause = conditions.join(' AND ')
+  const whereClause = whereConditions.join(' AND ')
 
-  // 使用原生SQL聚合查询（SQLite语法）
+  // 修正汇率查询逻辑：确保使用不晚于交易日期的最新汇率
   const query = `
     SELECT
-      -- 总收入（转换为基础货币）
       COALESCE(SUM(
         CASE
           WHEN t.type = 'INCOME' THEN
@@ -363,7 +403,6 @@ async function getTransactionStatsSQLite(
         END
       ), 0) as total_income,
 
-      -- 总支出（转换为基础货币）
       COALESCE(SUM(
         CASE
           WHEN t.type = 'EXPENSE' THEN
@@ -375,7 +414,6 @@ async function getTransactionStatsSQLite(
         END
       ), 0) as total_expense,
 
-      -- 本月收入（转换为基础货币）
       COALESCE(SUM(
         CASE
           WHEN t.type = 'INCOME' AND t.date >= ? THEN
@@ -387,7 +425,6 @@ async function getTransactionStatsSQLite(
         END
       ), 0) as this_month_income,
 
-      -- 本月支出（转换为基础货币）
       COALESCE(SUM(
         CASE
           WHEN t.type = 'EXPENSE' AND t.date >= ? THEN
@@ -399,7 +436,6 @@ async function getTransactionStatsSQLite(
         END
       ), 0) as this_month_expense,
 
-      -- 上月收入（转换为基础货币）
       COALESCE(SUM(
         CASE
           WHEN t.type = 'INCOME'
@@ -413,7 +449,6 @@ async function getTransactionStatsSQLite(
         END
       ), 0) as last_month_income,
 
-      -- 上月支出（转换为基础货币）
       COALESCE(SUM(
         CASE
           WHEN t.type = 'EXPENSE'
@@ -427,13 +462,8 @@ async function getTransactionStatsSQLite(
         END
       ), 0) as last_month_expense,
 
-      -- 收入交易数量
       COUNT(CASE WHEN t.type = 'INCOME' THEN 1 END) as income_count,
-
-      -- 支出交易数量
       COUNT(CASE WHEN t.type = 'EXPENSE' THEN 1 END) as expense_count,
-
-      -- 总交易数量
       COUNT(*) as total_count
 
     FROM transactions t
@@ -449,29 +479,11 @@ async function getTransactionStatsSQLite(
         WHERE er2.userId = er.userId
           AND er2.fromCurrencyId = er.fromCurrencyId
           AND er2.toCurrencyId = er.toCurrencyId
+          AND er2.toCurrencyId = er.toCurrencyId
       )
     )
     WHERE ${whereClause}
   `
-
-  // 为SQLite查询添加额外的参数（用于CASE WHEN中的货币代码比较）
-  const sqliteParams = [
-    ...params.slice(0, 5), // userId, baseCurrency.code, baseCurrency.id, thisMonth, lastMonth
-    baseCurrency.code, // total_income CASE
-    baseCurrency.code, // total_expense CASE
-    thisMonth.toISOString(),
-    baseCurrency.code, // this_month_income CASE
-    thisMonth.toISOString(),
-    baseCurrency.code, // this_month_expense CASE
-    lastMonth.toISOString(),
-    thisMonth.toISOString(),
-    baseCurrency.code, // last_month_income CASE
-    lastMonth.toISOString(),
-    thisMonth.toISOString(),
-    baseCurrency.code, // last_month_expense CASE
-    baseCurrency.id, // exchange_rates JOIN
-    ...params.slice(5), // 其他动态条件参数
-  ]
 
   const result = await prisma.$queryRawUnsafe<
     Array<{
@@ -485,7 +497,7 @@ async function getTransactionStatsSQLite(
       expense_count: number
       total_count: number
     }>
-  >(query, ...sqliteParams)
+  >(query, ...params)
 
   return processStatsResult(result[0] || {})
 }
@@ -494,12 +506,12 @@ async function getTransactionStatsSQLite(
  * 处理查询结果并计算衍生指标
  */
 function processStatsResult(stats: any): TransactionStatsResult {
-  const totalIncome = Number(stats.total_income) || 0
-  const totalExpense = Number(stats.total_expense) || 0
-  const thisMonthIncome = Number(stats.this_month_income) || 0
-  const thisMonthExpense = Number(stats.this_month_expense) || 0
-  const lastMonthIncome = Number(stats.last_month_income) || 0
-  const lastMonthExpense = Number(stats.last_month_expense) || 0
+  const totalIncome = convertToNumber(stats.total_income)
+  const totalExpense = convertToNumber(stats.total_expense)
+  const thisMonthIncome = convertToNumber(stats.this_month_income)
+  const thisMonthExpense = convertToNumber(stats.this_month_expense)
+  const lastMonthIncome = convertToNumber(stats.last_month_income)
+  const lastMonthExpense = convertToNumber(stats.last_month_expense)
 
   const totalNet = totalIncome - totalExpense
   const thisMonthNet = thisMonthIncome - thisMonthExpense

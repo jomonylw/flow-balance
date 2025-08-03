@@ -1,14 +1,17 @@
-import { prisma } from '@/lib/database/connection-manager'
 import { AccountType, TransactionType } from '@/types/core/constants'
 import { getDaysAgoDateRange } from '@/lib/utils/date-range'
 import {
   getDashboardAccounts as getUnifiedDashboardAccounts,
   getFlowAccountSummary as getUnifiedFlowAccountSummary,
-} from '@/lib/database/raw-queries'
+  // getAccountCountByType,
+  // getRecentActivitySummary,
+  getIncomeExpenseAnalysis as getRawIncomeExpenseAnalysis,
+} from '@/lib/database/queries'
 import {
   convertMultipleCurrencies,
   type ConversionResult,
 } from '@/lib/services/currency.service'
+import { prisma } from '@/lib/database/connection-manager'
 import type { ByCurrencyInfo } from '@/types/core'
 
 /**
@@ -129,43 +132,6 @@ export async function getDashboardStats(
     totalCategories: categoryCount,
     accountingDays,
   }
-}
-
-/**
- * 获取账户数量按类型分组
- */
-export async function getAccountCountByType(
-  userId: string
-): Promise<Record<AccountType, number>> {
-  // 直接使用原生 SQL 查询，避免 Prisma groupBy 的限制
-  const countByType = await prisma.$queryRaw<
-    Array<{
-      category_type: string
-      account_count: number
-    }>
-  >`
-    SELECT
-      c.type as category_type,
-      COUNT(a.id) as account_count
-    FROM accounts a
-    INNER JOIN categories c ON a."categoryId" = c.id
-    WHERE a."userId" = ${userId}
-    GROUP BY c.type
-  `
-
-  const counts: Record<AccountType, number> = {
-    [AccountType.ASSET]: 0,
-    [AccountType.LIABILITY]: 0,
-    [AccountType.INCOME]: 0,
-    [AccountType.EXPENSE]: 0,
-  }
-
-  countByType.forEach(row => {
-    const type = row.category_type as AccountType
-    counts[type] = Number(row.account_count)
-  })
-
-  return counts
 }
 
 /**
@@ -300,80 +266,6 @@ export async function getAccountBalanceDetails(
     )
 
   return [...stockAccountDetails, ...flowAccountDetails]
-}
-
-/**
- * 获取近期活动汇总（替代原有的 recentActivity 计算）
- */
-export async function getRecentActivitySummary(
-  userId: string,
-  periodDays: number = 30
-): Promise<{
-  summary: Record<string, { income: number; expense: number; net: number }>
-  totalIncome: number
-  totalExpense: number
-  totalNet: number
-}> {
-  const { startDate: periodStart, endDate: periodEnd } =
-    getDaysAgoDateRange(periodDays)
-
-  const activityData = await prisma.$queryRaw<
-    Array<{
-      currency_code: string
-      transaction_type: string
-      total_amount: number
-    }>
-  >`
-    SELECT
-      cur.code as currency_code,
-      t.type as transaction_type,
-      SUM(t.amount) as total_amount
-    FROM transactions t
-    INNER JOIN currencies cur ON t.currency_id = cur.id
-    WHERE t.user_id = ${userId}
-      AND t.date >= ${periodStart}
-      AND t.date <= ${periodEnd}
-      AND t.type IN ('INCOME', 'EXPENSE')
-    GROUP BY cur.code, t.type
-    ORDER BY cur.code, t.type
-  `
-
-  const summary: Record<
-    string,
-    { income: number; expense: number; net: number }
-  > = {}
-  let totalIncome = 0
-  let totalExpense = 0
-
-  activityData.forEach(row => {
-    const currencyCode = row.currency_code
-    const amount = Number(row.total_amount)
-
-    if (!summary[currencyCode]) {
-      summary[currencyCode] = { income: 0, expense: 0, net: 0 }
-    }
-
-    if (row.transaction_type === 'INCOME') {
-      summary[currencyCode].income = amount
-      totalIncome += amount
-    } else if (row.transaction_type === 'EXPENSE') {
-      summary[currencyCode].expense = amount
-      totalExpense += amount
-    }
-  })
-
-  // 计算净值
-  Object.keys(summary).forEach(currencyCode => {
-    summary[currencyCode].net =
-      summary[currencyCode].income - summary[currencyCode].expense
-  })
-
-  return {
-    summary,
-    totalIncome,
-    totalExpense,
-    totalNet: totalIncome - totalExpense,
-  }
 }
 
 /**
@@ -562,6 +454,7 @@ export async function calculateTotalBalanceWithConversion(
 
 /**
  * 获取收支分析数据（按币种分组，用于替代原有的收支计算）
+ * 此函数现在作为服务层包装器，调用查询函数并处理货币转换
  */
 export async function getIncomeExpenseAnalysis(
   userId: string,
@@ -575,59 +468,25 @@ export async function getIncomeExpenseAnalysis(
   totalExpenseInBaseCurrency: number
   hasConversionErrors: boolean
 }> {
-  const { startDate: periodStart, endDate: periodEnd } =
-    getDaysAgoDateRange(periodDays)
-
-  // 获取收入和支出数据
-  const incomeExpenseData = await prisma.$queryRaw<
-    Array<{
-      transaction_type: string
-      currency_code: string
-      currency_symbol: string
-      currency_name: string
-      total_amount: number
-    }>
-  >`
-    SELECT
-      t.type as transaction_type,
-      cur.code as currency_code,
-      cur.symbol as currency_symbol,
-      cur.name as currency_name,
-      SUM(t.amount) as total_amount
-    FROM transactions t
-    INNER JOIN currencies cur ON t."currencyId" = cur.id
-    WHERE t."userId" = ${userId}
-      AND t.date >= ${periodStart}
-      AND t.date <= ${periodEnd}
-      AND t.type IN ('INCOME', 'EXPENSE')
-    GROUP BY t.type, cur.code, cur.symbol, cur.name
-    ORDER BY t.type, total_amount DESC
-  `
-
-  // 分离收入和支出数据
-  const incomeData = incomeExpenseData.filter(
-    row => row.transaction_type === 'INCOME'
-  )
-  const expenseData = incomeExpenseData.filter(
-    row => row.transaction_type === 'EXPENSE'
-  )
-
-  // 准备转换数据
-  const incomeAmountsToConvert = incomeData.map(row => ({
-    amount: Number(row.total_amount),
-    currency: row.currency_code,
-  }))
-
-  const expenseAmountsToConvert = expenseData.map(row => ({
-    amount: Number(row.total_amount),
-    currency: row.currency_code,
-  }))
+  // 1. 从数据库获取原始收支数据
+  const { incomeByCurrency: rawIncome, expenseByCurrency: rawExpense } =
+    await getRawIncomeExpenseAnalysis(userId, periodDays)
 
   let totalIncomeInBaseCurrency = 0
   let totalExpenseInBaseCurrency = 0
   let hasConversionErrors = false
 
-  // 转换收入金额
+  // 2. 准备转换数据
+  const incomeAmountsToConvert = Object.values(rawIncome).map(d => ({
+    amount: d.originalAmount,
+    currency: d.currency.code,
+  }))
+  const expenseAmountsToConvert = Object.values(rawExpense).map(d => ({
+    amount: d.originalAmount,
+    currency: d.currency.code,
+  }))
+
+  // 3. 批量转换货币
   const incomeConversions =
     incomeAmountsToConvert.length > 0
       ? await convertMultipleCurrencies(
@@ -636,8 +495,6 @@ export async function getIncomeExpenseAnalysis(
           baseCurrency.code
         )
       : []
-
-  // 转换支出金额
   const expenseConversions =
     expenseAmountsToConvert.length > 0
       ? await convertMultipleCurrencies(
@@ -647,65 +504,43 @@ export async function getIncomeExpenseAnalysis(
         )
       : []
 
-  // 构建收入数据
-  const incomeByCurrency: Record<string, ByCurrencyInfo> = {}
-  incomeData.forEach((row, index) => {
-    const conversion = incomeConversions[index]
-    const originalAmount = Number(row.total_amount)
-
-    incomeByCurrency[row.currency_code] = {
-      originalAmount,
-      convertedAmount: conversion?.convertedAmount || originalAmount,
-      currency: {
-        code: row.currency_code,
-        symbol: row.currency_symbol,
-        name: row.currency_name,
-      },
-      exchangeRate: conversion?.exchangeRate || 1,
-      accountCount: 0, // 这里不统计账户数量，因为是交易级别的统计
-      success: conversion?.success ?? true,
-    }
-
-    if (conversion?.success) {
-      totalIncomeInBaseCurrency += conversion.convertedAmount
-    } else {
-      hasConversionErrors = true
-      if (row.currency_code === baseCurrency.code) {
-        totalIncomeInBaseCurrency += originalAmount
+  // 4. 构建包含转换后金额的最终数据
+  const incomeByCurrency = { ...rawIncome }
+  incomeConversions.forEach(conv => {
+    if (incomeByCurrency[conv.fromCurrency]) {
+      incomeByCurrency[conv.fromCurrency].convertedAmount = conv.convertedAmount
+      incomeByCurrency[conv.fromCurrency].exchangeRate = conv.exchangeRate
+      incomeByCurrency[conv.fromCurrency].success = conv.success
+      if (conv.success) {
+        totalIncomeInBaseCurrency += conv.convertedAmount
+      } else {
+        hasConversionErrors = true
+        if (conv.fromCurrency === baseCurrency.code) {
+          totalIncomeInBaseCurrency += conv.originalAmount
+        }
       }
     }
   })
 
-  // 构建支出数据
-  const expenseByCurrency: Record<string, ByCurrencyInfo> = {}
-  expenseData.forEach((row, index) => {
-    const conversion = expenseConversions[index]
-    const originalAmount = Number(row.total_amount)
-
-    expenseByCurrency[row.currency_code] = {
-      originalAmount,
-      convertedAmount: conversion?.convertedAmount || originalAmount,
-      currency: {
-        code: row.currency_code,
-        symbol: row.currency_symbol,
-        name: row.currency_name,
-      },
-      exchangeRate: conversion?.exchangeRate || 1,
-      accountCount: 0,
-      success: conversion?.success ?? true,
-    }
-
-    if (conversion?.success) {
-      totalExpenseInBaseCurrency += conversion.convertedAmount
-    } else {
-      hasConversionErrors = true
-      if (row.currency_code === baseCurrency.code) {
-        totalExpenseInBaseCurrency += originalAmount
+  const expenseByCurrency = { ...rawExpense }
+  expenseConversions.forEach(conv => {
+    if (expenseByCurrency[conv.fromCurrency]) {
+      expenseByCurrency[conv.fromCurrency].convertedAmount =
+        conv.convertedAmount
+      expenseByCurrency[conv.fromCurrency].exchangeRate = conv.exchangeRate
+      expenseByCurrency[conv.fromCurrency].success = conv.success
+      if (conv.success) {
+        totalExpenseInBaseCurrency += conv.convertedAmount
+      } else {
+        hasConversionErrors = true
+        if (conv.fromCurrency === baseCurrency.code) {
+          totalExpenseInBaseCurrency += conv.originalAmount
+        }
       }
     }
   })
 
-  // 计算净值（收入 - 支出）
+  // 5. 计算净值
   const netByCurrency: Record<string, ByCurrencyInfo> = {}
   const allCurrencies = new Set([
     ...Object.keys(incomeByCurrency),
@@ -715,19 +550,12 @@ export async function getIncomeExpenseAnalysis(
   allCurrencies.forEach(currencyCode => {
     const income = incomeByCurrency[currencyCode]
     const expense = expenseByCurrency[currencyCode]
-
     const incomeAmount = income?.originalAmount || 0
     const expenseAmount = expense?.originalAmount || 0
     const incomeConverted = income?.convertedAmount || 0
     const expenseConverted = expense?.convertedAmount || 0
-
-    // 使用收入或支出的货币信息（优先收入）
     const currency = income?.currency ||
-      expense?.currency || {
-        code: currencyCode,
-        symbol: currencyCode,
-        name: currencyCode,
-      }
+      expense?.currency || { code: currencyCode, symbol: '', name: '' }
 
     netByCurrency[currencyCode] = {
       originalAmount: incomeAmount - expenseAmount,

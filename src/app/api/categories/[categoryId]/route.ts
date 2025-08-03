@@ -13,7 +13,7 @@ import { getAllCategoryIds } from '@/lib/services/category-summary/utils'
 import {
   checkIfDescendantOptimized,
   getRootCategoryOptimized,
-} from '@/lib/database/queries/category-tree.queries'
+} from '@/lib/database/queries'
 
 export async function GET(
   request: NextRequest,

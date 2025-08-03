@@ -1,36 +1,14 @@
 import { prisma } from '@/lib/database/connection-manager'
-import { AccountType, TransactionType } from '@/types/core/constants'
+import { AccountType } from '@/types/core/constants'
 import { calculateTotalBalanceWithConversion } from '@/lib/services/account.service'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import { subMonths, endOfMonth, startOfMonth, format } from 'date-fns'
 import { BUSINESS_LIMITS } from '@/lib/constants/app-config'
-// import { getMonthlyIncomeExpense } from '@/lib/database/raw-queries'
-import { getDashboardCashFlow } from '@/lib/database/queries/report.queries'
-import { getNetWorthHistory } from '@/lib/database/queries/account.queries'
-
-// Dashboard service 专用类型定义
-type DashboardAccountWithTransactions = {
-  id: string
-  name: string
-  category: {
-    id: string
-    name: string
-    type: AccountType | undefined
-  }
-  transactions: Array<{
-    id: string
-    type: TransactionType
-    amount: number
-    date: string
-    description: string
-    notes: string | null
-    currency: {
-      code: string
-      symbol: string
-      name: string
-    }
-  }>
-}
+import {
+  getDashboardCashFlow,
+  getNetWorthHistory,
+} from '@/lib/database/queries'
+import { getIncomeExpenseAnalysis } from './dashboard-query.service'
 
 // Dashboard service 专用货币类型（匹配 getUserBaseCurrency 的返回值）
 type DashboardCurrency = {
@@ -75,58 +53,6 @@ export async function getUserBaseCurrency(userId: string) {
       name: '人民币',
     }
   )
-}
-
-/**
- * 获取用户的所有账户（用于计算）
- * @deprecated 此函数存在严重性能问题，请使用优化版本的函数
- */
-export async function getUserAccountsForCalculation(userId: string) {
-  console.warn(
-    'getUserAccountsForCalculation is deprecated due to performance issues. Consider using optimized alternatives.'
-  )
-
-  const accounts = await prisma.account.findMany({
-    where: { userId },
-    include: {
-      category: true,
-      transactions: {
-        include: {
-          currency: true,
-        },
-      },
-    },
-  })
-
-  // 转换账户数据格式，与原来的 API 保持一致
-  return accounts.map(account => ({
-    id: account.id,
-    name: account.name,
-    category: account.category
-      ? {
-          id: account.category.id,
-          name: account.category.name,
-          type: account.category.type as AccountType | undefined,
-        }
-      : {
-          id: 'unknown',
-          name: 'Unknown',
-          type: undefined,
-        },
-    transactions: account.transactions.map(t => ({
-      id: t.id,
-      type: t.type as TransactionType,
-      amount: parseFloat(t.amount.toString()),
-      date: t.date.toISOString(),
-      description: t.description,
-      notes: t.notes,
-      currency: {
-        code: t.currency.code,
-        symbol: t.currency.symbol,
-        name: t.currency.name,
-      },
-    })),
-  }))
 }
 
 /**
@@ -304,7 +230,6 @@ export async function getOptimizedMonthlyNetWorthData(
 export async function calculateMonthlyNetWorthData(
   userId: string,
   targetDate: Date,
-  accounts: DashboardAccountWithTransactions[],
   baseCurrency: DashboardCurrency
 ): Promise<{
   netWorth: number
@@ -314,28 +239,18 @@ export async function calculateMonthlyNetWorthData(
 }> {
   const monthEnd = endOfMonth(targetDate)
 
-  // 分离存量类账户（资产/负债）
-  const stockAccounts = accounts.filter(
-    account =>
-      account.category.type === AccountType.ASSET ||
-      account.category.type === AccountType.LIABILITY
-  )
-
-  // 使用已经过滤的存量类账户分别计算资产和负债
-  const assetAccounts = stockAccounts.filter(
-    account => account.category.type === AccountType.ASSET
-  )
-  const liabilityAccounts = stockAccounts.filter(
-    account => account.category.type === AccountType.LIABILITY
-  )
-
   const [assetResult, liabilityResult] = await Promise.all([
-    calculateTotalBalanceWithConversion(userId, assetAccounts, baseCurrency, {
-      asOfDate: monthEnd,
-    }),
     calculateTotalBalanceWithConversion(
       userId,
-      liabilityAccounts,
+      AccountType.ASSET,
+      baseCurrency,
+      {
+        asOfDate: monthEnd,
+      }
+    ),
+    calculateTotalBalanceWithConversion(
+      userId,
+      AccountType.LIABILITY,
       baseCurrency,
       { asOfDate: monthEnd }
     ),
@@ -360,7 +275,6 @@ export async function calculateMonthlyNetWorthData(
 export async function calculateMonthlyCashFlowData(
   userId: string,
   targetDate: Date,
-  accounts: DashboardAccountWithTransactions[],
   baseCurrency: DashboardCurrency
 ): Promise<{
   monthlyIncome: number
@@ -370,120 +284,23 @@ export async function calculateMonthlyCashFlowData(
 }> {
   const monthStart = startOfMonth(targetDate)
   const monthEnd = endOfMonth(targetDate)
+  const periodDays =
+    (monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24) + 1
 
-  // 分离流量类账户（收入/支出）
-  const flowAccounts = accounts.filter(
-    account =>
-      account.category.type === AccountType.INCOME ||
-      account.category.type === AccountType.EXPENSE
-  )
+  // 使用重构后的服务获取收支数据
+  const {
+    totalIncomeInBaseCurrency,
+    totalExpenseInBaseCurrency,
+    hasConversionErrors,
+  } = await getIncomeExpenseAnalysis(userId, baseCurrency, periodDays)
 
-  // 计算当月现金流（收入和支出）
-  const monthlyIncomeAmounts: Array<{
-    amount: number
-    currency: string
-  }> = []
-  const monthlyExpenseAmounts: Array<{
-    amount: number
-    currency: string
-  }> = []
-
-  // 只使用流量类账户计算现金流，与原来的 API 保持一致
-  flowAccounts.forEach(account => {
-    const accountType = account.category.type
-
-    if (
-      accountType === AccountType.INCOME ||
-      accountType === AccountType.EXPENSE
-    ) {
-      const monthlyTransactions = account.transactions.filter(t => {
-        const transactionDate = new Date(t.date)
-        return transactionDate >= monthStart && transactionDate <= monthEnd
-      })
-
-      monthlyTransactions.forEach(transaction => {
-        if (transaction.amount > 0) {
-          if (
-            accountType === AccountType.INCOME &&
-            transaction.type === TransactionType.INCOME
-          ) {
-            monthlyIncomeAmounts.push({
-              amount: transaction.amount,
-              currency: transaction.currency.code,
-            })
-          } else if (
-            accountType === AccountType.EXPENSE &&
-            transaction.type === TransactionType.EXPENSE
-          ) {
-            monthlyExpenseAmounts.push({
-              amount: transaction.amount,
-              currency: transaction.currency.code,
-            })
-          }
-        }
-      })
-    }
-  })
-
-  // 转换收支到本位币
-  const [incomeConversions, expenseConversions] = await Promise.all([
-    convertMultipleCurrencies(
-      userId,
-      monthlyIncomeAmounts,
-      baseCurrency.code,
-      monthEnd
-    ),
-    convertMultipleCurrencies(
-      userId,
-      monthlyExpenseAmounts,
-      baseCurrency.code,
-      monthEnd
-    ),
-  ])
-
-  const monthlyIncomeInBaseCurrency = incomeConversions.reduce(
-    (sum, result) => {
-      if (result.success) {
-        return sum + result.convertedAmount
-      } else if (result.originalCurrency === baseCurrency.code) {
-        // 只有相同货币时才使用原始金额
-        return sum + result.originalAmount
-      } else {
-        console.warn(
-          `收入汇率转换失败: ${result.originalCurrency} -> ${baseCurrency.code}`
-        )
-        return sum // 不添加转换失败的金额
-      }
-    },
-    0
-  )
-
-  const monthlyExpenseInBaseCurrency = expenseConversions.reduce(
-    (sum, result) => {
-      if (result.success) {
-        return sum + result.convertedAmount
-      } else if (result.originalCurrency === baseCurrency.code) {
-        // 只有相同货币时才使用原始金额
-        return sum + result.originalAmount
-      } else {
-        console.warn(
-          `支出汇率转换失败: ${result.originalCurrency} -> ${baseCurrency.code}`
-        )
-        return sum // 不添加转换失败的金额
-      }
-    },
-    0
-  )
-
-  const netCashFlow = monthlyIncomeInBaseCurrency - monthlyExpenseInBaseCurrency
+  const netCashFlow = totalIncomeInBaseCurrency - totalExpenseInBaseCurrency
 
   return {
-    monthlyIncome: monthlyIncomeInBaseCurrency,
-    monthlyExpense: monthlyExpenseInBaseCurrency,
+    monthlyIncome: totalIncomeInBaseCurrency,
+    monthlyExpense: totalExpenseInBaseCurrency,
     netCashFlow,
-    hasConversionErrors:
-      incomeConversions.some(r => !r.success) ||
-      expenseConversions.some(r => !r.success),
+    hasConversionErrors,
   }
 }
 
@@ -659,24 +476,34 @@ export async function getOptimizedMonthlyCashFlowData(
  * 生成月份列表
  */
 export function generateMonthsList(
-  months: number,
-  useAllData: boolean = false
+  monthsOrStartDate: number | Date,
+  endDate: Date = new Date()
 ): Date[] {
-  if (useAllData) {
-    // 对于 "all" 参数，使用传入的 months 值（通常是 1000），但限制在合理范围内
-    months = Math.min(months, BUSINESS_LIMITS.MAX_CHART_MONTHS)
+  const monthsList: Date[] = []
+  let startDate: Date
+
+  if (typeof monthsOrStartDate === 'number') {
+    // 基于月份数生成
+    const months = Math.min(monthsOrStartDate, BUSINESS_LIMITS.MAX_CHART_MONTHS)
+    startDate = subMonths(endDate, months - 1)
   } else {
-    months = Math.min(months, BUSINESS_LIMITS.MAX_CHART_MONTHS)
+    // 基于开始日期生成
+    startDate = monthsOrStartDate
   }
 
-  const monthsList: Date[] = []
-  const now = new Date()
+  let currentMonth = startOfMonth(startDate)
+  const finalMonth = startOfMonth(endDate)
 
-  for (let i = months - 1; i >= 0; i--) {
-    // 修复：生成每个月的第一天，而不是保持当前日期
-    const monthDate = subMonths(now, i)
-    const firstDayOfMonth = startOfMonth(monthDate)
-    monthsList.push(firstDayOfMonth)
+  while (currentMonth <= finalMonth) {
+    monthsList.push(currentMonth)
+    const nextMonthDate = new Date(currentMonth)
+    nextMonthDate.setMonth(nextMonthDate.getMonth() + 1)
+    currentMonth = startOfMonth(nextMonthDate)
+  }
+
+  // 确保不超过最大月份限制
+  if (monthsList.length > BUSINESS_LIMITS.MAX_CHART_MONTHS) {
+    return monthsList.slice(-BUSINESS_LIMITS.MAX_CHART_MONTHS)
   }
 
   return monthsList

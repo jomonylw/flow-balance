@@ -10,6 +10,10 @@ import { AccountType } from '@/types/core/constants'
 import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import { normalizeEndOfDay, getDaysAgoDateRange } from '@/lib/utils/date-range'
 import { calculateHistoricalCAGR } from '@/lib/services/cagr.service'
+import {
+  getPast12MonthsExpense,
+  getPast6MonthsIncomeExpense,
+} from '@/lib/database/queries'
 import { calculateTotalBalanceWithConversion as calculateTotalBalanceByAccountType } from '@/lib/services/dashboard-query.service'
 
 /**
@@ -66,6 +70,22 @@ async function calculateOptimizedNetWorth(
  * 提供 FIRE 计算所需的基础数据
  */
 export async function GET(_request: NextRequest) {
+  // 定义查询返回的行类型
+  interface IncomeExpenseRow {
+    transaction_type: string
+    currency_code: string
+    currency_symbol: string
+    currency_name: string
+    total_amount: number
+  }
+
+  interface ExpenseRow {
+    currency_code: string
+    currency_symbol: string
+    currency_name: string
+    total_amount: number
+  }
+
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -125,62 +145,25 @@ export async function GET(_request: NextRequest) {
 
         // 并行任务3：使用数据库聚合计算收支数据（优化版）
         (async () => {
-          // 使用数据库聚合直接计算过去12个月的支出
-          const past12MonthsExpenseData = await prisma.$queryRaw<
-            Array<{
-              currency_code: string
-              currency_symbol: string
-              currency_name: string
-              total_amount: number
-            }>
-          >`
-          SELECT
-            cur.code as currency_code,
-            cur.symbol as currency_symbol,
-            cur.name as currency_name,
-            SUM(t.amount) as total_amount
-          FROM transactions t
-          INNER JOIN currencies cur ON t."currencyId" = cur.id
-          WHERE t."userId" = ${user.id}
-            AND t.date >= ${twelveMonthsAgo}
-            AND t.date <= ${nowEndOfDay}
-            AND t.type = 'EXPENSE'
-          GROUP BY cur.code, cur.symbol, cur.name
-          ORDER BY total_amount DESC
-        `
-
-          // 使用数据库聚合直接计算过去6个月的收入和支出
-          const past6MonthsIncomeExpenseData = await prisma.$queryRaw<
-            Array<{
-              transaction_type: string
-              currency_code: string
-              currency_symbol: string
-              currency_name: string
-              total_amount: number
-            }>
-          >`
-          SELECT
-            t.type as transaction_type,
-            cur.code as currency_code,
-            cur.symbol as currency_symbol,
-            cur.name as currency_name,
-            SUM(t.amount) as total_amount
-          FROM transactions t
-          INNER JOIN currencies cur ON t."currencyId" = cur.id
-          WHERE t."userId" = ${user.id}
-            AND t.date >= ${sixMonthsAgo}
-            AND t.date <= ${nowEndOfDay}
-            AND t.type IN ('INCOME', 'EXPENSE')
-          GROUP BY t.type, cur.code, cur.symbol, cur.name
-          ORDER BY t.type, total_amount DESC
-        `
+          // 使用重构后的查询函数
+          const past12MonthsExpenseData = await getPast12MonthsExpense(
+            user.id,
+            twelveMonthsAgo,
+            nowEndOfDay
+          )
+          const past6MonthsIncomeExpenseData =
+            await getPast6MonthsIncomeExpense(
+              user.id,
+              sixMonthsAgo,
+              nowEndOfDay
+            )
 
           // 分离收入和支出数据
           const past6MonthsIncomeData = past6MonthsIncomeExpenseData.filter(
-            row => row.transaction_type === 'INCOME'
+            (row: IncomeExpenseRow) => row.transaction_type === 'INCOME'
           )
           const past6MonthsExpenseData = past6MonthsIncomeExpenseData.filter(
-            row => row.transaction_type === 'EXPENSE'
+            (row: IncomeExpenseRow) => row.transaction_type === 'EXPENSE'
           )
 
           // 数据库聚合查询完成，大幅减少数据传输量
@@ -222,22 +205,26 @@ export async function GET(_request: NextRequest) {
     } = recentTransactionsData
 
     // 准备过去12个月支出的货币转换数据
-    const expenseAmounts = past12MonthsExpenseData.map(row => ({
+    const expenseAmounts = past12MonthsExpenseData.map((row: ExpenseRow) => ({
       amount: Number(row.total_amount),
       currency: row.currency_code,
     }))
 
     // 准备过去6个月收入的货币转换数据
-    const recentIncomeAmounts = past6MonthsIncomeData.map(row => ({
-      amount: Number(row.total_amount),
-      currency: row.currency_code,
-    }))
+    const recentIncomeAmounts = past6MonthsIncomeData.map(
+      (row: IncomeExpenseRow) => ({
+        amount: Number(row.total_amount),
+        currency: row.currency_code,
+      })
+    )
 
     // 准备过去6个月支出的货币转换数据
-    const recentExpenseAmounts = past6MonthsExpenseData.map(row => ({
-      amount: Number(row.total_amount),
-      currency: row.currency_code,
-    }))
+    const recentExpenseAmounts = past6MonthsExpenseData.map(
+      (row: IncomeExpenseRow) => ({
+        amount: Number(row.total_amount),
+        currency: row.currency_code,
+      })
+    )
 
     // 并行计算所有货币转换
     let totalExpenses = 0
@@ -312,14 +299,32 @@ export async function GET(_request: NextRequest) {
       console.error('转换收支金额失败:', error)
       // 转换失败时使用原始金额作为近似值（仅限相同币种）
       totalExpenses = expenseAmounts
-        .filter(expense => expense.currency === baseCurrency.code)
-        .reduce((sum, expense) => sum + expense.amount, 0)
+        .filter(
+          (expense: { currency: string }) =>
+            expense.currency === baseCurrency.code
+        )
+        .reduce(
+          (sum: number, expense: { amount: number }) => sum + expense.amount,
+          0
+        )
       totalIncomeRecent = recentIncomeAmounts
-        .filter(income => income.currency === baseCurrency.code)
-        .reduce((sum, income) => sum + income.amount, 0)
+        .filter(
+          (income: { currency: string }) =>
+            income.currency === baseCurrency.code
+        )
+        .reduce(
+          (sum: number, income: { amount: number }) => sum + income.amount,
+          0
+        )
       totalExpensesRecent = recentExpenseAmounts
-        .filter(expense => expense.currency === baseCurrency.code)
-        .reduce((sum, expense) => sum + expense.amount, 0)
+        .filter(
+          (expense: { currency: string }) =>
+            expense.currency === baseCurrency.code
+        )
+        .reduce(
+          (sum: number, expense: { amount: number }) => sum + expense.amount,
+          0
+        )
     }
 
     const monthlyNetInvestment = Math.max(

@@ -355,7 +355,8 @@ export async function getStockCategorySummary(
     currency: string
   }> = []
 
-  for (const monthData of Object.values(accountDataByMonth)) {
+  for (const month of allMonths) {
+    const monthData = accountDataByMonth[month] || {}
     for (const accountData of Object.values(monthData)) {
       for (const [currency, amount] of Object.entries(accountData.amounts)) {
         if (amount !== 0 && currency !== baseCurrency.code) {

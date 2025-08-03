@@ -16,8 +16,8 @@ import {
   getAccountBalanceDetails,
   calculateTotalBalanceWithConversion,
   getIncomeExpenseAnalysis,
-  getAccountCountByType,
 } from '@/lib/services/dashboard-query.service'
+import { getAccountCountByType } from '@/lib/database/queries'
 import type { ByCurrencyInfo } from '@/types/core'
 
 export async function GET() {

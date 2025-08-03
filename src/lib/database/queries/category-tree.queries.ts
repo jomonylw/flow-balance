@@ -137,48 +137,50 @@ export async function getCategoryAncestorsOptimized(
 ): Promise<Category[]> {
   try {
     if (isPostgreSQL()) {
-      // PostgreSQL 版本：使用递归 CTE
+      // PostgreSQL 版本：使用递归 CTE，按层级排序
       const result = await prisma.$queryRaw<Category[]>`
         WITH RECURSIVE ancestor_tree AS (
-          -- 基础查询：选择起始分类的父分类
-          SELECT c.id, c.name, c."parentId", c.type, c."userId", c."order", c."createdAt", c."updatedAt"
+          -- 基础查询：选择起始分类的父分类，层级为1
+          SELECT c.id, c.name, c."parentId", c.type, c."userId", c."order", c."createdAt", c."updatedAt", 1 as level
           FROM categories c
           INNER JOIN categories start ON start.id = ${categoryId}
           WHERE c.id = start."parentId"
 
           UNION ALL
 
-          -- 递归查询：选择父分类的父分类
-          SELECT c.id, c.name, c."parentId", c.type, c."userId", c."order", c."createdAt", c."updatedAt"
+          -- 递归查询：选择父分类的父分类，层级+1
+          SELECT c.id, c.name, c."parentId", c.type, c."userId", c."order", c."createdAt", c."updatedAt", at.level + 1
           FROM categories c
           INNER JOIN ancestor_tree at ON c.id = at."parentId"
         )
-        SELECT * FROM ancestor_tree 
-        ORDER BY "createdAt" ASC
+        -- 选择分类数据，并按层级从高到低排序（根在前）
+        SELECT id, name, "parentId", type, "userId", "order", "createdAt", "updatedAt"
+        FROM ancestor_tree
+        ORDER BY level DESC
       `
-
       return result
     } else {
-      // SQLite 版本：使用递归 CTE
+      // SQLite 版本：使用递归 CTE，按层级排序
       const result = await prisma.$queryRaw<Category[]>`
         WITH RECURSIVE ancestor_tree AS (
-          -- 基础查询：选择起始分类的父分类
-          SELECT c.id, c.name, c.parentId, c.type, c.userId, c."order", c.createdAt, c.updatedAt
+          -- 基础查询：选择起始分类的父分类，层级为1
+          SELECT c.id, c.name, c.parentId, c.type, c.userId, c."order", c.createdAt, c.updatedAt, 1 as level
           FROM categories c
           INNER JOIN categories start ON start.id = ${categoryId}
           WHERE c.id = start.parentId
 
           UNION ALL
 
-          -- 递归查询：选择父分类的父分类
-          SELECT c.id, c.name, c.parentId, c.type, c.userId, c."order", c.createdAt, c.updatedAt
+          -- 递归查询：选择父分类的父分类，层级+1
+          SELECT c.id, c.name, c.parentId, c.type, c.userId, c."order", c.createdAt, c.updatedAt, at.level + 1
           FROM categories c
           INNER JOIN ancestor_tree at ON c.id = at.parentId
         )
-        SELECT * FROM ancestor_tree 
-        ORDER BY createdAt ASC
+        -- 选择分类数据，并按层级从高到低排序（根在前）
+        SELECT id, name, parentId, type, userId, "order", createdAt, updatedAt
+        FROM ancestor_tree
+        ORDER BY level DESC
       `
-
       return result
     }
   } catch (error) {

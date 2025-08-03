@@ -11,7 +11,7 @@ import {
   publishBalanceUpdate,
   publishTransactionUpdate,
 } from '@/lib/services/data-update.service'
-import { getAccountBalanceHistory } from '@/lib/database/queries/balance-history.queries'
+import { getAccountTransactionHistory } from '@/lib/database/queries'
 
 export async function POST(request: NextRequest) {
   try {
@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 使用优化的查询服务
-    const result = await getAccountBalanceHistory(
+    const result = await getAccountTransactionHistory(
       user.id,
       accountId,
       currencyCode || undefined,

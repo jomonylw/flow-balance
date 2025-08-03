@@ -237,15 +237,8 @@ export async function getFlowCategorySummary(
   }
 
   // 5. 使用统一查询服务获取月度流量数据
-  const endDate = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-    23,
-    59,
-    59,
-    999
-  )
+  const endDate = new Date(now)
+  endDate.setHours(23, 59, 59, 999) // 设置为当天的最后一毫秒
 
   const aggregatedData = await getMonthlyFlowSummary(
     categoryId,
@@ -328,7 +321,8 @@ export async function getFlowCategorySummary(
     currency: string
   }> = []
 
-  for (const monthData of Object.values(accountDataByMonth)) {
+  for (const month of allMonths) {
+    const monthData = accountDataByMonth[month] || {}
     for (const accountData of Object.values(monthData)) {
       for (const [currency, amount] of Object.entries(accountData.amounts)) {
         if (amount !== 0 && currency !== baseCurrency.code) {

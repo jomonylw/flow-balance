@@ -10,7 +10,7 @@ import {
 import { TransactionType } from '@prisma/client'
 import { normalizeDateRange } from '@/lib/utils/date-range'
 import { getAllCategoryIds } from '@/lib/services/category-summary/utils'
-import { getTransactionStats } from '@/lib/database/queries/transaction-stats.queries'
+import { getTransactionStats } from '@/lib/database/queries'
 
 // 注意：getDescendantCategoryIds 已替换为优化的 getAllCategoryIds 函数
 

@@ -8,7 +8,11 @@ import {
   unauthorizedResponse,
   notFoundResponse,
 } from '@/lib/api/response'
-import { getAccountBalanceHistory } from '@/lib/database/raw-queries'
+import {
+  getAccountBalanceHistory,
+  getOptimizedMonthlyStats,
+  getOptimizedTransactionStats,
+} from '@/lib/database/queries'
 
 export async function GET(
   request: NextRequest,
@@ -94,141 +98,6 @@ export async function GET(
     console.error('Get account details error:', error)
     return errorResponse(getAccountError('GET_DETAILS_FAILED'), 500)
   }
-}
-
-/**
- * 优化的交易统计函数
- */
-async function getOptimizedTransactionStats(
-  accountId: string,
-  userId: string
-): Promise<{
-  total: number
-  income: number
-  expense: number
-  balanceAdjustment: number
-}> {
-  const stats = await prisma.$queryRaw<
-    Array<{
-      transaction_type: string
-      count: number
-    }>
-  >`
-    SELECT
-      t.type as transaction_type,
-      COUNT(*) as count
-    FROM transactions t
-    WHERE t."accountId" = ${accountId}
-      AND t."userId" = ${userId}
-    GROUP BY t.type
-  `
-
-  const result = {
-    total: 0,
-    income: 0,
-    expense: 0,
-    balanceAdjustment: 0,
-  }
-
-  stats.forEach(stat => {
-    const count = Number(stat.count)
-    result.total += count
-
-    switch (stat.transaction_type) {
-      case 'INCOME':
-        result.income = count
-        break
-      case 'EXPENSE':
-        result.expense = count
-        break
-      case 'BALANCE':
-        result.balanceAdjustment = count
-        break
-    }
-  })
-
-  return result
-}
-
-/**
- * 优化的月度统计函数
- */
-async function getOptimizedMonthlyStats(
-  accountId: string,
-  userId: string
-): Promise<
-  Array<{
-    month: string
-    income: number
-    expense: number
-    count: number
-    net: number
-  }>
-> {
-  // 获取最近12个月的数据
-  const now = new Date()
-  const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1)
-
-  const monthlyData = await prisma.$queryRaw<
-    Array<{
-      month: string
-      transaction_type: string
-      total_amount: number
-      count: number
-    }>
-  >`
-    SELECT
-      to_char(t.date, 'YYYY-MM') as month,
-      t.type as transaction_type,
-      SUM(t.amount) as total_amount,
-      COUNT(*) as count
-    FROM transactions t
-    WHERE t."accountId" = ${accountId}
-      AND t."userId" = ${userId}
-      AND t.date >= ${twelveMonthsAgo}
-      AND t.type IN ('INCOME', 'EXPENSE')
-    GROUP BY month, t.type
-    ORDER BY month DESC
-  `
-
-  // 初始化最近12个月的数据结构
-  const monthlyStats: Record<
-    string,
-    { income: number; expense: number; count: number }
-  > = {}
-
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-    monthlyStats[monthKey] = { income: 0, expense: 0, count: 0 }
-  }
-
-  // 填充实际数据
-  monthlyData.forEach(row => {
-    const month = row.month
-    const amount = parseFloat(row.total_amount.toString())
-    const count = Number(row.count)
-
-    if (monthlyStats[month]) {
-      monthlyStats[month].count += count
-
-      if (row.transaction_type === 'INCOME') {
-        monthlyStats[month].income = amount
-      } else if (row.transaction_type === 'EXPENSE') {
-        monthlyStats[month].expense = amount
-      }
-    }
-  })
-
-  // 转换为数组格式并计算净值
-  return Object.entries(monthlyStats)
-    .sort(([a], [b]) => b.localeCompare(a))
-    .slice(0, 12)
-    .map(([month, stats]) => ({
-      month,
-      ...stats,
-      net: stats.income - stats.expense,
-    }))
 }
 
 /**

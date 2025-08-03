@@ -20,7 +20,7 @@ import {
   publishSystemUpdate,
 } from '@/lib/services/data-update.service'
 import { Transaction, LegacyAccount } from '@/types/business/transaction'
-import type { CategoryTransaction } from '@/types/core'
+import type { CategoryTransaction, CategoryType } from '@/types/core'
 import type { FlowMonthlyData, FlowSummaryData } from '@/types/components'
 import { convertPrismaAccountType, AccountType } from '@/types/core/constants'
 
@@ -99,7 +99,11 @@ export default function FlowCategoryDetailView({
 
   // 数据转换函数：将API返回的数据转换为图表需要的格式
   const transformDataForChart = useCallback(
-    (data: FlowSummaryData, baseCurrencyCode: string): FlowMonthlyData => {
+    (
+      data: FlowSummaryData,
+      baseCurrencyCode: string,
+      categoryType: CategoryType
+    ): FlowMonthlyData => {
       const chartData: FlowMonthlyData = {}
 
       data.forEach(monthItem => {
@@ -118,59 +122,48 @@ export default function FlowCategoryDetailView({
         let totalExpense = 0
         let totalTransactionCount = 0
 
-        // 处理子分类
-        monthItem.childCategories.forEach(childCategory => {
-          let categoryIncome = 0
-          let categoryExpense = 0
+        // A helper function to process balances for both sub-categories and direct accounts
+        const processBalances = (
+          items:
+            | typeof monthItem.childCategories
+            | typeof monthItem.directAccounts,
+          isSubCategory: boolean
+        ) => {
+          items.forEach(item => {
+            let itemIncome = 0
+            let itemExpense = 0
 
-          Object.values(childCategory.balances.converted).forEach(balance => {
-            const amount = balance as number
-            if (amount > 0) {
-              categoryIncome += amount
-              totalIncome += amount
-            } else if (amount < 0) {
-              categoryExpense += Math.abs(amount)
-              totalExpense += Math.abs(amount)
+            Object.values(item.balances.converted).forEach(balance => {
+              const amount = parseFloat(String(balance))
+              if (isNaN(amount) || amount === 0) return
+
+              // The API sends positive values, so we use categoryType to interpret them.
+              if (categoryType === 'EXPENSE') {
+                itemExpense += amount
+              } else {
+                itemIncome += amount
+              }
+            })
+
+            if (itemIncome > 0 || itemExpense > 0) {
+              chartData[monthKey][baseCurrencyCode].categories[item.name] = {
+                income: itemIncome,
+                expense: itemExpense,
+                balance: itemIncome - itemExpense,
+              }
+            }
+            totalIncome += itemIncome
+            totalExpense += itemExpense
+            if (!isSubCategory) {
+              totalTransactionCount += (
+                item as (typeof monthItem.directAccounts)[0]
+              ).transactionCount
             }
           })
+        }
 
-          if (categoryIncome > 0 || categoryExpense > 0) {
-            chartData[monthKey][baseCurrencyCode].categories[
-              childCategory.name
-            ] = {
-              income: categoryIncome,
-              expense: categoryExpense,
-              balance: categoryIncome - categoryExpense,
-            }
-          }
-        })
-
-        // 处理直属账户
-        monthItem.directAccounts.forEach(account => {
-          let accountIncome = 0
-          let accountExpense = 0
-
-          Object.values(account.balances.converted).forEach(balance => {
-            const amount = balance as number
-            if (amount > 0) {
-              accountIncome += amount
-              totalIncome += amount
-            } else if (amount < 0) {
-              accountExpense += Math.abs(amount)
-              totalExpense += Math.abs(amount)
-            }
-          })
-
-          totalTransactionCount += account.transactionCount
-
-          if (accountIncome > 0 || accountExpense > 0) {
-            chartData[monthKey][baseCurrencyCode].categories[account.name] = {
-              income: accountIncome,
-              expense: accountExpense,
-              balance: accountIncome - accountExpense,
-            }
-          }
-        })
+        processBalances(monthItem.childCategories, true)
+        processBalances(monthItem.directAccounts, false)
 
         // 设置月度汇总
         chartData[monthKey][baseCurrencyCode].income = totalIncome
@@ -204,7 +197,8 @@ export default function FlowCategoryDetailView({
           const baseCurrencyCode = user.settings?.baseCurrency?.code || 'CNY'
           const transformedData = transformDataForChart(
             summaryResult.data,
-            baseCurrencyCode
+            baseCurrencyCode,
+            category.type as CategoryType
           )
           setChartData(transformedData)
         }
@@ -214,7 +208,12 @@ export default function FlowCategoryDetailView({
         setIsLoadingSummary(false)
       }
     },
-    [category.id, user.settings?.baseCurrency?.code, transformDataForChart]
+    [
+      category.id,
+      category.type,
+      user.settings?.baseCurrency?.code,
+      transformDataForChart,
+    ]
   )
 
   useEffect(() => {
@@ -652,6 +651,7 @@ export default function FlowCategoryDetailView({
               <FlowMonthlySummaryChart
                 monthlyData={chartData}
                 baseCurrency={baseCurrencyForChart}
+                categoryType={category.type as CategoryType}
                 title={`${category.name} - ${t('category.monthly.cash.flow.summary')}`}
                 height={600}
                 showPieChart={true}

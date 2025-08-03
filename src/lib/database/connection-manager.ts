@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { API_TIMEOUTS } from '@/lib/constants/app-config'
+import { checkDatabaseConnection } from './queries'
 
 // Declare a global variable to cache the PrismaClient instance
 // This prevents creating multiple PrismaClient instances during development hot-reloading
@@ -102,8 +103,8 @@ if (process.env.NODE_ENV !== 'production') {
 // Enhanced connection management for serverless environment
 export async function ensureConnection() {
   try {
-    // Test the connection with a simple query
-    await prisma.$queryRaw`SELECT 1`
+    // Test the connection using the centralized query function
+    await checkDatabaseConnection()
     return prisma
   } catch (error) {
     console.warn(
@@ -121,7 +122,7 @@ export async function ensureConnection() {
         // 重新连接
         await prisma.$connect()
         // 测试连接
-        await prisma.$queryRaw`SELECT 1`
+        await checkDatabaseConnection()
         console.warn(`✅ Reconnected to database on attempt ${i + 1}`)
         return prisma
       } catch (reconnectError) {

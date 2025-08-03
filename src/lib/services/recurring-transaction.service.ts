@@ -675,7 +675,6 @@ export class RecurringTransactionService {
                 })
 
                 performanceMetrics.skippedDueToExisting++
-                processed++ // 仍然计为已处理，因为状态得到了更新
                 continue
               }
 

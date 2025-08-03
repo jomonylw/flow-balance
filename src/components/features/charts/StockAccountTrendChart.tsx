@@ -129,11 +129,36 @@ export default function StockAccountTrendChart({
           const itemCurrency = item?.originalCurrency || originalCurrency
 
           // 使用统一的日期格式化
-          const date = new Date(param.axisValue)
-          const formattedDate =
-            timeRange === 'lastMonth'
-              ? formatChartDate(date, 'day')
-              : formatChartDate(date, 'month')
+          let date: Date
+          let formattedDate: string
+          try {
+            if (timeRange === 'lastMonth') {
+              // 日期格式：YYYY-MM-DD，直接解析
+              date = new Date(param.axisValue + 'T00:00:00')
+            } else {
+              // 月份格式：YYYY-MM，需要补充日期部分
+              date = new Date(param.axisValue + '-01T00:00:00')
+            }
+
+            // 检查日期是否有效
+            if (isNaN(date.getTime())) {
+              console.warn('Invalid date in tooltip:', param.axisValue)
+              formattedDate = param.axisValue // 使用原始值作为后备
+            } else {
+              formattedDate =
+                timeRange === 'lastMonth'
+                  ? formatChartDate(date, 'day')
+                  : formatChartDate(date, 'month')
+            }
+          } catch (error) {
+            console.warn(
+              'Error formatting tooltip date:',
+              error,
+              'value:',
+              param.axisValue
+            )
+            formattedDate = param.axisValue // 使用原始值作为后备
+          }
 
           return `
             <div style="padding: 8px;">
@@ -168,13 +193,37 @@ export default function StockAccountTrendChart({
           fontSize: window.innerWidth < 768 ? 10 : 12,
           interval: window.innerWidth < 768 ? 'auto' : 0,
           formatter: function (value: string) {
-            const date = new Date(value)
-            if (timeRange === 'lastMonth') {
-              // 日期格式：显示月-日，遵循用户日期格式偏好
-              return formatChartDate(date, 'day')
-            } else {
-              // 月份格式：显示年/月，遵循用户日期格式偏好
-              return formatChartDate(date, 'month')
+            try {
+              let date: Date
+              if (timeRange === 'lastMonth') {
+                // 日期格式：YYYY-MM-DD，直接解析
+                date = new Date(value + 'T00:00:00')
+              } else {
+                // 月份格式：YYYY-MM，需要补充日期部分
+                date = new Date(value + '-01T00:00:00')
+              }
+
+              // 检查日期是否有效
+              if (isNaN(date.getTime())) {
+                console.warn('Invalid date in chart formatter:', value)
+                return value // 返回原始值作为后备
+              }
+
+              if (timeRange === 'lastMonth') {
+                // 日期格式：显示月-日，遵循用户日期格式偏好
+                return formatChartDate(date, 'day')
+              } else {
+                // 月份格式：显示年/月，遵循用户日期格式偏好
+                return formatChartDate(date, 'month')
+              }
+            } catch (error) {
+              console.warn(
+                'Error formatting chart date:',
+                error,
+                'value:',
+                value
+              )
+              return value // 返回原始值作为后备
             }
           },
         },

@@ -3,99 +3,66 @@
 /**
  * Flow Balance - Database Switch Script
  * 数据库切换脚本，支持 SQLite 和 PostgreSQL
+ * 仅更新 schema.prisma 文件中的 provider
  */
 
 const fs = require('fs')
 const path = require('path')
 
-const SCHEMA_DIR = path.join(__dirname, '..', 'prisma')
-const SQLITE_SCHEMA = path.join(SCHEMA_DIR, 'schema.prisma')
-const POSTGRESQL_SCHEMA = path.join(SCHEMA_DIR, 'schema.postgresql.prisma')
+const SCHEMA_PATH = path.join(__dirname, '..', 'prisma', 'schema.prisma')
 
 function showUsage() {
   console.log(`
-Flow Balance - Database Switch Script
+Flow Balance - Database Provider Switch Script
 
 Usage:
   node scripts/switch-database.js <database-type>
 
 Database Types:
-  sqlite      - Switch to SQLite (development)
-  postgresql  - Switch to PostgreSQL (production)
+  sqlite      - Switch provider to "sqlite"
+  postgresql  - Switch provider to "postgresql"
   postgres    - Alias for postgresql
 
 Examples:
   node scripts/switch-database.js sqlite
   node scripts/switch-database.js postgresql
 
-Environment Variables:
-  DATABASE_URL - Will be updated based on database type
+This script only modifies the 'provider' in the datasource block of your schema.prisma.
 `)
 }
 
-function switchToSQLite() {
-  console.log('🔄 Switching to SQLite database...')
+function switchProvider(provider) {
+  console.log(`🔄 Switching provider to "${provider}"...`)
 
-  // 备份当前 schema
-  if (fs.existsSync(SQLITE_SCHEMA)) {
-    const backupPath = `${SQLITE_SCHEMA}.backup.${Date.now()}`
-    fs.copyFileSync(SQLITE_SCHEMA, backupPath)
-    console.log(`📦 Current schema backed up to: ${backupPath}`)
-  }
-
-  // 读取当前 schema 并修改 provider
-  let schemaContent = fs.readFileSync(SQLITE_SCHEMA, 'utf8')
-
-  // 替换 datasource 配置
-  schemaContent = schemaContent.replace(
-    /datasource db \{[\s\S]*?\}/,
-    `datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}`
-  )
-
-  // 写入修改后的 schema
-  fs.writeFileSync(SQLITE_SCHEMA, schemaContent)
-
-  console.log('✅ Successfully switched to SQLite')
-  console.log('📝 Please update your .env file:')
-  console.log('   DATABASE_URL="file:./prisma/dev.db"')
-  console.log('')
-  console.log('🔧 Next steps:')
-  console.log('   pnpm db:generate')
-  console.log('   pnpm db:migrate')
-}
-
-function switchToPostgreSQL() {
-  console.log('🔄 Switching to PostgreSQL database...')
-
-  // 检查是否存在 PostgreSQL schema 文件
-  if (!fs.existsSync(POSTGRESQL_SCHEMA)) {
-    console.error('❌ PostgreSQL schema file not found!')
-    console.error(`   Expected: ${POSTGRESQL_SCHEMA}`)
+  if (!fs.existsSync(SCHEMA_PATH)) {
+    console.error(`❌ Schema file not found at: ${SCHEMA_PATH}`)
     process.exit(1)
   }
 
-  // 备份当前 schema
-  if (fs.existsSync(SQLITE_SCHEMA)) {
-    const backupPath = `${SQLITE_SCHEMA}.backup.${Date.now()}`
-    fs.copyFileSync(SQLITE_SCHEMA, backupPath)
-    console.log(`📦 Current schema backed up to: ${backupPath}`)
+  const schemaContent = fs.readFileSync(SCHEMA_PATH, 'utf8')
+
+  // 使用正则表达式替换 provider 的值
+  const updatedSchemaContent = schemaContent.replace(
+    /(datasource db {\s*provider\s*=\s*")[^"]*(")/,
+    `$1${provider}$2`
+  )
+
+  if (schemaContent === updatedSchemaContent) {
+    console.warn(
+      `🟡 Provider is already set to "${provider}". No changes made.`
+    )
+    return
   }
 
-  // 复制 PostgreSQL schema
-  fs.copyFileSync(POSTGRESQL_SCHEMA, SQLITE_SCHEMA)
+  fs.writeFileSync(SCHEMA_PATH, updatedSchemaContent)
 
-  console.log('✅ Successfully switched to PostgreSQL')
-  console.log('📝 Please update your .env file:')
   console.log(
-    '   DATABASE_URL="postgresql://username:password@localhost:5432/flowbalance?schema=public"'
+    `✅ Successfully switched provider to "${provider}" in ${SCHEMA_PATH}`
   )
-  console.log('')
   console.log('🔧 Next steps:')
-  console.log('   pnpm db:generate')
-  console.log('   pnpm db:migrate')
+  console.log('   - Update your DATABASE_URL in the .env file accordingly.')
+  console.log('   - Run `pnpm db:generate` to update Prisma Client.')
+  console.log('   - Run `pnpm db:migrate` if you have schema changes.')
 }
 
 function main() {
@@ -110,12 +77,12 @@ function main() {
 
   switch (dbType) {
     case 'sqlite':
-      switchToSQLite()
+      switchProvider('sqlite')
       break
 
     case 'postgresql':
     case 'postgres':
-      switchToPostgreSQL()
+      switchProvider('postgresql')
       break
 
     default:
@@ -131,6 +98,5 @@ if (require.main === module) {
 }
 
 module.exports = {
-  switchToSQLite,
-  switchToPostgreSQL,
+  switchProvider,
 }

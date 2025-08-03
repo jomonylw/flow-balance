@@ -13,7 +13,7 @@ import { convertMultipleCurrencies } from '@/lib/services/currency.service'
 import {
   getAccountTrendData,
   getFlowAccountTrendData,
-} from '@/lib/database/queries/account.queries'
+} from '@/lib/database/queries'
 import { subMonths, subDays } from 'date-fns'
 import type { TrendDataPoint } from '@/types/core'
 

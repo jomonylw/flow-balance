@@ -30,6 +30,7 @@ interface FlowMonthlySummaryChartProps {
   height?: number
   accounts?: LocalFlowAccount[]
   showPieChart?: boolean
+  categoryType: CategoryType // 新增：明确的分类类型 'INCOME' | 'EXPENSE'
   onTimeRangeChange?: (timeRange: FlowTimeRange) => void // 新增时间范围变更回调
   loading?: boolean // 新增外部loading状态
 }
@@ -41,6 +42,7 @@ export default function FlowMonthlySummaryChart({
   height = CHART.DEFAULT_HEIGHT,
   accounts = [],
   showPieChart = false,
+  categoryType,
   onTimeRangeChange,
   loading = false,
 }: FlowMonthlySummaryChartProps) {
@@ -141,8 +143,17 @@ export default function FlowMonthlySummaryChart({
 
       const months = Object.keys(filteredData).sort()
       const formattedMonths = months.map(month => {
-        const date = new Date(month + '-01')
-        return formatChartDate(date, 'month')
+        try {
+          const date = new Date(month + '-01T00:00:00')
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid date in chart data:', month)
+            return month
+          }
+          return formatChartDate(date, 'month')
+        } catch (error) {
+          console.warn('Error formatting chart date:', error, 'month:', month)
+          return month
+        }
       })
 
       // 根据数据点数量动态设置X轴显示
@@ -180,15 +191,8 @@ export default function FlowMonthlySummaryChart({
         }
       )
 
-      // 判断是收入类还是支出类
-      let isIncomeCategory = true
-      if (months.length > 0) {
-        const firstMonthData = monthlyData[months[0]]
-        const currencyData = firstMonthData[baseCurrency.code]
-        if (currencyData) {
-          isIncomeCategory = currencyData.income >= currencyData.expense
-        }
-      }
+      // 使用传入的 prop 进行判断
+      const isIncomeCategory = categoryType === 'INCOME'
 
       // 为每个子分类/账户准备柱状图数据
       const barSeries = categoryNames.map((categoryName, index) => {
@@ -284,8 +288,26 @@ export default function FlowMonthlySummaryChart({
             }
 
             const firstParam = paramsArray[0] as TooltipParam
-            const date = new Date((firstParam?.axisValue ?? '') + '-01')
-            const formattedDate = formatChartDate(date, 'month')
+            let formattedDate: string
+            try {
+              const date = new Date(
+                (firstParam?.axisValue ?? '') + '-01T00:00:00'
+              )
+              if (isNaN(date.getTime())) {
+                console.warn('Invalid date in tooltip:', firstParam?.axisValue)
+                formattedDate = firstParam?.axisValue ?? ''
+              } else {
+                formattedDate = formatChartDate(date, 'month')
+              }
+            } catch (error) {
+              console.warn(
+                'Error formatting tooltip date:',
+                error,
+                'value:',
+                firstParam?.axisValue
+              )
+              formattedDate = firstParam?.axisValue ?? ''
+            }
             let result = `<div style="font-weight: bold; margin-bottom: 8px;">${formattedDate}</div>`
             let total = 0
 
@@ -453,6 +475,7 @@ export default function FlowMonthlySummaryChart({
       formatChartDate,
       formatCurrency,
       getFilteredData,
+      categoryType,
     ]
   )
 
@@ -500,7 +523,23 @@ export default function FlowMonthlySummaryChart({
       const option: echarts.EChartsOption = {
         backgroundColor: 'transparent',
         title: {
-          text: `${formatChartDate(new Date(selectedMonth + '-01'), 'month')} ${isIncomeCategory ? t('category.income') : t('category.expense')} ${t('chart.category.breakdown')}`,
+          text: (() => {
+            try {
+              const date = new Date(selectedMonth + '-01T00:00:00')
+              const monthText = isNaN(date.getTime())
+                ? selectedMonth
+                : formatChartDate(date, 'month')
+              return `${monthText} ${isIncomeCategory ? t('category.income') : t('category.expense')} ${t('chart.category.breakdown')}`
+            } catch (error) {
+              console.warn(
+                'Error formatting pie chart title date:',
+                error,
+                'month:',
+                selectedMonth
+              )
+              return `${selectedMonth} ${isIncomeCategory ? t('category.income') : t('category.expense')} ${t('chart.category.breakdown')}`
+            }
+          })(),
           left: 'center',
           top: '5%',
           textStyle: {

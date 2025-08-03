@@ -14,6 +14,36 @@ import type {
   DashboardCashFlowResult,
 } from '@/types/database/raw-queries'
 
+/**
+ * 安全地将数据库返回的数值转换为 JavaScript number
+ * 处理 SQLite 和 PostgreSQL 之间的类型差异
+ */
+function convertToNumber(value: any): number {
+  if (value === null || value === undefined) {
+    return 0
+  }
+
+  // 如果是 BigInt，转换为 number
+  if (typeof value === 'bigint') {
+    return Number(value)
+  }
+
+  // 如果是字符串，尝试解析为数字
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value)
+    return isNaN(parsed) ? 0 : parsed
+  }
+
+  // 如果已经是数字，直接返回
+  if (typeof value === 'number') {
+    return isNaN(value) ? 0 : value
+  }
+
+  // 其他情况，尝试转换为数字
+  const converted = Number(value)
+  return isNaN(converted) ? 0 : converted
+}
+
 // ============================================================================
 // 现金流查询模块
 // ============================================================================
@@ -33,45 +63,73 @@ export async function getCashFlowData(
   try {
     const { startDate, endDate } = dateCondition
 
-    const result = await prisma.$queryRaw<
-      Array<{
-        category_id: string
-        category_name: string
-        category_type: string
-        account_id: string
-        account_name: string
-        currency_code: string
-        currency_symbol: string
-        currency_name: string
-        transaction_type: string
-        total_amount: number
-        transaction_count: number
-      }>
-    >`
-      SELECT
-        cat.id as category_id,
-        cat.name as category_name,
-        cat.type as category_type,
-        a.id as account_id,
-        a.name as account_name,
-        c.code as currency_code,
-        c.symbol as currency_symbol,
-        c.name as currency_name,
-        t.type as transaction_type,
-        SUM(t.amount) as total_amount,
-        COUNT(*) as transaction_count
-      FROM transactions t
-      JOIN accounts a ON t."accountId" = a.id
-      JOIN categories cat ON a."categoryId" = cat.id
-      JOIN currencies c ON t."currencyId" = c.id
-      WHERE t."userId" = ${userId}
-        AND t.date >= ${startDate}
-        AND t.date <= ${endDate}
-        AND cat.type IN ('INCOME', 'EXPENSE')
-        AND t.type IN ('INCOME', 'EXPENSE')
-      GROUP BY cat.id, cat.name, cat.type, a.id, a.name, c.code, c.symbol, c.name, t.type
-      ORDER BY cat.type, total_amount DESC
-    `
+    let result: Array<{
+      category_id: string
+      category_name: string
+      category_type: string
+      account_id: string
+      account_name: string
+      currency_code: string
+      currency_symbol: string
+      currency_name: string
+      transaction_type: string
+      total_amount: any // 允许任何类型，稍后转换
+      transaction_count: any // 允许任何类型，稍后转换
+    }>
+
+    if (isPostgreSQL()) {
+      result = await prisma.$queryRaw`
+        SELECT
+          cat.id as category_id,
+          cat.name as category_name,
+          cat.type as category_type,
+          a.id as account_id,
+          a.name as account_name,
+          c.code as currency_code,
+          c.symbol as currency_symbol,
+          c.name as currency_name,
+          t.type as transaction_type,
+          SUM(t.amount) as total_amount,
+          COUNT(*) as transaction_count
+        FROM transactions t
+        JOIN accounts a ON t."accountId" = a.id
+        JOIN categories cat ON a."categoryId" = cat.id
+        JOIN currencies c ON t."currencyId" = c.id
+        WHERE t."userId" = ${userId}
+          AND t.date >= ${startDate}
+          AND t.date <= ${endDate}
+          AND cat.type IN ('INCOME', 'EXPENSE')
+          AND t.type IN ('INCOME', 'EXPENSE')
+        GROUP BY cat.id, cat.name, cat.type, a.id, a.name, c.code, c.symbol, c.name, t.type
+        ORDER BY cat.type, total_amount DESC
+      `
+    } else {
+      result = await prisma.$queryRaw`
+        SELECT
+          cat.id as category_id,
+          cat.name as category_name,
+          cat.type as category_type,
+          a.id as account_id,
+          a.name as account_name,
+          c.code as currency_code,
+          c.symbol as currency_symbol,
+          c.name as currency_name,
+          t.type as transaction_type,
+          SUM(t.amount) as total_amount,
+          COUNT(*) as transaction_count
+        FROM transactions t
+        JOIN accounts a ON t.accountId = a.id
+        JOIN categories cat ON a.categoryId = cat.id
+        JOIN currencies c ON t.currencyId = c.id
+        WHERE t.userId = ${userId}
+          AND t.date >= ${startDate}
+          AND t.date <= ${endDate}
+          AND cat.type IN ('INCOME', 'EXPENSE')
+          AND t.type IN ('INCOME', 'EXPENSE')
+        GROUP BY cat.id, cat.name, cat.type, a.id, a.name, c.code, c.symbol, c.name, t.type
+        ORDER BY cat.type, total_amount DESC
+      `
+    }
 
     return result.map(row => ({
       categoryId: row.category_id,
@@ -83,8 +141,8 @@ export async function getCashFlowData(
       currencySymbol: row.currency_symbol,
       currencyName: row.currency_name,
       transactionType: row.transaction_type,
-      totalAmount: Number(row.total_amount) || 0,
-      transactionCount: Number(row.transaction_count) || 0,
+      totalAmount: convertToNumber(row.total_amount),
+      transactionCount: convertToNumber(row.transaction_count),
     }))
   } catch (error) {
     console.error('获取现金流数据失败:', error)
@@ -125,7 +183,7 @@ export async function getMonthlyIncomeExpense(
       Array<{
         account_type: string
         currency_code: string
-        total_amount: number
+        total_amount: any // 允许任何类型，稍后转换
       }>
     >`
       SELECT
@@ -148,7 +206,7 @@ export async function getMonthlyIncomeExpense(
     return result.map(row => ({
       accountType: row.account_type,
       currencyCode: row.currency_code,
-      totalAmount: Number(row.total_amount) || 0,
+      totalAmount: convertToNumber(row.total_amount),
     }))
   } catch (error) {
     console.error('获取月度收支数据失败:', error)
@@ -176,7 +234,7 @@ export async function getDashboardCashFlow(
       month: string
       category_type: string
       currency_code: string
-      total_amount: number
+      total_amount: any // 允许任何类型，稍后转换
     }>
 
     if (isPostgreSQL()) {
@@ -201,19 +259,23 @@ export async function getDashboardCashFlow(
       `
     } else {
       // SQLite 版本：使用 strftime 格式化月份
+      // 将 JavaScript Date 转换为毫秒时间戳
+      const startTimestamp = startDate.getTime()
+      const endTimestamp = endDate.getTime()
+
       result = await prisma.$queryRaw`
         SELECT
-          strftime('%Y-%m', t.date) as month,
+          strftime('%Y-%m', t.date/1000, 'unixepoch') as month,
           cat.type as category_type,
           c.code as currency_code,
           SUM(t.amount) as total_amount
         FROM transactions t
-        JOIN accounts a ON t."accountId" = a.id
-        JOIN categories cat ON a."categoryId" = cat.id
-        JOIN currencies c ON t."currencyId" = c.id
-        WHERE t."userId" = ${userId}
-          AND t.date >= ${startDate}
-          AND t.date <= ${endDate}
+        JOIN accounts a ON t.accountId = a.id
+        JOIN categories cat ON a.categoryId = cat.id
+        JOIN currencies c ON t.currencyId = c.id
+        WHERE t.userId = ${userId}
+          AND t.date >= ${startTimestamp}
+          AND t.date <= ${endTimestamp}
           AND cat.type IN ('INCOME', 'EXPENSE')
           AND t.type IN ('INCOME', 'EXPENSE')
         GROUP BY month, cat.type, c.code
@@ -225,7 +287,7 @@ export async function getDashboardCashFlow(
       month: row.month,
       categoryType: row.category_type,
       currencyCode: row.currency_code,
-      totalAmount: Number(row.total_amount) || 0,
+      totalAmount: convertToNumber(row.total_amount),
     }))
   } catch (error) {
     console.error('获取仪表板现金流数据失败:', error)
@@ -265,8 +327,8 @@ export async function getMonthlyFlowSummary(
       category_name: string
       currency_code: string
       transaction_type: string
-      total_amount: number
-      transaction_count: number
+      total_amount: any // 允许任何类型，稍后转换
+      transaction_count: any // 允许任何类型，稍后转换
     }>
 
     if (isPostgreSQL()) {
@@ -296,29 +358,40 @@ export async function getMonthlyFlowSummary(
         ORDER BY month DESC, a.name ASC
       `
     } else {
-      // SQLite 版本：使用 strftime 函数
+      // SQLite 版本：使用 strftime 和 WITH RECURSIVE 确保所有账户都出现
+      const startMonth = startDate.toISOString().slice(0, 10)
+      const endMonth = endDate.toISOString().slice(0, 10)
+
       aggregatedData = await prisma.$queryRaw`
+        WITH RECURSIVE months(month_start) AS (
+          SELECT ${startMonth}
+          UNION ALL
+          SELECT date(month_start, '+1 month')
+          FROM months
+          WHERE date(month_start, '+1 month') <= ${endMonth}
+        )
         SELECT
-          strftime('%Y-%m', t.date) as month,
+          strftime('%Y-%m', m.month_start) as month,
           a.id as account_id,
           a.name as account_name,
           a.description as account_description,
           a.categoryId as category_id,
           cat.name as category_name,
-          c.code as currency_code,
-          t.type as transaction_type,
-          SUM(t.amount) as total_amount,
-          COUNT(*) as transaction_count
-        FROM transactions t
-        JOIN accounts a ON t.accountId = a.id
+          cur.code as currency_code,
+          'FLOW' as transaction_type, -- 虚拟值以满足类型
+          CAST(COALESCE(SUM(t.amount), 0) AS TEXT) as total_amount,
+          CAST(COUNT(t.id) AS TEXT) as transaction_count
+        FROM months m
+        CROSS JOIN accounts a
         JOIN categories cat ON a.categoryId = cat.id
-        JOIN currencies c ON t.currencyId = c.id
-        WHERE t.userId = ${userId}
-          AND a.categoryId IN (${Prisma.join(allCategoryIds)})
+        JOIN currencies cur ON a.currencyId = cur.id
+        LEFT JOIN transactions t ON t.accountId = a.id
           AND t.type IN ('INCOME', 'EXPENSE')
-          AND t.date >= ${startDate}
+          AND strftime('%Y-%m', t.date/1000, 'unixepoch') = strftime('%Y-%m', m.month_start)
           AND t.date <= ${endDate}
-        GROUP BY month, a.id, a.name, a.description, a.categoryId, cat.name, c.code, t.type
+        WHERE a.userId = ${userId}
+          AND a.categoryId IN (${Prisma.join(allCategoryIds)})
+        GROUP BY month, a.id, a.name, a.description, a.categoryId, cat.name, cur.code
         ORDER BY month DESC, a.name ASC
       `
     }
@@ -332,8 +405,8 @@ export async function getMonthlyFlowSummary(
       categoryName: row.category_name,
       currencyCode: row.currency_code,
       transactionType: row.transaction_type,
-      totalAmount: Number(row.total_amount) || 0,
-      transactionCount: Number(row.transaction_count) || 0,
+      totalAmount: convertToNumber(row.total_amount),
+      transactionCount: convertToNumber(row.transaction_count),
     }))
   } catch (error) {
     console.error('获取月度流量汇总数据失败:', error)
@@ -368,7 +441,7 @@ export async function getMonthlyStockSummary(
       category_id: string
       category_name: string
       currency_code: string
-      balance_amount: number
+      balance_amount: any // 允许任何类型，稍后转换
     }>
 
     if (isPostgreSQL()) {
@@ -379,7 +452,7 @@ export async function getMonthlyStockSummary(
           UNION ALL
           SELECT month_start + interval '1 month'
           FROM months
-          WHERE month_start < date_trunc('month', ${endDate}::date)
+          WHERE month_start <= date_trunc('month', ${endDate}::date)
         ),
         account_months AS (
           SELECT
@@ -413,7 +486,7 @@ export async function getMonthlyStockSummary(
                WHERE t."accountId" = am.account_id
                  AND t."currencyId" = (SELECT id FROM currencies WHERE code = am.currency_code)
                  AND t.type = 'BALANCE'
-                 AND t.date <= (am.month_start + interval '1 month' - interval '1 day')
+                 AND t.date < (am.month_start + interval '1 month')
                ORDER BY t.date DESC, t."createdAt" DESC
                LIMIT 1
               ), 0
@@ -433,14 +506,17 @@ export async function getMonthlyStockSummary(
         ORDER BY month DESC, account_name ASC
       `
     } else {
-      // SQLite 版本：简化查询
+      // SQLite 版本：遵循兼容性指南
+      const startMonth = startDate.toISOString().slice(0, 7) + '-01'
+      const endMonth = endDate.toISOString().slice(0, 7) + '-01'
+
       monthlyBalanceData = await prisma.$queryRaw`
         WITH RECURSIVE months(month_start) AS (
-          SELECT date(${startDate})
+          SELECT ${startMonth}
           UNION ALL
           SELECT date(month_start, '+1 month')
           FROM months
-          WHERE month_start < date(${endDate})
+          WHERE month_start <= ${endMonth}
         )
         SELECT
           strftime('%Y-%m', m.month_start) as month,
@@ -450,17 +526,17 @@ export async function getMonthlyStockSummary(
           a.categoryId as category_id,
           cat.name as category_name,
           c.code as currency_code,
-          COALESCE(
+          CAST(COALESCE(
             (SELECT amount
              FROM transactions t
              WHERE t.accountId = a.id
                AND t.currencyId = c.id
                AND t.type = 'BALANCE'
-               AND t.date <= date(m.month_start, '+1 month', '-1 day')
+               AND t.date < strftime('%s', date(m.month_start, '+1 month')) * 1000
              ORDER BY t.date DESC, t.createdAt DESC
              LIMIT 1
             ), 0
-          ) as balance_amount
+          ) AS TEXT) as balance_amount
         FROM months m
         CROSS JOIN accounts a
         JOIN categories cat ON a.categoryId = cat.id
@@ -479,7 +555,7 @@ export async function getMonthlyStockSummary(
       categoryId: row.category_id,
       categoryName: row.category_name,
       currencyCode: row.currency_code,
-      balanceAmount: Number(row.balance_amount) || 0,
+      balanceAmount: convertToNumber(row.balance_amount),
     }))
   } catch (error) {
     console.error('获取月度存量汇总数据失败:', error)

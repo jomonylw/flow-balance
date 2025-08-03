@@ -103,3 +103,11 @@ export async function getDatabaseStats(): Promise<DatabaseStatsResult | null> {
     return null
   }
 }
+
+/**
+ * 检查数据库连接是否可用（用于内部重试逻辑）
+ * 成功则不返回任何内容，失败则抛出错误
+ */
+export async function checkDatabaseConnection(): Promise<void> {
+  await prisma.$queryRaw`SELECT 1`
+}

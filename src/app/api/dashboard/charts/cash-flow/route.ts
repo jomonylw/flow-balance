@@ -32,31 +32,25 @@ export async function GET(request: NextRequest) {
     const monthsParam = searchParams.get('months') || '12'
 
     // 支持 'all' 参数来获取所有历史数据
-    let months: number
-    let useAllData = false
+    const useAllData = monthsParam === 'all'
+    let monthsList: Date[]
 
-    if (monthsParam === 'all') {
-      useAllData = true
-      // 获取用户最早的交易日期来确定实际需要的月份数
+    if (useAllData) {
+      // 获取用户最早的交易日期来确定数据范围
       const earliestDate = await getUserEarliestTransactionDate(user.id)
       if (earliestDate) {
-        const now = new Date()
-        const diffInMonths = Math.ceil(
-          (now.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
-        )
-        months = Math.min(diffInMonths + 1, BUSINESS_LIMITS.MAX_CHART_MONTHS)
+        monthsList = generateMonthsList(earliestDate, new Date())
       } else {
-        months = 12 // 如果没有交易记录，默认显示12个月
+        // 如果没有交易记录，默认显示最近12个月
+        monthsList = generateMonthsList(12)
       }
     } else {
-      months = parseInt(monthsParam)
+      const months = parseInt(monthsParam)
+      monthsList = generateMonthsList(months)
     }
 
     // 获取用户设置以确定本位币
     const baseCurrency = await getUserBaseCurrency(user.id)
-
-    // 生成月份列表
-    const monthsList = generateMonthsList(months, useAllData)
 
     // 使用优化的批量计算函数（并行化处理）
     const monthlyData = await getOptimizedMonthlyCashFlowData(

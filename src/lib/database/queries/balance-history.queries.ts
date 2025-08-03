@@ -35,7 +35,7 @@ export interface BalanceHistoryResult {
  * 获取账户余额历史（优化版本）
  * 使用SQL窗口函数计算累计余额，避免应用层循环计算
  */
-export async function getAccountBalanceHistory(
+export async function getAccountTransactionHistory(
   userId: string,
   accountId: string,
   currencyCode?: string,
@@ -216,7 +216,9 @@ async function getStockAccountBalanceHistory(
     `
 
     const history: BalanceHistoryItem[] = result.map(row => ({
-      date: new Date(row.date).toISOString(),
+      date: new Date(
+        typeof row.date === 'string' ? parseInt(row.date) : row.date
+      ).toISOString(),
       balance: Number(row.running_balance) || 0,
       change: Number(row.balance_change) || 0,
       transaction: {
@@ -232,7 +234,7 @@ async function getStockAccountBalanceHistory(
 
     return { history, currentBalance }
   } else {
-    // SQLite 版本 - 简化实现
+    // SQLite 版本 - 使用窗口函数优化
     const result = await prisma.$queryRaw<
       Array<{
         id: string
@@ -245,48 +247,73 @@ async function getStockAccountBalanceHistory(
         balance_change: number
       }>
     >`
-      SELECT 
-        t.id,
-        t.type,
-        t.amount,
-        t.date,
-        t.description,
-        t.notes,
-        -- 简化的累计余额计算
-        SUM(
-          CASE 
-            WHEN t2.type = 'BALANCE' THEN t2.amount
-            WHEN t2.type = 'INCOME' AND ${accountType === 'ASSET' ? 1 : 0} THEN t2.amount
-            WHEN t2.type = 'EXPENSE' AND ${accountType === 'ASSET' ? 1 : 0} THEN -t2.amount
-            WHEN t2.type = 'INCOME' AND ${accountType === 'LIABILITY' ? 1 : 0} THEN t2.amount
-            WHEN t2.type = 'EXPENSE' AND ${accountType === 'LIABILITY' ? 1 : 0} THEN -t2.amount
+      WITH BalanceCalculations AS (
+        SELECT
+          t.id,
+          t.type,
+          t.amount,
+          t.date,
+          t.description,
+          t.notes,
+          t.updatedAt,
+          CASE
+            WHEN t.type = 'BALANCE' THEN t.amount
+            WHEN t.type = 'INCOME' AND ${accountType === 'ASSET' ? 1 : 0} = 1 THEN t.amount
+            WHEN t.type = 'EXPENSE' AND ${accountType === 'ASSET' ? 1 : 0} = 1 THEN -t.amount
+            WHEN t.type = 'INCOME' AND ${accountType === 'LIABILITY' ? 1 : 0} = 1 THEN t.amount
+            WHEN t.type = 'EXPENSE' AND ${accountType === 'LIABILITY' ? 1 : 0} = 1 THEN -t.amount
             ELSE 0
-          END
-        ) as running_balance,
-        -- 当前交易的余额变化
-        CASE 
-          WHEN t.type = 'BALANCE' THEN t.amount
-          WHEN t.type = 'INCOME' AND ${accountType === 'ASSET' ? 1 : 0} THEN t.amount
-          WHEN t.type = 'EXPENSE' AND ${accountType === 'ASSET' ? 1 : 0} THEN -t.amount
-          WHEN t.type = 'INCOME' AND ${accountType === 'LIABILITY' ? 1 : 0} THEN t.amount
-          WHEN t.type = 'EXPENSE' AND ${accountType === 'LIABILITY' ? 1 : 0} THEN -t.amount
-          ELSE 0
-        END as balance_change
-      FROM transactions t
-      INNER JOIN currencies c ON t.currencyId = c.id
-      INNER JOIN transactions t2 ON t2.userId = t.userId 
-        AND t2.accountId = t.accountId 
-        AND (t2.date < t.date OR (t2.date = t.date AND t2.id <= t.id))
-      WHERE t.userId = ${userId}
-        AND t.accountId = ${accountId}
-        ${Prisma.raw(currencyFilter.replace(/"/g, ''))}
-      GROUP BY t.id, t.type, t.amount, t.date, t.description, t.notes
-      ORDER BY t.date DESC, t.id DESC
+          END AS balance_change
+        FROM transactions t
+        INNER JOIN currencies c ON t.currencyId = c.id
+        WHERE t.userId = ${userId}
+          AND t.accountId = ${accountId}
+          ${Prisma.raw(currencyFilter.replace(/"/g, ''))}
+      ),
+      RunningTotals AS (
+        SELECT
+          bc.*,
+          SUM(
+            CASE
+              WHEN bc.type = 'BALANCE' THEN 0 -- Exclude BALANCE from raw running total
+              ELSE bc.balance_change
+            END
+          ) OVER (ORDER BY bc.date ASC, bc.updatedAt ASC) as raw_running_total
+        FROM BalanceCalculations bc
+      ),
+      LatestBalanceInfo AS (
+        SELECT
+          rt.amount as latest_balance_amount,
+          rt.raw_running_total as running_total_at_balance
+        FROM RunningTotals rt
+        WHERE rt.type = 'BALANCE'
+        ORDER BY rt.date DESC, rt.updatedAt DESC
+        LIMIT 1
+      ),
+      Correction AS (
+        SELECT
+          IFNULL(lbi.latest_balance_amount - lbi.running_total_at_balance, 0) as offset
+        FROM (SELECT 1) dummy
+        LEFT JOIN LatestBalanceInfo lbi ON 1=1
+      )
+      SELECT
+        rt.id,
+        rt.type,
+        rt.amount,
+        rt.date,
+        rt.description,
+        rt.notes,
+        rt.balance_change,
+        (rt.raw_running_total + (SELECT offset FROM Correction)) as running_balance
+      FROM RunningTotals rt
+      ORDER BY rt.date DESC, rt.updatedAt DESC
       LIMIT ${limit}
     `
 
     const history: BalanceHistoryItem[] = result.map(row => ({
-      date: new Date(row.date).toISOString(),
+      date: new Date(
+        typeof row.date === 'string' ? parseInt(row.date) : row.date
+      ).toISOString(),
       balance: Number(row.running_balance) || 0,
       change: Number(row.balance_change) || 0,
       transaction: {
@@ -359,7 +386,9 @@ async function getFlowAccountBalanceHistory(
     `
 
     const history: BalanceHistoryItem[] = result.map(row => ({
-      date: new Date(row.date).toISOString(),
+      date: new Date(
+        typeof row.date === 'string' ? parseInt(row.date) : row.date
+      ).toISOString(),
       balance: Number(row.running_balance) || 0,
       change: Number(row.amount) || 0,
       transaction: {
@@ -375,7 +404,7 @@ async function getFlowAccountBalanceHistory(
 
     return { history, currentBalance }
   } else {
-    // SQLite 版本
+    // SQLite 版本 - 使用窗口函数优化
     const result = await prisma.$queryRaw<
       Array<{
         id: string
@@ -387,35 +416,42 @@ async function getFlowAccountBalanceHistory(
         running_balance: number
       }>
     >`
-      SELECT 
-        t.id,
-        t.type,
-        t.amount,
-        t.date,
-        t.description,
-        t.notes,
-        -- SQLite 的累计余额计算
-        (SELECT SUM(t2.amount) 
-         FROM transactions t2 
-         INNER JOIN currencies c2 ON t2.currencyId = c2.id
-         WHERE t2.userId = t.userId 
-           AND t2.accountId = t.accountId 
-           AND (t2.date < t.date OR (t2.date = t.date AND t2.id <= t.id))
-           ${Prisma.raw(transactionTypeFilter.replace(/t\./g, 't2.'))}
-           ${Prisma.raw(currencyFilter.replace(/c\./g, 'c2.').replace(/"/g, ''))}
+      WITH OrderedTransactions AS (
+        SELECT
+          t.id,
+          t.type,
+          t.amount,
+          t.date,
+          t.description,
+          t.notes,
+          t.updatedAt
+        FROM transactions t
+        INNER JOIN currencies c ON t.currencyId = c.id
+        WHERE t.userId = ${userId}
+          AND t.accountId = ${accountId}
+          ${Prisma.raw(transactionTypeFilter)}
+          ${Prisma.raw(currencyFilter.replace(/"/g, ''))}
+      )
+      SELECT
+        id,
+        type,
+        amount,
+        date,
+        description,
+        notes,
+        SUM(amount) OVER (
+          ORDER BY date ASC, updatedAt ASC
+          ROWS UNBOUNDED PRECEDING
         ) as running_balance
-      FROM transactions t
-      INNER JOIN currencies c ON t.currencyId = c.id
-      WHERE t.userId = ${userId}
-        AND t.accountId = ${accountId}
-        ${Prisma.raw(transactionTypeFilter)}
-        ${Prisma.raw(currencyFilter.replace(/"/g, ''))}
-      ORDER BY t.date DESC, t.id DESC
+      FROM OrderedTransactions
+      ORDER BY date DESC, updatedAt DESC
       LIMIT ${limit}
     `
 
     const history: BalanceHistoryItem[] = result.map(row => ({
-      date: new Date(row.date).toISOString(),
+      date: new Date(
+        typeof row.date === 'string' ? parseInt(row.date) : row.date
+      ).toISOString(),
       balance: Number(row.running_balance) || 0,
       change: Number(row.amount) || 0,
       transaction: {

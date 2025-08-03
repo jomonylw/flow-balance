@@ -260,7 +260,7 @@ export default function NavigationSidebar({
             <div>
               {/* 美化的账户分类标题区域 */}
               <div className='flex items-center justify-between mb-3'>
-                <div className='flex items-center space-x-2'>
+                <div className='flex items-center space-x-2 pr-2'>
                   <h3 className='text-sm font-medium text-gray-900 dark:text-gray-100'>
                     {t('sidebar.categories')}
                   </h3>

@@ -12,7 +12,7 @@ import { getMonthsAgoDateRange } from '@/lib/utils/date-range'
 import { AccountType, TransactionType } from '@/types/core/constants'
 import { calculateAccountBalance } from '@/lib/services/account.service'
 import { getAllCategoryIds } from '@/lib/services/category-summary/utils'
-import { getCategoryTreeIds } from '@/lib/database/raw-queries'
+import { getMonthlyFlowData } from '@/lib/database/queries'
 
 export async function GET(request: NextRequest) {
   try {
@@ -438,49 +438,13 @@ async function getOptimizedFlowMonthlyData(
   // 计算日期范围
   const { startDate, endDate } = getMonthsAgoDateRange(months)
 
-  // 构建查询条件
-  let whereCondition = `t."userId" = '${userId}' AND t.date >= '${startDate.toISOString()}' AND t.date <= '${endDate.toISOString()}' AND t.type IN ('INCOME', 'EXPENSE')`
-
-  if (categoryId) {
-    const categoryIds = await getCategoryTreeIds(categoryId)
-    const categoryIdsStr = categoryIds.map(id => `'${id}'`).join(',')
-    whereCondition += ` AND a."categoryId" IN (${categoryIdsStr})`
-  }
-
-  // 使用单次数据库查询获取月度流量数据
-  const monthlyFlowData = await prisma.$queryRaw<
-    Array<{
-      month: string
-      account_id: string
-      account_name: string
-      category_name: string
-      currency_code: string
-      currency_symbol: string
-      currency_name: string
-      transaction_type: string
-      total_amount: number
-      transaction_count: number
-    }>
-  >`
-    SELECT
-      to_char(t.date, 'YYYY-MM') as month,
-      a.id as account_id,
-      a.name as account_name,
-      cat.name as category_name,
-      c.code as currency_code,
-      c.symbol as currency_symbol,
-      c.name as currency_name,
-      t.type as transaction_type,
-      SUM(t.amount) as total_amount,
-      COUNT(*) as transaction_count
-    FROM transactions t
-    JOIN accounts a ON t."accountId" = a.id
-    JOIN categories cat ON a."categoryId" = cat.id
-    JOIN currencies c ON t."currencyId" = c.id
-    WHERE ${whereCondition}
-    GROUP BY month, a.id, a.name, cat.name, c.code, c.symbol, c.name, t.type
-    ORDER BY month DESC, account_name
-  `
+  // 使用重构后的查询函数
+  const monthlyFlowData = await getMonthlyFlowData(
+    userId,
+    startDate,
+    endDate,
+    categoryId
+  )
 
   // 处理查询结果并按月分组
   const monthlyData: Record<string, any> = {}

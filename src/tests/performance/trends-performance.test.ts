@@ -9,7 +9,7 @@ import { GET } from '@/app/api/accounts/[accountId]/trends/route'
 import {
   getAccountTrendData,
   getFlowAccountTrendData,
-} from '@/lib/database/queries/account.queries'
+} from '@/lib/database/queries'
 import {
   createTestUser,
   createTestAccount,

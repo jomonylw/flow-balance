@@ -3,6 +3,7 @@
  * 包含账户余额计算和历史查询相关功能
  */
 
+import { format } from 'date-fns'
 import { prisma } from '../connection-manager'
 import { isPostgreSQL } from './system.queries'
 import type {
@@ -10,6 +11,36 @@ import type {
   BalanceHistoryResult,
   NetWorthHistoryResult,
 } from '@/types/database/raw-queries'
+
+/**
+ * 安全地将数据库返回的数值转换为 JavaScript number
+ * 处理 SQLite 和 PostgreSQL 之间的类型差异
+ */
+function convertToNumber(value: any): number {
+  if (value === null || value === undefined) {
+    return 0
+  }
+
+  // 如果是 BigInt，转换为 number
+  if (typeof value === 'bigint') {
+    return Number(value)
+  }
+
+  // 如果是字符串，尝试解析为数字
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value)
+    return isNaN(parsed) ? 0 : parsed
+  }
+
+  // 如果已经是数字，直接返回
+  if (typeof value === 'number') {
+    return isNaN(value) ? 0 : value
+  }
+
+  // 其他情况，尝试转换为数字
+  const converted = Number(value)
+  return isNaN(converted) ? 0 : converted
+}
 
 // ============================================================================
 // 余额计算查询模块
@@ -33,7 +64,7 @@ export async function getLatestAccountBalances(
       currency_code: string
       currency_symbol: string
       currency_name: string
-      final_balance: number
+      final_balance: any // 允许任何类型，稍后转换
     }>
 
     if (isPostgreSQL()) {
@@ -109,26 +140,66 @@ export async function getLatestAccountBalances(
         GROUP BY t."accountId", t."currencyId", c.code, c.symbol, c.name
       `
     } else {
-      // SQLite 版本：简化版本
+      // SQLite 版本：使用窗口函数模拟 `DISTINCT ON`
       balanceQuery = await prisma.$queryRaw`
+        WITH latest_balance_records AS (
+          -- 步骤 1: 使用 ROW_NUMBER() 找到每个账户和币种的最新 BALANCE 记录
+          SELECT
+            "accountId",
+            "currencyId",
+            amount as balance_amount,
+            date as balance_date
+          FROM (
+            SELECT
+              t."accountId",
+              t."currencyId",
+              t.amount,
+              t.date,
+              ROW_NUMBER() OVER(PARTITION BY t."accountId", t."currencyId" ORDER BY t.date DESC, t."createdAt" DESC) as rn
+            FROM "transactions" t
+            WHERE t."userId" = ${userId}
+              AND t.type = 'BALANCE'
+              AND t.date <= ${asOfDate}
+          )
+          WHERE rn = 1
+        ),
+        subsequent_transactions AS (
+          -- 步骤 2: 计算最新 BALANCE 记录之后的交易流水总和
+          SELECT
+            t."accountId",
+            t."currencyId",
+            SUM(
+              CASE
+                WHEN t.type = 'INCOME' THEN t.amount
+                WHEN t.type = 'EXPENSE' THEN -t.amount
+                ELSE 0
+              END
+            ) as transaction_sum
+          FROM "transactions" t
+          LEFT JOIN latest_balance_records lb ON t."accountId" = lb."accountId" AND t."currencyId" = lb."currencyId"
+          WHERE t."userId" = ${userId}
+            AND t.type != 'BALANCE'
+            AND t.date <= ${asOfDate}
+            -- 如果有 balance 记录，则只计算其后的交易；否则计算所有交易
+            AND t.date > COALESCE(lb.balance_date, 0)
+          GROUP BY t."accountId", t."currencyId"
+        ),
+        accounts_with_any_transaction AS (
+            -- 确保所有有交易的账户都被包含，即使它们没有 subsequent_transactions
+            SELECT DISTINCT "accountId", "currencyId" FROM "transactions" WHERE "userId" = ${userId}
+        )
+        -- 步骤 3: 合并结果
         SELECT
-          t.accountId as account_id,
+          awt."accountId" as account_id,
           c.code as currency_code,
           c.symbol as currency_symbol,
           c.name as currency_name,
-          SUM(
-            CASE
-              WHEN t.type = 'INCOME' THEN t.amount
-              WHEN t.type = 'EXPENSE' THEN -t.amount
-              WHEN t.type = 'BALANCE' THEN t.amount
-              ELSE 0
-            END
-          ) as final_balance
-        FROM transactions t
-        JOIN currencies c ON t.currencyId = c.id
-        WHERE t.userId = ${userId}
-          AND t.date <= ${asOfDate}
-        GROUP BY t.accountId, t.currencyId, c.code, c.symbol, c.name
+          -- 最终余额 = 最新余额 + 后续流水，使用 CAST 确保返回字符串避免 BigInt 转换问题
+          CAST(COALESCE(lb.balance_amount, 0) + COALESCE(st.transaction_sum, 0) AS TEXT) as final_balance
+        FROM accounts_with_any_transaction awt
+        JOIN "currencies" c ON awt."currencyId" = c.id
+        LEFT JOIN latest_balance_records lb ON awt."accountId" = lb."accountId" AND awt."currencyId" = lb."currencyId"
+        LEFT JOIN subsequent_transactions st ON awt."accountId" = st."accountId" AND awt."currencyId" = st."currencyId"
       `
     }
 
@@ -137,7 +208,7 @@ export async function getLatestAccountBalances(
       currencyCode: row.currency_code,
       currencySymbol: row.currency_symbol,
       currencyName: row.currency_name,
-      finalBalance: Number(row.final_balance) || 0,
+      finalBalance: convertToNumber(row.final_balance),
     }))
   } catch (error) {
     console.error('获取账户最新余额失败:', error)
@@ -162,7 +233,7 @@ export async function getAccountBalanceHistory(
       currency_code: string
       currency_symbol: string
       currency_name: string
-      final_balance: number
+      final_balance: any // 允许任何类型，稍后转换
     }>
 
     if (isPostgreSQL()) {
@@ -210,25 +281,60 @@ export async function getAccountBalanceHistory(
         LEFT JOIN subsequent_transactions st ON lb."currencyId" = st."currencyId"
       `
     } else {
-      // SQLite 版本：简化版本
+      // SQLite 版本：使用窗口函数模拟 `DISTINCT ON`
       balanceQuery = await prisma.$queryRaw`
+        WITH latest_balance_records AS (
+          -- 步骤 1: 找到每个币种的最新 BALANCE 记录
+          SELECT
+            "currencyId",
+            amount as balance_amount,
+            date as balance_date
+          FROM (
+            SELECT
+              t."currencyId",
+              t.amount,
+              t.date,
+              ROW_NUMBER() OVER(PARTITION BY t."currencyId" ORDER BY t.date DESC, t."createdAt" DESC) as rn
+            FROM "transactions" t
+            WHERE t."accountId" = ${accountId}
+              AND t."userId" = ${userId}
+              AND t.type = 'BALANCE'
+          )
+          WHERE rn = 1
+        ),
+        subsequent_transactions AS (
+          -- 步骤 2: 计算最新 BALANCE 记录之后的所有交易流水
+          SELECT
+            t."currencyId",
+            SUM(
+              CASE
+                WHEN t.type = 'INCOME' THEN t.amount
+                WHEN t.type = 'EXPENSE' THEN -t.amount
+                ELSE 0
+              END
+            ) as transaction_sum
+          FROM "transactions" t
+          LEFT JOIN latest_balance_records lb ON t."currencyId" = lb."currencyId"
+          WHERE t."accountId" = ${accountId}
+            AND t."userId" = ${userId}
+            AND t.type != 'BALANCE'
+            AND t.date > COALESCE(lb.balance_date, 0)
+          GROUP BY t."currencyId"
+        ),
+        currencies_in_account AS (
+            -- 确保账户中所有涉及的币种都被包含
+            SELECT DISTINCT "currencyId" FROM "transactions" WHERE "accountId" = ${accountId} AND "userId" = ${userId}
+        )
+        -- 步骤 3: 合并结果
         SELECT
           c.code as currency_code,
           c.symbol as currency_symbol,
           c.name as currency_name,
-          SUM(
-            CASE
-              WHEN t.type = 'INCOME' THEN t.amount
-              WHEN t.type = 'EXPENSE' THEN -t.amount
-              WHEN t.type = 'BALANCE' THEN t.amount
-              ELSE 0
-            END
-          ) as final_balance
-        FROM transactions t
-        JOIN currencies c ON t.currencyId = c.id
-        WHERE t.accountId = ${accountId}
-          AND t.userId = ${userId}
-        GROUP BY t.currencyId, c.code, c.symbol, c.name
+          CAST(COALESCE(lb.balance_amount, 0) + COALESCE(st.transaction_sum, 0) AS TEXT) as final_balance
+        FROM currencies_in_account cia
+        JOIN "currencies" c ON cia."currencyId" = c.id
+        LEFT JOIN latest_balance_records lb ON cia."currencyId" = lb."currencyId"
+        LEFT JOIN subsequent_transactions st ON cia."currencyId" = st."currencyId"
       `
     }
 
@@ -236,7 +342,7 @@ export async function getAccountBalanceHistory(
       currencyCode: row.currency_code,
       currencySymbol: row.currency_symbol,
       currencyName: row.currency_name,
-      finalBalance: Number(row.final_balance) || 0,
+      finalBalance: convertToNumber(row.final_balance),
     }))
   } catch (error) {
     console.error('获取账户余额历史失败:', error)
@@ -264,7 +370,7 @@ export async function getNetWorthHistory(
       month: string
       category_type: string
       currency_code: string
-      total_balance: number
+      total_balance: any // 允许任何类型，稍后转换
     }>
 
     if (isPostgreSQL()) {
@@ -348,14 +454,16 @@ export async function getNetWorthHistory(
         ORDER BY st.month ASC, st.category_type, total_balance DESC
       `
     } else {
-      // SQLite 版本：简化版本，使用递归 CTE 生成月份
+      // SQLite 版本：重构以消除相关子查询并与 PostgreSQL 逻辑对齐
+      const formattedStartDate = format(startDate, 'yyyy-MM-dd')
+      const formattedEndDate = format(endDate, 'yyyy-MM-dd')
       result = await prisma.$queryRaw`
         WITH RECURSIVE months(month_start) AS (
-          SELECT date(${startDate}, 'start of month')
+          SELECT date(${formattedStartDate}, 'start of month')
           UNION ALL
           SELECT date(month_start, '+1 month')
           FROM months
-          WHERE month_start < date(${endDate}, 'start of month')
+          WHERE month_start < date(${formattedEndDate}, 'start of month')
         ),
         month_ends AS (
           SELECT
@@ -363,66 +471,79 @@ export async function getNetWorthHistory(
             date(month_start, '+1 month', '-1 day') as month_end_date
           FROM months
         ),
-        account_balances AS (
+        account_month_ends AS (
+          -- 步骤 1: 创建所有账户和所有月份的组合
           SELECT
-            me.month,
+            a.id as account_id,
             cat.type as category_type,
+            c.id as currency_id,
             c.code as currency_code,
-            SUM(
-              COALESCE(
-                (SELECT amount
-                 FROM transactions t
-                 WHERE t.accountId = a.id
-                   AND t.currencyId = c.id
-                   AND t.type = 'BALANCE'
-                   AND t.date <= me.month_end_date
-                 ORDER BY t.date DESC, t.createdAt DESC
-                 LIMIT 1
-                ), 0
-              ) +
-              COALESCE(
-                (SELECT SUM(
-                   CASE
-                     WHEN t.type = 'INCOME' THEN t.amount
-                     WHEN t.type = 'EXPENSE' THEN -t.amount
-                     ELSE 0
-                   END
-                 )
-                 FROM transactions t
-                 WHERE t.accountId = a.id
-                   AND t.currencyId = c.id
-                   AND t.type != 'BALANCE'
-                   AND t.date > COALESCE(
-                     (SELECT date
-                      FROM transactions t2
-                      WHERE t2.accountId = a.id
-                        AND t2.currencyId = c.id
-                        AND t2.type = 'BALANCE'
-                        AND t2.date <= me.month_end_date
-                      ORDER BY t2.date DESC, t2.createdAt DESC
-                      LIMIT 1
-                     ), '1900-01-01'
-                   )
-                   AND t.date <= me.month_end_date
-                ), 0
-              )
-            ) as total_balance
-          FROM month_ends me
-          CROSS JOIN accounts a
+            me.month,
+            me.month_end_date
+          FROM accounts a
           JOIN categories cat ON a.categoryId = cat.id
           JOIN currencies c ON a.currencyId = c.id
+          CROSS JOIN month_ends me
           WHERE a.userId = ${userId}
             AND cat.type IN ('ASSET', 'LIABILITY')
-          GROUP BY me.month, cat.type, c.code
+        ),
+        latest_balances AS (
+          -- 步骤 2: 找到每个账户在每个月末之前的最新余额记录
+          SELECT
+            account_id,
+            currency_id,
+            month,
+            balance_amount,
+            balance_date
+          FROM (
+            SELECT
+              ame.account_id,
+              ame.currency_id,
+              ame.month,
+              t.amount as balance_amount,
+              t.date as balance_date,
+              ROW_NUMBER() OVER(PARTITION BY ame.account_id, ame.currency_id, ame.month ORDER BY t.date DESC, t.createdAt DESC) as rn
+            FROM account_month_ends ame
+            LEFT JOIN transactions t ON t.accountId = ame.account_id AND t.currencyId = ame.currency_id
+            WHERE t.userId = ${userId}
+              AND t.type = 'BALANCE'
+              AND t.date <= strftime('%s', ame.month_end_date || ' 23:59:59') * 1000
+          )
+          WHERE rn = 1
+        ),
+        subsequent_transactions AS (
+          -- 步骤 3: 计算从最新余额日期到月末的交易流水
+          SELECT
+            ame.account_id,
+            ame.currency_id,
+            ame.month,
+            SUM(
+              CASE
+                WHEN t.type = 'INCOME' THEN t.amount
+                WHEN t.type = 'EXPENSE' THEN -t.amount
+                ELSE 0
+              END
+            ) as transaction_sum
+          FROM account_month_ends ame
+          LEFT JOIN latest_balances lb ON ame.account_id = lb.account_id AND ame.currency_id = lb.currency_id AND ame.month = lb.month
+          LEFT JOIN transactions t ON t.accountId = ame.account_id AND t.currencyId = ame.currency_id
+          WHERE t.userId = ${userId}
+            AND t.type != 'BALANCE'
+            AND t.date <= strftime('%s', ame.month_end_date || ' 23:59:59') * 1000
+            AND t.date > COALESCE(lb.balance_date, 0)
+          GROUP BY ame.account_id, ame.currency_id, ame.month
         )
+        -- 步骤 4: 计算最终余额并聚合
         SELECT
-          month,
-          category_type,
-          currency_code,
-          total_balance
-        FROM account_balances
-        WHERE total_balance != 0
-        ORDER BY month ASC, category_type, total_balance DESC
+          ame.month,
+          ame.category_type,
+          ame.currency_code,
+          CAST(SUM(COALESCE(lb.balance_amount, 0) + COALESCE(st.transaction_sum, 0)) AS TEXT) as total_balance
+        FROM account_month_ends ame
+        LEFT JOIN latest_balances lb ON ame.account_id = lb.account_id AND ame.currency_id = lb.currency_id AND ame.month = lb.month
+        LEFT JOIN subsequent_transactions st ON ame.account_id = st.account_id AND ame.currency_id = st.currency_id AND ame.month = st.month
+        GROUP BY ame.month, ame.category_type, ame.currency_code
+        ORDER BY ame.month ASC, ame.category_type, total_balance DESC
       `
     }
 
@@ -430,7 +551,7 @@ export async function getNetWorthHistory(
       month: row.month,
       categoryType: row.category_type,
       currencyCode: row.currency_code,
-      totalBalance: Number(row.total_balance) || 0,
+      totalBalance: convertToNumber(row.total_balance),
     }))
   } catch (error) {
     console.error('获取净资产历史数据失败:', error)
@@ -468,8 +589,8 @@ export async function getAccountTrendData(
     let result: Array<{
       period: string
       currency_code: string
-      balance: number
-      transaction_count: number
+      balance: any // 允许任何类型，稍后转换
+      transaction_count: any // 允许任何类型，稍后转换
     }>
 
     if (isPostgreSQL()) {
@@ -614,102 +735,97 @@ export async function getAccountTrendData(
         `
       }
     } else {
-      // SQLite 版本：简化版本，使用递归 CTE 生成时间段
+      // SQLite 版本：遵循数据库兼容性指南进行重构
+      const startDateMs = startDate.getTime()
+      const endDateMs = endDate.getTime()
       const dateIncrement = granularity === 'daily' ? '+1 day' : '+1 month'
       const dateFormat = granularity === 'daily' ? '%Y-%m-%d' : '%Y-%m'
       const startOfPeriod =
         granularity === 'daily' ? 'start of day' : 'start of month'
 
       result = await prisma.$queryRaw`
-        WITH RECURSIVE periods(period_start) AS (
-          SELECT date(${startDate}, ${startOfPeriod})
-          UNION ALL
-          SELECT date(period_start, ${dateIncrement})
-          FROM periods
-          WHERE period_start < date(${endDate}, ${startOfPeriod})
-        ),
-        period_ends AS (
-          SELECT
-            strftime(${dateFormat}, period_start) as period,
-            CASE
-              WHEN ${granularity} = 'daily' THEN datetime(period_start, '+1 day', '-1 second')
-              ELSE datetime(period_start, '+1 month', '-1 day', '+23 hours', '+59 minutes', '+59 seconds')
-            END as period_end_date
-          FROM periods
-        ),
-        account_balances AS (
-          SELECT
-            pe.period,
-            c.code as currency_code,
-            COALESCE(
-              (SELECT amount
-               FROM transactions t
-               WHERE t.accountId = ${accountId}
-                 AND t.currencyId = c.id
-                 AND t.type = 'BALANCE'
-                 AND t.date <= pe.period_end_date
-               ORDER BY t.date DESC, t.createdAt DESC
-               LIMIT 1
-              ), 0
-            ) +
-            COALESCE(
-              (SELECT SUM(
-                 CASE
-                   WHEN t.type = 'INCOME' THEN t.amount
-                   WHEN t.type = 'EXPENSE' THEN -t.amount
-                   ELSE 0
-                 END
-               )
-               FROM transactions t
-               WHERE t.accountId = ${accountId}
-                 AND t.currencyId = c.id
-                 AND t.type != 'BALANCE'
-                 AND t.date > COALESCE(
-                   (SELECT date
-                    FROM transactions t2
-                    WHERE t2.accountId = ${accountId}
-                      AND t2.currencyId = c.id
-                      AND t2.type = 'BALANCE'
-                      AND t2.date <= pe.period_end_date
-                    ORDER BY t2.date DESC, t2.createdAt DESC
-                    LIMIT 1
-                   ), '1900-01-01'
-                 )
-                 AND t.date <= pe.period_end_date
-              ), 0
-            ) as balance,
-            COALESCE(
-              (SELECT COUNT(*)
-               FROM transactions t
-               WHERE t.accountId = ${accountId}
-                 AND t.currencyId = c.id
-                 AND t.date >= CASE
-                   WHEN ${granularity} = 'daily' THEN date(pe.period_end_date, 'start of day')
-                   ELSE date(pe.period_end_date, 'start of month')
-                 END
-                 AND t.date <= pe.period_end_date
-              ), 0
-            ) as transaction_count
-          FROM period_ends pe
-          CROSS JOIN accounts a
-          JOIN currencies c ON a.currencyId = c.id
-          WHERE a.id = ${accountId} AND a.userId = ${userId}
-        )
+        WITH RECURSIVE
+          periods(period_start) AS (
+            SELECT date(${startDateMs} / 1000, 'unixepoch', ${startOfPeriod})
+            UNION ALL
+            SELECT date(period_start, ${dateIncrement})
+            FROM periods
+            WHERE period_start < date(${endDateMs} / 1000, 'unixepoch', ${startOfPeriod})
+          ),
+          period_ends AS (
+            SELECT
+              strftime(${dateFormat}, period_start) as period,
+              datetime(period_start, ${dateIncrement}, '-1 second') as period_end_date
+            FROM periods
+          ),
+          account_info AS (
+            SELECT c.id as currency_id, c.code as currency_code
+            FROM accounts a
+            JOIN currencies c ON a.currencyId = c.id
+            WHERE a.id = ${accountId} AND a.userId = ${userId}
+          ),
+          latest_balances_per_period AS (
+              SELECT
+                  pe.period,
+                  pe.period_end_date,
+                  (
+                      SELECT t.amount
+                      FROM transactions t
+                      WHERE t.accountId = ${accountId}
+                        AND t.userId = ${userId}
+                        AND t.type = 'BALANCE'
+                        AND t.date <= strftime('%s', pe.period_end_date) * 1000
+                      ORDER BY t.date DESC, t.createdAt DESC
+                      LIMIT 1
+                  ) as balance_amount,
+                  (
+                      SELECT t.date
+                      FROM transactions t
+                      WHERE t.accountId = ${accountId}
+                        AND t.userId = ${userId}
+                        AND t.type = 'BALANCE'
+                        AND t.date <= strftime('%s', pe.period_end_date) * 1000
+                      ORDER BY t.date DESC, t.createdAt DESC
+                      LIMIT 1
+                  ) as balance_date
+              FROM period_ends pe
+          ),
+          transactions_per_period AS (
+              SELECT
+                  lb.period,
+                  SUM(
+                    CASE
+                      WHEN t.type = 'INCOME' THEN t.amount
+                      WHEN t.type = 'EXPENSE' THEN -t.amount
+                      ELSE 0
+                    END
+                  ) as transaction_sum,
+                  COUNT(t.id) as transaction_count
+              FROM latest_balances_per_period lb
+              LEFT JOIN transactions t ON t.accountId = ${accountId}
+                  AND t.userId = ${userId}
+                  AND t.type != 'BALANCE'
+                  AND t.date > COALESCE(lb.balance_date, 0)
+                  AND t.date <= strftime('%s', lb.period_end_date) * 1000
+              GROUP BY lb.period
+          )
         SELECT
-          period,
-          currency_code,
-          balance,
-          transaction_count
-        FROM account_balances
-        ORDER BY period ASC
+            lb.period,
+            ai.currency_code,
+            CAST(COALESCE(lb.balance_amount, 0) + COALESCE(tp.transaction_sum, 0) AS TEXT) as balance,
+            COALESCE(tp.transaction_count, 0) as transaction_count
+        FROM latest_balances_per_period lb
+        JOIN account_info ai
+        LEFT JOIN transactions_per_period tp ON lb.period = tp.period
+        ORDER BY lb.period ASC
       `
     }
 
     return result.map(row => ({
       period: row.period,
       currencyCode: row.currency_code,
-      balance: Number(row.balance) || 0,
-      transactionCount: Number(row.transaction_count) || 0,
+      balance: convertToNumber(row.balance),
+      transactionCount: convertToNumber(row.transaction_count),
     }))
   } catch (error) {
     console.error('获取账户趋势数据失败:', error)
@@ -762,8 +878,8 @@ export async function getFlowAccountTrendData(
     let result: Array<{
       period: string
       currency_code: string
-      total_amount: number
-      transaction_count: number
+      total_amount: any // 允许任何类型，稍后转换
+      transaction_count: any // 允许任何类型，稍后转换
     }>
 
     if (isPostgreSQL()) {
@@ -850,7 +966,9 @@ export async function getFlowAccountTrendData(
         `
       }
     } else {
-      // SQLite 版本
+      // SQLite 版本：遵循数据库兼容性指南进行重构
+      const startDateMs = startDate.getTime()
+      const endDateMs = endDate.getTime()
       const dateIncrement = granularity === 'daily' ? '+1 day' : '+1 month'
       const dateFormat = granularity === 'daily' ? '%Y-%m-%d' : '%Y-%m'
       const startOfPeriod =
@@ -858,56 +976,194 @@ export async function getFlowAccountTrendData(
 
       result = await prisma.$queryRaw`
         WITH RECURSIVE periods(period_start) AS (
-          SELECT date(${startDate}, ${startOfPeriod})
+          SELECT date(${startDateMs} / 1000, 'unixepoch', ${startOfPeriod})
           UNION ALL
           SELECT date(period_start, ${dateIncrement})
           FROM periods
-          WHERE period_start < date(${endDate}, ${startOfPeriod})
+          WHERE period_start < date(${endDateMs} / 1000, 'unixepoch', ${startOfPeriod})
         ),
         period_ends AS (
           SELECT
             strftime(${dateFormat}, period_start) as period,
-            period_start as period_start_date,
-            CASE
-              WHEN ${granularity} = 'daily' THEN datetime(period_start, '+1 day', '-1 second')
-              ELSE datetime(period_start, '+1 month', '-1 day', '+23 hours', '+59 minutes', '+59 seconds')
-            END as period_end_date
+            strftime('%s', period_start) * 1000 as period_start_date_ms,
+            strftime('%s', datetime(period_start, ${dateIncrement}, '-1 second')) * 1000 as period_end_date_ms
           FROM periods
+        ),
+        account_info AS (
+          SELECT
+            c.id as currency_id,
+            c.code as currency_code
+          FROM accounts a
+          JOIN currencies c ON a.currencyId = c.id
+          WHERE a.id = ${accountId}
         ),
         transaction_aggregates AS (
           SELECT
             pe.period,
-            c.code as currency_code,
             COALESCE(SUM(t.amount), 0) as total_amount,
             COALESCE(COUNT(t.id), 0) as transaction_count
           FROM period_ends pe
-          CROSS JOIN currencies c
           LEFT JOIN transactions t ON t.accountId = ${accountId}
-            AND t.currencyId = c.id
+            AND t.currencyId = (SELECT currency_id FROM account_info)
             AND t.type IN ('INCOME', 'EXPENSE')
-            AND t.date >= pe.period_start_date
-            AND t.date <= pe.period_end_date
-          WHERE c.id = (SELECT currencyId FROM accounts WHERE id = ${accountId})
-          GROUP BY pe.period, c.code
+            AND t.date >= pe.period_start_date_ms
+            AND t.date <= pe.period_end_date_ms
+          GROUP BY pe.period
         )
         SELECT
-          period,
-          currency_code,
-          total_amount,
-          transaction_count
-        FROM transaction_aggregates
-        ORDER BY period ASC
+          ta.period,
+          ai.currency_code,
+          CAST(ta.total_amount AS TEXT) as total_amount,
+          CAST(ta.transaction_count AS TEXT) as transaction_count
+        FROM transaction_aggregates ta
+        CROSS JOIN account_info ai
+        ORDER BY ta.period ASC
       `
     }
 
     return result.map(row => ({
       period: row.period,
       currencyCode: row.currency_code,
-      totalAmount: Number(row.total_amount) || 0,
-      transactionCount: Number(row.transaction_count) || 0,
+      totalAmount: convertToNumber(row.total_amount),
+      transactionCount: convertToNumber(row.transaction_count),
     }))
   } catch (error) {
     console.error('获取流量账户趋势数据失败:', error)
     throw new Error('获取流量账户趋势数据失败')
   }
+}
+
+/**
+ * 优化的交易统计函数
+ */
+export async function getOptimizedTransactionStats(
+  accountId: string,
+  userId: string
+): Promise<{
+  total: number
+  income: number
+  expense: number
+  balanceAdjustment: number
+}> {
+  const stats = await prisma.$queryRaw<
+    Array<{
+      transaction_type: string
+      count: number
+    }>
+  >`
+    SELECT
+      t.type as transaction_type,
+      COUNT(*) as count
+    FROM transactions t
+    WHERE t."accountId" = ${accountId}
+      AND t."userId" = ${userId}
+    GROUP BY t.type
+  `
+
+  const result = {
+    total: 0,
+    income: 0,
+    expense: 0,
+    balanceAdjustment: 0,
+  }
+
+  stats.forEach(stat => {
+    const count = Number(stat.count)
+    result.total += count
+
+    switch (stat.transaction_type) {
+      case 'INCOME':
+        result.income = count
+        break
+      case 'EXPENSE':
+        result.expense = count
+        break
+      case 'BALANCE':
+        result.balanceAdjustment = count
+        break
+    }
+  })
+
+  return result
+}
+
+/**
+ * 优化的月度统计函数
+ */
+export async function getOptimizedMonthlyStats(
+  accountId: string,
+  userId: string
+): Promise<
+  Array<{
+    month: string
+    income: number
+    expense: number
+    count: number
+    net: number
+  }>
+> {
+  // 获取最近12个月的数据
+  const now = new Date()
+  const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+
+  const monthlyData = await prisma.$queryRaw<
+    Array<{
+      month: string
+      transaction_type: string
+      total_amount: number
+      count: number
+    }>
+  >`
+    SELECT
+      to_char(t.date, 'YYYY-MM') as month,
+      t.type as transaction_type,
+      SUM(t.amount) as total_amount,
+      COUNT(*) as count
+    FROM transactions t
+    WHERE t."accountId" = ${accountId}
+      AND t."userId" = ${userId}
+      AND t.date >= ${twelveMonthsAgo}
+      AND t.type IN ('INCOME', 'EXPENSE')
+    GROUP BY month, t.type
+    ORDER BY month DESC
+  `
+
+  // 初始化最近12个月的数据结构
+  const monthlyStats: Record<
+    string,
+    { income: number; expense: number; count: number }
+  > = {}
+
+  for (let i = 0; i < 12; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    monthlyStats[monthKey] = { income: 0, expense: 0, count: 0 }
+  }
+
+  // 填充实际数据
+  monthlyData.forEach(row => {
+    const month = row.month
+    const amount = parseFloat(row.total_amount.toString())
+    const count = Number(row.count)
+
+    if (monthlyStats[month]) {
+      monthlyStats[month].count += count
+
+      if (row.transaction_type === 'INCOME') {
+        monthlyStats[month].income = amount
+      } else if (row.transaction_type === 'EXPENSE') {
+        monthlyStats[month].expense = amount
+      }
+    }
+  })
+
+  // 转换为数组格式并计算净值
+  return Object.entries(monthlyStats)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .slice(0, 12)
+    .map(([month, stats]) => ({
+      month,
+      ...stats,
+      net: stats.income - stats.expense,
+    }))
 }
