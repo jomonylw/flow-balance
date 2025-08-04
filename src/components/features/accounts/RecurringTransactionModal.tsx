@@ -286,13 +286,13 @@ export default function RecurringTransactionModal({
                 required
               >
                 <option value='WEEKLY'>{t('frequency.weekly')}</option>
-                <option value='BI_WEEKLY'>{t('frequency.bi_weekly')}</option>
+                {/* <option value='BI_WEEKLY'>{t('frequency.bi_weekly')}</option> */}
                 <option value='MONTHLY'>{t('frequency.monthly')}</option>
                 <option value='QUARTERLY'>{t('frequency.quarterly')}</option>
-                <option value='SEMI_ANNUALLY'>
+                {/* <option value='SEMI_ANNUALLY'>
                   {t('frequency.semi_annually')}
-                </option>
-                <option value='ANNUALLY'>{t('frequency.annually')}</option>
+                </option> */}
+                <option value='YEARLY'>{t('frequency.annually')}</option>
               </select>
             </div>
 

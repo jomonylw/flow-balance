@@ -206,13 +206,10 @@ export class FutureDataGenerationService {
       }
 
       // 计算下次日期
-      currentDate = RecurringTransactionService.calculateNextDate(currentDate, {
-        frequency: recurring.frequency,
-        interval: recurring.interval,
-        dayOfMonth: recurring.dayOfMonth,
-        dayOfWeek: recurring.dayOfWeek,
-        monthOfYear: recurring.monthOfYear,
-      })
+      currentDate = RecurringTransactionService.calculateNextDate(
+        currentDate,
+        recurring
+      )
     }
 
     // 批量创建遗漏的交易记录

@@ -31,13 +31,7 @@ export class RecurringTransactionService {
       throw new Error('指定的货币不存在')
     }
 
-    const nextDate = this.calculateNextDate(new Date(data.startDate), {
-      frequency: data.frequency,
-      interval: data.interval,
-      dayOfMonth: data.dayOfMonth,
-      dayOfWeek: data.dayOfWeek,
-      monthOfYear: data.monthOfYear,
-    })
+    const nextDate = new Date(data.startDate)
 
     const recurringTransaction = await prisma.recurringTransaction.create({
       data: {
@@ -94,6 +88,7 @@ export class RecurringTransactionService {
           dayOfMonth: data.dayOfMonth || existing.dayOfMonth,
           dayOfWeek: data.dayOfWeek || existing.dayOfWeek,
           monthOfYear: data.monthOfYear || existing.monthOfYear,
+          startDate: existing.startDate,
         })
       }
     }
@@ -261,10 +256,6 @@ export class RecurringTransactionService {
         })
 
         if (existingTransaction) {
-          console.log(
-            `⏭️  跳过重复交易：定期交易 ${recurringTransaction.id} 在 ${recurringTransaction.nextDate.toISOString()} 的交易已存在`
-          )
-
           // 交易已存在，只更新定期交易状态，不创建新交易
           const nextDate = this.calculateNextDate(
             recurringTransaction.nextDate,
@@ -306,9 +297,6 @@ export class RecurringTransactionService {
 
         // 警告：存量类账户不适合定期交易
         if (accountType === 'ASSET' || accountType === 'LIABILITY') {
-          console.warn(
-            `定期交易 ${recurringTransaction.description} 使用了存量类账户，这可能不符合预期`
-          )
         }
 
         // 创建交易记录
@@ -359,8 +347,7 @@ export class RecurringTransactionService {
       })
 
       return true
-    } catch (error) {
-      console.error('执行定期交易失败:', error)
+    } catch {
       return false
     }
   }
@@ -373,12 +360,18 @@ export class RecurringTransactionService {
     config: {
       frequency: string
       interval: number
+      startDate: Date
       dayOfMonth?: number | null
       dayOfWeek?: number | null
       monthOfYear?: number | null
     }
   ): Date {
     const nextDate = new Date(currentDate)
+
+    // 优先使用配置中的dayOfMonth。如果不存在，则回退到使用`startDate`的天数。
+    // 这是确保“月末”逻辑一致性的关键。
+    const targetDayOfMonth =
+      config.dayOfMonth || new Date(config.startDate).getDate()
 
     switch (config.frequency) {
       case 'DAILY':
@@ -388,7 +381,6 @@ export class RecurringTransactionService {
       case 'WEEKLY':
         nextDate.setDate(nextDate.getDate() + config.interval * 7)
         if (config.dayOfWeek !== null && config.dayOfWeek !== undefined) {
-          // 调整到指定的星期几
           const currentDay = nextDate.getDay()
           const targetDay = config.dayOfWeek
           const daysToAdd = (targetDay - currentDay + 7) % 7
@@ -397,34 +389,26 @@ export class RecurringTransactionService {
         break
 
       case 'MONTHLY':
-        nextDate.setMonth(nextDate.getMonth() + config.interval)
-        if (config.dayOfMonth !== null && config.dayOfMonth !== undefined) {
-          // 调整到指定的日期
-          nextDate.setDate(
-            Math.min(config.dayOfMonth, this.getDaysInMonth(nextDate))
-          )
-        }
-        break
-
       case 'QUARTERLY':
-        nextDate.setMonth(nextDate.getMonth() + config.interval * 3)
-        if (config.dayOfMonth !== null && config.dayOfMonth !== undefined) {
-          nextDate.setDate(
-            Math.min(config.dayOfMonth, this.getDaysInMonth(nextDate))
-          )
-        }
-        break
-
       case 'YEARLY':
-        nextDate.setFullYear(nextDate.getFullYear() + config.interval)
-        if (config.monthOfYear !== null && config.monthOfYear !== undefined) {
-          nextDate.setMonth(config.monthOfYear - 1) // 月份从0开始
+        // 1. 先将日期重置为1号，避免溢出
+        nextDate.setDate(1)
+
+        // 2. 增加月份/年份
+        if (config.frequency === 'MONTHLY') {
+          nextDate.setMonth(nextDate.getMonth() + config.interval)
+        } else if (config.frequency === 'QUARTERLY') {
+          nextDate.setMonth(nextDate.getMonth() + config.interval * 3)
+        } else if (config.frequency === 'YEARLY') {
+          nextDate.setFullYear(nextDate.getFullYear() + config.interval)
+          if (config.monthOfYear !== null && config.monthOfYear !== undefined) {
+            nextDate.setMonth(config.monthOfYear - 1) // 月份从0开始
+          }
         }
-        if (config.dayOfMonth !== null && config.dayOfMonth !== undefined) {
-          nextDate.setDate(
-            Math.min(config.dayOfMonth, this.getDaysInMonth(nextDate))
-          )
-        }
+
+        // 3. 设置最终日期
+        const daysInMonth = this.getDaysInMonth(nextDate)
+        nextDate.setDate(Math.min(targetDayOfMonth, daysInMonth))
         break
 
       default:
@@ -506,6 +490,28 @@ export class RecurringTransactionService {
     const dueRecurringTransactions = await prisma.recurringTransaction.findMany(
       {
         where,
+        select: {
+          id: true,
+          userId: true,
+          nextDate: true,
+          frequency: true,
+          interval: true,
+          dayOfMonth: true,
+          dayOfWeek: true,
+          monthOfYear: true,
+          startDate: true,
+          // Select other fields needed for processing
+          maxOccurrences: true,
+          currentCount: true,
+          endDate: true,
+          accountId: true,
+          currencyId: true,
+          type: true,
+          amount: true,
+          description: true,
+          notes: true,
+          tagIds: true,
+        },
         orderBy: [{ userId: 'asc' }, { nextDate: 'asc' }],
       }
     )
@@ -531,10 +537,6 @@ export class RecurringTransactionService {
       }
     }
 
-    console.log(
-      `🔄 开始批量处理 ${dueRecurringTransactions.length} 条到期定期交易`
-    )
-
     let processed = 0
     const errors: string[] = []
 
@@ -556,7 +558,6 @@ export class RecurringTransactionService {
       await prisma.$transaction(
         async tx => {
           // 1. 幂等性检查：查询所有可能重复的交易记录
-          console.log('🔍 执行幂等性检查，查询已存在的交易记录...')
 
           const recurringTransactionIds = dueRecurringTransactions.map(
             rt => rt.id
@@ -581,9 +582,6 @@ export class RecurringTransactionService {
             )
           )
 
-          console.log(
-            `📊 幂等性检查完成：发现 ${existingTransactions.length} 条已存在的交易记录`
-          )
           performanceMetrics.idempotencyChecked = existingTransactions.length
 
           // 准备批量创建的交易数据和定期交易更新数据
@@ -663,9 +661,6 @@ export class RecurringTransactionService {
 
               if (alreadyExists) {
                 // 交易已存在，跳过创建，但仍需更新定期交易状态
-                console.log(
-                  `⏭️  跳过重复交易：定期交易 ${recurring.id} 在 ${recurring.nextDate.toISOString()} 的交易已存在`
-                )
 
                 recurringUpdates.push({
                   id: recurring.id,
@@ -720,7 +715,6 @@ export class RecurringTransactionService {
             } catch (error) {
               const errorMsg = `Recurring transaction ${recurring.id} processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
               errors.push(errorMsg)
-              console.error(errorMsg, error)
             }
           }
 
@@ -758,41 +752,10 @@ export class RecurringTransactionService {
     } catch (error) {
       const errorMsg = `Batch recurring transaction processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       errors.push(errorMsg)
-      console.error(errorMsg, error)
     }
 
     const duration = Date.now() - startTime
     const rate = processed > 0 ? Math.round(processed / (duration / 1000)) : 0
-
-    // 详细的性能日志
-    console.log('✅ 批量定期交易处理完成:')
-    console.log(`   📊 处理统计: ${processed} 条定期交易`)
-    console.log(
-      `   ⏱️  总耗时: ${duration}ms (事务: ${performanceMetrics.transactionTime}ms)`
-    )
-    console.log(`   🚀 处理速率: ${rate} 条/秒`)
-    console.log(
-      `   💾 数据操作: 创建 ${performanceMetrics.transactionsCreated} 笔交易，更新 ${performanceMetrics.recurringUpdated} 条定期交易`
-    )
-    console.log(
-      `   🔍 幂等性检查: 检查了 ${performanceMetrics.idempotencyChecked} 条已存在记录`
-    )
-
-    if (performanceMetrics.skippedDueToExisting > 0) {
-      console.log(
-        `   ⏭️  跳过重复: ${performanceMetrics.skippedDueToExisting} 条 (交易已存在)`
-      )
-    }
-
-    if (performanceMetrics.skippedDueToLimits > 0) {
-      console.log(
-        `   ⏭️  跳过限制: ${performanceMetrics.skippedDueToLimits} 条 (达到限制条件)`
-      )
-    }
-
-    if (errors.length > 0) {
-      console.log(`   ⚠️  错误数量: ${errors.length}`)
-    }
 
     return {
       processed,

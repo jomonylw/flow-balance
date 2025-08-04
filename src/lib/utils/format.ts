@@ -96,7 +96,9 @@ export function generateId(): string {
  * @returns 该月的天数
  */
 export function getDaysInMonth(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)
+  ).getUTCDate()
 }
 
 /**
@@ -111,29 +113,26 @@ export function calculateLoanPaymentDate(
   targetDay: number,
   monthsToAdd: number = 0
 ): Date {
-  // 从基准日期的年月开始，避免日期跳跃问题
-  const baseYear = baseDate.getFullYear()
-  const baseMonth = baseDate.getMonth()
+  // 使用UTC方法获取基准日期的年月，避免时区问题
+  const baseYear = baseDate.getUTCFullYear()
+  const baseMonth = baseDate.getUTCMonth()
 
   // 计算目标年月
   const targetYear = baseYear + Math.floor((baseMonth + monthsToAdd) / 12)
   const targetMonth = (baseMonth + monthsToAdd) % 12
 
-  // 创建目标月份的第一天
-  const result = new Date(targetYear, targetMonth, 1)
+  // 使用 Date.UTC 创建目标月份的第一天，确保在UTC环境中操作
+  const firstDayOfTargetMonth = new Date(Date.UTC(targetYear, targetMonth, 1))
 
-  // 获取目标月份的最大天数
-  const maxDayInMonth = getDaysInMonth(result)
+  // 获取目标月份的最大天数（已更新为UTC）
+  const maxDayInMonth = getDaysInMonth(firstDayOfTargetMonth)
 
   // 如果目标日期超过该月最大天数，选择该月最后一天
   // 如果目标日期在该月范围内，使用目标日期
   const adjustedDay = Math.min(targetDay, maxDayInMonth)
 
-  // 设置为调整后的日期
-  result.setDate(adjustedDay)
-
-  // 确保时间部分为UTC时间的00:00:00，与单笔创建交易保持一致
-  result.setUTCHours(0, 0, 0, 0)
+  // 创建最终的UTC日期
+  const result = new Date(Date.UTC(targetYear, targetMonth, adjustedDay))
 
   return result
 }
@@ -150,17 +149,24 @@ export function calculateLoanPaymentDateForPeriod(
   paymentDay: number,
   period: number
 ): Date {
-  // 第一期使用合约开始日期
+  // 关键修复：将传入的、可能基于本地时区的 Date 对象，转换为纯粹的 UTC 日期。
+  // 这可以防止 "new Date('2025-01-31')" 被解析为本地时区的午夜（即 UTC 的前一天下午）。
+  const utcBaseDate = new Date(
+    Date.UTC(
+      contractStartDate.getUTCFullYear(),
+      contractStartDate.getUTCMonth(),
+      contractStartDate.getUTCDate()
+    )
+  )
+
+  // 第一期使用修正后的UTC合约开始日期
   if (period === 1) {
-    const result = new Date(contractStartDate)
-    // 确保时间部分为UTC时间的00:00:00，与单笔创建交易保持一致
-    result.setUTCHours(0, 0, 0, 0)
-    return result
+    return utcBaseDate
   }
 
-  // 第二期开始使用每月还款日
+  // 后续期数使用修正后的UTC日期作为基准进行计算
   // period - 1 是因为第一期已经是开始日期，第二期是开始日期的下个月
-  return calculateLoanPaymentDate(contractStartDate, paymentDay, period - 1)
+  return calculateLoanPaymentDate(utcBaseDate, paymentDay, period - 1)
 }
 
 /**

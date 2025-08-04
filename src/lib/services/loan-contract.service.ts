@@ -195,13 +195,16 @@ export class LoanContractService {
       }
     }
 
-    const startDate = new Date(data.startDate)
+    // 关键修复：确保从字符串创建日期时，显式指定为UTC时间。
+    // '2025-01-31' -> '2025-01-31T00:00:00.000Z'
+    // 这可以防止 new Date() 使用服务器本地时区，从而从源头避免时区偏差。
+    const startDate = new Date(`${data.startDate}T00:00:00.000Z`)
 
-    // 计算第一次还款日期（第二期的还款日期，使用智能日期调整）
+    // 计算第一次还款日期（即第一期的还款日期）
     const firstPaymentDate = calculateLoanPaymentDateForPeriod(
       startDate,
       data.paymentDay,
-      2 // 第二期
+      1 // 第一期
     )
 
     const loanContract = await prisma.loanContract.create({
@@ -419,7 +422,8 @@ export class LoanContractService {
       }
 
       if (data.startDate) {
-        updateData.startDate = new Date(data.startDate)
+        // 关键修复：同样在更新时确保日期被解析为UTC时间。
+        updateData.startDate = new Date(`${data.startDate}T00:00:00.000Z`)
       }
 
       if (data.transactionTagIds !== undefined) {
@@ -853,8 +857,6 @@ export class LoanContractService {
   ) {
     return await prisma.$transaction(async tx => {
       // 获取贷款合约信息
-      console.warn(`Looking for loan contract: id=${id}, userId=${userId}`)
-
       const loanContract = await tx.loanContract.findFirst({
         where: {
           id,
@@ -872,15 +874,7 @@ export class LoanContractService {
         },
       })
 
-      console.warn('Found loan contract:', loanContract ? 'YES' : 'NO')
-
       if (!loanContract) {
-        // Let's also check if the contract exists without userId filter
-        const contractExists = await tx.loanContract.findFirst({
-          where: { id },
-          select: { id: true, userId: true },
-        })
-        console.warn('Contract exists with different userId:', contractExists)
         throw new Error(t('loan.contract.not.found'))
       }
 
@@ -1350,8 +1344,6 @@ export class LoanContractService {
       }
     }
 
-    console.log(`🔄 开始批量处理 ${duePayments.length} 条到期贷款还款记录`)
-
     // 性能监控数据
     const performanceMetrics = {
       queryTime: 0,
@@ -1414,23 +1406,6 @@ export class LoanContractService {
 
     const duration = Date.now() - startTime
     const rate = processed > 0 ? Math.round(processed / (duration / 1000)) : 0
-
-    // 详细的性能日志
-    console.log('✅ 批量贷款还款处理完成:')
-    console.log(
-      `   📊 处理统计: ${processed} 条还款记录，${performanceMetrics.contractsProcessed} 个合约`
-    )
-    console.log(
-      `   ⏱️  总耗时: ${duration}ms (事务: ${performanceMetrics.transactionTime}ms)`
-    )
-    console.log(`   🚀 处理速率: ${rate} 条/秒`)
-    console.log(
-      `   💾 数据操作: 创建 ${performanceMetrics.transactionsCreated} 笔交易，更新 ${performanceMetrics.paymentsUpdated} 条还款记录`
-    )
-
-    if (errors.length > 0) {
-      console.log(`   ⚠️  错误数量: ${errors.length}`)
-    }
 
     return {
       processed,
@@ -1708,9 +1683,12 @@ export class LoanContractService {
     let nextPaymentDate = null
 
     if (!isCompleted) {
-      nextPaymentDate = new Date(loanContract.startDate)
-      nextPaymentDate.setMonth(nextPaymentDate.getMonth() + lastPayment.period)
-      nextPaymentDate.setDate(contractFields.paymentDay)
+      // 关键修复：统一使用修正后的日期计算函数，避免独立的、有问题的日期计算逻辑
+      nextPaymentDate = calculateLoanPaymentDateForPeriod(
+        loanContract.startDate,
+        contractFields.paymentDay,
+        lastPayment.period + 1 // 计算下一期
+      )
     }
 
     const updateData: {
@@ -1763,9 +1741,6 @@ export class LoanContractService {
 
     // 检查贷款合约是否处于活跃状态
     if (!loanContract.isActive) {
-      console.log(
-        `Loan contract ${loanContract.id} is inactive, skipping payment processing`
-      )
       return false
     }
 
@@ -1982,11 +1957,12 @@ export class LoanContractService {
         let nextPaymentDate = null
 
         if (!isCompleted) {
-          nextPaymentDate = new Date(loanContract.startDate)
-          nextPaymentDate.setMonth(
-            nextPaymentDate.getMonth() + loanPayment.period
+          // 关键修复：统一使用修正后的日期计算函数
+          nextPaymentDate = calculateLoanPaymentDateForPeriod(
+            loanContract.startDate,
+            contractFields.paymentDay,
+            loanPayment.period + 1 // 计算下一期
           )
-          nextPaymentDate.setDate(contractFields.paymentDay)
         }
 
         // 只有在贷款合约当前为活跃状态时才更新状态
@@ -2013,8 +1989,8 @@ export class LoanContractService {
 
       return true
     } catch (error) {
-      console.error('处理贷款还款记录失败:', error)
-      return false
+      // 错误应向上抛出，以便上层调用者（如批量处理）可以捕获并记录
+      throw error
     }
   }
 }
